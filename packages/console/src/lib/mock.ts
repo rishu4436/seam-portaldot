@@ -2,7 +2,7 @@
 // produced by the REAL @seam/compiler, @seam/policy and @seam/sdk, run offline
 // against Bot 4's saved Portaldot node snapshot (see scripts/gen-demo.mjs).
 // Simulated until we have a testnet: the chain's replies (tx hashes, blocks,
-// events). Fees are Bot 4's live estimates; weights are not measured yet.
+// events). Fees and weights are Bot 4's real payment_queryInfo results.
 import data from "../demo/scenarios.json";
 import type { Approval, Capability, Manifest, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, Hex, Estimate } from "./types";
 
