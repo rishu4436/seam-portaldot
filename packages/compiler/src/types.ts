@@ -101,6 +101,27 @@ export interface PlanStep {
   encodedCall: Hex | null;
   status: 'ok' | 'unavailable';
   reason?: string;
+  /**
+   * Present only for a contracts.call written with `message` (ink! ABI form). Covered by planDigest.
+   * The raw-`data` form never has it, so its plans and digests are unchanged.
+   */
+  contractMessage?: ContractMessage;
+}
+
+/** JSON value of an ink! message argument after normalisation (integers as strings, accounts as SS58, bytes as hex). */
+export type InkArgValue = string | boolean | null | InkArgValue[] | { [k: string]: InkArgValue };
+
+export interface ContractMessage {
+  /** blake2b-256("seam/abi/v1" || 0x00 || canonicalJSON(abi)). */
+  abiHash: Hex;
+  /** The manifest's abiRef, when the ABI came from options.abis rather than inline. */
+  abiRef?: string;
+  /** ink! message label, e.g. "settle". */
+  message: string;
+  /** 4-byte selector; always equal to the first 4 bytes of decodedArgs.data. */
+  selector: Hex;
+  /** Arguments keyed by ABI label, decoded back from the encoded bytes. */
+  args: Record<string, InkArgValue>;
 }
 
 export interface Plan {
@@ -120,6 +141,11 @@ export interface Plan {
 export interface CompileOptions {
   /** Allow Utility.batch_all even when its rollback behaviour is not verified. Default false. */
   allowAtomicUnverified?: boolean;
+  /**
+   * ink! ABIs (metadata.json objects) that contracts.call actions can name with `abiRef` instead of
+   * inlining `abi`. Only the referenced ABI's hash goes into the plan.
+   */
+  abis?: Record<string, unknown>;
 }
 
 export interface CompileIssue {
@@ -138,7 +164,11 @@ export type CompileErrorCode =
   | 'SS58_PREFIX'
   | 'CHAIN_MISMATCH'
   | 'FACTS_INVALID'
-  | 'ENCODE_FAILED';
+  | 'ENCODE_FAILED'
+  | 'ABI_INVALID'
+  | 'ABI_HASH_MISMATCH'
+  | 'ABI_MESSAGE_UNKNOWN'
+  | 'ABI_ARGS_INVALID';
 
 export class SeamCompileError extends Error {
   readonly issues: CompileIssue[];
