@@ -1,10 +1,11 @@
-// Snapshot the local dev node (read-only) into $SEAM_EVIDENCE_DIR (default /workspace/seam-evidence/devnode).
+// Snapshot the local dev node (read-only) into /workspace/seam-evidence/devnode and <repo>/evidence/devnode.
 import { snapshotFromNode, metadataVersionOf } from '../../dist/index.js';
-import { ENDPOINT, EVIDENCE, TYPES_BUNDLE, DECLARED_TOKEN, devFacts, saveJson } from './lib.mjs';
+import { ENDPOINT, EVIDENCE, REPO_EVIDENCE, TYPES_BUNDLE, DECLARED_TOKEN, devFacts, saveEvidence } from './lib.mjs';
 
 const files = await snapshotFromNode(ENDPOINT, EVIDENCE, { typesBundle: TYPES_BUNDLE, declaredToken: DECLARED_TOKEN });
+await snapshotFromNode(ENDPOINT, REPO_EVIDENCE, { typesBundle: TYPES_BUNDLE, declaredToken: DECLARED_TOKEN });
 const facts = await devFacts();
-saveJson(`${EVIDENCE}/devnode-facts-summary.json`, {
+saveEvidence('devnode-facts-summary.json', {
   fingerprint: facts.fingerprint,
   fingerprintDigest: facts.fingerprintDigest,
   metadataVersion: metadataVersionOf(facts.source.metadataHex),
