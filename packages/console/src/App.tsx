@@ -2,12 +2,13 @@ import { useMemo, useState } from "react";
 import * as api from "./lib/mock";
 import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
 
-type Scenario = "happy" | "nft" | "upgrade" | "fail";
+type Scenario = "happy" | "nft" | "upgrade" | "fail" | "midrun";
 const SCENARIOS: { id: Scenario; label: string; hint: string }[] = [
   { id: "happy", label: "Verified run", hint: "Transfer, ink! call, receipt token" },
   { id: "nft", label: "Missing pallet", hint: "Asks for nfts.mint on a chain without Nfts" },
   { id: "upgrade", label: "Runtime changed", hint: "Runtime upgrades after approval" },
   { id: "fail", label: "Step 2 fails", hint: "Sequential run stops halfway" },
+  { id: "midrun", label: "Upgrade mid-run", hint: "Runtime changes between step 1 and 2" },
 ];
 const STEPS = ["Connect", "Manifest", "Plan", "Checks", "Approve", "Receipt"] as const;
 
@@ -61,13 +62,12 @@ export default function App() {
     if (api.submitBlock()) { setLockBlock(api.discover(endpoint, true)); setStep(5); return; }
     setStep(5);
     const n = plan.steps.length;
-    setProgress(Array(n).fill("submitted"));
-    const r = api.receipt(plan, policy, approval, scenario === "fail" ? "settle" : undefined);
-    r.steps.forEach((s, i) => {
-      setTimeout(() => setProgress((p) => p.map((v, j) => (j === i ? (s.status === "finalized" ? "included" : s.status) : v))), 500 + i * 700);
-      setTimeout(() => setProgress((p) => p.map((v, j) => (j === i ? s.status : v))), 900 + i * 700);
+    setProgress(Array(n).fill("not_run"));
+    const events = api.timeline();
+    events.forEach((e, k) => {
+      setTimeout(() => setProgress((p) => p.map((v, j) => (j !== e.index ? v : e.phase === "checking" ? "checking" : e.phase === "sending" ? "submitted" : e.phase === "blocked" ? "blocked" : ((e.detail as StepStatus) ?? "finalized")))), 400 + k * 550);
     });
-    setTimeout(() => { setReceipt(r); setApproval({ ...approval, used: true }); }, 1000 + n * 700);
+    setTimeout(() => { setReceipt(api.receipt(plan, policy, approval)); setApproval({ ...approval, used: true }); }, 500 + events.length * 550);
   };
 
   const canGo = [true, !!facts, !!plan, !!policy, !!approval, !!receipt || !!lockBlock];
@@ -262,9 +262,11 @@ export default function App() {
                   return (
                     <li key={s.actionId} className={st}>
                       <b>{s.actionId}</b> <code>{s.capability}</code>
-                      <div className="stages">{(["submitted", "included", "finalized"] as const).map((x, k) => {
-                        const order = { not_run: -1, submitted: 0, included: 1, finalized: 2, failed: 1 }[st];
-                        return <span key={x} className={k <= order ? (st === "failed" && k === 1 ? "bad" : "on") : ""}>{st === "failed" && k === 1 ? "failed" : x}</span>;
+                      <div className="stages">{(["checking", "submitted", "finalized"] as const).map((x, k) => {
+                        const order: Record<string, number> = { not_run: -1, checking: 0, blocked: 0, submitted: 1, included: 1, failed: 2, finalized: 2 };
+                        const bad = (st === "blocked" && k === 0) || (st === "failed" && k === 2);
+                        const label = bad ? (st === "blocked" ? "blocked" : "failed") : x === "checking" ? (k <= order[st] ? "checked" : "check") : x === "submitted" ? "sent" : "finalized";
+                        return <span key={x} className={k <= order[st] ? (bad ? "bad" : "on") : ""}>{st === "checking" && k === 0 ? `checking step ${i + 1}…` : label}</span>;
                       })}</div>
                     </li>
                   );

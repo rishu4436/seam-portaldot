@@ -39,23 +39,25 @@ const good = () => [
 // Bot 4's real payment_queryInfo results from the Portaldot mainnet node (Oct 11), base units.
 const WEIGHTS = { pay: '567688000', settle: '5811203000', receipt: '295983000' };
 const FEES = { pay: '1490125636184', settle: '1520000000000', receipt: '1420000000000' };
-const chain = (outcomes, fingerprintAfter) => ({
+// fingerprintAfter: runtime changed before the first send. changeAfterStep: runtime changes once N steps have been sent.
+const chain = (outcomes, fingerprintAfter, changeAfterStep) => { let sent = 0; return {
   discover: async () => facts,
-  readFingerprint: async () => fingerprintAfter ?? facts.fingerprint,
+  readFingerprint: async () => (changeAfterStep != null && sent >= changeAfterStep ? { ...facts.fingerprint, specVersion: 1003 } : fingerprintAfter ?? facts.fingerprint),
   preflight: async (plan) => ({
     preflight: { steps: plan.steps.map((s) => ({ actionId: s.actionId, weight: { value: WEIGHTS[s.actionId] }, fee: { value: FEES[s.actionId] }, storageDeposit: { unknown: true }, dryRun: 'ok' })), totalFee: { value: '4430125636184' } },
     envelope: { signer: ALICE, nonce: 7, mortalityBlocks: 64, checkpoint: { number: 2721455, hash: '0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9' }, expiresAt: new Date(Date.now() + 600_000).toISOString() },
   }),
+  // The SDK only dry-runs the step it's about to send, after the previous one finalized, so 'ok' is what a node returns here.
   dryRunSigned: async (txs) => txs.map(() => 'ok'),
-  submit: async (_t, id) => outcomes.find((o) => o.actionId === id) ?? { actionId: id, status: 'not_run', events: [] },
-});
+  submit: async (_t, id) => { sent++; return outcomes.find((o) => o.actionId === id) ?? { actionId: id, status: 'not_run', events: [] }; },
+}; };
 const wallet = { sign: async (calls) => calls.map((c) => ({ signedTx: c, signedCall: c })) };
 
-async function run(id, { nft = false, outcomes = good(), fingerprintAfter } = {}) {
+async function run(id, { nft = false, outcomes = good(), fingerprintAfter, changeAfterStep } = {}) {
   const m = manifest(nft);
   const parsed = parseManifest(m);
   const plan = compile(m, facts);
-  const seam = new Seam(chain(outcomes, fingerprintAfter));
+  const seam = new Seam(chain(outcomes, fingerprintAfter, changeAfterStep));
   const out = { id, manifest: m, manifestDigest: parsed.ok ? parsed.digest : null, plan, planText: explainPlan(plan) };
   if (plan.mode === 'unavailable') return out;
   const p = await seam.prepare(m, facts, policy);
@@ -64,7 +66,9 @@ async function run(id, { nft = false, outcomes = good(), fingerprintAfter } = {}
   const a = seam.approve({ ...p, policy, facts });
   if (!a.ok) { out.approvalError = a.reason; return out; }
   out.approval = a.approval;
-  const r = await seam.execute({ ...p, policy, facts, approval: a.approval, wallet });
+  const timeline = [];
+  const r = await seam.execute({ ...p, policy, facts, approval: a.approval, wallet, onStep: (e) => timeline.push(e) });
+  out.timeline = timeline;
   out.run = r;
   if (r.ok) out.receiptText = explainReceipt(r.receipt);
   if (!r.ok) out.fingerprintNow = fingerprintAfter;
@@ -81,6 +85,7 @@ const scenarios = {
   nft: await run('nft', { nft: true }),
   upgrade: await run('upgrade', { fingerprintAfter: { ...facts.fingerprint, specVersion: 1003 } }),
   fail: await run('fail', { outcomes: failed }),
+  midrun: await run('midrun', { changeAfterStep: 1 }),
 };
 const json = JSON.stringify(scenarios, (_k, v) => (typeof v === 'bigint' ? v.toString() : v instanceof Map ? Object.fromEntries(v) : v), 2);
 writeFileSync(fileURLToPath(new URL('../src/demo/scenarios.json', import.meta.url)), json);
