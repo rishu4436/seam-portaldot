@@ -92,3 +92,24 @@ describe('discovery from the real spec 1002 snapshot', () => {
     expect(typeof written.fetchedAt).toBe('string');
   });
 });
+
+describe('readSigningCheckpoint', () => {
+  const H = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
+  const stub = (finalized: number, best: number) => ({
+    async send(method: string, params: unknown[]) {
+      if (method === 'chain_getFinalizedHead') return H(finalized);
+      if (method === 'chain_getBlockHash') return H(best);
+      if (method === 'chain_getHeader') { const n = parseInt(String(params[0]), 16); return { number: `0x${n.toString(16)}`, parentHash: H(n - 1) }; }
+      throw new Error(method);
+    },
+    async subscribe() { throw new Error('no'); }, async unsubscribe() { return true; }
+  });
+  it('uses the finalized head when finality lags the best block (Portaldot)', async () => {
+    const { readSigningCheckpoint } = await import('../src/index.js');
+    expect(await readSigningCheckpoint(stub(10, 12) as never)).toEqual({ number: 10, hash: H(10) });
+  });
+  it('uses the parent when the finalized head is the best block (instant seal), so system_dryRun sees its BlockHash', async () => {
+    const { readSigningCheckpoint } = await import('../src/index.js');
+    expect(await readSigningCheckpoint(stub(10, 10) as never)).toEqual({ number: 9, hash: H(9) });
+  });
+});

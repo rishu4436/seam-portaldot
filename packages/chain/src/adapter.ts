@@ -1,6 +1,6 @@
 import { encodeAddress } from '@polkadot/util-crypto';
 import type { BatchAllRollback, Hex, Plan, RuntimeFacts, RuntimeFingerprint } from '@seam/compiler';
-import { discover, readCheckpoint, refetchFingerprint } from './discover.js';
+import { discover, readSigningCheckpoint, refetchFingerprint } from './discover.js';
 import { SeamChainError } from './errors.js';
 import { toChainEvent, type ChainEvent } from './events.js';
 import { preflight, type PreflightReport } from './preflight.js';
@@ -146,7 +146,7 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
     async preflight(plan: Plan) {
       const f = needFacts();
       const report = await preflight(endpoint, plan, f, options);
-      const checkpoint = await readCheckpoint(endpoint, options);
+      const checkpoint = await readSigningCheckpoint(endpoint, options);
       const mortalityBlocks = options.mortalityBlocks ?? 64;
       const blockTimeMs = options.blockTimeMs ?? blockTimeFromFacts(f);
       if (!blockTimeMs) throw new SeamChainError('NODE_MISSING_VALUE', 'block time not in metadata; pass options.blockTimeMs');
