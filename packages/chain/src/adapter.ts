@@ -1,6 +1,6 @@
 import { encodeAddress } from '@polkadot/util-crypto';
 import type { BatchAllRollback, Hex, Plan, RuntimeFacts, RuntimeFingerprint } from '@seam/compiler';
-import { discover, readCheckpoint, refetchFingerprint } from './discover.js';
+import { discover, readSigningCheckpoint, refetchFingerprint } from './discover.js';
 import { SeamChainError } from './errors.js';
 import { toChainEvent, type ChainEvent } from './events.js';
 import { preflight, type PreflightReport } from './preflight.js';
@@ -83,7 +83,9 @@ export function blockTimeFromFacts(facts: RuntimeFacts): number | undefined {
   const expected = consts.babe?.expectedBlockTime?.toNumber();
   if (expected) return expected;
   const min = consts.timestamp?.minimumPeriod?.toNumber();
-  return min ? min * 2 : undefined;
+  // Below a second means manual/instant seal (substrate-contracts-node: MinimumPeriod 5 ms): blocks come per
+  // transaction, so metadata says nothing about real block time. Make the caller pass blockTimeMs.
+  return min && min * 2 >= 1000 ? min * 2 : undefined;
 }
 
 /** Maps a submitAndWatch result to the SDK's StepOutcome. */
@@ -144,7 +146,7 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
     async preflight(plan: Plan) {
       const f = needFacts();
       const report = await preflight(endpoint, plan, f, options);
-      const checkpoint = await readCheckpoint(endpoint, options);
+      const checkpoint = await readSigningCheckpoint(endpoint, options);
       const mortalityBlocks = options.mortalityBlocks ?? 64;
       const blockTimeMs = options.blockTimeMs ?? blockTimeFromFacts(f);
       if (!blockTimeMs) throw new SeamChainError('NODE_MISSING_VALUE', 'block time not in metadata; pass options.blockTimeMs');

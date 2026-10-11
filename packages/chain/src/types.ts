@@ -89,6 +89,8 @@ export interface SnapshotJson {
   signedExtensions?: string[];
   rpcMethods?: string[];
   fingerprintDigest?: Hex;
+  /** Token values the caller declared because system_properties had none (see DiscoverOptions.declaredToken). */
+  declaredToken?: { tokenSymbol: string; tokenDecimals: number; source: string };
 }
 
 export interface FreshFingerprint {

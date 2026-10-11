@@ -199,3 +199,19 @@ atomic plans and a failing step.
   for well-known keys SEAM never reads.
 - Raw RPC instead of `ApiPromise`: everything is encoded and decoded with the **pinned** runtime from the
   fingerprint, never with whatever metadata the node serves at the moment.
+
+## Local dev node (substrate-contracts-node)
+
+```sh
+npm run devnode -- start          # prebuilt substrate-contracts-node v0.42.0 (sha256-checked), ws://127.0.0.1:9944
+node scripts/devnode/snapshot.mjs # read-only snapshot -> /workspace/seam-evidence/devnode/
+node scripts/devnode/setup.mjs    # //Alice: create + mint asset 1, deploy fixtures/devnode/seam_emitter.wasm
+npm run test:devnode              # SEAM_DEVNODE=1: sequential, rollback, atomic runs (evidence in .../runs/)
+```
+
+Metadata V14, spec `substrate-contracts-node` 100, instant seal (a block per transaction, finalized after 1 s),
+system_properties empty (UNIT/12 is declared via `declaredToken`), no Babe (pass `blockTimeMs`).
+Dev keys are public: these scripts refuse any endpoint other than localhost and the Portaldot mainnet genesis.
+`seam_emitter` is a 158-byte hand-written Wasm contract (fixtures/devnode/seam_emitter.wat) that emits one
+event; replace it with Bot 2's ink! demo contract when that lands. Contracts.call needs a shim on V14 until the
+compiler binds `storage_deposit_limit` and Weight V2: see docs/devnode-assumptions.md.
