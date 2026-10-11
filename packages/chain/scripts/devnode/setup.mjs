@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { u8aToHex } from '@polkadot/util';
 import { withClient, decodeRuntime, storageKey } from '../../dist/index.js';
-import { ENDPOINT, EVIDENCE, ASSET_ID, STATE_FILE, devFacts, devKeys, encodeCall, sendSigned, saveJson, loadState, brief } from './lib.mjs';
+import { ENDPOINT, ASSET_ID, devFacts, devKeys, encodeCall, sendSigned, saveEvidence, loadState, brief } from './lib.mjs';
 
 const facts = await devFacts();
 const { alice } = await devKeys();
@@ -41,6 +41,6 @@ if (!state.contract || state.genesis !== facts.fingerprint.genesisHash || !(awai
 
 state.genesis = facts.fingerprint.genesisHash;
 state.assetId = ASSET_ID;
-saveJson(STATE_FILE, state);
-saveJson(`${EVIDENCE}/runs/setup-${Date.now()}.json`, { ...log, state });
+saveEvidence('state.json', state);
+saveEvidence(`runs/setup-${Date.now()}.json`, { ...log, state });
 console.log(JSON.stringify({ state, log }, null, 1));
