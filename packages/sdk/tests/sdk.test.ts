@@ -141,17 +141,17 @@ const policy = definePolicy({
   allowUnknown: { storageDeposit: true },
 });
 
-function fakeChain(f: RuntimeFacts, opts: { outcomes?: StepOutcome[]; fingerprintAfter?: RuntimeFacts['fingerprint']; dryRun?: SignedDryRun } = {}) {
+function fakeChain(f: RuntimeFacts, opts: { outcomes?: StepOutcome[]; fingerprintAfter?: RuntimeFacts['fingerprint']; changeAfterSubmits?: number; dryRun?: SignedDryRun } = {}) {
   const submitted: string[] = [];
   const outs = opts.outcomes ?? goodOutcomes();
   const chain: ChainAdapter = {
     discover: async () => f,
-    readFingerprint: async () => opts.fingerprintAfter ?? f.fingerprint,
+    readFingerprint: async () => (opts.fingerprintAfter && submitted.length >= (opts.changeAfterSubmits ?? 0) ? opts.fingerprintAfter : f.fingerprint),
     preflight: async (plan: Plan) => ({
       preflight: { steps: plan.steps.map((s) => ({ actionId: s.actionId, weight: { value: '1000' }, fee: { value: '10' }, storageDeposit: { unknown: true }, dryRun: 'ok' as const })), totalFee: { value: '30' } },
       envelope: { signer: ALICE, nonce: 7, mortalityBlocks: 64, expiresAt: new Date(Date.now() + 300_000).toISOString(), checkpoint: { number: 100, hash: `0x${'ab'.repeat(32)}` } } satisfies SigningEnvelope,
     }),
-    dryRunSigned: async (txs: Hex[]) => txs.map(() => opts.dryRun ?? 'ok'),
+    dryRunSigned: async (txs: Hex[]) => txs.map((_, i) => (i === 0 ? (opts.dryRun ?? 'ok') : 'unknown')),
     submit: async (tx: Hex, id: string) => { submitted.push(id); return outs.find((o) => o.actionId === id) ?? { actionId: id, status: 'not_run', events: [] }; },
   };
   return { chain, submitted };
@@ -182,7 +182,7 @@ describe('Seam flow', () => {
     await seam.execute({ ...p, policy, facts, wallet: honestWallet });
     const again = await seam.execute({ ...p, policy, facts, wallet: honestWallet });
     expect(again.ok).toBe(false);
-    if (!again.ok) expect(again.reason).toMatch(/already used/);
+    if (!again.ok) expect(again.reason).toMatch(/already (used|sent)/);
   });
   it('blocks when the runtime changed after approval, and submits nothing', async () => {
     const { chain, submitted } = fakeChain(facts, { fingerprintAfter: { ...facts.fingerprint, specVersion: 1003 } });
@@ -216,6 +216,33 @@ describe('Seam flow', () => {
     const run = await seam.execute({ ...(await prepared(seam)), policy, facts, wallet: honestWallet });
     expect(run.ok).toBe(false);
     expect(submitted).toEqual([]);
+  });
+  it('dry-runs and gates each sequential step just before sending it, in order', async () => {
+    const { chain } = fakeChain(facts);
+    const seam = new Seam(chain);
+    const p = await prepared(seam);
+    const log: string[] = [];
+    const run = await seam.execute({ ...p, policy: { ...policy, requireSignedDryRun: true }, facts, wallet: honestWallet, onStep: (e) => log.push(`${e.actionId}:${e.phase}`) });
+    expect(run.ok && run.receipt.result).toBe('verified');
+    expect(log).toEqual(['pay:checking', 'pay:sending', 'pay:done', 'call:checking', 'call:sending', 'call:done', 'receipt:checking', 'receipt:sending', 'receipt:done']);
+  });
+  it('a runtime upgrade between steps stops the run with a partial receipt', async () => {
+    const { chain, submitted } = fakeChain(facts, { fingerprintAfter: { ...facts.fingerprint, specVersion: 1003 }, changeAfterSubmits: 1 });
+    const seam = new Seam(chain);
+    const run = await seam.execute({ ...(await prepared(seam)), policy, facts, wallet: honestWallet });
+    expect(submitted).toEqual(['pay']);
+    expect(run.ok && run.receipt.result).toBe('partial');
+    if (run.ok) { expect(run.stoppedReason).toMatch(/stopped before sending it/); expect(run.receipt.steps[1]!.reason).toMatch(/^Not run\. SEAM stopped before sending it: .*runtime/i); }
+  });
+  it('a step whose own dry run fails is never sent, and the receipt says why', async () => {
+    let n = 0;
+    const { chain, submitted } = fakeChain(facts);
+    chain.dryRunSigned = async (txs) => txs.map(() => (n++ === 1 ? 'failed' : 'ok'));
+    const seam = new Seam(chain);
+    const run = await seam.execute({ ...(await prepared(seam)), policy, facts, wallet: honestWallet });
+    expect(submitted).toEqual(['pay']);
+    expect(run.ok && run.receipt.result).toBe('partial');
+    if (run.ok) expect(run.receipt.steps[1]!.reason).toMatch(/dry run of the signed transaction failed/);
   });
   it('stops after a failed step and never submits the next one', async () => {
     const o = goodOutcomes();

@@ -1,7 +1,7 @@
 import { compile, type CompileOptions, type Hex, type Manifest, type Plan, type RuntimeFacts, type RuntimeFingerprint } from '@seam/compiler';
 import {
   callsToSign, checkBeforeSubmit, createApproval, evaluatePolicy, InMemoryApprovalStore,
-  type ApprovalStore, type BoundApproval, type Policy, type PolicyResult, type PreflightResult, type SignedDryRun, type SigningEnvelope, type SubmitCheck,
+  usageKey, type ApprovalStore, type BoundApproval, type ReceiptStep, type Policy, type PolicyResult, type PreflightResult, type SignedDryRun, type SigningEnvelope, type SubmitCheck,
 } from '@seam/policy';
 import { buildReceipt, type Receipt, type StepOutcome } from './receipt.js';
 
@@ -24,7 +24,7 @@ export interface WalletSigner {
 }
 
 export type RunResult =
-  | { ok: true; receipt: Receipt }
+  | { ok: true; receipt: Receipt; /** Set when a sequential run stopped early; the receipt is then partial. */ stoppedReason?: string }
   | { ok: false; stage: 'policy' | 'approval' | 'submit_gate'; reason: string; policyResult?: PolicyResult; check?: SubmitCheck };
 
 export class Seam {
@@ -47,33 +47,68 @@ export class Seam {
   }
 
   /**
-   * Signs, re-checks everything at the last moment, submits, and verifies. Sequential plans stop at the first
-   * step that fails or doesn't verify; the receipt then says partial.
+   * Signs, re-checks everything at the last moment, submits, and verifies.
+   * Atomic plans: one gate check, one transaction. Sequential plans: before every step SEAM reads the runtime
+   * fingerprint again, dry-runs that step's signed transaction, and runs the gate for that step (sendIndex), after
+   * the previous step finalized and verified. It stops at the first step that fails, doesn't verify, or is blocked;
+   * the receipt then says partial and `stoppedReason` says why.
    */
   async execute(p: { plan: Plan; preflight: PreflightResult; envelope: SigningEnvelope; policy: Policy; policyResult: PolicyResult;
-    facts: RuntimeFacts; approval: BoundApproval; wallet: WalletSigner; now?: () => Date }): Promise<RunResult> {
+    facts: RuntimeFacts; approval: BoundApproval; wallet: WalletSigner; now?: () => Date;
+    onStep?: (e: { index: number; actionId: string; phase: 'checking' | 'sending' | 'done' | 'blocked'; detail?: string }) => void }): Promise<RunResult> {
     const now = p.now ?? (() => new Date());
     const calls = callsToSign(p.plan).filter((c): c is Hex => !!c);
     const signed = await p.wallet.sign(calls, p.envelope);
-    const signedDryRun = await this.chain.dryRunSigned(signed.map((s) => s.signedTx));
-    const check = checkBeforeSubmit({
-      manifestDigest: p.plan.manifestDigest, plan: p.plan, envelope: p.envelope, preflight: p.preflight, policy: p.policy,
-      policyResult: p.policyResult, approval: p.approval, preparedFingerprint: p.facts.fingerprint,
-      currentFingerprint: await this.chain.readFingerprint(), signedCalls: signed.map((s) => s.signedCall), signedDryRun, now: now(), store: this.store,
-    });
-    if (!check.ok) return { ok: false, stage: 'submit_gate', reason: check.reasons.map((r) => r.message).join(' '), check };
-    this.store.markUsed(p.approval.hash);
-
+    const signedCalls = signed.map((s) => s.signedCall);
     const atomic = p.plan.mode === 'atomic_verified' || p.plan.mode === 'atomic_unverified';
     const ids = atomic ? ['batch'] : p.plan.steps.map((s) => s.actionId);
+    const gate = async (sendIndex: number | undefined, signedDryRun: SignedDryRun[], previousSteps?: ReceiptStep[]) => checkBeforeSubmit({
+      manifestDigest: p.plan.manifestDigest, plan: p.plan, envelope: p.envelope, preflight: p.preflight, policy: p.policy,
+      policyResult: p.policyResult, approval: p.approval, preparedFingerprint: p.facts.fingerprint,
+      currentFingerprint: await this.chain.readFingerprint(), signedCalls, signedDryRun, sendIndex, previousSteps, now: now(), store: this.store,
+    });
+    const finish = (outcomes: StepOutcome[], stoppedReason?: string): RunResult => ({
+      ok: true, stoppedReason,
+      receipt: buildReceipt({ plan: p.plan, outcomes, policyDigest: p.policyResult.policyDigest, approvalHash: p.approval.hash, stoppedReason }),
+    });
+
+    if (atomic || signed.length === 1) {
+      const sendIndex = atomic ? undefined : 0;
+      p.onStep?.({ index: 0, actionId: ids[0]!, phase: 'checking' });
+      const check = await gate(sendIndex, await this.chain.dryRunSigned(signed.map((s) => s.signedTx)), atomic ? undefined : []);
+      if (!check.ok) return { ok: false, stage: 'submit_gate', reason: check.reasons.map((r) => r.message).join(' '), check };
+      this.store.markUsed(usageKey(p.approval.hash, sendIndex));
+      p.onStep?.({ index: 0, actionId: ids[0]!, phase: 'sending' });
+      const o = await this.chain.submit(signed[0]!.signedTx, ids[0]!);
+      p.onStep?.({ index: 0, actionId: ids[0]!, phase: 'done', detail: o.status });
+      return finish([o]);
+    }
+
     const outcomes: StepOutcome[] = [];
     for (let i = 0; i < signed.length; i++) {
-      const o = await this.chain.submit(signed[i]!.signedTx, ids[i]!);
+      const id = ids[i]!;
+      p.onStep?.({ index: i, actionId: id, phase: 'checking' });
+      // Only this step can dry-run now: later steps carry nonces the chain won't accept until this one lands.
+      const [mine] = await this.chain.dryRunSigned([signed[i]!.signedTx]);
+      const dry: SignedDryRun[] = signed.map((_, j) => (j === i ? (mine ?? 'unknown') : 'unknown'));
+      const previousSteps = buildReceipt({ plan: p.plan, outcomes }).steps.slice(0, i);
+      const check = await gate(i, dry, previousSteps);
+      if (!check.ok) {
+        const reason = check.reasons.map((r) => r.message).join(' ');
+        p.onStep?.({ index: i, actionId: id, phase: 'blocked', detail: reason });
+        if (i === 0) return { ok: false, stage: 'submit_gate', reason, check };
+        return finish(outcomes, `SEAM stopped before sending it: ${reason}`);
+      }
+      this.store.markUsed(usageKey(p.approval.hash, i));
+      p.onStep?.({ index: i, actionId: id, phase: 'sending' });
+      const o = await this.chain.submit(signed[i]!.signedTx, id);
       outcomes.push(o);
-      if (o.status !== 'finalized' && o.status !== 'included') break;
-      const partial = buildReceipt({ plan: p.plan, outcomes });
-      if (partial.steps.find((s) => s.actionId === ids[i])?.verification === 'not_verified') break;
+      p.onStep?.({ index: i, actionId: id, phase: 'done', detail: o.status });
+      const step = buildReceipt({ plan: p.plan, outcomes }).steps[i]!;
+      if (o.status !== 'finalized' || step.verification === 'not_verified') {
+        return i + 1 < signed.length ? finish(outcomes, `SEAM stopped because step ${i + 1} (${id}) did not complete and verify: ${step.reason}`) : finish(outcomes);
+      }
     }
-    return { ok: true, receipt: buildReceipt({ plan: p.plan, outcomes, policyDigest: p.policyResult.policyDigest, approvalHash: p.approval.hash }) };
+    return finish(outcomes);
   }
 }
