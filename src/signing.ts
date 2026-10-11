@@ -274,9 +274,17 @@ export function checkSignedExtrinsic(extrinsicHex: string, request: SigningReque
   cmp('nonce', String(request.nonce), String(s.nonce));
   cmp('era', request.era.hex, s.era.hex);
   cmp('tip', '0', s.tip);
-  const multi = hexToU8a(s.signature);
-  if (!signatureVerify(hexToU8a(request.signBytesHex), multi, s.signer.accountId).isValid) {
-    mismatches.push({ field: 'signature', expected: 'valid over the approved payload', actual: 'does not verify' });
+  // Verify over what this extrinsic actually carries (its call, era, nonce, tip) plus the request's chain
+  // context (spec, tx version, genesis, era block hash): exactly what a node will check.
+  const { registry } = encodeRuntime(facts);
+  const p = request.payload;
+  const actual = registry.createType('ExtrinsicPayload', {
+    method: s.callHex, era: s.era.hex, nonce: s.nonce, tip: s.tip,
+    specVersion: p.specVersion, transactionVersion: p.transactionVersion, genesisHash: p.genesisHash, blockHash: p.blockHash
+  }, { version: 4 }).toU8a({ method: true });
+  const message = actual.length > 256 ? blake2AsU8a(actual, 256) : actual;
+  if (!signatureVerify(message, hexToU8a(s.signature), s.signer.accountId).isValid) {
+    mismatches.push({ field: 'signature', expected: 'valid over the extrinsic contents', actual: 'does not verify' });
   }
   return { ok: mismatches.length === 0, mismatches, signed: s };
 }
