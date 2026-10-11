@@ -26,6 +26,13 @@ describe.skipIf(!LIVE)('local dev node (SEAM_DEVNODE=1)', () => {
   it('sequential transfer -> contract call -> mint, strict policy, per-step gate: receipt verified', () => {
     const { json } = evidenceOf(run('run-sequential.mjs'));
     expect(json.policy.requireSignedDryRun).toBe(true);
+    // complete recording: Manifest, facts, policy, rule-by-rule result, one recomputed gate check per step
+    expect(json.recordingVersion).toBe(2);
+    expect(json.manifest.actions).toHaveLength(3);
+    expect(json.facts.fingerprintDigest).toBe(json.fingerprintDigest);
+    expect(json.policyResult.rules.length).toBeGreaterThan(0);
+    expect(json.gateChecks.map((g: any) => [g.sendIndex, g.sdkOutcome, g.result.ok, g.agreesWithSdk])).toEqual([[0, 'sent', true, true], [1, 'sent', true, true], [2, 'sent', true, true]]);
+    expect(JSON.stringify(json)).not.toMatch(/"signature"|\/\/Alice/);
     expect(json.policyResult.allowed).toBe(true);
     const sent = json.stepLog.filter((s: any) => s.phase === 'sending');
     expect(sent.map((s: any) => s.dryRun.map((d: any) => d.outcome))).toEqual([['ok'], ['ok'], ['ok']]);
@@ -47,6 +54,13 @@ describe.skipIf(!LIVE)('local dev node (SEAM_DEVNODE=1)', () => {
   it('batch_all rollback: the gate blocks the failing batch; sent directly, nothing from steps 1 and 3 sticks', () => {
     const { file, json } = evidenceOf(run('run-rollback.mjs'));
     expect(json.seamGate).toMatchObject({ ok: false, stage: 'submit_gate', nothingSent: true });
+    expect(json.recordingVersion).toBe(2);
+    expect(json.preflight.steps).toHaveLength(3);
+    expect(json.envelope.checkpoint.hash).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(json.gateChecks).toHaveLength(1);
+    expect(json.gateChecks[0]).toMatchObject({ sdkOutcome: 'blocked', agreesWithSdk: true, result: { ok: false } });
+    expect(json.directSubmit.statuses.map((s: any) => s.status)).toEqual(['submitted', 'in_block', 'finalized']);
+    expect(JSON.stringify(json)).not.toMatch(/"signature"|\/\/Alice/);
     expect(json.seamGate.reasons.map((r: any) => r.code)).toEqual(['signed_dry_run_failed']);
     expect(json.directSubmit).toMatchObject({ status: 'finalized', success: false });
     expect(json.directSubmit.dispatchError).toMatch(/assets\.BalanceLow/);
