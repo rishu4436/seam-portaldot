@@ -72,6 +72,8 @@ export interface PlanStep {
   decoded: { assetId?: string; amount?: string; recipient?: string; contract?: string; value?: string };
   status: "ok" | "unavailable";
   reason?: string;
+  /** Set when a run script filled this step by hand because the compiler can't encode it on this runtime yet. */
+  shim?: string;
 }
 
 export interface Plan {
@@ -86,7 +88,7 @@ export interface Plan {
 }
 
 export interface Estimate { value?: string; unknown?: boolean }
-export interface PreflightStep { actionId: string; weight: Estimate; fee: Estimate; storageDeposit: Estimate; dryRun: "ok" | "failed" | "unknown"; note?: string }
+export interface PreflightStep { actionId: string; weight: Estimate; /** Weight V2 proof_size (bytes). Unknown on runtimes that don't report it (e.g. Portaldot spec 1002), never 0. */ proofSize?: Estimate; fee: Estimate; storageDeposit: Estimate; dryRun: "ok" | "failed" | "unknown"; note?: string }
 export interface PreflightResult { steps: PreflightStep[]; totalFee: Estimate }
 
 export interface SigningEnvelope { signer: string; nonce: number; mortalityBlocks: number; expiresAt: string }
