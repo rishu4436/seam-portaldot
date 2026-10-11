@@ -115,8 +115,11 @@ Before broadcasting, `submitAndWatch` checks that the node's genesis equals the 
 `submit` dry-runs each transaction again right before broadcasting it and returns a `failed` outcome
 without sending when that fails (`dryRunBeforeSubmit: false` turns this off).
 
-Note: with `requireSignedDryRun` on (Bot 3's default), only atomic plans pass the up-front gate. In a
-sequential plan, transactions 2..n can't dry-run before transaction 1 is on chain (future nonce → `'unknown'`).
+Sequential plans with `requireSignedDryRun` on (Bot 3's default): transactions 2..n can't dry-run before
+transaction 1 is on chain (future nonce → `'unknown'`), so the SDK's `execute` (77d3c82) gates each step on its
+own. Before every step it re-reads the fingerprint, calls `dryRunSigned([thatStep])` and runs
+`checkBeforeSubmit({ sendIndex, previousSteps })`, after the previous step finalized and verified. A step whose own
+dry run fails is never sent; the receipt says `partial`, and the blocked step and later ones are `not_run`.
 
 Extras: `signingRequests(calls, envelope)`, `lastDryRun`, `walletFrom(signPayload)` (turns
 an extension-style `signPayload` into the SDK's `WalletSigner`), `lastPreflight`, `lastSubmit`.
