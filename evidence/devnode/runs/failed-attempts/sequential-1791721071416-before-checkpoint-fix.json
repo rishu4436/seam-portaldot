@@ -1,0 +1,746 @@
+{
+ "kind": "sequential",
+ "ranAt": "2026-10-11T12:17:51.416Z",
+ "requireSignedDryRun": true,
+ "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+ "endpoint": "ws://127.0.0.1:9944",
+ "manifestDigest": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54",
+ "compiledMode": "unavailable",
+ "compiledModeReason": "Cannot run: step \"call\": Contracts.call on this runtime takes argument(s) SEAM cannot fill: storageDepositLimit",
+ "shimmed": true,
+ "plan": {
+  "planVersion": 1,
+  "manifestDigest": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54",
+  "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+  "signer": {
+   "type": "ss58",
+   "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+   "publicKey": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+  },
+  "mode": "sequential",
+  "modeReason": "[devnode shim] Steps run one after another; a failure stops later steps.",
+  "steps": [
+   {
+    "actionId": "pay",
+    "kind": "assets.transfer",
+    "capability": "Assets.transfer_keep_alive",
+    "palletIndex": 10,
+    "callIndex": 9,
+    "decodedArgs": {
+     "assetId": "1",
+     "amount": "2500",
+     "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+     "recipientAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48"
+    },
+    "encodedCall": "0x0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a481127",
+    "status": "ok"
+   },
+   {
+    "actionId": "call",
+    "kind": "contracts.call",
+    "capability": "Contracts.call",
+    "palletIndex": 8,
+    "callIndex": 6,
+    "decodedArgs": {
+     "contract": "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7",
+     "contractAccountId": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+     "value": "0",
+     "gasLimit": "5000000000",
+     "data": "0x5345414d",
+     "gasProofSize": "1000000",
+     "storageDepositLimit": "none",
+     "shim": "devnode V14 Contracts.call shim (compiler cannot fill storage_deposit_limit / Weight V2)"
+    },
+    "encodedCall": "0x08060088e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98000700f2052a0102093d0000105345414d",
+    "status": "ok"
+   },
+   {
+    "actionId": "mint",
+    "kind": "assets.mint",
+    "capability": "Assets.mint",
+    "palletIndex": 10,
+    "callIndex": 6,
+    "decodedArgs": {
+     "assetId": "1",
+     "amount": "7",
+     "recipient": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+     "recipientAccountId": "0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22"
+    },
+    "encodedCall": "0x0a06040090b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe221c",
+    "status": "ok"
+   }
+  ],
+  "planDigest": "0xc01241939d0ff5226614d2e3b2753c8af36de2e09c890743832dc53402211e08"
+ },
+ "preflight": {
+  "steps": [
+   {
+    "actionId": "pay",
+    "weight": {
+     "value": "540059000"
+    },
+    "fee": {
+     "value": "647102819"
+    },
+    "storageDeposit": {
+     "unknown": true
+    },
+    "dryRun": "unknown",
+    "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime"
+   },
+   {
+    "actionId": "call",
+    "weight": {
+     "value": "5518582000"
+    },
+    "fee": {
+     "value": "5625346301"
+    },
+    "storageDeposit": {
+     "unknown": true
+    },
+    "dryRun": "ok",
+    "note": "contract dry run ok via ContractsApi_call (gas required refTime 5516733, proofSize 1148); state at this block, before earlier steps run; storage deposit: not reported by this runtime"
+   },
+   {
+    "actionId": "mint",
+    "weight": {
+     "value": "273273000"
+    },
+    "fee": {
+     "value": "380331798"
+    },
+    "storageDeposit": {
+     "unknown": true
+    },
+    "dryRun": "unknown",
+    "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime"
+   }
+  ],
+  "totalFee": {
+   "value": "6652780918"
+  }
+ },
+ "preflightDetail": {
+  "nonce": 3,
+  "atBlock": {
+   "number": 3,
+   "hash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9"
+  },
+  "transactions": [
+   {
+    "actionIds": [
+     "pay"
+    ],
+    "nonce": 3,
+    "queryInfo": {
+     "weight": "540059000",
+     "class": "normal",
+     "partialFee": "647102819"
+    },
+    "feeDetails": {
+     "inclusionFee": {
+      "baseFee": "0x661d1d0",
+      "lenFee": "0x8f",
+      "adjustedWeightFee": "0x20302f04"
+     }
+    }
+   },
+   {
+    "actionIds": [
+     "call"
+    ],
+    "nonce": 4,
+    "queryInfo": {
+     "weight": "5518582000",
+     "class": "normal",
+     "partialFee": "5625346301"
+    },
+    "feeDetails": {
+     "inclusionFee": {
+      "baseFee": "0x661d1d0",
+      "lenFee": "0x9d",
+      "adjustedWeightFee": "0x148ea2690"
+     }
+    }
+   },
+   {
+    "actionIds": [
+     "mint"
+    ],
+    "nonce": 5,
+    "queryInfo": {
+     "weight": "273273000",
+     "class": "normal",
+     "partialFee": "380331798"
+    },
+    "feeDetails": {
+     "inclusionFee": {
+      "baseFee": "0x661d1d0",
+      "lenFee": "0x8e",
+      "adjustedWeightFee": "0x104994b8"
+     }
+    }
+   }
+  ],
+  "contractDryRuns": {
+   "call": {
+    "via": "state_call ContractsApi_call (v2)",
+    "result": {
+     "gasConsumed": {
+      "refTime": 5516733,
+      "proofSize": 1148
+     },
+     "gasRequired": {
+      "refTime": 5516733,
+      "proofSize": 1148
+     },
+     "storageDeposit": {
+      "charge": 0
+     },
+     "debugMessage": "0x",
+     "result": {
+      "ok": {
+       "flags": 0,
+       "data": "0x"
+      }
+     },
+     "events": [
+      {
+       "phase": {
+        "applyExtrinsic": 0
+       },
+       "event": {
+        "index": "0x0000",
+        "data": [
+         {
+          "weight": {
+           "refTime": 265758000,
+           "proofSize": 1493
+          },
+          "class": "Mandatory",
+          "paysFee": "Yes"
+         }
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0408",
+        "data": [
+         "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+         51248813283
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0802",
+        "data": [
+         "0xac3ef5b80c66cebd0d43c8bf7aa8acd3298f047aae0b2a851de99a8234a3743f",
+         201105000000,
+         "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0003",
+        "data": [
+         "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7"
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0400",
+        "data": [
+         "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7",
+         1000000000
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0402",
+        "data": [
+         "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+         "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7",
+         1000000000
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0800",
+        "data": [
+         "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+         "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7"
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0808",
+        "data": [
+         "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+         "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7",
+         100610000000
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0407",
+        "data": [
+         "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+         49998107779
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0600",
+        "data": [
+         "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+         1250705504,
+         0
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "applyExtrinsic": 1
+       },
+       "event": {
+        "index": "0x0000",
+        "data": [
+         {
+          "weight": {
+           "refTime": 1250748049,
+           "proofSize": 6262
+          },
+          "class": "Normal",
+          "paysFee": "Yes"
+         }
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "initialization": null
+       },
+       "event": {
+        "index": "0x0803",
+        "data": [
+         "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7",
+         "0x5345414d5345414d"
+        ]
+       },
+       "topics": []
+      },
+      {
+       "phase": {
+        "initialization": null
+       },
+       "event": {
+        "index": "0x0806",
+        "data": [
+         {
+          "signed": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+         },
+         "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7"
+        ]
+       },
+       "topics": []
+      }
+     ]
+    },
+    "debugMessage": ""
+   }
+  }
+ },
+ "envelope": {
+  "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+  "nonce": 3,
+  "mortalityBlocks": 64,
+  "checkpoint": {
+   "number": 3,
+   "hash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9"
+  },
+  "expiresAt": "2026-10-11T12:24:09.338Z"
+ },
+ "policy": {
+  "version": "seam/policy/v1",
+  "allowedCapabilities": "any",
+  "allowedAssets": [
+   "1"
+  ],
+  "allowedContracts": [
+   "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98"
+  ],
+  "allowedRecipients": [
+   "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+   "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
+  ],
+  "maxSteps": 10,
+  "allowedModes": [
+   "sequential",
+   "atomic_verified"
+  ],
+  "requireHumanApproval": true,
+  "maxApprovalSeconds": 600,
+  "requireSignedDryRun": true,
+  "allowUnknown": {
+   "storageDeposit": true,
+   "dryRun": true
+  },
+  "maxAmountPerAsset": {
+   "1": "1000000000000"
+  },
+  "maxNativeValue": "0",
+  "maxGasLimit": "50000000000"
+ },
+ "policyResult": {
+  "allowed": true,
+  "rules": [
+   {
+    "rule": "plan_integrity",
+    "outcome": "pass",
+    "reason": "plan digest matches its contents"
+   },
+   {
+    "rule": "runtime_match",
+    "outcome": "pass",
+    "reason": "plan was compiled against the current runtime"
+   },
+   {
+    "rule": "mode_allowed",
+    "outcome": "pass",
+    "reason": "execution mode sequential is allowed"
+   },
+   {
+    "rule": "capability",
+    "outcome": "pass",
+    "reason": "Assets.transfer_keep_alive is observed and allowed",
+    "actionId": "pay"
+   },
+   {
+    "rule": "asset_allowed",
+    "outcome": "pass",
+    "reason": "asset 1 is allowed",
+    "actionId": "pay"
+   },
+   {
+    "rule": "recipient_allowed",
+    "outcome": "pass",
+    "reason": "recipient is allowed",
+    "actionId": "pay"
+   },
+   {
+    "rule": "amount_limit",
+    "outcome": "pass",
+    "reason": "amount 2500 is within the limit of 1000000000000",
+    "actionId": "pay"
+   },
+   {
+    "rule": "capability",
+    "outcome": "pass",
+    "reason": "Contracts.call is observed and allowed",
+    "actionId": "call"
+   },
+   {
+    "rule": "contract_allowed",
+    "outcome": "pass",
+    "reason": "contract is allowed",
+    "actionId": "call"
+   },
+   {
+    "rule": "capability",
+    "outcome": "pass",
+    "reason": "Assets.mint is observed and allowed",
+    "actionId": "mint"
+   },
+   {
+    "rule": "asset_allowed",
+    "outcome": "pass",
+    "reason": "asset 1 is allowed",
+    "actionId": "mint"
+   },
+   {
+    "rule": "recipient_allowed",
+    "outcome": "pass",
+    "reason": "recipient is allowed",
+    "actionId": "mint"
+   },
+   {
+    "rule": "amount_limit",
+    "outcome": "pass",
+    "reason": "amount 7 is within the limit of 1000000000000",
+    "actionId": "mint"
+   },
+   {
+    "rule": "weight_limit",
+    "outcome": "pass",
+    "reason": "weight 540059000 is within limits",
+    "actionId": "pay"
+   },
+   {
+    "rule": "storage_limit",
+    "outcome": "pass",
+    "reason": "storage deposit is unknown (allowed by policy)",
+    "actionId": "pay"
+   },
+   {
+    "rule": "dry_run",
+    "outcome": "pass",
+    "reason": "The dry run result is unknown. (allowed by policy)",
+    "actionId": "pay"
+   },
+   {
+    "rule": "weight_limit",
+    "outcome": "pass",
+    "reason": "weight 5518582000 is within limits",
+    "actionId": "call"
+   },
+   {
+    "rule": "storage_limit",
+    "outcome": "pass",
+    "reason": "storage deposit is unknown (allowed by policy)",
+    "actionId": "call"
+   },
+   {
+    "rule": "dry_run",
+    "outcome": "pass",
+    "reason": "dry run succeeded",
+    "actionId": "call"
+   },
+   {
+    "rule": "weight_limit",
+    "outcome": "pass",
+    "reason": "weight 273273000 is within limits",
+    "actionId": "mint"
+   },
+   {
+    "rule": "storage_limit",
+    "outcome": "pass",
+    "reason": "storage deposit is unknown (allowed by policy)",
+    "actionId": "mint"
+   },
+   {
+    "rule": "dry_run",
+    "outcome": "pass",
+    "reason": "The dry run result is unknown. (allowed by policy)",
+    "actionId": "mint"
+   },
+   {
+    "rule": "fee_limit",
+    "outcome": "pass",
+    "reason": "total fee 6652780918 is within limits"
+   }
+  ],
+  "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599"
+ },
+ "approval": {
+  "ok": true,
+  "approval": {
+   "hash": "0x0fbccf33e6ca8246c4c4886061c1c355533805b6dbd702b672b4bdb0dfa026e7",
+   "covers": [
+    "manifest",
+    "plan",
+    "encoded calls",
+    "runtime fingerprint",
+    "policy",
+    "policy result",
+    "signing envelope",
+    "preflight"
+   ],
+   "expiresAt": "2026-10-11T12:24:09.338Z",
+   "used": false,
+   "binding": {
+    "manifestDigest": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54",
+    "planDigest": "0xc01241939d0ff5226614d2e3b2753c8af36de2e09c890743832dc53402211e08",
+    "planContentDigest": "0xd223a414300601f611ecdc78b19a0d600f50ad218139f285b6c36371bd4c443d",
+    "callsDigest": "0x11efa863d8a9041c98de4f44e3fca1cedc86915731d4084168db1da0be246629",
+    "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+    "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599",
+    "policyResultDigest": "0x6fc1d0c00a54b9ac4cb75f610b653f85ee31898794c87e9c3d4478586a80b31f",
+    "envelopeDigest": "0xcc6673b6e6eb184872e6d163e1745c6f68072c09ed6c1259a96342f2d7942f15",
+    "preflightDigest": "0x84e17fb3c689c19d36c59304668a7d5a1cc5a42fd788b97799e6aa57280e94b5",
+    "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "nonce": 3,
+    "mortalityBlocks": 64,
+    "expiresAt": "2026-10-11T12:24:09.338Z"
+   }
+  }
+ },
+ "signingRequests": [
+  {
+   "payload": {
+    "specVersion": "0x00000064",
+    "transactionVersion": "0x00000001",
+    "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "assetId": null,
+    "blockHash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9",
+    "blockNumber": "0x00000003",
+    "era": "0x3500",
+    "genesisHash": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+    "metadataHash": null,
+    "method": "0x0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a481127",
+    "mode": 0,
+    "nonce": "0x00000003",
+    "signedExtensions": [
+     "CheckNonZeroSender",
+     "CheckSpecVersion",
+     "CheckTxVersion",
+     "CheckGenesis",
+     "CheckMortality",
+     "CheckNonce",
+     "CheckWeight",
+     "ChargeTransactionPayment"
+    ],
+    "tip": "0x00000000000000000000000000000000",
+    "version": 4,
+    "withSignedTransaction": false
+   }
+  },
+  {
+   "payload": {
+    "specVersion": "0x00000064",
+    "transactionVersion": "0x00000001",
+    "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "assetId": null,
+    "blockHash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9",
+    "blockNumber": "0x00000003",
+    "era": "0x3500",
+    "genesisHash": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+    "metadataHash": null,
+    "method": "0x08060088e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98000700f2052a0102093d0000105345414d",
+    "mode": 0,
+    "nonce": "0x00000004",
+    "signedExtensions": [
+     "CheckNonZeroSender",
+     "CheckSpecVersion",
+     "CheckTxVersion",
+     "CheckGenesis",
+     "CheckMortality",
+     "CheckNonce",
+     "CheckWeight",
+     "ChargeTransactionPayment"
+    ],
+    "tip": "0x00000000000000000000000000000000",
+    "version": 4,
+    "withSignedTransaction": false
+   }
+  },
+  {
+   "payload": {
+    "specVersion": "0x00000064",
+    "transactionVersion": "0x00000001",
+    "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "assetId": null,
+    "blockHash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9",
+    "blockNumber": "0x00000003",
+    "era": "0x3500",
+    "genesisHash": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+    "metadataHash": null,
+    "method": "0x0a06040090b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe221c",
+    "mode": 0,
+    "nonce": "0x00000005",
+    "signedExtensions": [
+     "CheckNonZeroSender",
+     "CheckSpecVersion",
+     "CheckTxVersion",
+     "CheckGenesis",
+     "CheckMortality",
+     "CheckNonce",
+     "CheckWeight",
+     "ChargeTransactionPayment"
+    ],
+    "tip": "0x00000000000000000000000000000000",
+    "version": 4,
+    "withSignedTransaction": false
+   }
+  }
+ ],
+ "stepLog": [
+  {
+   "index": 0,
+   "actionId": "pay",
+   "phase": "checking",
+   "at": "2026-10-11T12:17:51.401Z"
+  },
+  {
+   "index": 0,
+   "actionId": "pay",
+   "phase": "blocked",
+   "detail": "Blocked: the dry run of the signed transaction failed, so it would fail on chain.",
+   "at": "2026-10-11T12:17:51.416Z",
+   "dryRun": [
+    {
+     "txHash": "0xde3ca1441d6ec3fbe68b0734864270b2667e6f6b7d885a41207b73576f6e5cee",
+     "outcome": "failed",
+     "detail": "invalid transaction: AncientBirthBlock",
+     "raw": "0x010005"
+    }
+   ]
+  }
+ ],
+ "statuses": [],
+ "run": {
+  "ok": false,
+  "stage": "submit_gate",
+  "reason": "Blocked: the dry run of the signed transaction failed, so it would fail on chain.",
+  "check": {
+   "ok": false,
+   "reasons": [
+    {
+     "code": "signed_dry_run_failed",
+     "message": "Blocked: the dry run of the signed transaction failed, so it would fail on chain."
+    }
+   ]
+  }
+ },
+ "redacted": {
+  "removed": "3 signature field(s) (signingRequests[].signature) when copied into the repo",
+  "at": "2026-10-11T12:30:15.334Z"
+ }
+}
