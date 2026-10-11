@@ -1,6 +1,5 @@
 import { blake2b } from "@noble/hashes/blake2b";
 import { utf8ToBytes, hexToBytes, bytesToHex } from "@noble/hashes/utils";
-import type { AddressType, TypedAddress } from "./types.js";
 
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const SS58_PRE = utf8ToBytes("SS58PRE");
@@ -73,35 +72,23 @@ export function encodeSs58(publicKey: Uint8Array, prefix: number): string {
 export type AddressCheck = { ok: true; accountId: string } | { ok: false; reason: string };
 
 /**
- * Checks one typed address against the chain. Prefix 42 is the generic Substrate prefix, so a correct
- * prefix proves the encoding, not that the address belongs to Portaldot; recipient allowlists do that.
- * Returns a normalized account id (lowercase hex public key, or lowercase H160) for allowlist checks.
+ * Defense in depth on a plan's addresses (the compiler checks the Manifest first). Native calls take an
+ * SS58 address on this chain's prefix or a 32-byte AccountId hex; revive.call takes only H160. Prefix 42 is the
+ * generic Substrate prefix, so a correct prefix proves the encoding, not that the address belongs to Portaldot;
+ * the recipient allowlist does that.
  */
-export function checkTypedAddress(addr: TypedAddress, chainSs58Prefix: number, allowedTypes: AddressType[]): AddressCheck {
-  if (!allowedTypes.includes(addr.type)) {
-    return { ok: false, reason: `a ${addr.type} address was given where only ${allowedTypes.join(" or ")} is accepted` };
+export function checkAddressFor(value: string, h160: boolean, chainSs58Prefix: number): AddressCheck {
+  if (h160) {
+    return /^0x[0-9a-fA-F]{40}$/.test(value)
+      ? { ok: true, accountId: value.toLowerCase() }
+      : { ok: false, reason: `"${value}" is not a 20-byte H160 address, which revive.call needs` };
   }
-  switch (addr.type) {
-    case "H160":
-      return /^0x[0-9a-fA-F]{40}$/.test(addr.value)
-        ? { ok: true, accountId: addr.value.toLowerCase() }
-        : { ok: false, reason: `"${addr.value}" is not a 20-byte H160 address` };
-    case "AccountId32":
-      return /^0x[0-9a-fA-F]{64}$/.test(addr.value)
-        ? { ok: true, accountId: addr.value.toLowerCase() }
-        : { ok: false, reason: `"${addr.value}" is not a 32-byte AccountId32` };
-    case "SS58": {
-      const d = decodeSs58(addr.value);
-      if ("error" in d) return { ok: false, reason: `SS58 address "${addr.value}" is invalid: ${d.error}` };
-      if (addr.ss58Prefix !== undefined && addr.ss58Prefix !== d.prefix) {
-        return { ok: false, reason: `the SS58 address uses prefix ${d.prefix} but the Manifest declared ${addr.ss58Prefix}` };
-      }
-      if (d.prefix !== chainSs58Prefix) {
-        return { ok: false, reason: `the SS58 address uses network prefix ${d.prefix}, but this chain uses ${chainSs58Prefix}` };
-      }
-      return { ok: true, accountId: "0x" + bytesToHex(d.publicKey) };
-    }
-  }
+  if (/^0x[0-9a-fA-F]{40}$/.test(value)) return { ok: false, reason: `"${value}" is an H160 address, but native calls need an SS58 or AccountId32 address` };
+  if (/^0x[0-9a-fA-F]{64}$/.test(value)) return { ok: true, accountId: value.toLowerCase() };
+  const d = decodeSs58(value);
+  if ("error" in d) return { ok: false, reason: `"${value}" is not a valid address: ${d.error}` };
+  if (d.prefix !== chainSs58Prefix) return { ok: false, reason: `the address uses network prefix ${d.prefix}, but this chain uses ${chainSs58Prefix}` };
+  return { ok: true, accountId: "0x" + bytesToHex(d.publicKey) };
 }
 
 /** Normalizes a plain address string from a plan step (SS58, AccountId32 hex or H160 hex) to a comparable id. */

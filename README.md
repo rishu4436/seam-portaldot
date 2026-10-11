@@ -22,17 +22,19 @@ SS58 prefix 42 is the generic Substrate prefix, so a correct prefix doesn't prov
 2. Approval reused or expired
 3. Runtime upgraded between compile and submit
 4. Metadata changed, same spec version
-5. Wrong address type, network prefix or checksum
+5. Wrong address type or network prefix (compiler refuses; policy re-checks plan addresses)
 6. Capability not observed or unknown
-7. Asset or contract not allowed
-8. Amount, weight or storage over the limit
+7. Asset, contract or contract message (selector) not allowed
+8. Amount, gas limit, weight or storage over the limit
 9. Sequential run fails at step 2 (stop, partial receipt)
 10. Wallet signed different bytes
 11. Success reported but expected event missing
 12. Atomic mode without a tested rollback
 13. Pinned type file changed after compiling
 
-Fixtures use the real fingerprint values from Bot 4's snapshot of `wss://mainnet.portaldot.io` (block 2,721,455). Calls, hashes and estimates in the fixtures are example data.
+Tests run on real plans: Bot 2's compiler (`@seam/compiler`, linked from `../seam-compiler`) compiles the demo Manifest against Bot 4's snapshot of `wss://mainnet.portaldot.io` (block 2,721,455, spec 1002). Only the preflight estimates and the signing envelope are example data.
+
+Hashing matches the compiler exactly: blake2b-256 of the domain, one 0x00 byte, then canonical JSON (safe integers only). A test checks the plan, fingerprint and generic digests against the compiler's own functions.
 
 ## Run
 
@@ -42,4 +44,4 @@ npm test
 npm run build
 ```
 
-Shared types in `src/types.ts` are copied from the console and will move to the shared package once the monorepo exists.
+Runtime facts, Manifest and Plan types are copied from the compiler into `src/compilerTypes.ts`; they become an import once the monorepo exists.
