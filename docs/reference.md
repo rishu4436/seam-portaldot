@@ -42,8 +42,8 @@ Set by the app, in code or as a JSON file. A file is checked by `parsePolicy`, w
 | `allowedAssets`, `allowedContracts`, `allowedRecipients` | `[]` (nothing) | Lists, or `"any"`. |
 | `allowedSelectors` | none | Allowed 4-byte contract messages, per contract. |
 | `maxAmountPerAsset` | none | Base-unit cap per asset id. `"*"` applies to any asset not listed. |
-| `maxNativeValue`, `maxGasLimit`, `maxWeight`, `maxFee`, `maxStorageDeposit` | none | Base-unit caps. `maxStorageDeposit` also caps a contract call's own `storageDepositLimit`. |
-| `maxProofSize` | none | Caps proof size on runtimes with two-part weights. Preflight must then report each step's proof size. Portaldot spec 1002 has one-part weights, so it reports unknown there. |
+| `maxNativeValue`, `maxGasLimit`, `maxWeight`, `maxFee`, `maxStorageDeposit` | none | Base-unit caps. `maxStorageDeposit` also caps a contract call's own `storageDepositLimit`. A call that sets it to `null` (no limit) is blocked whenever this cap is set. |
+| `maxProofSize` | none | Caps proof size on runtimes with two-part weights. Transfers and mints are checked against the preflight estimate. A contract call is checked against its own `proofSize` limit, because the node's estimate mostly repeats it. So size this cap to cover the proof size in the gas limit you choose, not the contract's real usage: on the test chain a call with a 1,000,000 limit used about 5,400. Portaldot spec 1002 has one-part weights, so proof size is unknown there. |
 | `maxSteps` | `10` | |
 | `allowedModes` | `sequential`, `atomic_verified` | |
 | `requireHumanApproval` | `true` | |
