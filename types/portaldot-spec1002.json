@@ -17,7 +17,8 @@
     "LookupSource": "Same evidence as Address: the Balances.transfer_keep_alive dest arg starts with the MultiAddress::Id tag 0x00.",
     "Balance": "Balances.ExistentialDeposit constant is 16 bytes in metadata => u128.",
     "BalanceOf": "Contracts.TombstoneDeposit (BalanceOf) constant is 16 bytes => u128.",
-    "Weight": "Contracts.DeletionWeightLimit (Weight) constant is 8 bytes => u64."
+    "Weight": "Contracts.DeletionWeightLimit (Weight) constant is 8 bytes => u64.",
+    "AccountId": "Signer of the mainnet extrinsic in block 2721116 is a 32-byte AccountId32 (fixtures/mainnet-extrinsic-2721116.json)."
   },
   "assumed": {
     "AssetId": "u32 (substrate-node default of that era). Mainnet has no assets yet, so it could not be checked. Compact-encoded, so bytes only differ if a value exceeds u32.",
