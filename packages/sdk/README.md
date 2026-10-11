@@ -16,7 +16,7 @@ The developer-facing part of SEAM: Manifest helpers, execution receipts, plain-E
 - `checkReceipt(r)` recomputes `receiptDigest` (`seam/receipt/v1`) to detect edits.
 
 ## Flow
-`new Seam(chainAdapter)` covers `prepare` (compile, preflight and policy), `approve`, and `execute`. SEAM never holds keys: the user's `WalletSigner` signs.
+`new Seam(chainAdapter)` covers `prepare(manifest, facts, policy, compileOptions?)` (compile, preflight and policy), `approve`, and `execute`. SEAM never holds keys: the user's `WalletSigner` signs.
 - **Atomic plans** are one `batch_all` transaction. SEAM dry-runs it, runs the submit gate once, then sends it.
 - **Sequential plans** are sent one step at a time. Before each step, SEAM re-reads the runtime fingerprint, dry-runs that step's signed transaction (later steps can't be dry-run yet because their nonce is in the future), and runs the gate for that step with `sendIndex` and the earlier receipt steps. The step goes out only after the previous one finalized and verified.
 - A run stops at the first step that is blocked, fails, or doesn't verify. The receipt is then `partial`, the first step not run says why, and the result carries `stoppedReason`.
@@ -30,7 +30,7 @@ seam check   manifest.json --policy policy.json
 seam verify  receipt.json
 seam explain plan.json | policy-result.json | receipt.json
 ```
-Offline commands use the bundled Portaldot mainnet snapshot (spec 1002, block 2,721,455), or `--snapshot <dir>`.
+Offline commands use the bundled Portaldot mainnet snapshot (spec 1002, block 2,721,455) by default. `--snapshot <dir|file> [--name n]` picks any snapshot saved by `seam snapshot` or `@seam/chain`'s `snapshotFromNode`, and `--endpoint <ws-url>` reads a live node. `seam check` validates the policy file with `parsePolicy` first.
 
 ## Tests
-`npm test` runs 25 offline tests against the real snapshot metadata. They cover Manifest validation, receipt verification (attack cases 9 and 11), explanations, and the full flow with a fake chain and wallet (approval reuse, runtime change, a tampered signature, a failed or unknown signed dry run, stopping after a failure).
+`npm test` runs 29 offline tests against the real snapshot metadata. They cover Manifest validation, receipt verification (attack cases 9 and 11), explanations, and the full flow with a fake chain and wallet (approval reuse, runtime change, a tampered signature, a failed or unknown signed dry run, stopping after a failure).

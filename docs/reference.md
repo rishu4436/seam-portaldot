@@ -34,7 +34,7 @@ Rules: amounts are base-unit strings, never numbers. Unknown fields and argument
 
 ## Policy
 
-Set by the app. `portaldotPolicy()` is the preset for Portaldot spec 1002: it allows an unknown storage deposit (this runtime never reports one) and an unknown dry run before signing. Nothing else is relaxed.
+Set by the app, in code or as a JSON file. A file is checked by `parsePolicy`, which rejects unknown or misspelled fields, number amounts, negative limits and bad modes. It also warns about loose settings, such as recipients set to `"any"`. Add `"base": "portaldot"` to start from the Portaldot preset. `portaldotPolicy()` is the preset for Portaldot spec 1002: it allows an unknown storage deposit (this runtime never reports one) and an unknown dry run before signing. Nothing else is relaxed.
 
 | Field | Default | Meaning |
 |---|---|---|
@@ -42,13 +42,14 @@ Set by the app. `portaldotPolicy()` is the preset for Portaldot spec 1002: it al
 | `allowedAssets`, `allowedContracts`, `allowedRecipients` | `[]` (nothing) | Lists, or `"any"`. |
 | `allowedSelectors` | none | Allowed 4-byte contract messages, per contract. |
 | `maxAmountPerAsset` | none | Base-unit cap per asset id. `"*"` applies to any asset not listed. |
-| `maxNativeValue`, `maxGasLimit`, `maxWeight`, `maxFee`, `maxStorageDeposit` | none | Base-unit caps. |
+| `maxNativeValue`, `maxGasLimit`, `maxWeight`, `maxFee`, `maxStorageDeposit` | none | Base-unit caps. `maxStorageDeposit` also caps a contract call's own `storageDepositLimit`. |
+| `maxProofSize` | none | Caps proof size on runtimes with two-part weights. Preflight must then report each step's proof size. Portaldot spec 1002 has one-part weights, so it reports unknown there. |
 | `maxSteps` | `10` | |
 | `allowedModes` | `sequential`, `atomic_verified` | |
 | `requireHumanApproval` | `true` | |
 | `maxApprovalSeconds` | `600` | An approval lasts at most this long. |
 | `requireSignedDryRun` | `true` | Each signed transaction must pass a dry run right before it's sent. |
-| `allowUnknown` | none | Which unknowns may pass: `fee`, `weight`, `storageDeposit`, `dryRun`. Everything else unknown is blocked. |
+| `allowUnknown` | none | Which unknowns may pass: `fee`, `weight`, `storageDeposit`, `dryRun`, `proofSize`. Everything else unknown is blocked. |
 
 Policy checks and what they look at: `plan_integrity`, `manifest_match`, `signer_match`, `runtime_match`, `plan_available`, `step_available`, `mode_allowed`, `max_steps`, `capability`, `call_index`, `address_check`, `asset_allowed`, `recipient_allowed`, `contract_allowed`, `selector_allowed`, `amount_limit`, `native_value_limit`, `gas_limit`, `preflight`, `dry_run`, `weight_limit`, `fee_limit`, `storage_limit`. Each one reports pass, block or unknown, with a plain reason.
 
@@ -100,9 +101,16 @@ Result: `verified` only when every step finalized and verified. `partial` when S
 | Command | What it does | Exit code |
 |---|---|---|
 | `seam digest <manifest>` | Checks the Manifest and prints its digest. | 0 valid, 2 invalid |
-| `seam compile <manifest>` | Compiles against the runtime and explains the plan. | 0 ok, 2 can't compile, 3 unavailable |
-| `seam check <manifest> --policy <file>` | Compiles, then runs every policy rule that doesn't need a node. | 0 passed, 4 blocked |
+| `seam compile <manifest>` | Compiles against a runtime and explains the plan. | 0 ok, 2 can't compile, 3 unavailable |
+| `seam check <manifest> --policy <file>` | Checks the policy file, compiles, then runs every policy rule that doesn't need a node. | 0 passed, 2 bad policy file, 4 blocked |
 | `seam verify <receipt>` | Checks the receipt wasn't edited, then explains it. | 0 intact, 5 edited |
 | `seam explain <file>` | Explains a plan, policy result or receipt in plain English. | 0 |
+| `seam snapshot <ws-endpoint> <out-dir>` | Saves a node's runtime, read-only, for offline use. | 0 |
 
-All commands take `--json` for raw output and `--snapshot <dir>` to use a different runtime snapshot. Exit code 1 means a usage error.
+**Which runtime.** By default the commands use the bundled Portaldot mainnet snapshot (spec 1002). To use another:
+- `--snapshot <dir or file>` uses a saved snapshot, for example the test chain's or, once it's public, the V3 testnet's. Add `--name` if the folder holds several.
+- `--endpoint <ws-url>` reads the live runtime from a node, read-only.
+
+The same Manifest compiles against each runtime using that runtime's own call indexes. Anything a runtime lacks comes out as unavailable with a reason.
+
+Every command takes `--json` for raw output. Exit code 1 means a usage error.

@@ -34,8 +34,8 @@ export class Seam {
 
   compile(manifest: Manifest, facts: RuntimeFacts, options?: CompileOptions) { return compile(manifest, facts, options); }
 
-  async prepare(manifest: Manifest, facts: RuntimeFacts, policy: Policy) {
-    const plan = compile(manifest, facts);
+  async prepare(manifest: Manifest, facts: RuntimeFacts, policy: Policy, options?: CompileOptions) {
+    const plan = compile(manifest, facts, options);
     const { preflight, envelope } = await this.chain.preflight(plan);
     const policyResult = evaluatePolicy({ policy, plan, facts, preflight, manifest });
     return { plan, preflight, envelope, policyResult };
