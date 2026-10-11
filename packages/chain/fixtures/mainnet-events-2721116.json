@@ -1,0 +1,16 @@
+{
+ "source": "wss://mainnet.portaldot.io, read-only, fetched 2026-10-11: chain_getBlockHash(2721116), chain_getBlock, state_getStorage(System.Events) at that block",
+ "block": 2721116,
+ "blockHash": "0x2cefe0dfe537531ada6c0aed7762a552e7b1ea93c97d399d7ba29be8c93d6e7a",
+ "extrinsics": [
+  "0x280403000b00a08429a101",
+  "0x4502840032db51fc607333c64b3bf3ab799919cace04802efa4d3ba9a61d03b8c7a0286f01986462b0ec5db590cd79df8135c6eac9db99f114f9ceb4b81e7a88381116f71071348703fc653929096d9cd89dd0a82ecf7dd3002b8b9049d9eaedd9d9950d8500752500060300e66541ee49b00334f5a93754022087dba7471b3de850129f8a592cf5e42012400b8f7b07cdf18e"
+ ],
+ "systemEventsKey": "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7",
+ "systemEvents": "0x1800000000000000481a0b0b0000000002000000010000000003e66541ee49b00334f5a93754022087dba7471b3de850129f8a592cf5e42012400000010000000600e66541ee49b00334f5a93754022087dba7471b3de850129f8a592cf5e42012408f7b07cdf18e00000000000000000000000001000000060232db51fc607333c64b3bf3ab799919cace04802efa4d3ba9a61d03b8c7a0286fe66541ee49b00334f5a93754022087dba7471b3de850129f8a592cf5e42012408f7b07cdf18e000000000000000000000000010000000c06884708d5110100000000000000000000000001000000000028c4b80a00000000000000",
+ "contractsCallProbe": {
+  "request": {"origin": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", "dest": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", "value": 0, "gasLimit": 5000000000, "inputData": "0x633aa551"},
+  "response": {"debugMessage": "", "gasConsumed": 0, "result": {"Err": {"Module": {"error": 12, "index": 13, "message": null}}}}
+ },
+ "note": "Real events for the signed Balances.transfer_keep_alive at index 1 (fixtures in @seam/compiler: mainnet-extrinsic-2721116.json). Used to check event decoding with the pinned spec 1002 types offline."
+}
