@@ -8,7 +8,7 @@ import {
 import { ALICE, ALICE_HEX, BOB, CHECKPOINT, atomicPlan, demoPlan, devKeys, snapshotFacts } from './helpers.js';
 
 const facts = snapshotFacts();
-const envelope: SigningEnvelope = { signer: ALICE, nonce: 7, mortalityBlocks: 64, expiresAt: '2026-10-11T13:00:00.000Z' };
+const envelope: SigningEnvelope = { signer: ALICE, nonce: 7, mortalityBlocks: 64, checkpoint: CHECKPOINT, expiresAt: '2026-10-11T13:00:00.000Z' };
 let keys: Awaited<ReturnType<typeof devKeys>>;
 beforeAll(async () => { keys = await devKeys(); });
 
@@ -17,7 +17,7 @@ const walletSign = (req: SigningRequest, pair = keys.alice) => u8aToHex(pair.sig
 
 describe('signing handoff (offline, spec 1002 snapshot)', () => {
   it('is deterministic: same plan + envelope + checkpoint give byte-identical payloads', () => {
-    const a = buildSigningRequests(demoPlan(), facts, envelope, CHECKPOINT);
+    const a = buildSigningRequests(demoPlan(), facts, envelope);
     const b = buildSigningRequests(demoPlan(), facts, { ...envelope }, { ...CHECKPOINT });
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
     expect(a.map((r) => r.nonce)).toEqual([7, 8, 9]);
@@ -25,7 +25,7 @@ describe('signing handoff (offline, spec 1002 snapshot)', () => {
   });
 
   it('builds an extension-compatible SignerPayloadJSON with the right chain values', () => {
-    const [r] = buildSigningRequests(demoPlan(), facts, envelope, CHECKPOINT);
+    const [r] = buildSigningRequests(demoPlan(), facts, envelope);
     expect(r!.payload).toMatchObject({
       address: ALICE,
       blockHash: CHECKPOINT.hash,
@@ -48,7 +48,7 @@ describe('signing handoff (offline, spec 1002 snapshot)', () => {
 
   it('sign -> assemble -> extractSignedCall round-trips to exactly the plan\'s call bytes', () => {
     const plan = demoPlan();
-    const reqs = buildSigningRequests(plan, facts, envelope, CHECKPOINT);
+    const reqs = buildSigningRequests(plan, facts, envelope);
     const signed = reqs.map((r) => assembleSignedExtrinsic(r.payload, walletSign(r), facts));
     const extracted = signed.map((x) => extractSignedCall(x, facts));
     expect(extracted.map((e) => e.callHex)).toEqual(plan.steps.map((s) => s.encodedCall));
@@ -66,7 +66,7 @@ describe('signing handoff (offline, spec 1002 snapshot)', () => {
   it('atomic plans sign exactly one call: the batch_all outerCall', () => {
     const { plan, facts: f } = atomicPlan();
     expect(plan.mode).toBe('atomic_verified');
-    const reqs = buildSigningRequests(plan, f, envelope, CHECKPOINT);
+    const reqs = buildSigningRequests(plan, f, envelope);
     expect(reqs).toHaveLength(1);
     expect(reqs[0]!.callHex).toBe(plan.outerCall!.encodedCall);
     expect(reqs[0]!.actionIds).toEqual(['pay', 'call', 'receipt']);
@@ -88,7 +88,7 @@ describe('signing handoff (offline, spec 1002 snapshot)', () => {
 
   it('detects a tampered call inside a signed extrinsic', () => {
     const plan = demoPlan();
-    const [r] = buildSigningRequests(plan, facts, envelope, CHECKPOINT);
+    const [r] = buildSigningRequests(plan, facts, envelope);
     const tx = assembleSignedExtrinsic(r!.payload, walletSign(r!), facts);
     // Change the last byte of the amount (inside the call, after the signature).
     const tampered = (tx.slice(0, -2) + (tx.endsWith('09') ? '0a' : '09')) as `0x${string}`;
@@ -100,7 +100,7 @@ describe('signing handoff (offline, spec 1002 snapshot)', () => {
   });
 
   it('refuses a signature that does not match the payload, or a wrong signer', () => {
-    const [r, r2] = buildSigningRequests(demoPlan(), facts, envelope, CHECKPOINT);
+    const [r, r2] = buildSigningRequests(demoPlan(), facts, envelope);
     expect(() => assembleSignedExtrinsic(r!.payload, walletSign(r2!), facts)).toThrow(/BAD_SIGNATURE/);
     expect(() => assembleSignedExtrinsic(r!.payload, walletSign(r!, keys.bob), facts)).toThrow(/BAD_SIGNATURE/);
     // untyped 64-byte signatures need the scheme, never guessed
@@ -110,7 +110,7 @@ describe('signing handoff (offline, spec 1002 snapshot)', () => {
   });
 
   it('refuses a payload edited for another chain, runtime or tip', () => {
-    const [r] = buildSigningRequests(demoPlan(), facts, envelope, CHECKPOINT);
+    const [r] = buildSigningRequests(demoPlan(), facts, envelope);
     const sig = walletSign(r!);
     expect(() => assembleSignedExtrinsic({ ...r!.payload, genesisHash: `0x${'11'.repeat(32)}` }, sig, facts)).toThrow(/PAYLOAD_MISMATCH: .*genesisHash/);
     expect(() => assembleSignedExtrinsic({ ...r!.payload, specVersion: '0x000003eb' }, sig, facts)).toThrow(/specVersion/);
@@ -119,17 +119,19 @@ describe('signing handoff (offline, spec 1002 snapshot)', () => {
 
   it('checks the envelope: signer, nonce, mortality, plan/facts match', () => {
     const plan = demoPlan();
-    expect(() => buildSigningRequests(plan, facts, { ...envelope, signer: BOB }, CHECKPOINT)).toThrow(/ENVELOPE_INVALID: envelope signer/);
-    expect(() => buildSigningRequests(plan, facts, { ...envelope, mortalityBlocks: 100 }, CHECKPOINT)).toThrow(/power of two/);
-    expect(() => buildSigningRequests(plan, facts, { ...envelope, nonce: -1 }, CHECKPOINT)).toThrow(/nonce/);
-    expect(() => buildSigningRequests({ ...plan, fingerprintDigest: `0x${'00'.repeat(32)}` }, facts, envelope, CHECKPOINT)).toThrow(/FACTS_MISMATCH/);
-    expect(() => buildSigningRequests({ ...plan, mode: 'unavailable' }, facts, envelope, CHECKPOINT)).toThrow(/PLAN_NOT_SIGNABLE/);
+    expect(() => buildSigningRequests(plan, facts, { ...envelope, signer: BOB })).toThrow(/ENVELOPE_INVALID: envelope signer/);
+    expect(() => buildSigningRequests(plan, facts, { ...envelope, mortalityBlocks: 100 })).toThrow(/power of two/);
+    expect(() => buildSigningRequests(plan, facts, { ...envelope, nonce: -1 })).toThrow(/nonce/);
+    expect(() => buildSigningRequests({ ...plan, fingerprintDigest: `0x${'00'.repeat(32)}` }, facts, envelope)).toThrow(/FACTS_MISMATCH/);
+    expect(() => buildSigningRequests({ ...plan, mode: 'unavailable' }, facts, envelope)).toThrow(/PLAN_NOT_SIGNABLE/);
+    expect(() => buildSigningRequests(plan, facts, { ...envelope, checkpoint: undefined as never })).toThrow(/no checkpoint/);
+    expect(() => buildSigningRequests(plan, facts, { ...envelope, checkpoint: { number: 1, hash: '0x12' } })).toThrow(/32-byte block hash/);
     // accepts the signer as AccountId32 hex too
-    expect(buildSigningRequests(plan, facts, { ...envelope, signer: ALICE_HEX }, CHECKPOINT)[0]!.payload.address).toBe(ALICE);
+    expect(buildSigningRequests(plan, facts, { ...envelope, signer: ALICE_HEX })[0]!.payload.address).toBe(ALICE);
   });
 
   it('rejects unsigned or non-canonical extrinsics', () => {
-    const [r] = buildSigningRequests(demoPlan(), facts, envelope, CHECKPOINT);
+    const [r] = buildSigningRequests(demoPlan(), facts, envelope);
     const tx = assembleSignedExtrinsic(r!.payload, walletSign(r!), facts);
     expect(() => extractSignedCall(`${tx}00`, facts)).toThrow(/NOT_SIGNED/);
     expect(() => extractSignedCall('0x280403000b00a08429a101', facts)).toThrow(/not signed/);

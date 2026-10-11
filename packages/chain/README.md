@@ -66,8 +66,10 @@ the compiler's `computeFingerprintDigest`, so it matches Bot 2 and Bot 3 byte fo
 ### 4. Signing handoff
 | function | what |
 |---|---|
-| `buildSigningRequests(plan, facts, envelope, checkpoint)` | one `SigningRequest` per transaction: the `outerCall` batch_all for atomic plans, or each step with nonce `envelope.nonce + i`. Each request has `payload` (polkadot.js-extension `SignerPayloadJSON` for `signer.signPayload`), `raw` (`SignerPayloadRaw`), `signingPayloadHex` (SCALE payload) and `signBytesHex` (exact bytes the key signs, which is the blake2b-256 of the payload when it is over 256 bytes), plus `callHex`, `nonce`, `era` |
+| `buildSigningRequests(plan, facts, envelope)` | era from `envelope.checkpoint`; one `SigningRequest` per transaction: the `outerCall` batch_all for atomic plans, or each step with nonce `envelope.nonce + i`. Each request has `payload` (polkadot.js-extension `SignerPayloadJSON` for `signer.signPayload`), `raw` (`SignerPayloadRaw`), `signingPayloadHex` (SCALE payload) and `signBytesHex` (exact bytes the key signs, which is the blake2b-256 of the payload when it is over 256 bytes), plus `callHex`, `nonce`, `era` |
 | `buildSigningRequest(callHex, facts, { signer, nonce, mortalityBlocks, checkpoint })` | the same for one call |
+| `signingRequestsForCalls(calls, facts, envelope)` | the same for explicit calls (the SDK wallet's `callsToSign(plan)`) |
+| `dryRunSigned(endpoint, signedTxs, facts)` | `system_dryRun` of each signed transaction → `{ results: ('ok'\|'failed'\|'unknown')[], details }` for `checkBeforeSubmit({ signedDryRun })`. In a sequential run, transaction i > 0 with a future nonce is `'unknown'` (the earlier ones aren't on chain yet) |
 | `signBytesOf(payload, facts)` | the bytes a key signs for a payload (for raw-signing wallets) |
 | `assembleSignedExtrinsic(payload, signature, facts, { scheme?, verify? })` | signed extrinsic hex. Refuses a payload for another genesis, spec or tx version, a non-zero tip, or other signed extensions. By default it **verifies the signature** first. Typed (65/66-byte) signatures are taken as given. An untyped 64-byte one needs `scheme`. |
 | `extractSignedCall(extrinsicHex, facts)` | `{ callHex, capability, palletIndex, callIndex, signer { accountId, ss58 }, nonce, era, tip, signature, signatureScheme, txHash }`: what is **actually inside** the extrinsic |
@@ -103,13 +105,20 @@ Before broadcasting, `submitAndWatch` checks that the node's genesis equals the 
 - `preflight(plan)` → `{ preflight: PreflightResult, envelope: SigningEnvelope }`. The envelope's signer is
   the plan signer (SS58), `nonce` comes from the node, `mortalityBlocks` defaults to 64, and `expiresAt` is
   now + (mortality − 1) × block time. The block time is read from metadata (`Babe.ExpectedBlockTime` =
-  60 000 ms on spec 1002). The finalized-head checkpoint is remembered per envelope.
+  60 000 ms on spec 1002). `checkpoint` is the finalized head the wallet signs against (bound by the approval).
+- `dryRunSigned(signedTxs)` → one `SignedDryRun` per signed transaction (see `dryRunSigned` above).
 - `submit(signedTx, actionId)` → `StepOutcome { actionId, status, txHash, block, events: {pallet,name,args}[], error? }`.
   `finalized` means it is in a finalized block, and the receipt checks the events. `failed` covers
   ExtrinsicFailed (with the decoded error) and dropped/invalid/usurped. `included` means it is in a block
   but the timeout ran out before finality. `submitted` means it was not yet in a block.
 
-Extras: `signingRequests(calls, envelope)`, `checkpointFor(envelope)`, `walletFrom(signPayload)` (turns
+`submit` dry-runs each transaction again right before broadcasting it and returns a `failed` outcome
+without sending when that fails (`dryRunBeforeSubmit: false` turns this off).
+
+Note: with `requireSignedDryRun` on (Bot 3's default), only atomic plans pass the up-front gate. In a
+sequential plan, transactions 2..n can't dry-run before transaction 1 is on chain (future nonce → `'unknown'`).
+
+Extras: `signingRequests(calls, envelope)`, `lastDryRun`, `walletFrom(signPayload)` (turns
 an extension-style `signPayload` into the SDK's `WalletSigner`), `lastPreflight`, `lastSubmit`.
 
 ```ts
