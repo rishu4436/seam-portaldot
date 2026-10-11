@@ -33,10 +33,11 @@ async function run(plan: Plan, facts: RuntimeFacts, policy: Policy, nodeOpts: Pa
     .map((q) => assembleSignedExtrinsic(q.payload, u8aToHex(keys.alice.sign(hexToU8a(q.signBytesHex), { withType: true })), facts));
   const dry = await dryRunSigned(node, signed, facts);
   const store = new InMemoryApprovalStore();
-  const gate = (o: { signedCalls?: Hex[]; current?: RuntimeFacts['fingerprint']; signedDryRun?: typeof dry.results } = {}) => checkBeforeSubmit({
+  const gate = (o: { signedCalls?: Hex[]; current?: RuntimeFacts['fingerprint']; signedDryRun?: typeof dry.results; sendIndex?: number; previousSteps?: [] } = {}) => checkBeforeSubmit({
     ...base, approval: approval.approval, preparedFingerprint: facts.fingerprint,
     currentFingerprint: o.current ?? fingerprintFromChainInputs(snapshotInputs()).fingerprint,
-    signedCalls: o.signedCalls ?? signedCallsOf(signed, facts), signedDryRun: o.signedDryRun ?? dry.results, now, store
+    signedCalls: o.signedCalls ?? signedCallsOf(signed, facts), signedDryRun: o.signedDryRun ?? dry.results, now, store,
+    ...(o.sendIndex !== undefined ? { sendIndex: o.sendIndex, previousSteps: o.previousSteps ?? [] } : {})
   });
   return { policyResult, approval, envelope, signed, dry, gate };
 }
@@ -44,7 +45,7 @@ async function run(plan: Plan, facts: RuntimeFacts, policy: Policy, nodeOpts: Pa
 describe('plugs into Bot 3\'s policy package (fddfee3) as-is', () => {
   it('createApproval refuses an envelope without a checkpoint; the chain envelope has one', async () => {
     const facts = snapshotFacts();
-    const { envelope, policyResult } = await run(demoPlan(), facts, portaldotPolicy({ ...limits, requireSignedDryRun: false }));
+    const { envelope, policyResult } = await run(demoPlan(), facts, portaldotPolicy(limits));
     expect(policyResult.allowed).toBe(true);
     expect(envelope.checkpoint).toEqual({ number: 2721455, hash: snapshotInputs().head.hash });
     const pf = { steps: [], totalFee: { value: '0' } };
@@ -79,15 +80,18 @@ describe('plugs into Bot 3\'s policy package (fddfee3) as-is', () => {
     expect(gate().reasons.map((r) => r.code)).toEqual(['signed_dry_run_failed']);
   });
 
-  it('sequential plan: later transactions have future nonces, so requireSignedDryRun cannot pass up front (needs a per-step gate)', async () => {
+  it('sequential plan, requireSignedDryRun on: the per-step gate (sendIndex) needs only that step\'s dry run', async () => {
     const facts = snapshotFacts();
     const strict = await run(demoPlan(), facts, portaldotPolicy(limits));
+    // later transactions have future nonces, so they are 'unknown' until the earlier ones are on chain
     expect(strict.dry.results).toEqual(['ok', 'unknown', 'unknown']);
     expect(strict.dry.details[1]!.detail).toMatch(/nonce is in the future/);
-    expect(strict.gate().reasons.map((r) => r.code)).toEqual(['signed_dry_run_missing']);
-    // with requireSignedDryRun off, the up-front gate passes; @seam/chain's adapter then dry-runs each
-    // transaction again right before sending it and refuses one that fails
-    const relaxed = await run(demoPlan(), facts, portaldotPolicy({ ...limits, requireSignedDryRun: false }));
-    expect(relaxed.gate()).toEqual({ ok: true, reasons: [] });
+    // gating the whole plan at once can't pass; gating step 1 on its own does
+    expect(strict.gate().reasons.map((r) => r.code)).toContain('signed_dry_run_missing');
+    expect(strict.gate({ sendIndex: 0 })).toEqual({ ok: true, reasons: [] });
+    // step 2 can't go before step 1 was sent, and its own dry run must be ok
+    const codes = strict.gate({ sendIndex: 1 }).reasons.map((r) => r.code);
+    expect(codes).toContain('out_of_order');
+    expect(codes).toContain('signed_dry_run_missing');
   });
 });
