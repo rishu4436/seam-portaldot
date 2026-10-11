@@ -18,12 +18,11 @@ const limits = {
   maxAmountPerAsset: { '1': '5000000000000000', '2': '1' }, maxNativeValue: '0', maxGasLimit: '10000000000',
   maxWeight: '1000000000', maxFee: '10000000000'
 };
-// Strict default (requireSignedDryRun on) works for atomic plans. For sequential plans, transactions 2..n
-// have future nonces when the SDK dry-runs them up front, so they come back 'unknown' and the gate blocks
-// (see the first test). The sequential tests turn it off; the adapter still dry-runs each transaction right
-// before sending it and refuses one that fails.
+// Strict default (requireSignedDryRun on) everywhere. Sequential plans pass it because the SDK (77d3c82) gates
+// each step on its own: fresh fingerprint and a dry run of that step's signed transaction, after the previous
+// step finalized, with Bot 3's per-step gate (sendIndex, previousSteps).
 const strict = portaldotPolicy(limits);
-const policy = portaldotPolicy({ ...limits, requireSignedDryRun: false });
+const policy = strict;
 
 describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (fake node)', () => {
   const setup = async (o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {}, batchAllRollback?: 'verified') => {
@@ -43,17 +42,24 @@ describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (f
     return { sdk, seam, node, adapter, wallet, facts, prepared };
   };
 
-  it('sequential plan with requireSignedDryRun on: the up-front dry run of txs 2..n is unknown (future nonce), so the gate blocks', async () => {
+  it('sequential plan with requireSignedDryRun on: each step is dry-run and gated just before it is sent; receipt verified', async () => {
     const { seam, node, adapter, wallet, facts, prepared } = await setup();
+    expect(prepared.policyResult.allowed).toBe(true);
     const now = new Date('2026-10-11T12:00:00Z');
-    const p = { ...prepared, policyResult: (await import('@seam/policy')).evaluatePolicy({ policy: strict, plan: prepared.plan, facts, preflight: prepared.preflight }) };
-    const approval = seam.approve({ ...p, policy: strict, facts, now });
+    const approval = seam.approve({ ...prepared, policy: strict, facts, now });
     expect(approval.ok).toBe(true);
-    const run = await seam.execute({ ...p, policy: strict, facts, approval: approval.approval, wallet, now: () => now });
-    expect(run).toMatchObject({ ok: false, stage: 'submit_gate' });
-    expect(run.check.reasons.map((r: any) => r.code)).toEqual(['signed_dry_run_missing']);
-    expect(adapter.lastDryRun!.map((d) => d.outcome)).toEqual(['ok', 'unknown', 'unknown']);
-    expect(node.submitted).toHaveLength(0);
+    const dryRuns: string[] = [];
+    const run = await seam.execute({
+      ...prepared, policy: strict, facts, approval: approval.approval, wallet, now: () => now,
+      onStep: (e: any) => { if (e.phase === 'sending') dryRuns.push(adapter.lastDryRun!.map((d) => d.outcome).join()); }
+    });
+    expect(run.ok).toBe(true);
+    expect(run.stoppedReason).toBeUndefined();
+    // one fresh dry run per step, of that step alone, and it was ok each time
+    expect(dryRuns).toEqual(['ok', 'ok', 'ok']);
+    expect(node.submitted).toHaveLength(3);
+    expect(run.receipt.result).toBe('verified');
+    expect(run.receipt.steps.map((s: any) => s.verification)).toEqual(['verified', 'verified', 'verified']);
   });
 
   it('runs end to end and the receipt verifies every step from the decoded events', async () => {
@@ -72,16 +78,21 @@ describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (f
     ]);
   });
 
-  it('a failing second step is caught by the pre-submit dry run, not sent, and the receipt says partial', async () => {
-    const { seam, node, wallet, facts, prepared } = await setup({ failCall: (c) => (c.startsWith('0x0d00') ? { index: 13, error: 12 } : undefined) });
+  it('a failing second step is caught by its per-step dry run, the gate stops it, and the receipt says partial', async () => {
+    const { seam, node, adapter, wallet, facts, prepared } = await setup({ failCall: (c) => (c.startsWith('0x0d00') ? { index: 13, error: 12 } : undefined) });
     const now = new Date('2026-10-11T12:00:00Z');
     const approval = seam.approve({ ...prepared, policy, facts, now });
     const run = await seam.execute({ ...prepared, policy, facts, approval: approval.approval, wallet, now: () => now });
-    // the adapter's pre-submit dry run catches step 2, so it is never broadcast
+    // step 2's own dry run fails, so the gate blocks it before broadcast; step 3 never runs
     expect(node.submitted).toHaveLength(1);
+    expect(adapter.lastDryRun!.map((d) => d.outcome)).toEqual(['failed']);
+    expect(adapter.lastDryRun![0]!.detail).toMatch(/contracts\.ContractNotFound/);
+    expect(run.ok).toBe(true);
+    expect(run.stoppedReason).toMatch(/dry run/);
     expect(run.receipt.result).toBe('partial');
-    expect(run.receipt.steps[1]).toMatchObject({ status: 'failed', verification: 'not_verified' });
-    expect(run.receipt.steps[1].reason).toMatch(/not sent: the dry run right before submitting failed \(dispatch failed: contracts\.ContractNotFound/);
+    expect(run.receipt.steps[0]).toMatchObject({ status: 'finalized', verification: 'verified' });
+    expect(run.receipt.steps[1].status).toBe('not_run');
+    expect(run.receipt.steps[1].reason).toMatch(/dry run/);
     expect(run.receipt.steps[2].status).toBe('not_run');
   });
 
