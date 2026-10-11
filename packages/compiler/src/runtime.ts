@@ -36,25 +36,56 @@ export interface LoadedRuntime {
   registry: TypeRegistry;
   metadata: Metadata;
   metadataHash: Hex;
-  typesBundleHash: Hex;
+  /** blake2b-256 of the pinned types file, or null for metadata V14+ (self-describing, no pinned types used). */
+  typesBundleHash: Hex | null;
   pinned: PinnedTypes;
+  /** Metadata version byte (13 for Portaldot spec 1002, 14+ for self-describing runtimes). */
+  metadataVersion: number;
+}
+
+/**
+ * The `source.typesBundle` value recorded for metadata V14+ runtimes: no overrides. Whatever types file a caller
+ * passes for a V14+ runtime is ignored, so the Portaldot spec-1002 file can never be applied to another chain.
+ */
+export const NO_PINNED_TYPES = '{"types":{}}';
+
+/** Metadata version: byte 4 of the raw metadata, after the "meta" magic. */
+export function metadataVersionOf(metadataHex: string): number {
+  const h = metadataHex.trim();
+  if (!/^0x6d657461[0-9a-fA-F]{2}/.test(h)) throw new Error('metadata must start with the "meta" magic (0x6d657461)');
+  return parseInt(h.slice(10, 12), 16);
+}
+
+/** True when the runtime needs a pinned types file (metadata V13 and older). */
+export function needsPinnedTypes(metadataHex: string): boolean {
+  return metadataVersionOf(metadataHex) <= 13;
 }
 
 const cache = new Map<string, LoadedRuntime>();
 
 /**
- * Builds a polkadot.js registry from raw metadata plus the pinned types.
- * Pure and offline. Cached by (metadataHash, typesBundleHash).
+ * Builds a polkadot.js registry from raw metadata plus, for metadata V13 and older only, the pinned types.
+ * Metadata V14+ is self-describing: its own type registry is used, any `typesBundle` is ignored and
+ * `typesBundleHash` is null. A V13 runtime must be given a pinned types file, and if the file declares a
+ * `metadataVersion` it must match. Pure and offline. Cached by (metadataHash, typesBundleHash).
  */
-export function loadRuntime(metadataHex: string, typesBundle: string): LoadedRuntime {
+export function loadRuntime(metadataHex: string, typesBundle?: string | null): LoadedRuntime {
+  const metadataVersion = metadataVersionOf(metadataHex);
+  const legacy = metadataVersion <= 13;
+  if (legacy && (typeof typesBundle !== 'string' || typesBundle.length === 0)) {
+    throw new Error(`metadata V${metadataVersion} is not self-describing; a pinned types file is required`);
+  }
   const metaBytes = hexBytes(metadataHex.trim());
   const metadataHash = blake2_256(metaBytes);
-  const typesBundleHash = blake2_256(utf8Bytes(typesBundle));
+  const typesBundleHash = legacy ? blake2_256(utf8Bytes(typesBundle!)) : null;
   const key = `${metadataHash}:${typesBundleHash}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
-  const pinned = parsePinnedTypes(typesBundle);
+  const pinned = legacy ? parsePinnedTypes(typesBundle!) : parsePinnedTypes(NO_PINNED_TYPES);
+  if (legacy && pinned.metadataVersion !== undefined && pinned.metadataVersion !== metadataVersion) {
+    throw new Error(`the pinned types file is for metadata V${pinned.metadataVersion}, this runtime serves V${metadataVersion}`);
+  }
   const registry = new TypeRegistry();
   registry.register(pinned.types as Record<string, string>);
   let metadata!: Metadata;
@@ -62,7 +93,7 @@ export function loadRuntime(metadataHex: string, typesBundle: string): LoadedRun
     metadata = new Metadata(registry, metaBytes);
     registry.setMetadata(metadata);
   });
-  const loaded: LoadedRuntime = { registry, metadata, metadataHash, typesBundleHash, pinned };
+  const loaded: LoadedRuntime = { registry, metadata, metadataHash, typesBundleHash, pinned, metadataVersion };
   cache.set(key, loaded);
   return loaded;
 }
