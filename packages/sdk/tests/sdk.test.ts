@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { compile, type Hex, type Plan, type RuntimeFacts } from '@seam/compiler';
-import { definePolicy, type SigningEnvelope } from '@seam/policy';
+import { definePolicy, type SignedDryRun, type SigningEnvelope } from '@seam/policy';
 import {
   Seam, buildReceipt, checkReceipt, defineManifest, action, explainPlan, explainPolicy, explainReceipt, factsFromSnapshot,
   parseManifest, toBaseUnits, type ChainAdapter, type ChainEvent, type StepOutcome, type WalletSigner,
@@ -141,7 +141,7 @@ const policy = definePolicy({
   allowUnknown: { storageDeposit: true },
 });
 
-function fakeChain(f: RuntimeFacts, opts: { outcomes?: StepOutcome[]; fingerprintAfter?: RuntimeFacts['fingerprint'] } = {}) {
+function fakeChain(f: RuntimeFacts, opts: { outcomes?: StepOutcome[]; fingerprintAfter?: RuntimeFacts['fingerprint']; dryRun?: SignedDryRun } = {}) {
   const submitted: string[] = [];
   const outs = opts.outcomes ?? goodOutcomes();
   const chain: ChainAdapter = {
@@ -149,8 +149,9 @@ function fakeChain(f: RuntimeFacts, opts: { outcomes?: StepOutcome[]; fingerprin
     readFingerprint: async () => opts.fingerprintAfter ?? f.fingerprint,
     preflight: async (plan: Plan) => ({
       preflight: { steps: plan.steps.map((s) => ({ actionId: s.actionId, weight: { value: '1000' }, fee: { value: '10' }, storageDeposit: { unknown: true }, dryRun: 'ok' as const })), totalFee: { value: '30' } },
-      envelope: { signer: ALICE, nonce: 7, mortalityBlocks: 64, expiresAt: new Date(Date.now() + 300_000).toISOString() } satisfies SigningEnvelope,
+      envelope: { signer: ALICE, nonce: 7, mortalityBlocks: 64, expiresAt: new Date(Date.now() + 300_000).toISOString(), checkpoint: { number: 100, hash: `0x${'ab'.repeat(32)}` } } satisfies SigningEnvelope,
     }),
+    dryRunSigned: async (txs: Hex[]) => txs.map(() => opts.dryRun ?? 'ok'),
     submit: async (tx: Hex, id: string) => { submitted.push(id); return outs.find((o) => o.actionId === id) ?? { actionId: id, status: 'not_run', events: [] }; },
   };
   return { chain, submitted };
@@ -199,6 +200,21 @@ describe('Seam flow', () => {
     const run = await seam.execute({ ...p, policy, facts, wallet: evil });
     expect(run.ok).toBe(false);
     if (!run.ok) expect(run.reason).toMatch(/signed different call data/);
+    expect(submitted).toEqual([]);
+  });
+  it('blocks when the signed transaction fails its dry run, and submits nothing', async () => {
+    const { chain, submitted } = fakeChain(facts, { dryRun: 'failed' });
+    const seam = new Seam(chain);
+    const run = await seam.execute({ ...(await prepared(seam)), policy, facts, wallet: honestWallet });
+    expect(run.ok).toBe(false);
+    if (!run.ok) expect(run.reason).toMatch(/dry run of the signed transaction failed/);
+    expect(submitted).toEqual([]);
+  });
+  it('blocks when the dry run result is unknown (policy requires one)', async () => {
+    const { chain, submitted } = fakeChain(facts, { dryRun: 'unknown' });
+    const seam = new Seam(chain);
+    const run = await seam.execute({ ...(await prepared(seam)), policy, facts, wallet: honestWallet });
+    expect(run.ok).toBe(false);
     expect(submitted).toEqual([]);
   });
   it('stops after a failed step and never submits the next one', async () => {

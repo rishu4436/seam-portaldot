@@ -16,7 +16,7 @@ The developer-facing part of SEAM: Manifest helpers, execution receipts, plain-E
 - `checkReceipt(r)` recomputes `receiptDigest` (`seam/receipt/v1`) to detect edits.
 
 ## Flow
-`new Seam(chainAdapter)` covers `prepare` (compile, preflight and policy), `approve`, and `execute`. `execute` signs through the user's `WalletSigner`, runs the policy submit gate (approval reuse or expiry, runtime change, signed bytes), submits, stops at the first failed or unverified step, and returns a receipt. SEAM never holds keys.
+`new Seam(chainAdapter)` covers `prepare` (compile, preflight and policy), `approve`, and `execute`. `execute` signs through the user's `WalletSigner`, dry-runs the signed transactions through the adapter, runs the policy submit gate (approval reuse or expiry, runtime change, signed bytes, signed dry run), submits, stops at the first failed or unverified step, and returns a receipt. SEAM never holds keys.
 
 ## CLI
 ```
@@ -29,4 +29,4 @@ seam explain plan.json | policy-result.json | receipt.json
 Offline commands use the bundled Portaldot mainnet snapshot (spec 1002, block 2,721,455), or `--snapshot <dir>`.
 
 ## Tests
-`npm test` runs 20 offline tests against the real snapshot metadata. They cover Manifest validation, receipt verification (attack cases 9 and 11), explanations, and the full flow with a fake chain and wallet (approval reuse, runtime change, a tampered signature, stopping after a failure).
+`npm test` runs 22 offline tests against the real snapshot metadata. They cover Manifest validation, receipt verification (attack cases 9 and 11), explanations, and the full flow with a fake chain and wallet (approval reuse, runtime change, a tampered signature, a failed or unknown signed dry run, stopping after a failure).
