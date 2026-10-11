@@ -1,0 +1,22 @@
+{
+ "setupAt": "2026-10-11T12:30:35.342Z",
+ "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+ "steps": [
+  {
+   "what": "asset 1 already exists, skipped create/mint"
+  },
+  {
+   "what": "contract 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98 already deployed, skipped"
+  }
+ ],
+ "state": {
+  "contract": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+  "contractInstantiatedIn": {
+   "txHash": "0x361413adf3465fcb5948bdbd370a5ca9ec4082a52f6ff53e4e688e1a4bc2ac31",
+   "block": 3,
+   "blockHash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9"
+  },
+  "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+  "assetId": 1
+ }
+}

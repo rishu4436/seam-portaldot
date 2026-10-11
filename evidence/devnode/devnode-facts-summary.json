@@ -1,0 +1,194 @@
+{
+ "fingerprint": {
+  "genesisHash": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+  "specName": "substrate-contracts-node",
+  "specVersion": 100,
+  "transactionVersion": 1,
+  "metadataHash": "0x9fd4164787982261fefce38d58de6beca2a2d516c6bcb8bb720950aa820307b7",
+  "ss58Prefix": 42,
+  "tokenSymbol": "UNIT",
+  "tokenDecimals": 12,
+  "typesBundleHash": "0x4387cb3953e535bb47e5ea34a027b2c3a73742093a677f054e47b0adb5689810"
+ },
+ "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+ "metadataVersion": 14,
+ "behaviour": {
+  "batchAllRollback": "unknown"
+ },
+ "capabilities": {
+  "Assets.create": {
+   "status": "observed",
+   "palletIndex": 10,
+   "callIndex": 0,
+   "args": [
+    {
+     "name": "id",
+     "type": "Compact<u32>"
+    },
+    {
+     "name": "admin",
+     "type": "MultiAddress"
+    },
+    {
+     "name": "min_balance",
+     "type": "u128"
+    }
+   ],
+   "argTypesConfidence": "partial"
+  },
+  "Assets.mint": {
+   "status": "observed",
+   "palletIndex": 10,
+   "callIndex": 6,
+   "args": [
+    {
+     "name": "id",
+     "type": "Compact<u32>"
+    },
+    {
+     "name": "beneficiary",
+     "type": "MultiAddress"
+    },
+    {
+     "name": "amount",
+     "type": "Compact<u128>"
+    }
+   ],
+   "argTypesConfidence": "partial"
+  },
+  "Assets.transfer_keep_alive": {
+   "status": "observed",
+   "palletIndex": 10,
+   "callIndex": 9,
+   "args": [
+    {
+     "name": "id",
+     "type": "Compact<u32>"
+    },
+    {
+     "name": "target",
+     "type": "MultiAddress"
+    },
+    {
+     "name": "amount",
+     "type": "Compact<u128>"
+    }
+   ],
+   "argTypesConfidence": "partial"
+  },
+  "Contracts.call": {
+   "status": "observed",
+   "palletIndex": 8,
+   "callIndex": 6,
+   "args": [
+    {
+     "name": "dest",
+     "type": "MultiAddress"
+    },
+    {
+     "name": "value",
+     "type": "Compact<u128>"
+    },
+    {
+     "name": "gas_limit",
+     "type": "SpWeightsWeightV2Weight"
+    },
+    {
+     "name": "storage_deposit_limit",
+     "type": "Option<Compact<u128>>"
+    },
+    {
+     "name": "data",
+     "type": "Bytes"
+    }
+   ],
+   "argTypesConfidence": "partial"
+  },
+  "Contracts.instantiate_with_code": {
+   "status": "observed",
+   "palletIndex": 8,
+   "callIndex": 7,
+   "args": [
+    {
+     "name": "value",
+     "type": "Compact<u128>"
+    },
+    {
+     "name": "gas_limit",
+     "type": "SpWeightsWeightV2Weight"
+    },
+    {
+     "name": "storage_deposit_limit",
+     "type": "Option<Compact<u128>>"
+    },
+    {
+     "name": "code",
+     "type": "Bytes"
+    },
+    {
+     "name": "data",
+     "type": "Bytes"
+    },
+    {
+     "name": "salt",
+     "type": "Bytes"
+    }
+   ],
+   "argTypesConfidence": "partial"
+  },
+  "Revive.call": {
+   "status": "observed",
+   "palletIndex": 9,
+   "callIndex": 0,
+   "args": [
+    {
+     "name": "dest",
+     "type": "MultiAddress"
+    },
+    {
+     "name": "value",
+     "type": "Compact<u128>"
+    },
+    {
+     "name": "gas_limit",
+     "type": "SpWeightsWeightV2Weight"
+    },
+    {
+     "name": "storage_deposit_limit",
+     "type": "Compact<u128>"
+    },
+    {
+     "name": "data",
+     "type": "Bytes"
+    }
+   ],
+   "argTypesConfidence": "partial"
+  },
+  "Utility.batch_all": {
+   "status": "observed",
+   "palletIndex": 2,
+   "callIndex": 2,
+   "args": [
+    {
+     "name": "calls",
+     "type": "Vec<Call>"
+    }
+   ],
+   "argTypesConfidence": "full"
+  },
+  "Nfts.mint": {
+   "status": "not_observed"
+  }
+ },
+ "pallets": [
+  "Assets",
+  "Balances",
+  "Contracts",
+  "Nfts",
+  "Revive",
+  "Sudo",
+  "System",
+  "Timestamp",
+  "Utility"
+ ]
+}

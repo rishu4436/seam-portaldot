@@ -11,6 +11,8 @@ import {
 
 export const ENDPOINT = process.env.SEAM_DEVNODE_URL ?? 'ws://127.0.0.1:9944';
 export const EVIDENCE = process.env.SEAM_EVIDENCE_DIR ?? '/workspace/seam-evidence/devnode';
+/** Copy inside the repo (evidence/devnode at the monorepo root), so the hashes are reviewable with the code. */
+export const REPO_EVIDENCE = process.env.SEAM_REPO_EVIDENCE_DIR ?? fileURLToPath(new URL('../../../../evidence/devnode', import.meta.url));
 export const TYPES_BUNDLE = readFileSync(fileURLToPath(new URL('../../fixtures/devnode-types.json', import.meta.url)), 'utf8');
 /** substrate-contracts-node --dev reports no system_properties. UNIT = 1_000 * MILLIUNIT = 10^12 base units
  *  (runtime/src/lib.rs v0.42.0: MILLIUNIT = 1_000_000_000), so 12 decimals. Declared, not read from the node. */
@@ -71,6 +73,32 @@ export async function nextNonce(address) {
 export function loadState() {
   try { return JSON.parse(readFileSync(STATE_FILE, 'utf8')); } catch { return {}; }
 }
+/** Keys that must never appear in evidence: signatures, signed extrinsics (they embed the signature), key material. */
+const SECRET_KEYS = /^(signature|signatures|signedTx|signedTxs|signedExtrinsic|extrinsic|seed|secret|secretKey|privateKey|mnemonic|suri|uri|pair|keypair)$/i;
+/** Dev-key derivation paths / mnemonics: refuse to write them even inside strings. */
+const SECRET_TEXT = /\/\/(Alice|Bob|Charlie|Dave|Eve|Ferdie)\b|bottom drive obey lake curtain smoke basket hold race lonely fit walk/;
+
+/** Throws if value contains a signature, signed extrinsic, seed or key. Returns the JSON text. */
+export function evidenceJson(value) {
+  const text = JSON.stringify(value, (k, v) => {
+    if (k && SECRET_KEYS.test(k)) throw new Error(`refusing to write evidence: field "${k}" could hold a signature or key`);
+    return typeof v === 'bigint' ? v.toString() : v;
+  }, 1) + '\n';
+  if (SECRET_TEXT.test(text)) throw new Error('refusing to write evidence: it contains a dev seed / derivation path');
+  return text;
+}
+
+/** Writes one evidence file to /workspace/seam-evidence/devnode/<rel> and to <repo>/evidence/devnode/<rel>. */
+export function saveEvidence(rel, value) {
+  const text = evidenceJson(value);
+  for (const dir of [EVIDENCE, REPO_EVIDENCE]) {
+    const path = `${dir}/${rel}`;
+    mkdirSync(path.replace(/\/[^/]+$/, ''), { recursive: true });
+    writeFileSync(path, text);
+  }
+  return `${EVIDENCE}/${rel}`;
+}
+
 export function saveJson(path, value) {
   mkdirSync(path.replace(/\/[^/]+$/, ''), { recursive: true });
   writeFileSync(path, JSON.stringify(value, (_k, v) => (typeof v === 'bigint' ? v.toString() : v), 1) + '\n');

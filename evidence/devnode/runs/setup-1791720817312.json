@@ -1,0 +1,91 @@
+{
+ "setupAt": "2026-10-11T12:13:34.179Z",
+ "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+ "steps": [
+  {
+   "what": "Assets.create(1, Alice, min_balance 1)",
+   "txHash": "0xfceb08534c1dd192b2645d3656f46e125cc34a464f5d748a732d50d6d6eb3c04",
+   "status": "finalized",
+   "history": [
+    "submitted",
+    "in_block",
+    "finalized"
+   ],
+   "block": {
+    "number": 1,
+    "hash": "0xb2e55d30fae6bc72098c3fb727823010a7d5e73852362cb69e776430aa03c439"
+   },
+   "extrinsicIndex": 1,
+   "success": true,
+   "events": [
+    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 383912157)",
+    "Balances.Reserved(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 10000000000000000)",
+    "Assets.Created(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d)",
+    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0)",
+    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 383912157, 0)",
+    "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":3675,\"refTime\":383912000}})"
+   ]
+  },
+  {
+   "what": "Assets.mint(1, Alice, 1000000000000)",
+   "txHash": "0x847dd270d80a4dca64425e2a9e998f31971fafeb079e283c62243253267c33dc",
+   "status": "finalized",
+   "history": [
+    "submitted",
+    "in_block",
+    "finalized"
+   ],
+   "block": {
+    "number": 2,
+    "hash": "0xa43a4a9b1cd4384415ab340464aca6c4f101f73b243e284e81203ab2c0c8244b"
+   },
+   "extrinsicIndex": 1,
+   "success": true,
+   "events": [
+    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380342028)",
+    "Assets.Issued(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1000000000000)",
+    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0)",
+    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380342028, 0)",
+    "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":3675,\"refTime\":380347000}})"
+   ]
+  },
+  {
+   "what": "Contracts.instantiate_with_code(seam_emitter.wasm)",
+   "txHash": "0x361413adf3465fcb5948bdbd370a5ca9ec4082a52f6ff53e4e688e1a4bc2ac31",
+   "status": "finalized",
+   "history": [
+    "submitted",
+    "in_block",
+    "finalized"
+   ],
+   "block": {
+    "number": 3,
+    "hash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9"
+   },
+   "extrinsicIndex": 1,
+   "success": true,
+   "events": [
+    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 51248813283)",
+    "Contracts.CodeStored(0xac3ef5b80c66cebd0d43c8bf7aa8acd3298f047aae0b2a851de99a8234a3743f, 201105000000, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d)",
+    "System.NewAccount(0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98)",
+    "Balances.Endowed(0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98, 1000000000)",
+    "Balances.Transfer(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98, 1000000000)",
+    "Contracts.Instantiated(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98)",
+    "Contracts.StorageDepositTransferredAndHeld(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98, 100610000000)",
+    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 49998107779)",
+    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1250705504, 0)",
+    "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":6262,\"refTime\":1250748049}})"
+   ]
+  }
+ ],
+ "state": {
+  "contract": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+  "contractInstantiatedIn": {
+   "txHash": "0x361413adf3465fcb5948bdbd370a5ca9ec4082a52f6ff53e4e688e1a4bc2ac31",
+   "block": 3,
+   "blockHash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9"
+  },
+  "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+  "assetId": 1
+ }
+}

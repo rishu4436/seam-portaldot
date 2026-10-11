@@ -1,0 +1,125 @@
+{
+ "kind": "batch_all-rollback",
+ "ranAt": "2026-10-11T12:19:17.412Z",
+ "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+ "planMode": "atomic_unverified",
+ "steps": [
+  {
+   "actionId": "pay",
+   "call": "0x0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4814",
+   "args": {
+    "assetId": "1",
+    "amount": "5",
+    "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+    "recipientAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48"
+   }
+  },
+  {
+   "actionId": "overdraw",
+   "call": "0x0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a480f00404c948b3203",
+   "args": {
+    "assetId": "1",
+    "amount": "900000000000000",
+    "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+    "recipientAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48"
+   }
+  },
+  {
+   "actionId": "mint",
+   "call": "0x0a06040090b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe220c",
+   "args": {
+    "assetId": "1",
+    "amount": "3",
+    "recipient": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+    "recipientAccountId": "0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22"
+   }
+  }
+ ],
+ "outerCall": {
+  "capability": "Utility.batch_all",
+  "palletIndex": 2,
+  "callIndex": 2,
+  "encodedCall": "0x02020c0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48140a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a480f00404c948b32030a06040090b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe220c"
+ },
+ "policyResult": {
+  "allowed": true
+ },
+ "approvalHash": "0x5abaa77f34360471d8052b8bf8eca0480e2cffe947cf8e90561908f1dd439650",
+ "seamGate": {
+  "stage": "submit_gate",
+  "ok": false,
+  "reasons": [
+   {
+    "code": "signed_dry_run_failed",
+    "message": "Blocked: the dry run of the signed transaction failed, so it would fail on chain."
+   }
+  ],
+  "dryRun": [
+   {
+    "txHash": "0xdd097d1e89356947f1ae274554efceace1494aa40683434a9866ef4abef1a6dd",
+    "outcome": "failed",
+    "detail": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
+    "raw": "0x0001030a00000000"
+   }
+  ],
+  "nothingSent": true
+ },
+ "directSubmit": {
+  "note": "test-only bypass of the gate, local dev chain",
+  "txHash": "0xdd097d1e89356947f1ae274554efceace1494aa40683434a9866ef4abef1a6dd",
+  "status": "finalized",
+  "history": [
+   "submitted",
+   "in_block",
+   "finalized"
+  ],
+  "block": {
+   "number": 12,
+   "hash": "0xba4a5705f541b7854e05148cc3477ab924236868ed12010270a23db66c595984"
+  },
+  "extrinsicIndex": 1,
+  "success": false,
+  "dispatchError": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
+  "events": [
+   "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1538607859)",
+   "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 278378512)",
+   "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1260229347, 0)",
+   "System.ExtrinsicFailed({\"module\":{\"error\":\"0x00000000\",\"index\":10}}, {\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16413,\"refTime\":1260466516}})"
+  ]
+ },
+ "state": {
+  "before": {
+   "block": 11,
+   "aliceNonce": 11,
+   "asset": {
+    "alice": "999999992500",
+    "bob": "7500",
+    "charlie": "21",
+    "supply": "1000000000021"
+   }
+  },
+  "afterGate": {
+   "block": 11,
+   "aliceNonce": 11,
+   "asset": {
+    "alice": "999999992500",
+    "bob": "7500",
+    "charlie": "21",
+    "supply": "1000000000021"
+   }
+  },
+  "after": {
+   "block": 12,
+   "aliceNonce": 12,
+   "asset": {
+    "alice": "999999992500",
+    "bob": "7500",
+    "charlie": "21",
+    "supply": "1000000000021"
+   }
+  }
+ },
+ "innerEffects": [],
+ "conclusion": "ROLLED BACK: batch_all failed as a whole (ExtrinsicFailed, the inner error from step 2); step 1's transfer and step 3's mint left no events and no balance change. Only the fee was charged (nonce advanced).",
+ "batchAllRollback": "verified"
+}
