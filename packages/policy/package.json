@@ -1,0 +1,25 @@
+{
+  "name": "@seam/policy",
+  "version": "0.1.0",
+  "description": "SEAM policy engine, runtime lock and approval binding",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@seam/compiler": "file:../seam-compiler",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.8.0"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts"
+}
