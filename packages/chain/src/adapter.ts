@@ -83,7 +83,9 @@ export function blockTimeFromFacts(facts: RuntimeFacts): number | undefined {
   const expected = consts.babe?.expectedBlockTime?.toNumber();
   if (expected) return expected;
   const min = consts.timestamp?.minimumPeriod?.toNumber();
-  return min ? min * 2 : undefined;
+  // Below a second means manual/instant seal (substrate-contracts-node: MinimumPeriod 5 ms): blocks come per
+  // transaction, so metadata says nothing about real block time. Make the caller pass blockTimeMs.
+  return min && min * 2 >= 1000 ? min * 2 : undefined;
 }
 
 /** Maps a submitAndWatch result to the SDK's StepOutcome. */

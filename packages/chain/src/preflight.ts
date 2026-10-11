@@ -1,4 +1,4 @@
-import { u8aToHex } from '@polkadot/util';
+import { hexToU8a, u8aConcat, u8aToHex } from '@polkadot/util';
 import { encodeAddress } from '@polkadot/util-crypto';
 import type { Hex, Plan, PlanStep, RuntimeFacts } from '@seam/compiler';
 import { SeamChainError } from './errors.js';
@@ -90,6 +90,8 @@ async function contractDryRun(client: RpcClient, facts: RuntimeFacts, plan: Plan
   try {
     raw = await rpc<Record<string, unknown>>(client, 'contracts_call', [req, at]);
   } catch (e) {
+    const viaApi = await contractDryRunViaRuntimeApi(client, facts, plan.signer.publicKey, dest, a.value, a.data, at);
+    if (viaApi) return viaApi;
     return { outcome: 'unknown', note: `contracts_call unavailable: ${(e as Error).message.slice(0, 200)}` };
   }
   const result = raw?.result as Record<string, unknown> | undefined;
@@ -101,6 +103,56 @@ async function contractDryRun(client: RpcClient, facts: RuntimeFacts, plan: Plan
     return { outcome: 'ok', note: `contract dry run ok${gas}; state at this block, before earlier steps run`, raw };
   }
   return { outcome: 'unknown', note: 'contracts_call returned a shape SEAM does not recognise', raw };
+}
+
+/** blake2_64("ContractsApi") as listed in RuntimeVersion.apis. */
+const CONTRACTS_API_ID = '0x68b66ba122c93fa7';
+const CONTRACT_RESULT_V2 = {
+  SeamContractStorageDeposit: { _enum: { Refund: 'u128', Charge: 'u128' } },
+  SeamExecReturnValue: { flags: 'u32', data: 'Bytes' },
+  SeamContractResultV2: {
+    gasConsumed: 'WeightV2',
+    gasRequired: 'WeightV2',
+    storageDeposit: 'SeamContractStorageDeposit',
+    debugMessage: 'Bytes',
+    result: 'Result<SeamExecReturnValue, DispatchError>',
+    events: 'Option<Vec<EventRecord>>'
+  }
+};
+
+/**
+ * Newer nodes dropped the contracts_call RPC; the same dry run is the ContractsApi_call runtime API (v2) via
+ * state_call. Only used when the runtime lists ContractsApi version 2; gas_limit and storage_deposit_limit are
+ * None so the runtime reports what the call needs. Returns undefined when this path doesn't apply.
+ */
+async function contractDryRunViaRuntimeApi(
+  client: RpcClient, facts: RuntimeFacts, origin: string, dest: string, value: string, data: string, at: Hex
+): Promise<{ outcome: 'ok' | 'failed' | 'unknown'; note: string; raw?: unknown } | undefined> {
+  try {
+    const version = await rpc<{ apis?: [string, number][] }>(client, 'state_getRuntimeVersion', [at]);
+    const api = version?.apis?.find(([id]) => id === CONTRACTS_API_ID);
+    if (!api || api[1] !== 2) return undefined;
+    const { registry } = decodeRuntime(facts);
+    registry.register(CONTRACT_RESULT_V2 as any);
+    const params = u8aConcat(
+      registry.createType('AccountId', origin).toU8a(),
+      registry.createType('AccountId', dest).toU8a(),
+      registry.createType('u128', value).toU8a(),
+      registry.createType('Option<WeightV2>', null).toU8a(),
+      registry.createType('Option<u128>', null).toU8a(),
+      registry.createType('Bytes', data).toU8a()
+    );
+    const out = await rpc<string>(client, 'state_call', ['ContractsApi_call', u8aToHex(params), at]);
+    const res = registry.createType('SeamContractResultV2', hexToU8a(out)) as any;
+    const raw = { via: 'state_call ContractsApi_call (v2)', result: res.toJSON(), debugMessage: res.debugMessage.toUtf8() };
+    const gas = ` (gas required refTime ${res.gasRequired.refTime.toString()}, proofSize ${res.gasRequired.proofSize.toString()})`;
+    if (res.result.isErr) return { outcome: 'failed', note: `contract dry run failed: ${describeDispatchError(facts, res.result.asErr.toJSON())}${gas}`, raw };
+    const flags = res.result.asOk.flags.toNumber();
+    if (flags & 1) return { outcome: 'failed', note: `contract dry run reverted (flags ${flags})${gas}`, raw };
+    return { outcome: 'ok', note: `contract dry run ok via ContractsApi_call${gas}; state at this block, before earlier steps run`, raw };
+  } catch (e) {
+    return { outcome: 'unknown', note: `ContractsApi_call dry run could not be read: ${(e as Error).message.slice(0, 200)}` };
+  }
 }
 
 /** Assets steps: an empty Assets.Asset entry means the asset does not exist, so the step must fail. Anything else stays unknown. */
