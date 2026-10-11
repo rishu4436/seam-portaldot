@@ -16,6 +16,12 @@ export interface PreflightStep {
   weight: Estimate;
   fee: Estimate;
   storageDeposit: Estimate;
+  /**
+   * Proof size (PoV) part of the weight, from payment_queryInfo on two-part-weight (Weight V2) runtimes.
+   * Unknown on Weight V1 runtimes (Portaldot spec 1002), which have no proof size. Optional in @seam/policy's
+   * type (bot3/policy-file 71daa3b); @seam/chain always sets it.
+   */
+  proofSize?: Estimate;
   dryRun: 'ok' | 'failed' | 'unknown';
   note?: string;
 }

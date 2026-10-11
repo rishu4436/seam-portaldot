@@ -26,7 +26,15 @@ export interface PreflightTxDetail {
   actionIds: string[];
   nonce: number;
   /** payment_queryInfo on the (fake- or really-) signed extrinsic. */
-  queryInfo?: { weight: string; class: string; partialFee: string };
+  queryInfo?: {
+    weight: string;
+    class: string;
+    partialFee: string;
+    /** 1: weight is a plain number (no proof size). 2: {ref_time, proof_size}. */
+    weightVersion: 1 | 2;
+    /** proof_size of the Weight V2 answer; absent on Weight V1. */
+    proofSize?: string;
+  };
   /** payment_queryFeeDetails, when the node returns it. */
   feeDetails?: unknown;
   /** system_dryRun result (only with real signed extrinsics). */
@@ -71,11 +79,19 @@ async function queryInfo(client: RpcClient, extrinsic: Hex, at: Hex): Promise<Pr
   // SEAM's weight limit is on ref_time (computation); proof_size is not limited by the policy.
   const v2 = typeof w === 'object' && w !== null ? (w as Record<string, unknown>) : undefined;
   const weight = v2 ? toBigInt(v2.ref_time ?? v2.refTime) : toBigInt(w);
-  return { weight: weight.toString(), class: String(info.class), partialFee: toBigInt(info.partialFee).toString() };
+  const out: NonNullable<PreflightTxDetail['queryInfo']> = {
+    weight: weight.toString(), class: String(info.class), partialFee: toBigInt(info.partialFee).toString(), weightVersion: v2 ? 2 : 1
+  };
+  if (v2) {
+    const proof = v2.proof_size ?? v2.proofSize;
+    // A V2 answer without a proof size stays unknown; never filled with 0.
+    if (proof !== undefined && proof !== null) out.proofSize = toBigInt(proof).toString();
+  }
+  return out;
 }
 
 /** ink! dry run with contracts_call (spec 1002 shape: { debugMessage, gasConsumed, result: { Ok | Err } }). */
-async function contractDryRun(client: RpcClient, facts: RuntimeFacts, plan: Plan, step: PlanStep, at: Hex): Promise<{ outcome: 'ok' | 'failed' | 'unknown'; note: string; raw?: unknown }> {
+async function contractDryRun(client: RpcClient, facts: RuntimeFacts, plan: Plan, step: PlanStep, at: Hex): Promise<ContractDryRun> {
   const a = step.decodedArgs;
   const dest = a.contractAccountId ?? a.contract;
   if (!dest || a.data === undefined || a.gasLimit === undefined || a.value === undefined) {
@@ -108,6 +124,14 @@ async function contractDryRun(client: RpcClient, facts: RuntimeFacts, plan: Plan
   return { outcome: 'unknown', note: 'contracts_call returned a shape SEAM does not recognise', raw };
 }
 
+interface ContractDryRun {
+  outcome: 'ok' | 'failed' | 'unknown';
+  note: string;
+  raw?: unknown;
+  /** gas_required.proof_size from ContractsApi_call (Weight V2 runtimes), when the node gave it. */
+  proofSizeRequired?: string;
+}
+
 /** blake2_64("ContractsApi") as listed in RuntimeVersion.apis. */
 const CONTRACTS_API_ID = '0x68b66ba122c93fa7';
 const CONTRACT_RESULT_V2 = {
@@ -130,7 +154,7 @@ const CONTRACT_RESULT_V2 = {
  */
 async function contractDryRunViaRuntimeApi(
   client: RpcClient, facts: RuntimeFacts, origin: string, dest: string, value: string, data: string, at: Hex
-): Promise<{ outcome: 'ok' | 'failed' | 'unknown'; note: string; raw?: unknown } | undefined> {
+): Promise<ContractDryRun | undefined> {
   try {
     const version = await rpc<{ apis?: [string, number][] }>(client, 'state_getRuntimeVersion', [at]);
     const api = version?.apis?.find(([id]) => id === CONTRACTS_API_ID);
@@ -148,11 +172,12 @@ async function contractDryRunViaRuntimeApi(
     const out = await rpc<string>(client, 'state_call', ['ContractsApi_call', u8aToHex(params), at]);
     const res = registry.createType('SeamContractResultV2', hexToU8a(out)) as any;
     const raw = { via: 'state_call ContractsApi_call (v2)', result: res.toJSON(), debugMessage: res.debugMessage.toUtf8() };
-    const gas = ` (gas required refTime ${res.gasRequired.refTime.toString()}, proofSize ${res.gasRequired.proofSize.toString()})`;
-    if (res.result.isErr) return { outcome: 'failed', note: `contract dry run failed: ${describeDispatchError(facts, res.result.asErr.toJSON())}${gas}`, raw };
+    const proofSizeRequired = res.gasRequired.proofSize.toString() as string;
+    const gas = ` (gas required refTime ${res.gasRequired.refTime.toString()}, proofSize ${proofSizeRequired})`;
+    if (res.result.isErr) return { outcome: 'failed', note: `contract dry run failed: ${describeDispatchError(facts, res.result.asErr.toJSON())}${gas}`, raw, proofSizeRequired };
     const flags = res.result.asOk.flags.toNumber();
-    if (flags & 1) return { outcome: 'failed', note: `contract dry run reverted (flags ${flags})${gas}`, raw };
-    return { outcome: 'ok', note: `contract dry run ok via ContractsApi_call${gas}; state at this block, before earlier steps run`, raw };
+    if (flags & 1) return { outcome: 'failed', note: `contract dry run reverted (flags ${flags})${gas}`, raw, proofSizeRequired };
+    return { outcome: 'ok', note: `contract dry run ok via ContractsApi_call${gas}; state at this block, before earlier steps run`, raw, proofSizeRequired };
   } catch (e) {
     return { outcome: 'unknown', note: `ContractsApi_call dry run could not be read: ${(e as Error).message.slice(0, 200)}` };
   }
@@ -244,10 +269,12 @@ export async function preflight(endpoint: Endpoint, plan: Plan, facts: RuntimeFa
       const info = atomic ? standalone.get(s.actionId) : tx.queryInfo;
       const notes: string[] = [];
       let dryRun: PreflightStep['dryRun'] = 'unknown';
+      let contractProof: string | undefined;
       if (s.kind === 'contracts.call') {
         const c = await contractDryRun(client, facts, plan, s, atBlock.hash);
         dryRun = c.outcome;
         notes.push(c.note);
+        contractProof = c.proofSizeRequired;
         if (c.raw !== undefined) contractDryRuns[s.actionId] = c.raw;
       } else if ((s.kind === 'assets.transfer' || s.kind === 'assets.mint') && s.decodedArgs.assetId !== undefined) {
         const exists = await assetExists(client, facts, s.decodedArgs.assetId, atBlock.hash);
@@ -266,11 +293,19 @@ export async function preflight(endpoint: Endpoint, plan: Plan, facts: RuntimeFa
       if (atomic) notes.push('atomic: weight and fee here are for this call on its own; the batch is charged once (totalFee)');
       if (!info) notes.push(`payment_queryInfo gave no answer${tx.error ? ` (${tx.error.slice(0, 120)})` : ''}`);
       notes.push('storage deposit: not reported by this runtime');
+      // proofSize: the transaction's pre-dispatch proof_size (for a contract call it already includes the
+      // gas_limit's proof_size, so it is the upper bound the chain will accept). Never 0 when not reported.
+      let proofSize: Estimate = UNKNOWN;
+      if (info?.weightVersion === 1) notes.push('proof size: unknown, this runtime has no proof size (Weight V1: weight is a single number)');
+      else if (info?.proofSize !== undefined) proofSize = known(info.proofSize);
+      else notes.push(info ? 'proof size: unknown, payment_queryInfo gave a two-part weight without proof_size' : 'proof size: unknown, payment_queryInfo gave no answer');
+      if (contractProof !== undefined) notes.push(`contract needs proof size ${contractProof} (ContractsApi_call gas_required)`);
       steps.push({
         actionId: s.actionId,
         weight: info ? known(info.weight) : UNKNOWN,
         fee: info ? known(info.partialFee) : UNKNOWN,
         storageDeposit: UNKNOWN,
+        proofSize,
         dryRun,
         note: notes.join('; ')
       });

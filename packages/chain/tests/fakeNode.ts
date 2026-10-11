@@ -21,6 +21,8 @@ export interface FakeNodeOptions {
   stopAfterInBlock?: boolean;
   /** Report this status instead of including (e.g. 'invalid', 'dropped'). */
   rejectWith?: string;
+  /** payment_queryInfo weight JSON. Default: the plain number spec 1002 returns (Weight V1). */
+  queryInfoWeight?: unknown;
 }
 
 interface FakeBlock { number: number; hash: Hex; extrinsics: string[]; events: Hex }
@@ -78,7 +80,7 @@ export class FakeNode implements RpcClient {
       case 'system_accountNextIndex':
         return r(this.nonces.get(String(params[0])) ?? 0);
       case 'payment_queryInfo':
-        return r({ weight: 200000000, class: 'normal', partialFee: '1500000000' });
+        return r({ weight: this.o.queryInfoWeight ?? 200000000, class: 'normal', partialFee: '1500000000' });
       case 'payment_queryFeeDetails':
         throw new Error('Method not found');
       case 'system_dryRun':

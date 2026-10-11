@@ -74,6 +74,40 @@ describe('preflight (fake node replaying the snapshot)', () => {
   });
 });
 
+describe('preflight proof size (steps[].proofSize)', () => {
+  it('Weight V1 (the spec 1002 snapshot): unknown with a note, never 0', async () => {
+    const r = await preflight(node({ existingAssets: ['1', '2'] }), demoPlan(), facts);
+    for (const s of r.result.steps) {
+      expect(s.proofSize).toEqual({ unknown: true });
+      expect(s.note).toMatch(/proof size: unknown, this runtime has no proof size \(Weight V1/);
+    }
+    expect(r.transactions.every((t) => t.queryInfo?.weightVersion === 1 && t.queryInfo.proofSize === undefined)).toBe(true);
+  });
+
+  it('Weight V2 answer {ref_time, proof_size} (RPC JSON): weight is ref_time, proofSize is proof_size', async () => {
+    const r = await preflight(node({ existingAssets: ['1', '2'], queryInfoWeight: { ref_time: 540059000, proof_size: 6208 } }), demoPlan(), facts);
+    for (const s of r.result.steps) {
+      expect(s.weight).toEqual({ value: '540059000' });
+      expect(s.proofSize).toEqual({ value: '6208' });
+      expect(s.note).not.toMatch(/proof size: unknown/);
+    }
+    expect(r.transactions[0]!.queryInfo).toMatchObject({ weightVersion: 2, proofSize: '6208' });
+  });
+
+  it('camelCase {refTime, proofSize} and hex numbers are read too; atomic steps get their standalone proof size', async () => {
+    const { plan, facts: f } = atomicPlan();
+    const r = await preflight(new FakeNode({ inputs: snapshotInputs(), facts: f, existingAssets: ['1', '2'], queryInfoWeight: { refTime: '0x2540be400', proofSize: '0x1000' } }), plan, f);
+    expect(r.result.steps.map((s) => s.proofSize)).toEqual([{ value: '4096' }, { value: '4096' }, { value: '4096' }]);
+    expect(r.result.steps[0]!.weight).toEqual({ value: '10000000000' });
+  });
+
+  it('a two-part weight without proof_size stays unknown', async () => {
+    const r = await preflight(node({ existingAssets: ['1', '2'], queryInfoWeight: { ref_time: 1000 } }), demoPlan(), facts);
+    expect(r.result.steps[0]!.proofSize).toEqual({ unknown: true });
+    expect(r.result.steps[0]!.note).toMatch(/two-part weight without proof_size/);
+  });
+});
+
 describe('storage keys', () => {
   it('storageKey strips the compact length prefix polkadot.js puts on decorated keys', async () => {
     const { storageKey, decodeRuntime } = await import('../src/index.js');
