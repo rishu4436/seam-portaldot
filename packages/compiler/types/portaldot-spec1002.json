@@ -1,0 +1,28 @@
+{
+  "chain": "portaldot",
+  "specVersion": 1002,
+  "metadataVersion": 13,
+  "types": {
+    "Address": "MultiAddress",
+    "LookupSource": "MultiAddress",
+    "Balance": "u128",
+    "BalanceOf": "Balance",
+    "Weight": "u64",
+    "AssetId": "u32",
+    "TAssetBalance": "u64",
+    "CodeHash": "Hash"
+  },
+  "verified": {
+    "Address": "Real signed extrinsic from mainnet block 2721116 decodes and re-encodes byte-identically with MultiAddress (fixtures/mainnet-extrinsic-2721116.json).",
+    "LookupSource": "Same evidence as Address: the Balances.transfer_keep_alive dest arg starts with the MultiAddress::Id tag 0x00.",
+    "Balance": "Balances.ExistentialDeposit constant is 16 bytes in metadata => u128.",
+    "BalanceOf": "Contracts.TombstoneDeposit (BalanceOf) constant is 16 bytes => u128.",
+    "Weight": "Contracts.DeletionWeightLimit (Weight) constant is 8 bytes => u64.",
+    "AccountId": "Signer of the mainnet extrinsic in block 2721116 is a 32-byte AccountId32 (fixtures/mainnet-extrinsic-2721116.json)."
+  },
+  "assumed": {
+    "AssetId": "u32 (substrate-node default of that era). Mainnet has no assets yet, so it could not be checked. Compact-encoded, so bytes only differ if a value exceeds u32.",
+    "TAssetBalance": "u64 (pallet-assets Balance in substrate-node of that era). Not checkable on chain. Compact-encoded.",
+    "CodeHash": "H256 (Hash). Not used by any SEAM call."
+  }
+}
