@@ -1,9 +1,9 @@
 import type {
-  Approval, Fingerprint, Hex, Plan, PolicyResult, PreflightResult, ReceiptStep, SigningEnvelope,
+  Approval, RuntimeFingerprint, Hex, Plan, PolicyResult, PreflightResult, ReceiptStep, SigningEnvelope,
 } from "./types.js";
 import { digest } from "./digest.js";
-import { checkRuntimeLock } from "./runtimeLock.js";
-import { type Policy, policyDigest } from "./policy.js";
+import { checkRuntimeLock, fingerprintDigest } from "./runtimeLock.js";
+import { type Policy, policyDigest, planDigest } from "./policy.js";
 import { normalizeAccount } from "./address.js";
 
 /** Everything an approval commits to. Change any of it and the approval no longer matches. */
@@ -34,23 +34,31 @@ export interface ApprovalInput {
   preflight: PreflightResult;
   policy: Policy;
   policyResult: PolicyResult;
-  fingerprint: Fingerprint;
+  fingerprint: RuntimeFingerprint;
   now: Date;
 }
 
 const COVERS = ["manifest", "plan", "encoded calls", "runtime fingerprint", "policy", "policy result", "signing envelope", "preflight"];
 
-export function callsDigest(plan: Plan): Hex {
-  return digest("seam/calls/v1", plan.steps.map((s) => s.encodedCall ?? null));
+/** The exact call bytes the wallet must sign: the one batch_all for atomic plans, otherwise each step in order. */
+export function callsToSign(plan: Plan): (Hex | null)[] {
+  if (plan.mode === "atomic_verified" || plan.mode === "atomic_unverified") return [plan.outerCall?.encodedCall ?? null];
+  return plan.steps.map((s) => s.encodedCall);
 }
+
+export function callsDigest(plan: Plan): Hex {
+  return digest("seam/calls/v1", callsToSign(plan));
+}
+
+const sameAccount = (a: string, b: string) => (normalizeAccount(a) ?? a.toLowerCase()) === (normalizeAccount(b) ?? b.toLowerCase());
 
 function buildBinding(i: Omit<ApprovalInput, "now">, expiresAt: string): ApprovalBinding {
   return {
     manifestDigest: i.manifestDigest,
-    planDigest: i.plan.digest,
+    planDigest: i.plan.planDigest,
     planContentDigest: digest("seam/plan-content/v1", i.plan),
     callsDigest: callsDigest(i.plan),
-    fingerprintDigest: i.fingerprint.digest,
+    fingerprintDigest: fingerprintDigest(i.fingerprint),
     policyDigest: policyDigest(i.policy),
     policyResultDigest: digest("seam/policy-result/v1", i.policyResult),
     envelopeDigest: digest("seam/envelope/v1", i.envelope),
@@ -71,12 +79,13 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
     const why = policyResult.rules.find((r) => r.outcome !== "pass")?.reason ?? "the policy check did not pass";
     return { ok: false, reason: `Can't approve: ${why}` };
   }
+  if (planDigest(plan) !== plan.planDigest) return { ok: false, reason: "Can't approve: the plan was changed after it was compiled." };
   if (policyResult.policyDigest !== policyDigest(policy)) return { ok: false, reason: "Can't approve: the policy result was made with a different policy." };
-  if (plan.fingerprintDigest !== fingerprint.digest) return { ok: false, reason: "Can't approve: the plan was compiled for a different runtime." };
-  if ((normalizeAccount(envelope.signer) ?? envelope.signer) !== (normalizeAccount(plan.signer) ?? plan.signer)) {
+  if (plan.fingerprintDigest !== fingerprintDigest(fingerprint)) return { ok: false, reason: "Can't approve: the plan was compiled for a different runtime." };
+  if (!sameAccount(envelope.signer, plan.signer.publicKey)) {
     return { ok: false, reason: "Can't approve: the signing envelope's signer is not the plan's signer." };
   }
-  if (plan.steps.some((s) => !s.encodedCall)) return { ok: false, reason: "Can't approve: a step has no encoded call, so there is nothing exact to sign." };
+  if (callsToSign(plan).some((c) => !c)) return { ok: false, reason: "Can't approve: a call has no encoded bytes, so there is nothing exact to sign." };
   const envelopeExpiry = Date.parse(envelope.expiresAt);
   if (Number.isNaN(envelopeExpiry)) return { ok: false, reason: "Can't approve: the signing envelope has no valid expiry time." };
   if (envelopeExpiry <= now.getTime()) return { ok: false, reason: "Can't approve: the signing envelope has already expired." };
@@ -98,9 +107,9 @@ export class InMemoryApprovalStore implements ApprovalStore {
 export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerprint"> {
   approval: BoundApproval;
   /** Fingerprint the plan was prepared against. */
-  preparedFingerprint: Fingerprint;
+  preparedFingerprint: RuntimeFingerprint;
   /** Fingerprint read from the node right before submission. */
-  currentFingerprint: Fingerprint;
+  currentFingerprint: RuntimeFingerprint;
   /** The encoded calls the wallet actually signed, in order. */
   signedCalls: Hex[];
   now: Date;
@@ -140,7 +149,7 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   const lock = checkRuntimeLock(input.preparedFingerprint, input.currentFingerprint);
   if (!lock.ok) reasons.push({ code: "runtime_changed", message: lock.reason });
 
-  const expected = plan.steps.map((s) => (s.encodedCall ?? "").toLowerCase());
+  const expected = callsToSign(plan).map((c) => (c ?? "").toLowerCase());
   const signed = input.signedCalls.map((c) => c.toLowerCase());
   if (expected.length !== signed.length || expected.some((c, i) => c !== signed[i])) {
     reasons.push({ code: "signed_bytes_mismatch", message: "Blocked: the wallet signed different call data from the approved plan." });
