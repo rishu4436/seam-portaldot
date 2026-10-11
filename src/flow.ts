@@ -1,7 +1,7 @@
 import { compile, type CompileOptions, type Hex, type Manifest, type Plan, type RuntimeFacts, type RuntimeFingerprint } from '@seam/compiler';
 import {
   callsToSign, checkBeforeSubmit, createApproval, evaluatePolicy, InMemoryApprovalStore,
-  type ApprovalStore, type BoundApproval, type Policy, type PolicyResult, type PreflightResult, type SigningEnvelope, type SubmitCheck,
+  type ApprovalStore, type BoundApproval, type Policy, type PolicyResult, type PreflightResult, type SignedDryRun, type SigningEnvelope, type SubmitCheck,
 } from '@seam/policy';
 import { buildReceipt, type Receipt, type StepOutcome } from './receipt.js';
 
@@ -11,6 +11,8 @@ export interface ChainAdapter {
   /** Fingerprint read fresh from the node, used right before submitting. */
   readFingerprint(): Promise<RuntimeFingerprint>;
   preflight(plan: Plan): Promise<{ preflight: PreflightResult; envelope: SigningEnvelope }>;
+  /** system_dryRun of each signed transaction, in order, run after signing and before the submit gate. */
+  dryRunSigned(signedTxs: Hex[]): Promise<SignedDryRun[]>;
   /** Broadcast one signed transaction and track it to finality, returning its events. */
   submit(signedTx: Hex, actionId: string): Promise<StepOutcome>;
 }
@@ -53,10 +55,11 @@ export class Seam {
     const now = p.now ?? (() => new Date());
     const calls = callsToSign(p.plan).filter((c): c is Hex => !!c);
     const signed = await p.wallet.sign(calls, p.envelope);
+    const signedDryRun = await this.chain.dryRunSigned(signed.map((s) => s.signedTx));
     const check = checkBeforeSubmit({
       manifestDigest: p.plan.manifestDigest, plan: p.plan, envelope: p.envelope, preflight: p.preflight, policy: p.policy,
       policyResult: p.policyResult, approval: p.approval, preparedFingerprint: p.facts.fingerprint,
-      currentFingerprint: await this.chain.readFingerprint(), signedCalls: signed.map((s) => s.signedCall), now: now(), store: this.store,
+      currentFingerprint: await this.chain.readFingerprint(), signedCalls: signed.map((s) => s.signedCall), signedDryRun, now: now(), store: this.store,
     });
     if (!check.ok) return { ok: false, stage: 'submit_gate', reason: check.reasons.map((r) => r.message).join(' '), check };
     this.store.markUsed(p.approval.hash);
