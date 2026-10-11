@@ -1,0 +1,27 @@
+{
+  "name": "@seam/sdk",
+  "version": "0.1.0",
+  "description": "SEAM SDK and CLI: Manifest helpers, execution receipts, plain-English explanations, and the end-to-end flow over compiler, policy and chain",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": { "seam": "dist/cli.js" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@seam/compiler": "file:../seam-compiler",
+    "@seam/policy": "file:../seam-policy"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}
