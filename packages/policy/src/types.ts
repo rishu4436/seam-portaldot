@@ -9,6 +9,8 @@ export interface PreflightStep {
   weight: Estimate;
   fee: Estimate;
   storageDeposit: Estimate;
+  /** Proof size (PoV) part of the weight, on runtimes with two-part weights. */
+  proofSize?: Estimate;
   dryRun: "ok" | "failed" | "unknown";
   note?: string;
 }
