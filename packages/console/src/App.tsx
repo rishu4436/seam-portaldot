@@ -1,9 +1,22 @@
 import { useMemo, useState } from "react";
 import * as api from "./lib/mock";
+import * as tc from "./lib/testchain";
 import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
 
-type Scenario = "happy" | "nft" | "upgrade" | "fail" | "midrun";
-const SCENARIOS: { id: Scenario; label: string; hint: string }[] = [
+type Source = "mainnet" | "testchain";
+type MainScenario = "happy" | "nft" | "upgrade" | "fail" | "midrun";
+type Scenario = MainScenario | tc.TcScn;
+const SOURCES: { id: Source; label: string; hint: string }[] = [
+  { id: "mainnet", label: "Portaldot mainnet snapshot", hint: "Simulated chain replies" },
+  { id: "testchain", label: "Test chain, real run", hint: `substrate-contracts-node, ${tc.ENDPOINT}` },
+];
+// Test-chain mode only lists runs that have real evidence.
+const TC_SCENARIOS: { id: tc.TcScn; label: string; hint: string }[] = [
+  { id: "sequential", label: "Sequential, verified", hint: "Transfer, contract call, mint in 3 blocks" },
+  { id: "atomic", label: "Atomic, verified", hint: "All 3 steps in one batch_all" },
+  { id: "rollback", label: "Rollback proof", hint: "Gate blocks BalanceLow; bypass rolls back" },
+];
+const SCENARIOS: { id: MainScenario; label: string; hint: string }[] = [
   { id: "happy", label: "Verified run", hint: "Transfer, ink! call, receipt token" },
   { id: "nft", label: "Missing pallet", hint: "Asks for nfts.mint on a chain without Nfts" },
   { id: "upgrade", label: "Runtime changed", hint: "Runtime upgrades after approval" },
@@ -33,8 +46,28 @@ function Digest({ label, value }: { label: string; value?: string }) {
   );
 }
 
+const KIND_CAP: Record<string, string> = { "assets.transfer": "Assets.transfer_keep_alive", "assets.mint": "Assets.mint", "contracts.call": "Contracts.call", "revive.call": "Revive.call", "nfts.mint": "Nfts.mint" };
+const isEmitted = (e: string) => e.startsWith("Contracts.ContractEmitted");
+const evTone = (e: string) => (isEmitted(e) ? "emit" : e.startsWith("System.ExtrinsicFailed") ? "fail" : e.startsWith("Assets.") || e.startsWith("Utility.") || e.startsWith("Contracts.") ? "key" : "");
+function Events({ list }: { list: string[] }) {
+  return <ul className="evlist">{list.map((e, i) => <li key={i} className={evTone(e)}><code>{e}</code>{isEmitted(e) && <Pill tone="ok">contract event</Pill>}</li>)}</ul>;
+}
+
+function StateTable({ st, cols }: { st: tc.Rollback["state"]; cols: ("before" | "afterGate" | "after")[] }) {
+  const names: Record<string, string> = { before: "Before", afterGate: "After gate", after: "After bypass" };
+  const rows = Object.keys(st.before.asset);
+  return (
+    <table className="tbl"><thead><tr><th></th>{cols.map((c) => <th key={c}>{names[c]} (#{st[c].block})</th>)}</tr></thead><tbody>
+      {rows.map((r) => <tr key={r}><td>{r}</td>{cols.map((c) => <td key={c} className={st[c].asset[r] !== st.before.asset[r] ? "bad" : ""}>{Number(st[c].asset[r]).toLocaleString()}</td>)}</tr>)}
+      <tr><td>Alice nonce</td>{cols.map((c) => <td key={c}>{st[c].aliceNonce}</td>)}</tr>
+    </tbody></table>
+  );
+}
+
 export default function App() {
+  const [source, setSource] = useState<Source>("mainnet");
   const [scenario, setScenario] = useState<Scenario>("happy");
+  const [gate, setGate] = useState<tc.Rollback>();
   const [step, setStep] = useState(0);
   const [endpoint, setEndpoint] = useState("wss://mainnet.portaldot.io");
   const [facts, setFacts] = useState<RuntimeFacts>();
@@ -46,31 +79,41 @@ export default function App() {
   const [receipt, setReceipt] = useState<Receipt>();
   const [lockBlock, setLockBlock] = useState<RuntimeFacts>();
   const [progress, setProgress] = useState<StepStatus[]>([]);
-  const manifest = useMemo(() => api.demoManifest(scenario === "nft"), [scenario]);
+  const real = source === "testchain";
+  const manifest = useMemo(() => (real ? tc.demoManifest() : api.demoManifest(scenario === "nft")), [scenario, real]);
 
-  const reset = (s: Scenario) => {
-    setScenario(s); api.setScenario(s); setStep(0); setFacts(undefined); setPlan(undefined); setPre(undefined); setPolicy(undefined);
-    setEnv(undefined); setApproval(undefined); setReceipt(undefined); setLockBlock(undefined); setProgress([]);
+  const reset = (s: Scenario, src: Source = source) => {
+    setSource(src); setScenario(s);
+    if (src === "testchain") tc.setScenario(s as tc.TcScn); else api.setScenario(s as MainScenario);
+    setStep(0); setFacts(undefined); setPlan(undefined); setPre(undefined); setPolicy(undefined);
+    setEnv(undefined); setApproval(undefined); setReceipt(undefined); setLockBlock(undefined); setProgress([]); setGate(undefined);
   };
+  const switchSource = (src: Source) => { if (src === source) return; setEndpoint(src === "testchain" ? tc.ENDPOINT : "wss://mainnet.portaldot.io"); reset(src === "testchain" ? "sequential" : "happy", src); };
 
-  const doDiscover = () => { setFacts(api.discover(endpoint)); };
-  const doCompile = () => { if (facts) { setPlan(api.compile(manifest, facts)); setStep(2); } };
-  const doChecks = () => { if (plan) { setPre(api.preflight(plan)); setPolicy(api.checkPolicy(plan)); setStep(3); } };
-  const doApprove = () => { if (plan && policy) { const e = api.envelope(); setEnv(e); setApproval(api.approve(plan, policy, e)); } };
+  const doDiscover = () => { setFacts(real ? tc.discover(endpoint) : api.discover(endpoint)); };
+  const doCompile = () => { if (facts) { setPlan(real ? tc.compile() : api.compile(manifest, facts)); setStep(2); } };
+  const doChecks = () => { if (plan) { setPre(real ? tc.preflight() : api.preflight(plan)); setPolicy(real ? tc.checkPolicy() : api.checkPolicy(plan)); setStep(3); } };
+  const doApprove = () => { if (plan && policy) { const e = real ? tc.envelope() : api.envelope(); setEnv(e); setApproval(real ? tc.approve() : api.approve(plan, policy, e!)); } };
   const doSubmit = () => {
     if (!plan || !policy || !approval || !facts) return;
-    if (api.submitBlock()) { setLockBlock(api.discover(endpoint, true)); setStep(5); return; }
+    if (!real && api.submitBlock()) { setLockBlock(api.discover(endpoint, true)); setStep(5); return; }
     setStep(5);
     const n = plan.steps.length;
     setProgress(Array(n).fill("not_run"));
-    const events = api.timeline();
+    const events = real ? tc.timeline() : api.timeline();
+    if (real && tc.submitBlock()) {
+      events.forEach((e, k) => setTimeout(() => setProgress((p) => p.map((v, j) => (j !== e.index ? v : e.phase === "blocked" ? "blocked" : "checking"))), 300 + k * 120));
+      setTimeout(() => setGate(tc.rollback()), 400 + events.length * 120);
+      return;
+    }
     events.forEach((e, k) => {
       setTimeout(() => setProgress((p) => p.map((v, j) => (j !== e.index ? v : e.phase === "checking" ? "checking" : e.phase === "sending" ? "submitted" : e.phase === "blocked" ? "blocked" : ((e.detail as StepStatus) ?? "finalized")))), 400 + k * 550);
     });
-    setTimeout(() => { setReceipt(api.receipt(plan, policy, approval)); setApproval({ ...approval, used: true }); }, 500 + events.length * 550);
+    setTimeout(() => { setReceipt(real ? tc.receipt() : api.receipt(plan, policy, approval)); setApproval({ ...approval, used: true }); }, 500 + events.length * 550);
   };
 
-  const canGo = [true, !!facts, !!plan, !!policy, !!approval, !!receipt || !!lockBlock];
+  const canGo = [true, !!facts, !!plan, !!policy, !!approval, !!receipt || !!lockBlock || !!gate];
+  const run = real ? tc.info() : undefined;
 
   return (
     <div className="shell">
@@ -84,8 +127,18 @@ export default function App() {
           ))}
         </nav>
         <div className="scen">
-          <small>Demo scenario</small>
-          {SCENARIOS.map((s) => (
+          <small>Data source</small>
+          {SOURCES.map((s) => (
+            <button key={s.id} className={`scenbtn src ${source === s.id ? "on" : ""}`} onClick={() => switchSource(s.id)}>
+              <b>{s.label}</b><span>{s.hint}</span>
+            </button>
+          ))}
+          <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>
+          {real ? TC_SCENARIOS.map((s) => (
+            <button key={s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
+              <b>{s.label}</b><span>{s.hint}</span>
+            </button>
+          )) : SCENARIOS.map((s) => (
             <button key={s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
               <b>{s.label}</b><span>{s.hint}</span>
             </button>
@@ -105,14 +158,22 @@ export default function App() {
             </div>
           )}
         </header>
-        <div className="banner">Plans, policy checks, approvals and receipts are real output from the SEAM compiler, policy engine and SDK, run against a saved snapshot of the Portaldot node. Transaction hashes, blocks and events are simulated until the testnet is live.</div>
+        {real ? (
+          <div className="banner real">
+            <b>Real run on a local test chain, not Portaldot.</b> Everything here was recorded from a real substrate-contracts-node v0.42.0 at <code>{tc.ENDPOINT}</code> (metadata v14, token UNIT): hashes, blocks, events, fees, dry runs and digests. The console replays that recording; it isn't connected live. Run {new Date(run!.ranAt).toLocaleString()} · <code>{run!.evidenceFile}</code>.
+            {run!.shimmed && <> One step was filled by hand: SEAM's compiler can't yet encode <code>Contracts.call</code> on metadata v14, so Bot 4's run script added the storage deposit limit and Weight V2 gas and recomputed the plan digest.</>}
+          </div>
+        ) : (
+          <div className="banner">Plans, policy checks, approvals and receipts are real output from the SEAM compiler, policy engine and SDK, run against a saved snapshot of the Portaldot node. Transaction hashes, blocks and events are simulated until the testnet is live.</div>
+        )}
 
         {step === 0 && (
           <section className="grid2">
             <div className="card">
               <h3>Node</h3>
               <label>RPC endpoint</label>
-              <div className="row"><input value={endpoint} onChange={(e) => setEndpoint(e.target.value)} /><button onClick={doDiscover}>Discover runtime</button></div>
+              <div className="row"><input value={endpoint} readOnly={real} onChange={(e) => setEndpoint(e.target.value)} /><button onClick={doDiscover}>{real ? "Load recorded runtime" : "Discover runtime"}</button></div>
+              {real && <p className="muted small">{tc.node().binary}. Runtime snapshot read from the node at {new Date(tc.node().rpcSnapshotAt).toLocaleString()}.</p>}
               {facts && (
                 <>
                   <h4>Runtime fingerprint</h4>
@@ -124,6 +185,17 @@ export default function App() {
                     <dt>Block</dt><dd>#{facts.discoveredAtBlock.toLocaleString()}</dd>
                   </dl>
                   <Digest label="Fingerprint digest" value={facts.fingerprint.digest} />
+                  {real && (
+                    <>
+                      <dl className="kv" style={{ marginTop: 10 }}><dt>Pallets</dt><dd>{tc.node().pallets.join(", ")}</dd><dt>Token source</dt><dd><small className="muted">{tc.node().declaredToken.source}</small></dd></dl>
+                      <h4>Chain setup (real transactions)</h4>
+                      <table className="tbl"><tbody>
+                        {tc.setup().steps.map((s) => (
+                          <tr key={s.txHash}><td>{s.what}</td><td><small className="muted">block #{s.block.number} · tx <code title={s.txHash}>{short(s.txHash, 6)}</code></small></td><td className="r"><Pill tone={s.success ? "ok" : "bad"}>{s.success ? "finalized" : "failed"}</Pill></td></tr>
+                        ))}
+                      </tbody></table>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -155,13 +227,14 @@ export default function App() {
               <h3>Intent</h3>
               <ol className="flow">
                 {manifest.actions.map((a) => {
-                  const cap = facts?.capabilities.find((c) => c.id === a.requires);
+                  const req = a.requires ?? KIND_CAP[a.kind];
+                  const cap = facts?.capabilities.find((c) => c.id === req);
                   return (
-                    <li key={a.id}><b>{a.kind}</b><span className="muted"> needs </span><code>{a.requires}</code> {cap && <Pill tone={triTone(cap.status)}>{human[cap.status]}</Pill>}</li>
+                    <li key={a.id}><b>{a.kind}</b><span className="muted"> needs </span><code>{req}</code> {cap && <Pill tone={triTone(cap.status)}>{human[cap.status]}</Pill>}</li>
                   );
                 })}
               </ol>
-              <Digest label="Manifest digest" value={api.manifestDigest(manifest)} />
+              {real ? (tc.manifestDigest() ? <><Digest label="Manifest digest" value={tc.manifestDigest()} />{tc.manifestVerified() && <div className="note">The run saved only the Manifest's digest. This Manifest is rebuilt from Bot 4's run script, and its digest matches the recorded one exactly.</div>}</> : <div className="note">This rollback test wasn't built from a Manifest. It's Bot 4's hand-made batch_all, made to fail at step 2 on purpose.</div>) : <Digest label="Manifest digest" value={api.manifestDigest(manifest)} />}
               <div className="actions"><button onClick={doCompile}>Compile plan</button></div>
             </div>
             <div className="card"><h3>Manifest</h3><pre className="code">{JSON.stringify(manifest, null, 2)}</pre></div>
@@ -180,37 +253,42 @@ export default function App() {
                     <td><code>{s.capability}</code>{s.callIndex && <small className="muted"> [{s.callIndex.join(", ")}]</small>}</td>
                     <td><small>{Object.entries(s.decoded).filter(([, v]) => v).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</small></td>
                     <td><code>{short(s.encodedCall, 6)}</code></td>
-                    <td className="r">{s.status === "ok" ? <Pill tone="ok">Ready</Pill> : <Pill tone="bad">Unavailable</Pill>}</td>
+                    <td className="r">{s.shim && <><Pill tone="warn">Filled by run script</Pill> </>}{s.status === "ok" ? <Pill tone="ok">Ready</Pill> : <Pill tone="bad">Unavailable</Pill>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {plan.steps.filter((s) => s.reason).map((s) => <div key={s.actionId} className="note bad"><b>{s.actionId}:</b> {s.reason}</div>)}
             {plan.modeReason && <div className="note"><b>Why this mode:</b> {plan.modeReason}</div>}
-            <div className="digests"><Digest label="Plan digest" value={plan.digest} /><Digest label="Manifest" value={plan.manifestDigest} /><Digest label="Fingerprint" value={plan.fingerprintDigest} /></div>
+            {real && run?.shimmed && <div className="note"><b>Honest note:</b> on its own the compiler returned <code>{run.compiledMode}</code>: "{run.compiledModeReason}". The <code>call</code> step was filled by <code>shimContractsCall</code> in Bot 4's run script ({plan.steps.find((s) => s.shim)?.shim}). Every other step and the plan digest are the compiler's own output.</div>}
+            {real && tc.outerCall() && <div className="note"><b>Sent as one transaction:</b> <code>{tc.outerCall()!.capability}</code> <code title={tc.outerCall()!.encodedCall}>{short(tc.outerCall()!.encodedCall, 10)}</code></div>}
+            <div className="digests">{plan.digest !== "0x" && <Digest label="Plan digest" value={plan.digest} />}<Digest label="Manifest" value={plan.manifestDigest} /><Digest label="Fingerprint" value={plan.fingerprintDigest} /></div>
             <div className="actions">{plan.mode === "unavailable" ? <div className="note bad">SEAM won't send this plan for preflight or signing, because a step can't run on this runtime. Remove the step or connect to a runtime that has it.</div> : <button onClick={doChecks}>Run preflight and policy</button>}</div>
           </section>
         )}
 
-        {step === 3 && pre && policy && (
+        {step === 3 && policy && (
           <section className="grid2">
-            <div className="card">
-              <h3>Preflight</h3>
-              <table className="tbl"><thead><tr><th>Step</th><th>Weight</th><th>Fee</th><th>Storage</th><th className="r">Dry run</th></tr></thead><tbody>
+            {!pre ? <div className="card"><h3>Preflight</h3><p className="muted">This rollback test's evidence has no preflight. It records the plan, that policy allowed it, the approval hash and the submit gate's signed dry run, shown on the next screens.</p></div> : <div className="card">
+              <h3>Preflight</h3>{real && tc.preflightAt() && <p className="muted small">Read from the node at block #{tc.preflightAt()!.number} <code>{short(tc.preflightAt()!.hash, 6)}</code>. Weight is ref_time.</p>}
+              <table className="tbl"><thead><tr><th>Step</th><th>Weight</th><th>Proof size</th><th>Fee</th><th>Storage</th><th className="r">Dry run</th></tr></thead><tbody>
                 {pre.steps.map((s) => (
-                  <tr key={s.actionId}><td><b>{s.actionId}</b></td><td>{s.weight.value ?? "unknown"}</td><td>{s.fee.value ?? "unknown"}</td><td>{s.storageDeposit.unknown ? <Pill tone="warn">Unknown</Pill> : s.storageDeposit.value}</td><td className="r"><Pill tone={triTone(s.dryRun)}>{s.dryRun}</Pill></td></tr>
+                  <tr key={s.actionId}><td><b>{s.actionId}</b></td><td>{s.weight.value ?? "unknown"}</td><td>{s.proofSize?.value ? <>{s.proofSize.value}{real && tc.usedProofSize(s.actionId) && <small className="muted"><br />used {tc.usedProofSize(s.actionId)!.value}{tc.usedProofSize(s.actionId)!.shared ? " (whole batch)" : ""}</small>}</> : <Pill tone="warn">Unknown</Pill>}</td><td>{s.fee.value ?? "unknown"}</td><td>{s.storageDeposit.unknown ? <Pill tone="warn">Unknown</Pill> : s.storageDeposit.value}</td><td className="r"><Pill tone={triTone(s.dryRun)}>{s.dryRun}</Pill></td></tr>
                 ))}
               </tbody></table>
               <p className="muted">Estimated total fee: <b>{pre.totalFee.value}</b></p>
-            </div>
+              {real && pre.steps.filter((s) => s.note).map((s) => <div key={s.actionId} className="note small"><b>{s.actionId}:</b> {s.note}</div>)}
+            </div>}
             <div className="card">
               <div className="row between"><h3>Policy</h3>{policy.allowed ? <Pill tone="ok">Allowed</Pill> : <Pill tone="bad">Blocked</Pill>}</div>
+              {real && policy.explain && <p className="muted">{policy.explain}</p>}
               <ul className="rules">
                 {policy.rules.map((r, i) => (
                   <li key={i} className={r.outcome}><Pill tone={triTone(r.outcome)}>{r.outcome}</Pill><div><code>{r.rule}</code>{r.actionId && <small className="muted"> · {r.actionId}</small>}<p>{r.reason}</p></div></li>
                 ))}
               </ul>
-              <Digest label="Policy digest" value={policy.policyDigest} />
+              {policy.policyDigest !== "0x" && <Digest label="Policy digest" value={policy.policyDigest} />}
+              {real && tc.policyFile() && <details className="small"><summary className="muted">Policy file used</summary><pre className="code">{JSON.stringify(tc.policyFile(), null, 2)}</pre></details>}
               <div className="actions">
                 {policy.allowed ? <button onClick={() => setStep(4)}>Next: Approve</button> : <div className="note bad">SEAM blocked this plan. Change the Manifest or connect to a runtime that has the missing capability.</div>}
               </div>
@@ -222,18 +300,22 @@ export default function App() {
           <section className="grid2">
             <div className="card">
               <h3>What you're approving</h3>
-              <ul className="checks">{(approval?.covers ?? ["Manifest digest", "Plan digest", "Runtime fingerprint", "Policy digest and result", "Preflight result", "Signer, nonce, mortality and expiry"]).map((c) => <li key={c}>{c}</li>)}</ul>
+              <ul className="checks">{(approval?.covers?.length ? approval.covers : real && approval ? ["Not recorded in this test's evidence: only the approval hash was saved."] : approval?.covers ?? ["Manifest digest", "Plan digest", "Runtime fingerprint", "Policy digest and result", "Preflight result", "Signer, nonce, mortality and expiry"]).map((c) => <li key={c}>{c}</li>)}</ul>
               <p className="muted">If any of these change after you approve, the approval stops working and SEAM asks you to approve again.</p>
               {!approval ? <div className="actions"><button onClick={doApprove}>Approve this plan</button></div> : (
                 <>
                   <Digest label="Approval hash" value={approval.hash} />
-                  <dl className="kv"><dt>Signer</dt><dd><code>{short(env?.signer, 8)}</code></dd><dt>Nonce</dt><dd>{env?.nonce}</dd><dt>Valid for</dt><dd>{env?.mortalityBlocks} blocks, until {new Date(approval.expiresAt).toLocaleTimeString()}</dd></dl>
+                  {env && <dl className="kv"><dt>Signer</dt><dd><code>{short(env?.signer, 8)}</code></dd><dt>Nonce</dt><dd>{env?.nonce}</dd><dt>Valid for</dt><dd>{env?.mortalityBlocks} blocks, until {new Date(approval.expiresAt).toLocaleTimeString()}</dd>
+                    {real && tc.checkpoint() && <><dt>Checkpoint</dt><dd>block #{tc.checkpoint()!.number} <code>{short(tc.checkpoint()!.hash, 6)}</code></dd></>}
+                    {real && tc.signing() && <><dt>Signed</dt><dd>{tc.signing()!.count} signing request{tc.signing()!.count > 1 ? "s" : ""} · spec {parseInt(tc.signing()!.specVersion, 16)} · era <code>{tc.signing()!.era}</code></dd><dt>Extensions</dt><dd><small className="muted">{tc.signing()!.signedExtensions.join(", ")}</small></dd></>}
+                  </dl>}
                 </>
               )}
             </div>
             <div className="card">
               <h3>Sign with your wallet</h3>
               <p className="muted">SEAM never holds your keys. Your wallet signs the exact bytes from the approved plan, and SEAM checks the runtime again right before it submits.</p>
+              {real && <p className="muted small">On this test chain the "wallet" was the public dev account //Alice. Replaying shows what happened next; nothing is sent from the console.</p>}
               <button disabled={!approval} onClick={doSubmit}>Sign and submit</button>
             </div>
           </section>
@@ -252,7 +334,36 @@ export default function App() {
           </section>
         )}
 
-        {step === 5 && !lockBlock && plan && (
+        {step === 5 && real && gate && (
+          <section className="grid2">
+            <div className="card blocked">
+              <div className="row between"><h3>SEAM blocked this submission</h3><Pill tone="bad">{gate.gate.reasons[0]?.code.replace(/_/g, " ")}</Pill></div>
+              <p>{gate.gate.reasons.map((r) => r.message).join(" ")} {gate.gate.nothingSent && <b>Nothing was sent.</b>}</p>
+              {gate.gate.dryRun.map((d) => <dl key={d.txHash} className="kv"><dt>Signed dry run</dt><dd><Pill tone="bad">{d.outcome}</Pill> {d.detail}</dd><dt>Tx</dt><dd><code className="wrap">{d.txHash}</code></dd><dt>Raw result</dt><dd><code>{d.raw}</code></dd></dl>)}
+              <h4>Balances after the gate (asset 1)</h4>
+              <StateTable st={gate.state} cols={["before", "afterGate"]} />
+            </div>
+            <div className="card">
+              <div className="row between"><h3>Rollback proof</h3><Pill tone={gate.verdict === "verified" ? "ok" : "warn"}>rollback {gate.verdict}</Pill></div>
+              <div className="note"><b>Test-only bypass:</b> {gate.bypass.note}. To prove what the gate prevented, the same signed batch_all was sent straight to the node, outside SEAM.</div>
+              <dl className="kv" style={{ marginTop: 10 }}>
+                <dt>Tx</dt><dd><code className="wrap">{gate.bypass.txHash}</code></dd>
+                <dt>Block</dt><dd>#{gate.bypass.block.number} <code className="wrap">{gate.bypass.block.hash}</code></dd>
+                <dt>Status</dt><dd>{gate.bypass.history.join(" → ")} · <Pill tone="bad">ExtrinsicFailed</Pill></dd>
+                <dt>Error</dt><dd>{gate.bypass.dispatchError}</dd>
+              </dl>
+              <h4>Events in that block</h4>
+              <Events list={gate.bypass.events} />
+              <p className="muted small">No Assets.Transferred or Assets.Issued: step 1's transfer and step 3's mint left nothing behind. Inner effects found: {gate.innerEffects.length}.</p>
+              <h4>Balances and supply</h4>
+              <StateTable st={gate.state} cols={["before", "after"]} />
+              <div className="note">{gate.conclusion}</div>
+              <p className="muted small">Evidence: <code>{gate.evidenceFile}</code>. This proof is why the atomic run may use <code>atomic_verified</code> on this runtime.</p>
+            </div>
+          </section>
+        )}
+
+        {step === 5 && !lockBlock && !gate && plan && (
           <section className="grid2">
             <div className="card">
               <h3>Live tracking</h3>
@@ -268,6 +379,7 @@ export default function App() {
                         const label = bad ? (st === "blocked" ? "blocked" : "failed") : x === "checking" ? (k <= order[st] ? "checked" : "check") : x === "submitted" ? "sent" : "finalized";
                         return <span key={x} className={k <= order[st] ? (bad ? "bad" : "on") : ""}>{st === "checking" && k === 0 ? `checking step ${i + 1}…` : label}</span>;
                       })}</div>
+                      {real && st !== "not_run" && st !== "checking" && tc.dryRunFor(i) && <small className="muted">signed dry run: {tc.dryRunFor(i)!.outcome} ({tc.dryRunFor(i)!.detail})</small>}
                     </li>
                   );
                 })}
@@ -282,7 +394,14 @@ export default function App() {
                     <div key={s.actionId} className="rstep">
                       <div className="row between"><b>{s.actionId}</b><Pill tone={triTone(s.verification === "verified" ? "ok" : s.verification === "unknown" ? "unknown" : "bad")}>{s.verification.replace("_", " ")}</Pill></div>
                       <p>{s.reason}</p>
-                      {s.txHash && <small className="muted">tx <code>{short(s.txHash, 8)}</code> · block #{s.block?.number.toLocaleString()} · {s.events.join(", ")}</small>}
+                      {s.txHash && !real && <small className="muted">tx <code>{short(s.txHash, 8)}</code> · block #{s.block?.number.toLocaleString()} · {s.events.join(", ")}</small>}
+                      {s.txHash && real && (
+                        <>
+                          <dl className="kv small"><dt>Tx</dt><dd><code className="wrap">{s.txHash}</code></dd><dt>Block</dt><dd>#{s.block?.number} <code className="wrap">{s.block?.hash}</code></dd>
+                            <dt>Status</dt><dd>{tc.history(s.txHash).filter((h, k, a) => a.findIndex((x) => x.status === h.status) === k).map((h) => h.status).join(" → ")}</dd></dl>
+                          <Events list={s.events} />
+                        </>
+                      )}
                     </div>
                   ))}
                   <div className="digests"><Digest label="Receipt" value={receipt.digest} /><Digest label="Approval" value={receipt.approvalHash} /><Digest label="Plan" value={receipt.planDigest} /><Digest label="Policy" value={receipt.policyDigest} /></div>
