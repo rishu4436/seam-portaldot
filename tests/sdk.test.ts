@@ -20,12 +20,12 @@ const policy = definePolicy({
 });
 
 describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (fake node)', () => {
-  const setup = async (o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {}) => {
+  const setup = async (o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {}, batchAllRollback?: 'verified') => {
     const sdk = await import(SDK);
     const keys = await devKeys();
     const node = new FakeNode({ inputs: snapshotInputs(), facts: snapshotFacts(), existingAssets: ['1', '2'], ...o });
     // allowMainnet only because the fake node replays the mainnet snapshot; nothing leaves the process.
-    const adapter = createPortaldotAdapter(node, { allowMainnet: true, submitTimeoutMs: 2000, now: () => new Date('2026-10-11T12:00:00Z') });
+    const adapter = createPortaldotAdapter(node, { allowMainnet: true, submitTimeoutMs: 2000, now: () => new Date('2026-10-11T12:00:00Z'), ...(batchAllRollback ? { batchAllRollback } : {}) });
     const chain: ChainAdapter = adapter;
     // The user's wallet (TEST ONLY: public //Alice dev seed), as an extension-style signPayload.
     const wallet = adapter.walletFrom(async (payload) => ({
@@ -63,5 +63,15 @@ describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (f
     expect(run.receipt.steps[1]).toMatchObject({ status: 'failed', verification: 'not_verified' });
     expect(run.receipt.steps[1].reason).toMatch(/contracts\.ContractNotFound/);
     expect(run.receipt.steps[2].status).toBe('not_run');
+  });
+
+  it('atomic plan: one batch_all transaction, every step verified from its events', async () => {
+    const { seam, node, wallet, facts, prepared } = await setup({}, 'verified');
+    expect(prepared.plan.mode).toBe('atomic_verified');
+    const now = new Date('2026-10-11T12:00:00Z');
+    const approval = seam.approve({ ...prepared, policy, facts, now });
+    const run = await seam.execute({ ...prepared, policy, facts, approval: approval.approval, wallet, now: () => now });
+    expect(node.submitted).toHaveLength(1);
+    expect(run.receipt.result).toBe('verified');
   });
 });
