@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T12:04:59.468Z",
+  "generatedAt": "2026-10-11T12:09:40.910Z",
   "facts": {
     "fingerprint": {
       "genesisHash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
@@ -2585,10 +2585,10 @@
         {
           "actionId": "pay",
           "weight": {
-            "unknown": true
+            "value": "567688000"
           },
           "fee": {
-            "value": "1490000000000"
+            "value": "1490125636184"
           },
           "storageDeposit": {
             "unknown": true
@@ -2598,7 +2598,7 @@
         {
           "actionId": "settle",
           "weight": {
-            "unknown": true
+            "value": "5811203000"
           },
           "fee": {
             "value": "1520000000000"
@@ -2611,7 +2611,7 @@
         {
           "actionId": "receipt",
           "weight": {
-            "unknown": true
+            "value": "295983000"
           },
           "fee": {
             "value": "1420000000000"
@@ -2623,14 +2623,18 @@
         }
       ],
       "totalFee": {
-        "value": "4430000000000"
+        "value": "4430125636184"
       }
     },
     "envelope": {
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
       "nonce": 7,
       "mortalityBlocks": 64,
-      "expiresAt": "2026-10-11T12:14:59.495Z"
+      "checkpoint": {
+        "number": 2721455,
+        "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
+      },
+      "expiresAt": "2026-10-11T12:19:40.939Z"
     },
     "policyResult": {
       "allowed": true,
@@ -2701,7 +2705,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 567688000 is within limits",
           "actionId": "pay"
         },
         {
@@ -2719,7 +2723,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 5811203000 is within limits",
           "actionId": "settle"
         },
         {
@@ -2737,7 +2741,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 295983000 is within limits",
           "actionId": "receipt"
         },
         {
@@ -2755,14 +2759,14 @@
         {
           "rule": "fee_limit",
           "outcome": "pass",
-          "reason": "total fee 4430000000000 is within limits"
+          "reason": "total fee 4430125636184 is within limits"
         }
       ],
-      "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04"
+      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
     },
     "policyText": "Allowed: all 21 policy checks passed.",
     "approval": {
-      "hash": "0xa52a0ba16b38d6ebff1aac8942b60c7b81d5118a99e0b38a9c631ce67b02c103",
+      "hash": "0x61eaadc11b4e218ab8b4d2e032f13ab28e6e1851cdc0ce1590c439f578873bca",
       "covers": [
         "manifest",
         "plan",
@@ -2773,7 +2777,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:14:59.495Z",
+      "expiresAt": "2026-10-11T12:19:40.939Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
@@ -2781,14 +2785,14 @@
         "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
         "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04",
-        "policyResultDigest": "0xe7aa727dddeb2236322dfe18c7b3beb09f45ef23ed5df5f140f134f19cc9cd83",
-        "envelopeDigest": "0xe418f7e476d8c32bdc9ba0e9bd1c47d6b67a9506b0f74fcfa76660bc4abe08dd",
-        "preflightDigest": "0xf87a41024dce7d9170148fabfaeb0190882c5cfd6e550087a6c4d3c8198d0731",
+        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
+        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
+        "envelopeDigest": "0xfd34a897b728fe0c9900a42c6971f8ee7558a89762e8e1397aa5bdbc635bbe55",
+        "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:14:59.495Z"
+        "expiresAt": "2026-10-11T12:19:40.939Z"
       }
     },
     "run": {
@@ -2798,8 +2802,8 @@
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
         "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04",
-        "approvalHash": "0xa52a0ba16b38d6ebff1aac8942b60c7b81d5118a99e0b38a9c631ce67b02c103",
+        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
+        "approvalHash": "0x61eaadc11b4e218ab8b4d2e032f13ab28e6e1851cdc0ce1590c439f578873bca",
         "mode": "sequential",
         "steps": [
           {
@@ -2853,7 +2857,7 @@
           "verified": 3,
           "expected": 3
         },
-        "receiptDigest": "0x1fe9bd7cd3e046ed2286944375165123b320110d2adf731c21ed54ad3104ae8a"
+        "receiptDigest": "0x6507cb83c5003354293f5d75503a291f1206f9e1f49ad362a5d0926798099764"
       }
     },
     "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: finalized. The call succeeded and the contract emitted an event. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x7265636569707400000000000000000000000000000000000000000000000000"
@@ -3071,10 +3075,10 @@
         {
           "actionId": "pay",
           "weight": {
-            "unknown": true
+            "value": "567688000"
           },
           "fee": {
-            "value": "1490000000000"
+            "value": "1490125636184"
           },
           "storageDeposit": {
             "unknown": true
@@ -3084,7 +3088,7 @@
         {
           "actionId": "settle",
           "weight": {
-            "unknown": true
+            "value": "5811203000"
           },
           "fee": {
             "value": "1520000000000"
@@ -3097,7 +3101,7 @@
         {
           "actionId": "receipt",
           "weight": {
-            "unknown": true
+            "value": "295983000"
           },
           "fee": {
             "value": "1420000000000"
@@ -3109,14 +3113,18 @@
         }
       ],
       "totalFee": {
-        "value": "4430000000000"
+        "value": "4430125636184"
       }
     },
     "envelope": {
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
       "nonce": 7,
       "mortalityBlocks": 64,
-      "expiresAt": "2026-10-11T12:14:59.518Z"
+      "checkpoint": {
+        "number": 2721455,
+        "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
+      },
+      "expiresAt": "2026-10-11T12:19:40.961Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3187,7 +3195,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 567688000 is within limits",
           "actionId": "pay"
         },
         {
@@ -3205,7 +3213,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 5811203000 is within limits",
           "actionId": "settle"
         },
         {
@@ -3223,7 +3231,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 295983000 is within limits",
           "actionId": "receipt"
         },
         {
@@ -3241,14 +3249,14 @@
         {
           "rule": "fee_limit",
           "outcome": "pass",
-          "reason": "total fee 4430000000000 is within limits"
+          "reason": "total fee 4430125636184 is within limits"
         }
       ],
-      "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04"
+      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
     },
     "policyText": "Allowed: all 21 policy checks passed.",
     "approval": {
-      "hash": "0x88e7cd5b19306338da1d1b1712e4ae3961081683e423bcb356c433c946fefd7b",
+      "hash": "0x009e725ca08273adace2fc7a8af262a37a6fe864339e1229b917053e5725f606",
       "covers": [
         "manifest",
         "plan",
@@ -3259,7 +3267,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:14:59.518Z",
+      "expiresAt": "2026-10-11T12:19:40.961Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
@@ -3267,14 +3275,14 @@
         "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
         "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04",
-        "policyResultDigest": "0xe7aa727dddeb2236322dfe18c7b3beb09f45ef23ed5df5f140f134f19cc9cd83",
-        "envelopeDigest": "0xcffc2465157d5acf342eae668d6470f3d9e80b2e98eaf4f4f79fb083c3c9d8b3",
-        "preflightDigest": "0xf87a41024dce7d9170148fabfaeb0190882c5cfd6e550087a6c4d3c8198d0731",
+        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
+        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
+        "envelopeDigest": "0xbc7447762732d1fdded1a0f2130aec39454eea1761974ebc3f6f48504650438d",
+        "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:14:59.518Z"
+        "expiresAt": "2026-10-11T12:19:40.961Z"
       }
     },
     "run": {
@@ -3411,10 +3419,10 @@
         {
           "actionId": "pay",
           "weight": {
-            "unknown": true
+            "value": "567688000"
           },
           "fee": {
-            "value": "1490000000000"
+            "value": "1490125636184"
           },
           "storageDeposit": {
             "unknown": true
@@ -3424,7 +3432,7 @@
         {
           "actionId": "settle",
           "weight": {
-            "unknown": true
+            "value": "5811203000"
           },
           "fee": {
             "value": "1520000000000"
@@ -3437,7 +3445,7 @@
         {
           "actionId": "receipt",
           "weight": {
-            "unknown": true
+            "value": "295983000"
           },
           "fee": {
             "value": "1420000000000"
@@ -3449,14 +3457,18 @@
         }
       ],
       "totalFee": {
-        "value": "4430000000000"
+        "value": "4430125636184"
       }
     },
     "envelope": {
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
       "nonce": 7,
       "mortalityBlocks": 64,
-      "expiresAt": "2026-10-11T12:14:59.531Z"
+      "checkpoint": {
+        "number": 2721455,
+        "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
+      },
+      "expiresAt": "2026-10-11T12:19:40.973Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3527,7 +3539,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 567688000 is within limits",
           "actionId": "pay"
         },
         {
@@ -3545,7 +3557,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 5811203000 is within limits",
           "actionId": "settle"
         },
         {
@@ -3563,7 +3575,7 @@
         {
           "rule": "weight_limit",
           "outcome": "pass",
-          "reason": "weight is unknown (allowed by policy)",
+          "reason": "weight 295983000 is within limits",
           "actionId": "receipt"
         },
         {
@@ -3581,14 +3593,14 @@
         {
           "rule": "fee_limit",
           "outcome": "pass",
-          "reason": "total fee 4430000000000 is within limits"
+          "reason": "total fee 4430125636184 is within limits"
         }
       ],
-      "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04"
+      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
     },
     "policyText": "Allowed: all 21 policy checks passed.",
     "approval": {
-      "hash": "0x34860906c1d985633cfc4369ae651c1f936b5b617529c0382564c30f3b49f322",
+      "hash": "0xa7999601a3fc8960cff4926e8d6b80dc0dcb001191966bff2efdd84c969c00cc",
       "covers": [
         "manifest",
         "plan",
@@ -3599,7 +3611,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:14:59.531Z",
+      "expiresAt": "2026-10-11T12:19:40.973Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
@@ -3607,14 +3619,14 @@
         "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
         "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04",
-        "policyResultDigest": "0xe7aa727dddeb2236322dfe18c7b3beb09f45ef23ed5df5f140f134f19cc9cd83",
-        "envelopeDigest": "0x47c077c1315330b7660d9f81ccf7093c2d85e19ae1fbae1bf7a24bbf6c79ed03",
-        "preflightDigest": "0xf87a41024dce7d9170148fabfaeb0190882c5cfd6e550087a6c4d3c8198d0731",
+        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
+        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
+        "envelopeDigest": "0x11ee299b38665f1a6c81a34b43ce317d17f9fdda44f4fb4ac45c6528511d257d",
+        "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:14:59.531Z"
+        "expiresAt": "2026-10-11T12:19:40.973Z"
       }
     },
     "run": {
@@ -3624,8 +3636,8 @@
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
         "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0x7a40a37416705e271b224dd3db5ca4fd92f54320dca73acb247c7e01c64a6e04",
-        "approvalHash": "0x34860906c1d985633cfc4369ae651c1f936b5b617529c0382564c30f3b49f322",
+        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
+        "approvalHash": "0xa7999601a3fc8960cff4926e8d6b80dc0dcb001191966bff2efdd84c969c00cc",
         "mode": "sequential",
         "steps": [
           {
@@ -3670,7 +3682,7 @@
           "verified": 1,
           "expected": 3
         },
-        "receiptDigest": "0xd52a0c987ca6feb67aa9d60655949c3aca401ea49e604751119455303f2e1196"
+        "receiptDigest": "0x8acc99af529a7ab3d38aa4fb51491b8971a20d797e50b8166d91e0cd6bdcb719"
       }
     },
     "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: failed. The transaction failed on chain: Contracts.ContractTrapped. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: not run. Not run, because an earlier step did not complete."
