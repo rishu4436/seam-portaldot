@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { compile, factsFromMetadata, readPinnedTypes } from "@seam/compiler";
-export { usageKey } from "../src/index.js";
+export { usageKey, planDigest } from "../src/index.js";
 import { definePolicy, type Manifest, type Plan, type PreflightResult, type RuntimeFacts, type SigningEnvelope } from "../src/index.js";
 
 // Real data: Bot 4's read-only snapshot of wss://mainnet.portaldot.io at block 2,721,455 (spec 1002),

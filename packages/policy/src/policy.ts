@@ -22,7 +22,10 @@ export interface Policy {
   maxNativeValue?: string;
   /** Max gasLimit a contract call may set (it's inside the plan digest). */
   maxGasLimit?: string;
+  /** Max computation weight (refTime) per step from preflight. */
   maxWeight?: string;
+  /** Max proof size per step: from preflight, and any proofSize a contract call sets. Two-part-weight runtimes only. */
+  maxProofSize?: string;
   maxFee?: string;
   maxStorageDeposit?: string;
   maxSteps?: number;
@@ -32,7 +35,7 @@ export interface Policy {
   /** Require a successful system_dryRun of the signed transaction(s) at the submit gate. A failed one always blocks. */
   requireSignedDryRun: boolean;
   /** Which preflight unknowns may pass. Unknown capabilities are never allowed. */
-  allowUnknown: { fee?: boolean; weight?: boolean; storageDeposit?: boolean; dryRun?: boolean };
+  allowUnknown: { fee?: boolean; weight?: boolean; storageDeposit?: boolean; dryRun?: boolean; proofSize?: boolean };
 }
 
 export const DEFAULT_POLICY: Policy = {
@@ -188,6 +191,8 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
     };
     capCheck("native_value_limit", "native value", d.value, policy.maxNativeValue);
     capCheck("gas_limit", "gas limit", d.gasLimit, policy.maxGasLimit);
+    capCheck("proof_size_limit", "proof size limit", d.proofSize, policy.maxProofSize);
+    capCheck("storage_limit", "storage deposit limit", d.storageDepositLimit, policy.maxStorageDeposit);
   }
 
   // Preflight: real estimates from the node. Unknowns block unless the policy allows them.
@@ -206,6 +211,7 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
       if (!planIds.has(p.actionId)) { block("preflight", "Blocked: preflight includes a step that isn't in the plan.", p.actionId); continue; }
       est("weight_limit", "weight", p.weight, policy.maxWeight, policy.allowUnknown.weight, p.actionId);
       est("storage_limit", "storage deposit", p.storageDeposit, policy.maxStorageDeposit, policy.allowUnknown.storageDeposit, p.actionId);
+      if (policy.maxProofSize !== undefined) est("proof_size_limit", "proof size", p.proofSize ?? { unknown: true }, policy.maxProofSize, policy.allowUnknown.proofSize, p.actionId);
       if (p.dryRun === "failed") block("dry_run", `Blocked: the dry run failed${p.note ? ` (${p.note})` : ""}.`, p.actionId);
       else if (p.dryRun === "unknown") unknown("dry_run", "The dry run result is unknown.", !!policy.allowUnknown.dryRun, p.actionId);
       else pass("dry_run", "dry run succeeded", p.actionId);
