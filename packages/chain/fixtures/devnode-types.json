@@ -1,0 +1,10 @@
+{
+  "chain": "substrate-contracts-node",
+  "specVersion": 100,
+  "metadataVersion": 14,
+  "types": {},
+  "verified": {},
+  "assumed": {
+    "(none)": "Metadata V14 is self-describing: every call, event and storage type comes from the metadata's type lookup, so no overrides are pinned. The Portaldot spec-1002 file (Weight u64, AssetId u32, TAssetBalance u64) must NOT be used here."
+  }
+}
