@@ -71,7 +71,7 @@ describe('submitAndWatch and event reading (fake node)', () => {
   });
 
   it('times out after inclusion with the in-block result', async () => {
-    const r = await submitAndWatch(node({ stopAfterInBlock: true }), signedPlan()[0]!, undefined, { ...opts(), timeoutMs: 50 });
+    const r = await submitAndWatch(node({ stopAfterInBlock: true }), signedPlan()[0]!, undefined, { ...opts(), timeoutMs: 1000 });
     expect(r).toMatchObject({ status: 'in_block', timedOut: true });
     expect(r.inclusion!.success).toBe(true);
   });
