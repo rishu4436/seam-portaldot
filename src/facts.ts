@@ -1,6 +1,6 @@
 import { expandMetadata } from '@polkadot/types';
 import { DOMAIN, digestJson } from './canonical.js';
-import { loadRuntime, type LoadedRuntime } from './runtime.js';
+import { loadRuntime, withoutLookupWarning, type LoadedRuntime } from './runtime.js';
 import type {
   BatchAllRollback,
   Capability,
@@ -113,7 +113,7 @@ export function readCapabilities(rt: LoadedRuntime): Record<string, Capability> 
  */
 export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
   const rt = loadRuntime(input.metadataHex, input.typesBundle);
-  const consts = expandMetadata(rt.registry, rt.metadata).consts as any;
+  const consts = withoutLookupWarning(() => expandMetadata(rt.registry, rt.metadata)).consts as any;
   const version = consts.system?.version;
   if (!version) throw new Error('metadata has no System.Version constant');
   const specName = version.specName.toString() as string;
