@@ -55,12 +55,15 @@ describe('preflight (fake node replaying the snapshot)', () => {
   it('uses system_dryRun only with real signed extrinsics', async () => {
     const keys = await devKeys();
     const plan = demoPlan();
-    const reqs = buildSigningRequests(plan, facts, { signer: ALICE, nonce: 0, mortalityBlocks: 64, expiresAt: 'x' }, CHECKPOINT);
+    const reqs = buildSigningRequests(plan, facts, { signer: ALICE, nonce: 0, mortalityBlocks: 64, checkpoint: CHECKPOINT, expiresAt: 'x' });
     const signed = reqs.map((q) => assembleSignedExtrinsic(q.payload, u8aToHex(keys.alice.sign(hexToU8a(q.signBytesHex), { withType: true })), facts));
     const n = node({ existingAssets: ['1', '2'] });
     const r = await preflight(n, plan, facts, { signedExtrinsics: signed, nonce: 0 });
     expect(r.nonceSource).toBe('caller');
-    expect(r.result.steps.map((s) => s.dryRun)).toEqual(['ok', 'ok', 'ok']);
+    // tx 1 dry-runs ok; txs 2 and 3 have future nonces until tx 1 is on chain, so they stay unknown
+    // ('call' is still ok from its contracts_call dry run)
+    expect(r.result.steps.map((s) => s.dryRun)).toEqual(['ok', 'ok', 'unknown']);
+    expect(r.result.steps[2]!.note).toMatch(/nonce is in the future/);
     expect(n.log.filter((c) => c.method === 'system_dryRun')).toHaveLength(3);
   });
 

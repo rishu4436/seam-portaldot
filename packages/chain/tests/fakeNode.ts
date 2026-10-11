@@ -82,7 +82,7 @@ export class FakeNode implements RpcClient {
       case 'payment_queryFeeDetails':
         throw new Error('Method not found');
       case 'system_dryRun':
-        return r('0x0000');
+        return r(this.dryRun(String(params[0])));
       case 'contracts_call':
         return r(this.o.contractsCall ?? { debugMessage: '', gasConsumed: 1000, result: { Ok: { flags: 0, data: '0x' } } });
       case 'state_getStorage': {
@@ -124,6 +124,31 @@ export class FakeNode implements RpcClient {
     return this.subs.delete(Number(id));
   }
 
+  /** ApplyExtrinsicResult like a node: Future/Stale nonce, BadProof, or Ok(Err(Module)) from failCall. */
+  private dryRun(hex: string): Hex {
+    const { registry } = encodeRuntime(this.o.facts);
+    const ext = registry.createType('Extrinsic', hex);
+    const expected = this.nonces.get(ext.signer.toString()) ?? 0;
+    if (ext.nonce.toNumber() > expected) return '0x010002';
+    if (ext.nonce.toNumber() < expected) return '0x010003';
+    if (!this.signatureOk(ext)) return '0x010004';
+    const fail = this.o.failCall?.(ext.method.toHex());
+    if (fail) return `0x000103${fail.index.toString(16).padStart(2, '0')}${fail.error.toString(16).padStart(2, '0')}` as Hex;
+    return '0x0000';
+  }
+
+  private signatureOk(ext: any): boolean {
+    const { registry } = encodeRuntime(this.o.facts);
+    const fp = this.o.facts.fingerprint;
+    const payload = registry.createType('ExtrinsicPayload', {
+      method: ext.method.toHex(), era: ext.era.toHex(), nonce: ext.nonce, tip: ext.tip,
+      specVersion: fp.specVersion, transactionVersion: fp.transactionVersion, genesisHash: fp.genesisHash,
+      blockHash: this.o.inputs.head.hash
+    }, { version: 4 }).toU8a({ method: true });
+    const multi = ext.inner.signature.multiSignature.toU8a();
+    return signatureVerify(payload.length > 256 ? hexToU8a(blake2AsHex(payload, 256)) : payload, multi, ext.signer.toString()).isValid;
+  }
+
   /** Verifies the extrinsic like a node, then puts it in a new block with events. */
   private include(hex: string): FakeBlock {
     const { registry } = encodeRuntime(this.o.facts);
@@ -132,14 +157,7 @@ export class FakeNode implements RpcClient {
     const signer = ext.signer.toString();
     const expectedNonce = this.nonces.get(signer) ?? 0;
     if (ext.nonce.toNumber() !== expectedNonce) throw new Error(`1010: Invalid Transaction: nonce ${ext.nonce.toNumber()} != ${expectedNonce}`);
-    const fp = this.o.facts.fingerprint;
-    const payload = registry.createType('ExtrinsicPayload', {
-      method: ext.method.toHex(), era: ext.era.toHex(), nonce: ext.nonce, tip: ext.tip,
-      specVersion: fp.specVersion, transactionVersion: fp.transactionVersion, genesisHash: fp.genesisHash,
-      blockHash: this.o.inputs.head.hash
-    }, { version: 4 }).toU8a({ method: true });
-    const multi = (ext as any).inner.signature.multiSignature.toU8a();
-    if (!signatureVerify(payload.length > 256 ? hexToU8a(blake2AsHex(payload, 256)) : payload, multi, signer).isValid) {
+    if (!this.signatureOk(ext)) {
       throw new Error('1010: Invalid Transaction: Transaction has a bad signature');
     }
     this.nonces.set(signer, expectedNonce + 1);
