@@ -73,3 +73,16 @@ describe('preflight (fake node replaying the snapshot)', () => {
     await expect(preflight(n, demoPlan(), facts)).rejects.toThrow(/RUNTIME_CHANGED/);
   });
 });
+
+describe('storage keys', () => {
+  it('storageKey strips the compact length prefix polkadot.js puts on decorated keys', async () => {
+    const { storageKey, decodeRuntime } = await import('../src/index.js');
+    const { snapshotFacts } = await import('./helpers.js');
+    const q = (decodeRuntime(snapshotFacts()).decorated().query as any).assets.asset;
+    const key = storageKey(q, 1);
+    // twox128("Assets") ++ twox128("Asset") ++ blake2_128_concat(u32 1)
+    expect(key.startsWith('0x682a59d51ab9e48a8c8cc418ff9708d2d34371a193a751eea5883e9553457b2e')).toBe(true);
+    expect(key.endsWith('01000000')).toBe(true);
+    expect((key.length - 2) / 2).toBe(16 + 16 + 16 + 4);
+  });
+});
