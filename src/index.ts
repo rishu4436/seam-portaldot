@@ -20,3 +20,50 @@ export {
   type DiscoverOptions,
   type SnapshotFiles
 } from './discover.js';
+export {
+  buildSigningRequests,
+  buildSigningRequest,
+  callsForSigning,
+  assembleSignedExtrinsic,
+  extractSignedCall,
+  signedCallsOf,
+  checkSignedExtrinsic,
+  toMultiSignature,
+  type SigningRequest,
+  type SigningCheckpoint,
+  type SingleSigningInput,
+  type SignedCall,
+  type SignedCheck,
+  type EraInfo,
+  type AssembleOptions,
+  type SignatureScheme,
+  type SignerPayloadJSON,
+  type SignerPayloadRaw
+} from './signing.js';
+export { preflight, fakeSignedExtrinsic, type PreflightOptions, type PreflightReport, type PreflightTxDetail } from './preflight.js';
+export { decodeBlockEvents, outcomeForExtrinsic, argToString, toChainEvent, type ChainEvent, type DecodedEvent, type ExtrinsicOutcome } from './events.js';
+export {
+  submitAndWatch,
+  waitFinalized,
+  readEvents,
+  readInclusion,
+  findExtrinsicIndex,
+  PORTALDOT_MAINNET_GENESIS,
+  type TxStatus,
+  type StatusUpdate,
+  type SubmitResult,
+  type SubmitOptions,
+  type InclusionResult,
+  type FinalityResult
+} from './submit.js';
+export { DECODE_TYPES, SYSTEM_EVENTS_KEY, decodeRuntime, encodeRuntime, extrinsicHash, describeDispatchError } from './runtime.js';
+export {
+  createPortaldotAdapter,
+  toStepOutcome,
+  blockTimeFromFacts,
+  type PortaldotAdapter,
+  type PortaldotAdapterOptions,
+  type ChainAdapter,
+  type StepOutcome,
+  type WalletSigner
+} from './adapter.js';
