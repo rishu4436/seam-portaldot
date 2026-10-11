@@ -1,0 +1,10 @@
+{
+  "name": "seam",
+  "private": true,
+  "description": "SEAM: one intent, multiple execution surfaces, one verified result, for Portaldot",
+  "workspaces": ["packages/compiler", "packages/policy", "packages/sdk", "packages/console"],
+  "scripts": {
+    "build": "npm run build -w @seam/compiler && npm run build -w @seam/policy && npm run build -w @seam/sdk && npm run build -w @seam/console",
+    "test": "npm test -w @seam/compiler && npm test -w @seam/policy && npm test -w @seam/sdk"
+  }
+}
