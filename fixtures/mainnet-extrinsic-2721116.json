@@ -1,0 +1,7 @@
+{
+ "source": "wss://mainnet.portaldot.io chain_getBlock(block 2721116), fetched read-only 2026-10-11",
+ "block": 2721116,
+ "blockHash": null,
+ "extrinsic": "0x4502840032db51fc607333c64b3bf3ab799919cace04802efa4d3ba9a61d03b8c7a0286f01986462b0ec5db590cd79df8135c6eac9db99f114f9ceb4b81e7a88381116f71071348703fc653929096d9cd89dd0a82ecf7dd3002b8b9049d9eaedd9d9950d8500752500060300e66541ee49b00334f5a93754022087dba7471b3de850129f8a592cf5e42012400b8f7b07cdf18e",
+ "note": "Signed Balances.transfer_keep_alive. Proves the runtime uses MultiAddress for LookupSource/Address (0x00 'Id' variant before the 32-byte account)."
+}
