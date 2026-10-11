@@ -13,7 +13,7 @@ export interface RuntimeFingerprint {
   tokenSymbol: string;
   tokenDecimals: number;
   /** blake2b-256 of the raw bytes of the pinned type-definitions file. */
-  typesBundleHash: Hex;
+  typesBundleHash: Hex | null;
 }
 
 export type CapabilityStatus = 'observed' | 'not_observed' | 'unknown';

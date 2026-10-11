@@ -95,7 +95,7 @@ Args per kind (unknown arg names are rejected):
 |---|---|---|
 | `assets.transfer` | `Assets.transfer_keep_alive` | `assetId`, `amount`, `recipient` |
 | `assets.mint` | `Assets.mint` | `assetId`, `amount`, `recipient` |
-| `contracts.call` | `Contracts.call` | `contract`, `value`, `gasLimit`, `data` (hex: ink! selector + SCALE args) |
+| `contracts.call` | `Contracts.call` | `contract`, `value`, `gasLimit`, `data` (hex: ink! selector + SCALE args); on Weight-v2 runtimes also `proofSize` and `storageDepositLimit` (see below) |
 | `revive.call` | `Revive.call` | `contract` (H160), `value`, `data`, optional `gasLimit`, `storageDepositLimit` |
 | `nfts.mint` | `Nfts.mint` | `collection`, `item`, `recipient` |
 
@@ -107,6 +107,24 @@ Args per kind (unknown arg names are rejected):
   H160 is only accepted for `revive.call` contracts, and as a signer only if every action is `revive.call`.
 - **Manifest digest**: `blake2b-256("seam/manifest/v1" || 0x00 || canonicalJSON(manifest))`, where canonical JSON means
   sorted keys, no whitespace, integers only (any float anywhere → `NOT_CANONICAL`).
+
+### contracts.call on old and new pallet-contracts
+
+The compiler reads `Contracts.call`'s argument list from the metadata and supports both shapes:
+
+| runtime | Contracts.call args | Manifest |
+|---|---|---|
+| Portaldot spec 1002 (metadata V13, Weight v1) | `dest, value, gas_limit: Compact<u64>, data` | `gasLimit`; `proofSize` / `storageDepositLimit` are refused (`MANIFEST_INVALID`) |
+| e.g. substrate-contracts-node v0.42 (metadata V14, Weight v2) | `dest, value, gas_limit: Weight { ref_time, proof_size }, storage_deposit_limit: Option<Compact<Balance>>, data` | `gasLimit` (= ref_time), **`proofSize`**, **`storageDepositLimit`** |
+
+- `proofSize` is a base-unit string (u64). Missing on a Weight-v2 runtime → the step is `unavailable`
+  ("…takes gas_limit as Weight { ref_time, proof_size }; the manifest must give proofSize").
+- `storageDepositLimit` is a base-unit string, or `null` meaning "no limit" (encoded as `None`). **Omitted** on a
+  runtime that takes it → `unavailable` with "Contracts.call on this runtime takes argument(s) SEAM cannot fill:
+  storageDepositLimit". SEAM never picks a default.
+- Both land in the step's `decodedArgs` exactly as given (`proofSize: "262144"`, `storageDepositLimit: "…"` or `null`),
+  so they are in `planDigest` and policy can check them. On Weight-v1 runtimes the keys are absent, so existing
+  digests are unchanged.
 
 ## Plan
 
@@ -150,6 +168,15 @@ and preflight. (`gasLimit` for `contracts.call` is a call argument the developer
 
 ## Pinned types (`types/portaldot-spec1002.json`)
 
+**Only for metadata V13 runtimes.** `loadRuntime` / `factsFromMetadata` read the metadata version first:
+
+- **V13 and older** (Portaldot spec 1002): a pinned types file is required. If it declares `metadataVersion` or
+  `specVersion`, they must match the runtime, so the Portaldot file can't be applied to another V13 chain by mistake.
+  `typesBundleHash` = blake2b-256 of the file (unchanged).
+- **V14+** (self-describing): every type comes from the metadata's own registry. Any types file passed is ignored,
+  `fingerprint.typesBundleHash` is **`null`**, `source.typesBundle` is the constant `NO_PINNED_TYPES` (`{"types":{}}`),
+  and every capability's `argTypesConfidence` is `full`. `typesBundle` is optional in `factsFromMetadata`.
+
 Portaldot spec 1002 serves **metadata V13**, which doesn't carry full type information, so polkadot.js needs type definitions.
 The file pins them and records what was verified against chain data and what is assumed:
 
@@ -169,9 +196,13 @@ Changing this file changes `typesBundleHash`, and with it the fingerprint and ev
 `fixtures/` holds copies of Bot 4's read-only captures of Portaldot mainnet (spec 1002, tx version 2, SS58 42, POT 14 decimals,
 metadata blake2b `0x8b91f644…5150`), plus one real signed extrinsic used as type evidence. Tests make no network calls.
 
+`fixtures/devnode-metadata.hex` + `devnode-snapshot.json` are a read-only capture of the local dev node
+(substrate-contracts-node v0.42.0, spec 100, metadata V14, genesis `0xe8cf…b208`, metadata blake2b `0x9fd4…07b7`;
+`state_getMetadata`, `state_getRuntimeVersion`, `chain_getBlockHash(0)`, `system_properties`). The node reports no token
+properties; tests declare `UNIT` / 12 decimals.
+
 ## Known limits
 
 - `contracts.call` takes `data` as raw hex. Encoding ink! messages from a contract ABI is not part of the compiler.
-- Spec 1002 has the old `pallet-contracts` (Weight v1 `gas_limit: Compact<u64>`, no `storage_deposit_limit`). Newer runtimes
-  with extra args make the step `unavailable` with a reason until a binding is added.
+- `Contracts.call` shapes other than the two above (e.g. a future extra argument) make the step `unavailable` with a reason.
 - polkadot.js prints `Unable to map [u8; 32] to a lookup index` once while converting V13 metadata. It's harmless.

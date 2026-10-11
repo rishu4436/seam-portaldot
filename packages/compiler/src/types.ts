@@ -12,8 +12,11 @@ export interface RuntimeFingerprint {
   ss58Prefix: number;
   tokenSymbol: string;
   tokenDecimals: number;
-  /** blake2b-256 of the raw bytes of the pinned type-definitions file. */
-  typesBundleHash: Hex;
+  /**
+   * blake2b-256 of the raw bytes of the pinned type-definitions file (metadata V13 runtimes such as Portaldot
+   * spec 1002). null for metadata V14+ runtimes, which are self-describing and use no pinned types.
+   */
+  typesBundleHash: Hex | null;
 }
 
 export type CapabilityStatus = 'observed' | 'not_observed' | 'unknown';
@@ -53,7 +56,7 @@ export interface RuntimeFacts {
    */
   source: {
     metadataHex: Hex;
-    /** Exact text of the pinned type-definitions file. */
+    /** Exact text of the pinned type-definitions file (V13), or NO_PINNED_TYPES for V14+ runtimes. */
     typesBundle: string;
   };
 }
@@ -97,6 +100,12 @@ export interface PlanStep {
   capability: string;
   palletIndex: number | null;
   callIndex: number | null;
+  /**
+   * Normalised arguments as base-unit / SS58 / hex strings. contracts.call on Weight-v2 runtimes also has
+   * proofSize (string) and storageDepositLimit (string, or **null** = the manifest explicitly chose no limit).
+   * NOTE: typed Record<string, string> so existing consumers keep compiling; storageDepositLimit is the one
+   * key that can be null at runtime (policy reads it that way).
+   */
   decodedArgs: Record<string, string>;
   encodedCall: Hex | null;
   status: 'ok' | 'unavailable';
