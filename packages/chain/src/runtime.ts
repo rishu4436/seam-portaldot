@@ -1,5 +1,5 @@
 import { Metadata, TypeRegistry, expandMetadata } from '@polkadot/types';
-import { hexToU8a } from '@polkadot/util';
+import { compactStripLength, hexToU8a, u8aToHex } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { loadRuntime, parsePinnedTypes, type Hex, type LoadedRuntime, type RuntimeFacts } from '@seam/compiler';
 import { SeamChainError } from './errors.js';
@@ -89,6 +89,14 @@ export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   };
   decodeCache.set(key, rt);
   return rt;
+}
+
+/**
+ * Raw storage key for a decorated storage entry. polkadot.js's decorated entry returns the key with a SCALE
+ * compact length prefix (it is meant to be passed to the RPC layer as Bytes); state_getStorage needs it without.
+ */
+export function storageKey(entry: (...args: unknown[]) => Uint8Array, ...args: unknown[]): Hex {
+  return u8aToHex(compactStripLength(entry(...args))[1]) as Hex;
 }
 
 /** blake2b-256 of the extrinsic bytes: the tx hash the node reports. */

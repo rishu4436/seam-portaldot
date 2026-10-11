@@ -4,7 +4,7 @@ import type { Hex, Plan, PlanStep, RuntimeFacts } from '@seam/compiler';
 import { SeamChainError } from './errors.js';
 import { readHead } from './discover.js';
 import { rpc, toBigInt, toSafeNumber, withClient, type ConnectOptions, type Endpoint, type RpcClient } from './rpc.js';
-import { decodeRuntime, describeDispatchError, encodeRuntime } from './runtime.js';
+import { decodeRuntime, describeDispatchError, encodeRuntime, storageKey } from './runtime.js';
 import { callsForSigning } from './signing.js';
 import { dryRunOne } from './dryrun.js';
 import type { BlockRef, Estimate, PreflightResult, PreflightStep } from './types.js';
@@ -67,7 +67,10 @@ async function queryInfo(client: RpcClient, extrinsic: Hex, at: Hex): Promise<Pr
   const info = await rpc<{ weight: unknown; class: unknown; partialFee: unknown }>(client, 'payment_queryInfo', [extrinsic, at]);
   // Weight is a plain u64 on spec 1002; newer nodes return { refTime, proofSize }.
   const w = info.weight as unknown;
-  const weight = typeof w === 'object' && w !== null && 'refTime' in w ? toBigInt((w as { refTime: unknown }).refTime) : toBigInt(w);
+  // Weight V1 is a number; Weight V2 is {ref_time, proof_size} (RPC JSON is snake_case) or {refTime, proofSize}.
+  // SEAM's weight limit is on ref_time (computation); proof_size is not limited by the policy.
+  const v2 = typeof w === 'object' && w !== null ? (w as Record<string, unknown>) : undefined;
+  const weight = v2 ? toBigInt(v2.ref_time ?? v2.refTime) : toBigInt(w);
   return { weight: weight.toString(), class: String(info.class), partialFee: toBigInt(info.partialFee).toString() };
 }
 
@@ -160,7 +163,7 @@ async function assetExists(client: RpcClient, facts: RuntimeFacts, assetId: stri
   try {
     const query = (decodeRuntime(facts).decorated().query as any).assets?.asset;
     if (!query) return undefined;
-    const key = u8aToHex(query(assetId));
+    const key = storageKey(query, assetId);
     const value = await rpc<string | null>(client, 'state_getStorage', [key, at]);
     return value !== null && value !== undefined && value !== '0x';
   } catch {

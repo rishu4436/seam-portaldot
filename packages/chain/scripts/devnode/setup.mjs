@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { u8aToHex } from '@polkadot/util';
-import { withClient, decodeRuntime } from '../../dist/index.js';
+import { withClient, decodeRuntime, storageKey } from '../../dist/index.js';
 import { ENDPOINT, EVIDENCE, ASSET_ID, STATE_FILE, devFacts, devKeys, encodeCall, sendSigned, saveJson, loadState, brief } from './lib.mjs';
 
 const facts = await devFacts();
@@ -13,7 +13,7 @@ const log = { setupAt: new Date().toISOString(), genesis: facts.fingerprint.gene
 const dec = decodeRuntime(facts);
 
 async function storage(key) { return withClient(ENDPOINT, (c) => c.send('state_getStorage', [key])); }
-const assetKey = u8aToHex(dec.decorated().query.assets.asset(ASSET_ID));
+const assetKey = storageKey(dec.decorated().query.assets.asset, ASSET_ID);
 
 if (!(await storage(assetKey))) {
   const create = encodeCall(facts, 'Assets', 'create', [ASSET_ID, { Id: alice.address }, 1]);
@@ -26,7 +26,7 @@ if (!(await storage(assetKey))) {
   if (m.status !== 'finalized' || !m.inclusion?.success) throw new Error('mint failed');
 } else log.steps.push({ what: `asset ${ASSET_ID} already exists, skipped create/mint` });
 
-if (!state.contract || state.genesis !== facts.fingerprint.genesisHash || !(await storage(u8aToHex(dec.decorated().query.contracts.contractInfoOf(state.contract))))) {
+if (!state.contract || state.genesis !== facts.fingerprint.genesisHash || !(await storage(storageKey(dec.decorated().query.contracts.contractInfoOf, state.contract)))) {
   const wasm = readFileSync(fileURLToPath(new URL('../../fixtures/devnode/seam_emitter.wasm', import.meta.url)));
   const inst = encodeCall(facts, 'Contracts', 'instantiate_with_code', [
     0, { refTime: 50_000_000_000n, proofSize: 1_000_000n }, null, u8aToHex(wasm), '0x', u8aToHex(new TextEncoder().encode(`seam-${Date.now()}`))
