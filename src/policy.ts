@@ -29,6 +29,8 @@ export interface Policy {
   allowedModes: PlanMode[];
   requireHumanApproval: boolean;
   maxApprovalSeconds: number;
+  /** Require a successful system_dryRun of the signed transaction(s) at the submit gate. A failed one always blocks. */
+  requireSignedDryRun: boolean;
   /** Which preflight unknowns may pass. Unknown capabilities are never allowed. */
   allowUnknown: { fee?: boolean; weight?: boolean; storageDeposit?: boolean; dryRun?: boolean };
 }
@@ -43,8 +45,18 @@ export const DEFAULT_POLICY: Policy = {
   allowedModes: ["sequential", "atomic_verified"],
   requireHumanApproval: true,
   maxApprovalSeconds: 600,
+  requireSignedDryRun: true,
   allowUnknown: {},
 };
+
+/**
+ * Starting point for today's Portaldot runtime: it never reports a storage deposit, and a real dry run needs the
+ * signed transaction, so both are allowed as unknown before signing; the submit gate then requires the dry run of
+ * the signed transaction to succeed.
+ */
+export function portaldotPolicy(overrides: Partial<Policy> = {}): Policy {
+  return definePolicy({ ...overrides, allowUnknown: { storageDeposit: true, dryRun: true, ...overrides.allowUnknown } });
+}
 
 export function definePolicy(overrides: Partial<Policy> = {}): Policy {
   return { ...DEFAULT_POLICY, ...overrides, allowUnknown: { ...DEFAULT_POLICY.allowUnknown, ...overrides.allowUnknown } };
