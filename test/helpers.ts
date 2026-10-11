@@ -57,7 +57,7 @@ export function preflight(plan: Plan): PreflightResult {
 
 export const NOW = new Date("2026-10-20T10:00:00Z");
 export const envelope = (over: Partial<SigningEnvelope> = {}): SigningEnvelope =>
-  ({ signer: ALICE, nonce: 5, mortalityBlocks: 64, expiresAt: "2026-10-20T10:30:00Z", ...over });
+  ({ signer: ALICE, nonce: 5, mortalityBlocks: 64, checkpoint: { number: 2721455, hash: "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9" }, expiresAt: "2026-10-20T10:30:00Z", ...over });
 
 export const policy = (over = {}) => definePolicy({
   allowedAssets: ["1", "2"],

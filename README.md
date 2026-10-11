@@ -10,6 +10,8 @@ SEAM's safety gate between "compiled" and "signed": the policy engine, the runti
 - **`checkRuntimeLock(prepared, current)`** names exactly which fingerprint fields changed. Portaldot's signed extensions don't include `CheckMetadataHash`, so this is the only guard against a metadata change that keeps the same spec version.
 - **`canRunNextStep` / `overallResult`** stop a sequential run after a failed or unverified step and mark the receipt as partial or not verified.
 
+`portaldotPolicy()` is the starting point for today's Portaldot runtime. It allows an unknown storage deposit, which this runtime never reports, and an unknown dry run before signing. The submit gate then requires a successful `system_dryRun` of each signed transaction (`requireSignedDryRun`, on by default). The signing envelope must carry a `checkpoint` block, and the approval covers it.
+
 Defaults: unknown capabilities are never allowed, other unknowns are blocked unless listed in `allowUnknown`, `atomic_unverified` is off, human approval is on, and approvals last at most 10 minutes.
 
 SS58 prefix 42 is the generic Substrate prefix, so a correct prefix doesn't prove an address belongs to Portaldot. The recipient allowlist is the real guard.

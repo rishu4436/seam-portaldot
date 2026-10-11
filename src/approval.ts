@@ -1,5 +1,5 @@
 import type {
-  Approval, RuntimeFingerprint, Hex, Plan, PolicyResult, PreflightResult, ReceiptStep, SigningEnvelope,
+  Approval, RuntimeFingerprint, SignedDryRun, Hex, Plan, PolicyResult, PreflightResult, ReceiptStep, SigningEnvelope,
 } from "./types.js";
 import { digest } from "./digest.js";
 import { checkRuntimeLock, fingerprintDigest } from "./runtimeLock.js";
@@ -87,6 +87,9 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
   }
   if (callsToSign(plan).some((c) => !c)) return { ok: false, reason: "Can't approve: a call has no encoded bytes, so there is nothing exact to sign." };
   const envelopeExpiry = Date.parse(envelope.expiresAt);
+  if (!envelope.checkpoint || !Number.isSafeInteger(envelope.checkpoint.number) || !/^0x[0-9a-fA-F]{64}$/.test(envelope.checkpoint.hash ?? "")) {
+    return { ok: false, reason: "Can't approve: the signing envelope has no checkpoint block, so the wallet can't sign it." };
+  }
   if (Number.isNaN(envelopeExpiry)) return { ok: false, reason: "Can't approve: the signing envelope has no valid expiry time." };
   if (envelopeExpiry <= now.getTime()) return { ok: false, reason: "Can't approve: the signing envelope has already expired." };
   const expiresAt = new Date(Math.min(envelopeExpiry, now.getTime() + policy.maxApprovalSeconds * 1000)).toISOString();
@@ -112,6 +115,8 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
   currentFingerprint: RuntimeFingerprint;
   /** The encoded calls the wallet actually signed, in order. */
   signedCalls: Hex[];
+  /** system_dryRun result for each signed transaction, in the same order. */
+  signedDryRun?: SignedDryRun[];
   now: Date;
   store: ApprovalStore;
 }
@@ -153,6 +158,13 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   const signed = input.signedCalls.map((c) => c.toLowerCase());
   if (expected.length !== signed.length || expected.some((c, i) => c !== signed[i])) {
     reasons.push({ code: "signed_bytes_mismatch", message: "Blocked: the wallet signed different call data from the approved plan." });
+  }
+
+  const dry = input.signedDryRun ?? [];
+  if (dry.includes("failed")) {
+    reasons.push({ code: "signed_dry_run_failed", message: "Blocked: the dry run of the signed transaction failed, so it would fail on chain." });
+  } else if (input.policy.requireSignedDryRun && (dry.length !== signed.length || dry.some((d) => d !== "ok"))) {
+    reasons.push({ code: "signed_dry_run_missing", message: "Blocked: the policy needs a successful dry run of each signed transaction before sending, and one is missing or unknown." });
   }
 
   return { ok: reasons.length === 0, reasons };
