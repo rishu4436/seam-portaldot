@@ -113,3 +113,26 @@ describe('readSigningCheckpoint', () => {
     expect(await readSigningCheckpoint(stub(10, 10) as never)).toEqual({ number: 9, hash: H(9) });
   });
 });
+
+describe('declaredToken (node without tokenSymbol/tokenDecimals in system_properties)', () => {
+  it('tokenInfo uses declared values only when the node reports none, and refuses a disagreement', async () => {
+    const { tokenInfo } = await import('../src/index.js');
+    expect(tokenInfo({}, { tokenSymbol: 'UNIT', tokenDecimals: 12 })).toEqual({ tokenSymbol: 'UNIT', tokenDecimals: 12 });
+    expect(tokenInfo({ tokenSymbol: 'POT', tokenDecimals: 14 }, { tokenSymbol: 'POT', tokenDecimals: 14 })).toEqual({ tokenSymbol: 'POT', tokenDecimals: 14 });
+    expect(() => tokenInfo({ tokenSymbol: 'POT', tokenDecimals: 14 }, { tokenSymbol: 'UNIT', tokenDecimals: 14 })).toThrow(/FACTS_MISMATCH.*declared tokenSymbol UNIT/);
+    expect(() => tokenInfo({}, undefined)).toThrow(/NODE_MISSING_VALUE/);
+  });
+
+  it('createPortaldotAdapter passes declaredToken to discovery', async () => {
+    const { createPortaldotAdapter } = await import('../src/index.js');
+    const { FakeNode } = await import('./fakeNode.js');
+    const { snapshotFacts, snapshotInputs } = await import('./helpers.js');
+    const inputs = { ...snapshotInputs(), properties: { ss58Format: 42 } };
+    const node = new FakeNode({ inputs, facts: snapshotFacts() });
+    await expect(createPortaldotAdapter(node).discover()).rejects.toThrow(/NODE_MISSING_VALUE/);
+    const facts = await createPortaldotAdapter(node, { declaredToken: { tokenSymbol: 'POT', tokenDecimals: 14 } }).discover();
+    expect(facts.fingerprint).toMatchObject({ tokenSymbol: 'POT', tokenDecimals: 14 });
+    // same nine fields as the node that reports them, so the same digest
+    expect(facts.fingerprintDigest).toBe(snapshotFacts().fingerprintDigest);
+  });
+});

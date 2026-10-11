@@ -44,6 +44,8 @@ export interface PortaldotAdapterOptions extends ConnectOptions {
   /** Pinned types file text. Default: the compiler's spec 1002 file. */
   typesBundle?: string;
   batchAllRollback?: BatchAllRollback;
+  /** Token symbol/decimals for a node whose system_properties omit them (see DiscoverOptions.declaredToken). */
+  declaredToken?: { tokenSymbol: string; tokenDecimals: number };
   /** Use these facts instead of the ones discover() returns (e.g. facts from an approved snapshot). */
   facts?: RuntimeFacts;
   /** Envelope mortality, power of two. Default 64 blocks (about 64 minutes at Portaldot's 60 s blocks). */
