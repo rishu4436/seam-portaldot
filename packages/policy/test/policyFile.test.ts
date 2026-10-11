@@ -56,4 +56,26 @@ describe("two-part weights", () => {
     const r = evaluatePolicy({ policy: H.policy({ maxProofSize: "100000" }), plan: edited, facts, preflight: { ...H.preflight(edited), steps: H.preflight(edited).steps.map((s) => ({ ...s, proofSize: { value: "1" } })) } });
     expect(r.rules.filter((x) => x.outcome === "block").map((x) => x.rule).sort()).toEqual(["proof_size_limit", "storage_limit"]);
   });
+  it("treats storageDepositLimit null as 'no limit': blocked under a cap, allowed without one", () => {
+    const p = structuredClone(plan);
+    (p.steps[1].decodedArgs as Record<string, string | null>).storageDepositLimit = null;
+    const edited = { ...p, planDigest: H.planDigest(p) };
+    const pf = H.preflight(edited);
+    const capped = evaluatePolicy({ policy: H.policy(), plan: edited, facts, preflight: pf });
+    expect(capped.rules.find((x) => x.rule === "storage_limit" && x.outcome === "block")!.reason).toMatch(/no storage deposit limit/);
+    const uncapped = evaluatePolicy({ policy: H.policy({ maxStorageDeposit: undefined }), plan: edited, facts, preflight: pf });
+    expect(uncapped.allowed).toBe(true);
+  });
+  it("uses a contract call's own proofSize instead of the node's estimate (Bot 4's test-chain numbers)", () => {
+    const p = structuredClone(plan);
+    p.steps[1].decodedArgs.proofSize = "1000000";
+    const edited = { ...p, planDigest: H.planDigest(p) };
+    const pf = H.preflight(edited);
+    pf.steps[0].proofSize = { value: "6208" };
+    pf.steps[1].proofSize = { value: "1004291" };
+    pf.steps[2].proofSize = { value: "3675" };
+    expect(evaluatePolicy({ policy: H.policy({ maxProofSize: "1000000" }), plan: edited, facts, preflight: pf }).allowed).toBe(true);
+    expect(evaluatePolicy({ policy: H.policy({ maxProofSize: "500000" }), plan: edited, facts, preflight: pf }).rules
+      .find((x) => x.rule === "proof_size_limit" && x.outcome === "block")!.reason).toMatch(/proof size limit 1000000/);
+  });
 });
