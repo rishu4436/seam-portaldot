@@ -16,8 +16,8 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@seam/compiler": "file:../seam-compiler",
-    "@seam/policy": "file:../seam-policy"
+    "@seam/compiler": "file:../compiler",
+    "@seam/policy": "file:../policy"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
