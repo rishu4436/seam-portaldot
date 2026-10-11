@@ -1,0 +1,18 @@
+{
+  "note": "Read-only capture of the local dev node (Bot 4's substrate-contracts-node) for offline compiler tests: state_getMetadata, state_getRuntimeVersion, chain_getBlockHash(0), system_properties.",
+  "endpoint": "ws://127.0.0.1:9944",
+  "chain": "Development",
+  "nodeVersion": "0.42.0-f209befc88c",
+  "block": 18,
+  "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+  "runtime": {
+    "specName": "substrate-contracts-node",
+    "implName": "substrate-contracts-node",
+    "specVersion": 100,
+    "implVersion": 1,
+    "transactionVersion": 1
+  },
+  "properties": {},
+  "metadataVersion": 14,
+  "metadata_blake2b256": "9fd4164787982261fefce38d58de6beca2a2d516c6bcb8bb720950aa820307b7"
+}
