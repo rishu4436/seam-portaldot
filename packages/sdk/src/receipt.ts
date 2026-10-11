@@ -94,12 +94,16 @@ export interface ReceiptInput {
   outcomes: StepOutcome[];
   policyDigest?: Hex;
   approvalHash?: Hex;
+  /** Why a sequential run stopped early. Shown on the first step that was not run. */
+  stoppedReason?: string;
 }
 
-export function buildReceipt({ plan, outcomes, policyDigest, approvalHash }: ReceiptInput): Receipt {
+export function buildReceipt({ plan, outcomes, policyDigest, approvalHash, stoppedReason }: ReceiptInput): Receipt {
   const byId = new Map(outcomes.map((o) => [o.actionId, o]));
   const atomic = plan.mode === 'atomic_verified' || plan.mode === 'atomic_unverified';
   const steps = plan.steps.map((s) => verifyStep(s, plan.signer.publicKey, atomic ? (byId.get(s.actionId) ?? byId.get('batch')) : byId.get(s.actionId)));
+  const firstNotRun = steps.find((s) => s.status === 'not_run');
+  if (stoppedReason && firstNotRun) firstNotRun.reason = `Not run. ${stoppedReason}`;
   const body = {
     receiptVersion: 1 as const,
     manifestDigest: plan.manifestDigest,
