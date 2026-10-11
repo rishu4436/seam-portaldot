@@ -1,0 +1,645 @@
+{
+  "source": {
+    "hash": "0x1fa93c546eaf0e392aca9ffcb6e5acadf674f5e39d70b058fd7228a98f606128",
+    "language": "ink! 5.1.1",
+    "compiler": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "build_info": {
+      "build_mode": "Release",
+      "built_by": "contracts/seam-demo/build.sh (no wasm-opt)",
+      "target": "wasm32-unknown-unknown, target-cpu=mvp"
+    }
+  },
+  "contract": {
+    "name": "seam_demo",
+    "version": "0.1.0",
+    "authors": [
+      "SEAM team"
+    ],
+    "description": "SEAM demo: settle(order_id, amount) emits Settled on every call",
+    "license": "MIT"
+  },
+  "image": null,
+  "version": 5,
+  "types": [
+    {
+      "id": 0,
+      "type": {
+        "path": [
+          "ink_primitives",
+          "types",
+          "AccountId"
+        ],
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "type": 1,
+                "typeName": "[u8; 32]"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "type": {
+        "def": {
+          "array": {
+            "len": 32,
+            "type": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": {
+        "def": {
+          "primitive": "u8"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": {
+        "def": {
+          "primitive": "u64"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": {
+        "def": {
+          "primitive": "u128"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": {
+        "def": {
+          "primitive": "u32"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": {
+        "path": [
+          "seam_demo",
+          "seam_demo",
+          "SeamDemo"
+        ],
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "last",
+                "type": 7,
+                "typeName": "<Option<Settlement> as::ink::storage::traits::AutoStorableHint<\n::ink::storage::traits::ManualKey<2129240896u32, ()>,>>::Type"
+              },
+              {
+                "name": "count",
+                "type": 3,
+                "typeName": "<u64 as::ink::storage::traits::AutoStorableHint<::ink::storage\n::traits::ManualKey<922449982u32, ()>,>>::Type"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": {
+        "path": [
+          "Option"
+        ],
+        "params": [
+          {
+            "name": "T",
+            "type": 8
+          }
+        ],
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "name": "None",
+                "index": 0
+              },
+              {
+                "name": "Some",
+                "fields": [
+                  {
+                    "type": 8
+                  }
+                ],
+                "index": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": {
+        "path": [
+          "seam_demo",
+          "seam_demo",
+          "Settlement"
+        ],
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "caller",
+                "type": 0,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "order_id",
+                "type": 3,
+                "typeName": "u64"
+              },
+              {
+                "name": "amount",
+                "type": 4,
+                "typeName": "Balance"
+              },
+              {
+                "name": "block",
+                "type": 5,
+                "typeName": "BlockNumber"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": {
+        "path": [
+          "Result"
+        ],
+        "params": [
+          {
+            "name": "T",
+            "type": 10
+          },
+          {
+            "name": "E",
+            "type": 11
+          }
+        ],
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "name": "Ok",
+                "fields": [
+                  {
+                    "type": 10
+                  }
+                ],
+                "index": 0
+              },
+              {
+                "name": "Err",
+                "fields": [
+                  {
+                    "type": 11
+                  }
+                ],
+                "index": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": {
+        "def": {
+          "tuple": []
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": {
+        "path": [
+          "ink_primitives",
+          "LangError"
+        ],
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "name": "CouldNotReadInput",
+                "index": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": {
+        "path": [
+          "Result"
+        ],
+        "params": [
+          {
+            "name": "T",
+            "type": 7
+          },
+          {
+            "name": "E",
+            "type": 11
+          }
+        ],
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "name": "Ok",
+                "fields": [
+                  {
+                    "type": 7
+                  }
+                ],
+                "index": 0
+              },
+              {
+                "name": "Err",
+                "fields": [
+                  {
+                    "type": 11
+                  }
+                ],
+                "index": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": {
+        "path": [
+          "Result"
+        ],
+        "params": [
+          {
+            "name": "T",
+            "type": 3
+          },
+          {
+            "name": "E",
+            "type": 11
+          }
+        ],
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "name": "Ok",
+                "fields": [
+                  {
+                    "type": 3
+                  }
+                ],
+                "index": 0
+              },
+              {
+                "name": "Err",
+                "fields": [
+                  {
+                    "type": 11
+                  }
+                ],
+                "index": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": {
+        "path": [
+          "ink_primitives",
+          "types",
+          "Hash"
+        ],
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "type": 1,
+                "typeName": "[u8; 32]"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": {
+        "path": [
+          "ink_env",
+          "types",
+          "NoChainExtension"
+        ],
+        "def": {
+          "variant": {}
+        }
+      }
+    }
+  ],
+  "storage": {
+    "root": {
+      "root_key": "0x00000000",
+      "layout": {
+        "struct": {
+          "name": "SeamDemo",
+          "fields": [
+            {
+              "name": "last",
+              "layout": {
+                "enum": {
+                  "name": "Option",
+                  "dispatchKey": "0x00000000",
+                  "variants": {
+                    "0": {
+                      "name": "None",
+                      "fields": []
+                    },
+                    "1": {
+                      "name": "Some",
+                      "fields": [
+                        {
+                          "name": "0",
+                          "layout": {
+                            "struct": {
+                              "name": "Settlement",
+                              "fields": [
+                                {
+                                  "name": "caller",
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x00000000",
+                                      "ty": 0
+                                    }
+                                  }
+                                },
+                                {
+                                  "name": "order_id",
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x00000000",
+                                      "ty": 3
+                                    }
+                                  }
+                                },
+                                {
+                                  "name": "amount",
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x00000000",
+                                      "ty": 4
+                                    }
+                                  }
+                                },
+                                {
+                                  "name": "block",
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x00000000",
+                                      "ty": 5
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "count",
+              "layout": {
+                "leaf": {
+                  "key": "0x00000000",
+                  "ty": 3
+                }
+              }
+            }
+          ]
+        }
+      },
+      "ty": 6
+    }
+  },
+  "spec": {
+    "constructors": [
+      {
+        "label": "new",
+        "selector": "0x9bae9d5e",
+        "payable": false,
+        "args": [],
+        "returnType": {
+          "type": 9,
+          "displayName": [
+            "ink_primitives",
+            "ConstructorResult"
+          ]
+        },
+        "docs": [],
+        "default": false
+      }
+    ],
+    "messages": [
+      {
+        "label": "settle",
+        "selector": "0x6c337222",
+        "mutates": true,
+        "payable": false,
+        "args": [
+          {
+            "label": "order_id",
+            "type": {
+              "type": 3,
+              "displayName": [
+                "u64"
+              ]
+            }
+          },
+          {
+            "label": "amount",
+            "type": {
+              "type": 4,
+              "displayName": [
+                "Balance"
+              ]
+            }
+          }
+        ],
+        "returnType": {
+          "type": 9,
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ]
+        },
+        "docs": [
+          " Records a settlement and emits `Settled { caller, order_id, amount }`.",
+          " Not payable: SEAM's compiler rejects a non-zero `value` for it."
+        ],
+        "default": false
+      },
+      {
+        "label": "last_settlement",
+        "selector": "0x0d9613e2",
+        "mutates": false,
+        "payable": false,
+        "args": [],
+        "returnType": {
+          "type": 12,
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ]
+        },
+        "docs": [
+          " The last settlement, if any."
+        ],
+        "default": false
+      },
+      {
+        "label": "settlement_count",
+        "selector": "0x9f37bde5",
+        "mutates": false,
+        "payable": false,
+        "args": [],
+        "returnType": {
+          "type": 13,
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ]
+        },
+        "docs": [
+          " How many times `settle` has been called."
+        ],
+        "default": false
+      }
+    ],
+    "events": [
+      {
+        "label": "Settled",
+        "module_path": "seam_demo::seam_demo",
+        "signature_topic": "0x7ed8c671bb851ee2349b5a1282a2740936f1faf4ff0f59e2e566910f44b9039b",
+        "args": [
+          {
+            "label": "caller",
+            "indexed": true,
+            "type": {
+              "type": 0,
+              "displayName": [
+                "AccountId"
+              ]
+            },
+            "docs": []
+          },
+          {
+            "label": "order_id",
+            "indexed": true,
+            "type": {
+              "type": 3,
+              "displayName": [
+                "u64"
+              ]
+            },
+            "docs": []
+          },
+          {
+            "label": "amount",
+            "indexed": false,
+            "type": {
+              "type": 4,
+              "displayName": [
+                "Balance"
+              ]
+            },
+            "docs": []
+          }
+        ],
+        "docs": [
+          "Emitted on every successful `settle`."
+        ]
+      }
+    ],
+    "docs": [],
+    "lang_error": {
+      "type": 11,
+      "displayName": [
+        "ink",
+        "LangError"
+      ]
+    },
+    "environment": {
+      "accountId": {
+        "type": 0,
+        "displayName": [
+          "AccountId"
+        ]
+      },
+      "balance": {
+        "type": 4,
+        "displayName": [
+          "Balance"
+        ]
+      },
+      "hash": {
+        "type": 14,
+        "displayName": [
+          "Hash"
+        ]
+      },
+      "timestamp": {
+        "type": 3,
+        "displayName": [
+          "Timestamp"
+        ]
+      },
+      "blockNumber": {
+        "type": 5,
+        "displayName": [
+          "BlockNumber"
+        ]
+      },
+      "chainExtension": {
+        "type": 15,
+        "displayName": [
+          "ChainExtension"
+        ]
+      },
+      "maxEventTopics": 4,
+      "staticBufferSize": 16384
+    }
+  }
+}
