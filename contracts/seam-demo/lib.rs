@@ -5,7 +5,7 @@
 //! contract) instead of `unknown`.
 //!
 //! Selectors are ink!'s defaults: the first 4 bytes of blake2b-256 of the message label.
-//! They are the same for the ink! 3 build in `../seam-demo-ink3`, so one Manifest works on both chains.
+//! They don't depend on the ink! version, so an ink! 3 build for Portaldot mainnet would keep them (see README).
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 
 #[ink::contract]
