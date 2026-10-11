@@ -1,7 +1,7 @@
 /**
  * Bot 5's SDK flow (Seam: discover -> prepare -> approve -> execute -> receipt) running on
  * createPortaldotAdapter against the in-process fake node. Imports the SDK from its sibling folder
- * (../../seam-sdk/dist) until the monorepo wires packages together; skipped if it isn't built.
+ * (../../sdk/dist) until the monorepo wires packages together; skipped if it isn't built.
  */
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +12,7 @@ import { createPortaldotAdapter, signBytesOf, type ChainAdapter } from '../src/i
 import { FakeNode } from './fakeNode.js';
 import { BOB, CHARLIE, demoManifest, devKeys, snapshotFacts, snapshotInputs } from './helpers.js';
 
-const SDK = fileURLToPath(new URL('../../seam-sdk/dist/index.js', import.meta.url));
+const SDK = fileURLToPath(new URL('../../sdk/dist/index.js', import.meta.url));
 const policy = definePolicy({
   allowedAssets: ['1', '2'], allowedContracts: [CHARLIE], allowedRecipients: [BOB],
   maxAmountPerAsset: { '1': '5000000000000000', '2': '1' }, maxNativeValue: '0', maxGasLimit: '10000000000',
