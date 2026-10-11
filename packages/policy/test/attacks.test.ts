@@ -273,4 +273,31 @@ describe("unknowns and approval rules", () => {
     pf.totalFee = { unknown: true };
     expect(evaluatePolicy({ policy: portaldotPolicy(base), plan, facts, preflight: pf }).allowed).toBe(false);
   });
+  it("sequential plans pass the gate one step at a time, with only the current step's dry run required", () => {
+    const run = approvedRun();
+    const store = new InMemoryApprovalStore();
+    const { usageKey } = H;
+    // Before anything is sent, later transactions can't dry-run yet (future nonce).
+    const pre = ["ok", "unknown", "unknown"] as const;
+    expect(codes(submit(run, { store, signedDryRun: [...pre] }))).toContain("signed_dry_run_missing");
+    expect(submit(run, { store, signedDryRun: [...pre], sendIndex: 0, previousSteps: [] }).ok).toBe(true);
+    store.markUsed(usageKey(run.approval.hash, 0));
+    expect(codes(submit(run, { store, signedDryRun: [...pre], sendIndex: 0, previousSteps: [] }))).toContain("approval_reused");
+    const done: ReceiptStep = { actionId: "pay", status: "finalized", events: ["Assets.Transferred"], verification: "verified", reason: "ok" };
+    // Step 2 needs its own fresh dry run and step 1's result.
+    expect(codes(submit(run, { store, signedDryRun: ["ok", "unknown", "unknown"], sendIndex: 1, previousSteps: [done] }))).toContain("signed_dry_run_missing");
+    expect(codes(submit(run, { store, signedDryRun: ["ok", "ok", "unknown"], sendIndex: 1, previousSteps: [] }))).toContain("previous_steps_missing");
+    expect(codes(submit(run, { store, signedDryRun: ["ok", "ok", "unknown"], sendIndex: 1, previousSteps: [{ ...done, verification: "not_verified" }] }))).toContain("previous_step_failed");
+    expect(submit(run, { store, signedDryRun: ["ok", "ok", "unknown"], sendIndex: 1, previousSteps: [done] }).ok).toBe(true);
+    // Skipping ahead is blocked.
+    expect(codes(submit(run, { store: new InMemoryApprovalStore(), signedDryRun: ["ok", "ok", "ok"], sendIndex: 2, previousSteps: [done, done] }))).toContain("out_of_order");
+    // A runtime change between steps still blocks the next step.
+    expect(codes(submit(run, { store, signedDryRun: ["ok", "ok", "unknown"], sendIndex: 1, previousSteps: [done], currentFingerprint: { ...run.fingerprint, specVersion: 1003 } }))).toContain("runtime_changed");
+  });
+  it("atomic plans can't be sent step by step", () => {
+    const verifiedFacts = { ...facts, behaviour: { batchAllRollback: "verified" as const } };
+    const atomic = H.compilePlan(H.demoManifest(), verifiedFacts);
+    const run = approvedRun(atomic, verifiedFacts);
+    expect(codes(submit(run, { sendIndex: 0, previousSteps: [] }))).toContain("send_index_invalid");
+  });
 });
