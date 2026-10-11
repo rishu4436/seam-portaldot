@@ -56,7 +56,7 @@ export function compile(_m: Manifest, _facts: RuntimeFacts): Plan {
 
 export function preflight(_plan: Plan): PreflightResult {
   const p = S().preflight;
-  return { steps: p.steps.map((s: any) => ({ actionId: s.actionId, weight: s.weight.unknown ? { unknown: true } : { value: s.weight.value }, fee: POT(s.fee.value), storageDeposit: s.storageDeposit.unknown ? { unknown: true } : POT(s.storageDeposit.value), dryRun: s.dryRun })), totalFee: POT(p.totalFee.value) };
+  return { steps: p.steps.map((s: any) => ({ actionId: s.actionId, weight: s.weight.unknown ? { unknown: true } : { value: s.weight.value }, proofSize: s.proofSize?.value ? { value: Number(s.proofSize.value).toLocaleString() } : { unknown: true }, fee: POT(s.fee.value), storageDeposit: s.storageDeposit.unknown ? { unknown: true } : POT(s.storageDeposit.value), dryRun: s.dryRun })), totalFee: POT(p.totalFee.value) };
 }
 
 export function checkPolicy(_plan: Plan): PolicyResult {
