@@ -6,15 +6,16 @@ import { computeFingerprintDigest, factsFromMetadata, readPinnedTypes } from '@s
 import { checkRuntimeLock, fingerprintDigest as policyFingerprintDigest } from '@seam/policy';
 import {
   discover, factsFromChainInputs, fingerprintFromChainInputs, readFingerprint, refetchFingerprint, snapshotFromChainInputs,
-  snapshotFromNode, tokenInfo, chainInputsFromSnapshot, listRpcMethods, readCheckpoint, signedExtensionsOf
+  snapshotFromNode, tokenInfo, quietly, chainInputsFromSnapshot, listRpcMethods, readCheckpoint, signedExtensionsOf
 } from '../src/index.js';
 import { FakeNode } from './fakeNode.js';
 import { metadataHex, snapshot, snapshotFacts, snapshotInputs } from './helpers.js';
 
-const compilerFacts = () => factsFromMetadata({
+// factsFromMetadata (compiler 14faeb7) still prints the lookup warning from expandMetadata; see README.
+const compilerFacts = () => quietly(() => factsFromMetadata({
   metadataHex, typesBundle: readPinnedTypes(), genesisHash: snapshot.genesis,
   tokenSymbol: 'POT', tokenDecimals: 14, specName: 'portaldot', specVersion: 1002, transactionVersion: 2, ss58Prefix: 42
-});
+}));
 
 describe('discovery from the real spec 1002 snapshot', () => {
   it('builds the same RuntimeFacts fingerprint as the compiler', () => {
