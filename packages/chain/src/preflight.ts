@@ -6,6 +6,7 @@ import { readHead } from './discover.js';
 import { rpc, toBigInt, toSafeNumber, withClient, type ConnectOptions, type Endpoint, type RpcClient } from './rpc.js';
 import { decodeRuntime, describeDispatchError, encodeRuntime } from './runtime.js';
 import { callsForSigning } from './signing.js';
+import { dryRunOne } from './dryrun.js';
 import type { BlockRef, Estimate, PreflightResult, PreflightStep } from './types.js';
 
 export interface PreflightOptions extends ConnectOptions {
@@ -68,22 +69,6 @@ async function queryInfo(client: RpcClient, extrinsic: Hex, at: Hex): Promise<Pr
   const w = info.weight as unknown;
   const weight = typeof w === 'object' && w !== null && 'refTime' in w ? toBigInt((w as { refTime: unknown }).refTime) : toBigInt(w);
   return { weight: weight.toString(), class: String(info.class), partialFee: toBigInt(info.partialFee).toString() };
-}
-
-async function dryRunSigned(client: RpcClient, facts: RuntimeFacts, extrinsic: Hex, at: Hex): Promise<NonNullable<PreflightTxDetail['dryRun']>> {
-  let raw: string;
-  try {
-    raw = await rpc<string>(client, 'system_dryRun', [extrinsic, at]);
-  } catch (e) {
-    return { outcome: 'unknown', detail: `system_dryRun unavailable: ${(e as Error).message.slice(0, 200)}` };
-  }
-  const { registry } = decodeRuntime(facts);
-  const res = registry.createType('ApplyExtrinsicResult', raw) as unknown as {
-    isOk: boolean; asOk: { isOk: boolean; asErr: { toJSON(): unknown } }; asErr: { toString(): string };
-  };
-  if (!res.isOk) return { outcome: 'failed', detail: `transaction is invalid: ${res.asErr.toString()}` };
-  if (!res.asOk.isOk) return { outcome: 'failed', detail: `dispatch failed: ${describeDispatchError(facts, res.asOk.asErr.toJSON())}` };
-  return { outcome: 'ok', detail: 'system_dryRun: dispatch ok' };
 }
 
 /** ink! dry run with contracts_call (spec 1002 shape: { debugMessage, gasConsumed, result: { Ok | Err } }). */
@@ -176,7 +161,10 @@ export async function preflight(endpoint: Endpoint, plan: Plan, facts: RuntimeFa
       } catch {
         /* optional */
       }
-      if (opts.signedExtrinsics?.[i]) detail.dryRun = await dryRunSigned(client, facts, ext, atBlock.hash);
+      if (opts.signedExtrinsics?.[i]) {
+        const d = await dryRunOne(client, facts, ext, i, atBlock.hash);
+        detail.dryRun = { outcome: d.outcome, detail: `system_dryRun: ${d.detail}` };
+      }
       transactions.push(detail);
     }
 
