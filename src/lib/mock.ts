@@ -1,4 +1,4 @@
-// EXAMPLE DATA. Runtime fingerprint fields come from Bot 4's real read-only
+// EXAMPLE DATA. Call indexes are real (Bot 2 compiler on spec 1002). Runtime fingerprint fields come from Bot 4's real read-only
 // snapshot of wss://mainnet.portaldot.io (block 2,721,455). Digests, hashes,
 // fees and addresses below are placeholders until the SDK is wired in.
 import type { Manifest, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, Approval } from "./types";
@@ -36,10 +36,10 @@ export function discover(endpoint: string, upgraded = false): RuntimeFacts {
       digest: h(`fp-${specVersion}`),
     },
     capabilities: [
-      { id: "Assets.transfer_keep_alive", status: "observed", pallet: "Assets", callIndex: [10, 9], argTypesPartial: true },
-      { id: "Assets.mint", status: "observed", pallet: "Assets", callIndex: [10, 3], argTypesPartial: true },
-      { id: "Contracts.call", status: "observed", pallet: "Contracts", callIndex: [14, 0], argTypesPartial: true },
-      { id: "Utility.batch_all", status: "observed", pallet: "Utility", callIndex: [3, 2], argTypesPartial: true },
+      { id: "Assets.transfer_keep_alive", status: "observed", pallet: "Assets", callIndex: [26, 6], argTypesPartial: true },
+      { id: "Assets.mint", status: "observed", pallet: "Assets", callIndex: [26, 3], argTypesPartial: true },
+      { id: "Contracts.call", status: "observed", pallet: "Contracts", callIndex: [13, 0], argTypesPartial: true },
+      { id: "Utility.batch_all", status: "observed", pallet: "Utility", callIndex: [1, 2], argTypesPartial: true },
       { id: "Revive.call", status: "not_observed" },
       { id: "Nfts.mint", status: "not_observed" },
     ],
@@ -57,10 +57,10 @@ export const DEMO_CONTRACT = "5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL";
 export function demoManifest(withNft: boolean): Manifest {
   const actions: Manifest["actions"] = [
     { id: "pay", kind: "assets.transfer", requires: "Assets.transfer_keep_alive", args: { assetId: "1", amount: "2500000000000000", recipient: { type: "SS58", value: BOB, ss58Prefix: 42 } } },
-    { id: "settle", kind: "contracts.call", requires: "Contracts.call", args: { contract: { type: "SS58", value: DEMO_CONTRACT, ss58Prefix: 42 }, selector: "0x633aa551", value: "0" } },
+    { id: "settle", kind: "contracts.call", requires: "Contracts.call", args: { contract: { type: "SS58", value: DEMO_CONTRACT, ss58Prefix: 42 }, value: "0", gasLimit: "5000000000", data: "0x633aa551" } },
     withNft
       ? { id: "receipt", kind: "nfts.mint", requires: "Nfts.mint", args: { collection: "7", item: "1", owner: { type: "SS58", value: EXAMPLE_SIGNER, ss58Prefix: 42 } } }
-      : { id: "receipt", kind: "assets.mint", requires: "Assets.mint", args: { assetId: "2", amount: "1", beneficiary: { type: "SS58", value: EXAMPLE_SIGNER, ss58Prefix: 42 } } },
+      : { id: "receipt", kind: "assets.mint", requires: "Assets.mint", args: { assetId: "2", amount: "1", recipient: { type: "SS58", value: EXAMPLE_SIGNER, ss58Prefix: 42 } } },
   ];
   return { version: "seam/manifest/v1", expectedChain: { genesisHash: "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54", specVersion: 1002 }, signer: { type: "SS58", value: EXAMPLE_SIGNER, ss58Prefix: 42 }, preferredMode: "sequential", actions };
 }
