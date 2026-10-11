@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T12:09:40.910Z",
+  "generatedAt": "2026-10-11T12:16:53.102Z",
   "facts": {
     "fingerprint": {
       "genesisHash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
@@ -2634,7 +2634,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-11T12:19:40.939Z"
+      "expiresAt": "2026-10-11T12:26:53.128Z"
     },
     "policyResult": {
       "allowed": true,
@@ -2766,7 +2766,7 @@
     },
     "policyText": "Allowed: all 21 policy checks passed.",
     "approval": {
-      "hash": "0x61eaadc11b4e218ab8b4d2e032f13ab28e6e1851cdc0ce1590c439f578873bca",
+      "hash": "0xdb09d88c4a1aeeb7e48a03feac57fb1ee3495ec6d497708ec8d79faaa33bd09b",
       "covers": [
         "manifest",
         "plan",
@@ -2777,7 +2777,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:19:40.939Z",
+      "expiresAt": "2026-10-11T12:26:53.128Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
@@ -2787,14 +2787,64 @@
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
         "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
-        "envelopeDigest": "0xfd34a897b728fe0c9900a42c6971f8ee7558a89762e8e1397aa5bdbc635bbe55",
+        "envelopeDigest": "0x9675718eb52f413939622760ab57101861155a2928cedae1677094c775c61f17",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:19:40.939Z"
+        "expiresAt": "2026-10-11T12:26:53.128Z"
       }
     },
+    "timeline": [
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "checking"
+      },
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "sending"
+      },
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "done",
+        "detail": "finalized"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "checking"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "sending"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "done",
+        "detail": "finalized"
+      },
+      {
+        "index": 2,
+        "actionId": "receipt",
+        "phase": "checking"
+      },
+      {
+        "index": 2,
+        "actionId": "receipt",
+        "phase": "sending"
+      },
+      {
+        "index": 2,
+        "actionId": "receipt",
+        "phase": "done",
+        "detail": "finalized"
+      }
+    ],
     "run": {
       "ok": true,
       "receipt": {
@@ -2803,7 +2853,7 @@
         "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "approvalHash": "0x61eaadc11b4e218ab8b4d2e032f13ab28e6e1851cdc0ce1590c439f578873bca",
+        "approvalHash": "0xdb09d88c4a1aeeb7e48a03feac57fb1ee3495ec6d497708ec8d79faaa33bd09b",
         "mode": "sequential",
         "steps": [
           {
@@ -2857,7 +2907,7 @@
           "verified": 3,
           "expected": 3
         },
-        "receiptDigest": "0x6507cb83c5003354293f5d75503a291f1206f9e1f49ad362a5d0926798099764"
+        "receiptDigest": "0x0ba29317e15757dba699748a2ef6b727bd645d97660a64e7c8880dbb95552a00"
       }
     },
     "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: finalized. The call succeeded and the contract emitted an event. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x7265636569707400000000000000000000000000000000000000000000000000"
@@ -3124,7 +3174,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-11T12:19:40.961Z"
+      "expiresAt": "2026-10-11T12:26:53.150Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3256,7 +3306,7 @@
     },
     "policyText": "Allowed: all 21 policy checks passed.",
     "approval": {
-      "hash": "0x009e725ca08273adace2fc7a8af262a37a6fe864339e1229b917053e5725f606",
+      "hash": "0x13c49846de8063bb63aa9e2300eaf8a2c391ef9410c7e3d50c113b8188edd1bc",
       "covers": [
         "manifest",
         "plan",
@@ -3267,7 +3317,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:19:40.961Z",
+      "expiresAt": "2026-10-11T12:26:53.150Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
@@ -3277,14 +3327,27 @@
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
         "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
-        "envelopeDigest": "0xbc7447762732d1fdded1a0f2130aec39454eea1761974ebc3f6f48504650438d",
+        "envelopeDigest": "0xadd31cd0a7af40a25b042bdfb80af40f67def876b0c758e1b4c34af871a57f23",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:19:40.961Z"
+        "expiresAt": "2026-10-11T12:26:53.150Z"
       }
     },
+    "timeline": [
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "checking"
+      },
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "blocked",
+        "detail": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+      }
+    ],
     "run": {
       "ok": false,
       "stage": "submit_gate",
@@ -3468,7 +3531,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-11T12:19:40.973Z"
+      "expiresAt": "2026-10-11T12:26:53.163Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3600,7 +3663,7 @@
     },
     "policyText": "Allowed: all 21 policy checks passed.",
     "approval": {
-      "hash": "0xa7999601a3fc8960cff4926e8d6b80dc0dcb001191966bff2efdd84c969c00cc",
+      "hash": "0xf6a19478a850f84c38876b7d4b36b1be2b3b4874064689d31674d463b8e66263",
       "covers": [
         "manifest",
         "plan",
@@ -3611,7 +3674,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:19:40.973Z",
+      "expiresAt": "2026-10-11T12:26:53.163Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
@@ -3621,23 +3684,58 @@
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
         "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
-        "envelopeDigest": "0x11ee299b38665f1a6c81a34b43ce317d17f9fdda44f4fb4ac45c6528511d257d",
+        "envelopeDigest": "0x0974ebff47e5ef9fd511e75d5e48df7391e85ab5156bc3837488e56eaea1c9b1",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:19:40.973Z"
+        "expiresAt": "2026-10-11T12:26:53.163Z"
       }
     },
+    "timeline": [
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "checking"
+      },
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "sending"
+      },
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "done",
+        "detail": "finalized"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "checking"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "sending"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "done",
+        "detail": "failed"
+      }
+    ],
     "run": {
       "ok": true,
+      "stoppedReason": "SEAM stopped because step 2 (settle) did not complete and verify: The transaction failed on chain: Contracts.ContractTrapped.",
       "receipt": {
         "receiptVersion": 1,
         "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
         "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "approvalHash": "0xa7999601a3fc8960cff4926e8d6b80dc0dcb001191966bff2efdd84c969c00cc",
+        "approvalHash": "0xf6a19478a850f84c38876b7d4b36b1be2b3b4874064689d31674d463b8e66263",
         "mode": "sequential",
         "steps": [
           {
@@ -3674,6 +3772,405 @@
             "status": "not_run",
             "events": [],
             "verification": "unknown",
+            "reason": "Not run. SEAM stopped because step 2 (settle) did not complete and verify: The transaction failed on chain: Contracts.ContractTrapped."
+          }
+        ],
+        "result": "partial",
+        "coverage": {
+          "verified": 1,
+          "expected": 3
+        },
+        "receiptDigest": "0x1f60433e5b19cda7351c1ac246e18ebb5ae79436c8566dc3cbcb077bce396235"
+      }
+    },
+    "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: failed. The transaction failed on chain: Contracts.ContractTrapped. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: not run. Not run. SEAM stopped because step 2 (settle) did not complete and verify: The transaction failed on chain: Contracts.ContractTrapped."
+  },
+  "midrun": {
+    "id": "midrun",
+    "manifest": {
+      "version": 1,
+      "signer": {
+        "type": "ss58",
+        "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "ss58Prefix": 42
+      },
+      "actions": [
+        {
+          "id": "pay",
+          "kind": "assets.transfer",
+          "args": {
+            "assetId": "1",
+            "amount": "2500",
+            "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+          }
+        },
+        {
+          "id": "settle",
+          "kind": "contracts.call",
+          "args": {
+            "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "value": "0",
+            "gasLimit": "5000000000",
+            "data": "0x633aa551"
+          }
+        },
+        {
+          "id": "receipt",
+          "kind": "assets.mint",
+          "args": {
+            "assetId": "2",
+            "amount": "1",
+            "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+          }
+        }
+      ]
+    },
+    "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+    "plan": {
+      "planVersion": 1,
+      "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+      "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
+      "signer": {
+        "type": "ss58",
+        "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "publicKey": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+      },
+      "mode": "sequential",
+      "modeReason": "Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+      "steps": [
+        {
+          "actionId": "pay",
+          "kind": "assets.transfer",
+          "capability": "Assets.transfer_keep_alive",
+          "palletIndex": 26,
+          "callIndex": 6,
+          "decodedArgs": {
+            "assetId": "1",
+            "amount": "2500",
+            "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "recipientAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48"
+          },
+          "encodedCall": "0x1a0604008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a481127",
+          "status": "ok"
+        },
+        {
+          "actionId": "settle",
+          "kind": "contracts.call",
+          "capability": "Contracts.call",
+          "palletIndex": 13,
+          "callIndex": 0,
+          "decodedArgs": {
+            "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "contractAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
+            "value": "0",
+            "gasLimit": "5000000000",
+            "data": "0x633aa551"
+          },
+          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551",
+          "status": "ok"
+        },
+        {
+          "actionId": "receipt",
+          "kind": "assets.mint",
+          "capability": "Assets.mint",
+          "palletIndex": 26,
+          "callIndex": 3,
+          "decodedArgs": {
+            "assetId": "2",
+            "amount": "1",
+            "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "recipientAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48"
+          },
+          "encodedCall": "0x1a0308008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4804",
+          "status": "ok"
+        }
+      ],
+      "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45"
+    },
+    "planText": "Plan for 3 steps: steps run one at a time, and SEAM stops at the first one that fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- settle: contracts.call is ready (Contracts.call).\n- receipt: assets.mint is ready (Assets.mint).\nWhy this mode: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+    "preflight": {
+      "steps": [
+        {
+          "actionId": "pay",
+          "weight": {
+            "value": "567688000"
+          },
+          "fee": {
+            "value": "1490125636184"
+          },
+          "storageDeposit": {
+            "unknown": true
+          },
+          "dryRun": "ok"
+        },
+        {
+          "actionId": "settle",
+          "weight": {
+            "value": "5811203000"
+          },
+          "fee": {
+            "value": "1520000000000"
+          },
+          "storageDeposit": {
+            "unknown": true
+          },
+          "dryRun": "ok"
+        },
+        {
+          "actionId": "receipt",
+          "weight": {
+            "value": "295983000"
+          },
+          "fee": {
+            "value": "1420000000000"
+          },
+          "storageDeposit": {
+            "unknown": true
+          },
+          "dryRun": "ok"
+        }
+      ],
+      "totalFee": {
+        "value": "4430125636184"
+      }
+    },
+    "envelope": {
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "nonce": 7,
+      "mortalityBlocks": 64,
+      "checkpoint": {
+        "number": 2721455,
+        "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
+      },
+      "expiresAt": "2026-10-11T12:26:53.176Z"
+    },
+    "policyResult": {
+      "allowed": true,
+      "rules": [
+        {
+          "rule": "plan_integrity",
+          "outcome": "pass",
+          "reason": "plan digest matches its contents"
+        },
+        {
+          "rule": "runtime_match",
+          "outcome": "pass",
+          "reason": "plan was compiled against the current runtime"
+        },
+        {
+          "rule": "mode_allowed",
+          "outcome": "pass",
+          "reason": "execution mode sequential is allowed"
+        },
+        {
+          "rule": "capability",
+          "outcome": "pass",
+          "reason": "Assets.transfer_keep_alive is observed and allowed",
+          "actionId": "pay"
+        },
+        {
+          "rule": "asset_allowed",
+          "outcome": "pass",
+          "reason": "asset 1 is allowed",
+          "actionId": "pay"
+        },
+        {
+          "rule": "recipient_allowed",
+          "outcome": "pass",
+          "reason": "recipient is allowed",
+          "actionId": "pay"
+        },
+        {
+          "rule": "capability",
+          "outcome": "pass",
+          "reason": "Contracts.call is observed and allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "contract_allowed",
+          "outcome": "pass",
+          "reason": "contract is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "capability",
+          "outcome": "pass",
+          "reason": "Assets.mint is observed and allowed",
+          "actionId": "receipt"
+        },
+        {
+          "rule": "asset_allowed",
+          "outcome": "pass",
+          "reason": "asset 2 is allowed",
+          "actionId": "receipt"
+        },
+        {
+          "rule": "recipient_allowed",
+          "outcome": "pass",
+          "reason": "recipient is allowed",
+          "actionId": "receipt"
+        },
+        {
+          "rule": "weight_limit",
+          "outcome": "pass",
+          "reason": "weight 567688000 is within limits",
+          "actionId": "pay"
+        },
+        {
+          "rule": "storage_limit",
+          "outcome": "pass",
+          "reason": "storage deposit is unknown (allowed by policy)",
+          "actionId": "pay"
+        },
+        {
+          "rule": "dry_run",
+          "outcome": "pass",
+          "reason": "dry run succeeded",
+          "actionId": "pay"
+        },
+        {
+          "rule": "weight_limit",
+          "outcome": "pass",
+          "reason": "weight 5811203000 is within limits",
+          "actionId": "settle"
+        },
+        {
+          "rule": "storage_limit",
+          "outcome": "pass",
+          "reason": "storage deposit is unknown (allowed by policy)",
+          "actionId": "settle"
+        },
+        {
+          "rule": "dry_run",
+          "outcome": "pass",
+          "reason": "dry run succeeded",
+          "actionId": "settle"
+        },
+        {
+          "rule": "weight_limit",
+          "outcome": "pass",
+          "reason": "weight 295983000 is within limits",
+          "actionId": "receipt"
+        },
+        {
+          "rule": "storage_limit",
+          "outcome": "pass",
+          "reason": "storage deposit is unknown (allowed by policy)",
+          "actionId": "receipt"
+        },
+        {
+          "rule": "dry_run",
+          "outcome": "pass",
+          "reason": "dry run succeeded",
+          "actionId": "receipt"
+        },
+        {
+          "rule": "fee_limit",
+          "outcome": "pass",
+          "reason": "total fee 4430125636184 is within limits"
+        }
+      ],
+      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
+    },
+    "policyText": "Allowed: all 21 policy checks passed.",
+    "approval": {
+      "hash": "0x2f83292ea1638ff2e9a6cb8cbdbae4d6bc817b40194207123aeb63341e5bfbf9",
+      "covers": [
+        "manifest",
+        "plan",
+        "encoded calls",
+        "runtime fingerprint",
+        "policy",
+        "policy result",
+        "signing envelope",
+        "preflight"
+      ],
+      "expiresAt": "2026-10-11T12:26:53.176Z",
+      "used": false,
+      "binding": {
+        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
+        "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
+        "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
+        "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
+        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
+        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
+        "envelopeDigest": "0x8f44a44c5606d86e3a48c20f0240346ce052b6eca4f246fd72e91005e495e4e8",
+        "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
+        "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "nonce": 7,
+        "mortalityBlocks": 64,
+        "expiresAt": "2026-10-11T12:26:53.176Z"
+      }
+    },
+    "timeline": [
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "checking"
+      },
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "sending"
+      },
+      {
+        "index": 0,
+        "actionId": "pay",
+        "phase": "done",
+        "detail": "finalized"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "checking"
+      },
+      {
+        "index": 1,
+        "actionId": "settle",
+        "phase": "blocked",
+        "detail": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+      }
+    ],
+    "run": {
+      "ok": true,
+      "stoppedReason": "SEAM stopped before sending it: Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval.",
+      "receipt": {
+        "receiptVersion": 1,
+        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
+        "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
+        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
+        "approvalHash": "0x2f83292ea1638ff2e9a6cb8cbdbae4d6bc817b40194207123aeb63341e5bfbf9",
+        "mode": "sequential",
+        "steps": [
+          {
+            "actionId": "pay",
+            "status": "finalized",
+            "txHash": "0x7061790000000000000000000000000000000000000000000000000000000000",
+            "block": {
+              "number": 2721461,
+              "hash": "0x0000000000000000000000000000000000000000000000000000000000b10c01"
+            },
+            "events": [
+              "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
+              "System.ExtrinsicSuccess({})"
+            ],
+            "verification": "verified",
+            "reason": "Transfer confirmed: asset, amount and account all match the plan."
+          },
+          {
+            "actionId": "settle",
+            "status": "not_run",
+            "events": [],
+            "verification": "unknown",
+            "reason": "Not run. SEAM stopped before sending it: Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+          },
+          {
+            "actionId": "receipt",
+            "status": "not_run",
+            "events": [],
+            "verification": "unknown",
             "reason": "Not run, because an earlier step did not complete."
           }
         ],
@@ -3682,9 +4179,9 @@
           "verified": 1,
           "expected": 3
         },
-        "receiptDigest": "0x8acc99af529a7ab3d38aa4fb51491b8971a20d797e50b8166d91e0cd6bdcb719"
+        "receiptDigest": "0xc1a8870122193e0a6de13410002023afe9bb016cf4a7173f01ace2654105bcdb"
       }
     },
-    "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: failed. The transaction failed on chain: Contracts.ContractTrapped. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: not run. Not run, because an earlier step did not complete."
+    "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: not run. Not run. SEAM stopped before sending it: Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval.\n- receipt: not run. Not run, because an earlier step did not complete."
   }
 }
