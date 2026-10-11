@@ -57,8 +57,20 @@ export function loadRuntime(metadataHex: string, typesBundle: string): LoadedRun
   const pinned = parsePinnedTypes(typesBundle);
   const registry = new TypeRegistry();
   registry.register(pinned.types as Record<string, string>);
-  const metadata = new Metadata(registry, metaBytes);
-  registry.setMetadata(metadata);
+  // polkadot.js warns "Unable to map [u8; 32] to a lookup index" while decorating V13 *storage* keys. SEAM never
+  // reads storage through this registry (calls and events only), so drop exactly that message and nothing else.
+  const warn = console.warn;
+  console.warn = (...a: unknown[]) => {
+    if (typeof a[0] === 'string' && /^Unable to map .* to a lookup index$/.test(a[0])) return;
+    warn(...a);
+  };
+  let metadata: Metadata;
+  try {
+    metadata = new Metadata(registry, metaBytes);
+    registry.setMetadata(metadata);
+  } finally {
+    console.warn = warn;
+  }
   const loaded: LoadedRuntime = { registry, metadata, metadataHash, typesBundleHash, pinned };
   cache.set(key, loaded);
   return loaded;
