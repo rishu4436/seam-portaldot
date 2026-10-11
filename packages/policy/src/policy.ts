@@ -192,7 +192,12 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
     capCheck("native_value_limit", "native value", d.value, policy.maxNativeValue);
     capCheck("gas_limit", "gas limit", d.gasLimit, policy.maxGasLimit);
     capCheck("proof_size_limit", "proof size limit", d.proofSize, policy.maxProofSize);
-    capCheck("storage_limit", "storage deposit limit", d.storageDepositLimit, policy.maxStorageDeposit);
+    // storageDepositLimit: null means the developer chose "no limit" (Bot 2's compiler never defaults to it).
+    const sdl = (d as Record<string, string | null | undefined>).storageDepositLimit;
+    if (sdl === null) {
+      if (policy.maxStorageDeposit !== undefined) block("storage_limit", `Blocked: this contract call sets no storage deposit limit, so it can't be kept under the policy's limit of ${policy.maxStorageDeposit}.`, id);
+      else pass("storage_limit", "no storage deposit limit set, and the policy sets none either", id);
+    } else capCheck("storage_limit", "storage deposit limit", sdl, policy.maxStorageDeposit);
   }
 
   // Preflight: real estimates from the node. Unknowns block unless the policy allows them.
@@ -211,7 +216,13 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
       if (!planIds.has(p.actionId)) { block("preflight", "Blocked: preflight includes a step that isn't in the plan.", p.actionId); continue; }
       est("weight_limit", "weight", p.weight, policy.maxWeight, policy.allowUnknown.weight, p.actionId);
       est("storage_limit", "storage deposit", p.storageDeposit, policy.maxStorageDeposit, policy.allowUnknown.storageDeposit, p.actionId);
-      if (policy.maxProofSize !== undefined) est("proof_size_limit", "proof size", p.proofSize ?? { unknown: true }, policy.maxProofSize, policy.allowUnknown.proofSize, p.actionId);
+      if (policy.maxProofSize !== undefined) {
+        // A contract call's own proofSize limit already bounds what it can use (checked above), and the node's
+        // estimate for it mostly echoes that limit, so the estimate isn't checked again for those steps.
+        const own = plan.steps.find((s) => s.actionId === p.actionId)?.decodedArgs.proofSize;
+        if (own !== undefined && own !== null) pass("proof_size_limit", `proof size is bounded by the call's own limit of ${own}`, p.actionId);
+        else est("proof_size_limit", "proof size", p.proofSize ?? { unknown: true }, policy.maxProofSize, policy.allowUnknown.proofSize, p.actionId);
+      }
       if (p.dryRun === "failed") block("dry_run", `Blocked: the dry run failed${p.note ? ` (${p.note})` : ""}.`, p.actionId);
       else if (p.dryRun === "unknown") unknown("dry_run", "The dry run result is unknown.", !!policy.allowUnknown.dryRun, p.actionId);
       else pass("dry_run", "dry run succeeded", p.actionId);
