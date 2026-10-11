@@ -64,12 +64,14 @@ Throws `SeamCompileError` (with **all** problems found in `error.issues`, each `
 wrong. Returns a Plan with `mode: 'unavailable'` when the input is fine but the runtime can't do it.
 
 Error codes: `MANIFEST_INVALID`, `NOT_CANONICAL`, `AMOUNT_INVALID`, `ADDRESS_INVALID`, `ADDRESS_TYPE`, `SS58_PREFIX`,
-`CHAIN_MISMATCH`, `FACTS_INVALID`, `ENCODE_FAILED`.
+`CHAIN_MISMATCH`, `FACTS_INVALID`, `ENCODE_FAILED`, and for the ink! ABI form `ABI_INVALID`, `ABI_HASH_MISMATCH`,
+`ABI_MESSAGE_UNKNOWN`, `ABI_ARGS_INVALID`.
 
-Options: `allowAtomicUnverified` (default `false`).
+Options: `allowAtomicUnverified` (default `false`); `abis` (map of name → ink! metadata JSON, used by `abiRef`).
 
 Other exports: `computePlanDigest(plan)`, `computeManifestDigest(manifest)`, `computeFingerprintDigest(fp)`,
-`canonicalJson`, `digestJson`, `loadRuntime`, `readPinnedTypes`, `KIND_TO_CAPABILITY`.
+`canonicalJson`, `digestJson`, `loadRuntime`, `readPinnedTypes`, `KIND_TO_CAPABILITY`,
+`encodeInkMessage`, `decodeInkMessage(abi, data, ss58Prefix)`, `computeAbiHash(abi)`, `loadInkAbi`.
 
 ## Manifest (draft v1, owned by Bot 5)
 
@@ -95,7 +97,7 @@ Args per kind (unknown arg names are rejected):
 |---|---|---|
 | `assets.transfer` | `Assets.transfer_keep_alive` | `assetId`, `amount`, `recipient` |
 | `assets.mint` | `Assets.mint` | `assetId`, `amount`, `recipient` |
-| `contracts.call` | `Contracts.call` | `contract`, `value`, `gasLimit`, `data` (hex: ink! selector + SCALE args) |
+| `contracts.call` | `Contracts.call` | `contract`, `value`, `gasLimit`, and **either** `data` (hex: ink! selector + SCALE args) **or** `message` + `abi`/`abiRef` (+ `args`, optional `abiHash`), see below |
 | `revive.call` | `Revive.call` | `contract` (H160), `value`, `data`, optional `gasLimit`, `storageDepositLimit` |
 | `nfts.mint` | `Nfts.mint` | `collection`, `item`, `recipient` |
 
@@ -108,6 +110,50 @@ Args per kind (unknown arg names are rejected):
 - **Manifest digest**: `blake2b-256("seam/manifest/v1" || 0x00 || canonicalJSON(manifest))`, where canonical JSON means
   sorted keys, no whitespace, integers only (any float anywhere → `NOT_CANONICAL`).
 
+### contracts.call from an ink! ABI
+
+Instead of hand-encoding `data`, name the message and give the contract's ink! metadata (`metadata.json`, or a whole
+`.contract` bundle; ink! metadata V0 to V5, read offline by `@polkadot/api-contract`'s `Abi`):
+
+```jsonc
+{ "id": "settle", "kind": "contracts.call",
+  "args": { "contract": "5FHn…94ty", "value": "0", "gasLimit": "5000000000",
+            "message": "settle",
+            "args": { "order_id": 7, "amount": "2500000000000000" },   // or positional: [7, "2500000000000000"]
+            "abi": { /* metadata.json */ } } }                      // or "abiRef": "seam_demo" + options.abis
+```
+
+- **Exactly one** of `data` or `message`. `args`, `abi`, `abiRef`, `abiHash` are only allowed with `message`, and
+  exactly one of `abi` / `abiRef` is required. `abiRef` names an entry of `compile(..., { abis })`; the manifest then
+  stays small, and the plan still pins the ABI by hash. An optional `abiHash` in the manifest must match
+  (`ABI_HASH_MISMATCH`).
+- The compiler encodes `data = selector ‖ SCALE(args)` using the ABI's own type info, so **`data` still starts with the
+  4-byte selector** (policy's `allowedSelectors` keeps working unchanged).
+- Arguments are checked strictly against the ABI before encoding: integers as digit strings (or safe integers),
+  range-checked to the type's bits; `AccountId` as SS58 **with the chain prefix** or `0x` + 64 hex; `bool`; `String`;
+  `Vec<u8>` / `[u8; N]` / `Hash` as `0x` hex (exact length for fixed); structs as objects with exactly their fields;
+  tuples/vectors as arrays; `Option` as `null` or the value; enums as `"Variant"` or `{ "Variant": value }`.
+  Anything else is `ABI_ARGS_INVALID` with the exact path (e.g. `actions[1].args.args.amount`), as are a wrong count,
+  unknown/missing names, and a non-zero `value` for a non-payable message. Unknown message names
+  (`ABI_MESSAGE_UNKNOWN`) list the messages the ABI has; constructors are refused.
+- The encoded bytes are decoded again with the ABI and must give back the same message and args (`ENCODE_FAILED` otherwise).
+- **ABI hash:** `abiHash = blake2b-256("seam/abi/v1" || 0x00 || canonicalJSON(abi))`. Key order doesn't matter;
+  any other change (even docs) changes it.
+
+The plan step then carries:
+
+```jsonc
+"decodedArgs": { "contract": "…", "contractAccountId": "0x…", "value": "0", "gasLimit": "5000000000",
+                 "data": "0x<selector><args>", "message": "settle", "selector": "0x<4 bytes>", "abiHash": "0x…" },
+"contractMessage": { "abiHash": "0x…", "abiRef": "seam_demo" /* only with abiRef */, "message": "settle",
+                     "selector": "0x…", "args": { "order_id": "7", "amount": "2500000000000000" } }
+```
+
+Both are inside `planDigest`, so an approval covers the ABI, the message and the decoded arguments. `contractMessage.args`
+is the normalised form (integers as strings, accounts as SS58 with the chain prefix, bytes as lowercase hex).
+The raw-`data` form is unchanged: no `message`/`selector`/`abiHash` keys and no `contractMessage`, so existing plan
+digests are identical.
+
 ## Plan
 
 ```ts
@@ -117,7 +163,8 @@ Args per kind (unknown arg names are rejected):
   signer: { type, value, publicKey },          // publicKey = AccountId32 hex (or H160)
   mode: 'atomic_verified' | 'atomic_unverified' | 'sequential' | 'unavailable',
   modeReason: string,                          // plain-language why
-  steps: [{ actionId, kind, capability, palletIndex, callIndex, decodedArgs, encodedCall, status: 'ok'|'unavailable', reason? }],
+  steps: [{ actionId, kind, capability, palletIndex, callIndex, decodedArgs, encodedCall, status: 'ok'|'unavailable', reason?,
+           contractMessage? }],   // contractMessage only for the ink! ABI form of contracts.call
   outerCall?: { capability: 'Utility.batch_all', palletIndex, callIndex, encodedCall },   // atomic modes only
   planDigest                                   // blake2b-256("seam/plan/v1" || 0x00 || canonicalJSON(plan without planDigest))
 }
@@ -169,9 +216,13 @@ Changing this file changes `typesBundleHash`, and with it the fingerprint and ev
 `fixtures/` holds copies of Bot 4's read-only captures of Portaldot mainnet (spec 1002, tx version 2, SS58 42, POT 14 decimals,
 metadata blake2b `0x8b91f644…5150`), plus one real signed extrinsic used as type evidence. Tests make no network calls.
 
+`fixtures/ink/` holds ink! metadata used by the ABI tests: `erc20.v5.json` (ink! 5, metadata V5) and `flipper.v3.json`
+(ink! 3.0.0-rc7, metadata V3), both from the polkadot-js/api test fixtures (Apache-2.0) with the wasm blob removed.
+
 ## Known limits
 
-- `contracts.call` takes `data` as raw hex. Encoding ink! messages from a contract ABI is not part of the compiler.
+- The ink! ABI form supports the argument types listed above; `Result`, maps and sets as message *arguments* are refused
+  with `ABI_ARGS_INVALID` rather than guessed. Return values and events are not decoded by the compiler.
 - Spec 1002 has the old `pallet-contracts` (Weight v1 `gas_limit: Compact<u64>`, no `storage_deposit_limit`). Newer runtimes
   with extra args make the step `unavailable` with a reason until a binding is added.
 - polkadot.js prints `Unable to map [u8; 32] to a lookup index` once while converting V13 metadata. It's harmless.

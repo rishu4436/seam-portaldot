@@ -3,12 +3,14 @@ import { DOMAIN, NotCanonicalError, digestJson } from './canonical.js';
 import { parseH160, parseNativeAddress } from './address.js';
 import { computeFingerprintDigest } from './facts.js';
 import { loadRuntime, type LoadedRuntime } from './runtime.js';
+import { encodeInkMessage } from './ink.js';
 import {
   SeamCompileError,
   type ActionKind,
   type Capability,
   type CompileIssue,
   type CompileOptions,
+  type ContractMessage,
   type Hex,
   type Manifest,
   type ManifestAction,
@@ -34,7 +36,8 @@ export const BATCH_CAPABILITY = 'Utility.batch_all';
 const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }> = {
   'assets.transfer': { required: ['assetId', 'amount', 'recipient'], optional: [] },
   'assets.mint': { required: ['assetId', 'amount', 'recipient'], optional: [] },
-  'contracts.call': { required: ['contract', 'value', 'gasLimit', 'data'], optional: [] },
+  // contracts.call: exactly one of `data` (raw hex) or `message` (+ `abi` or `abiRef`, optional `args`, `abiHash`).
+  'contracts.call': { required: ['contract', 'value', 'gasLimit'], optional: ['data', 'message', 'args', 'abi', 'abiRef', 'abiHash'] },
   'revive.call': { required: ['contract', 'value', 'data'], optional: ['gasLimit', 'storageDepositLimit'] },
   'nfts.mint': { required: ['collection', 'item', 'recipient'], optional: [] }
 };
@@ -100,13 +103,81 @@ interface ValidatedAction {
   values: Record<string, string>;
   /** Values as passed to polkadot.js (addresses as AccountId hex). */
   encodeValues: Record<string, string>;
+  /** ink! ABI form of contracts.call only. */
+  contractMessage?: ContractMessage;
+}
+
+/** Checks the contracts.call `data` / `message` choice and encodes the ABI form. Returns false on error. */
+function contractData(
+  a: Record<string, unknown>,
+  base: string,
+  ss58Prefix: number,
+  options: CompileOptions,
+  issues: CompileIssue[],
+  set: (k: string, v: string | undefined) => void
+): ContractMessage | undefined {
+  const p = (k: string) => `${base}.args.${k}`;
+  const hasData = a.data !== undefined;
+  const hasMsg = a.message !== undefined;
+  if (hasData === hasMsg) {
+    issues.push({
+      code: 'MANIFEST_INVALID',
+      path: p(hasData ? 'message' : 'data'),
+      message: hasData
+        ? 'give either "data" (raw hex) or "message" (ink! ABI form), not both'
+        : 'contracts.call needs either "data" (0x hex: ink! selector + SCALE args) or "message" with "abi"/"abiRef"'
+    });
+    return undefined;
+  }
+  if (hasData) {
+    for (const k of ['args', 'abi', 'abiRef', 'abiHash']) {
+      if (a[k] !== undefined) issues.push({ code: 'MANIFEST_INVALID', path: p(k), message: `"${k}" is only used with "message"; remove it or drop "data"` });
+    }
+    set('data', parseHexBytes(a.data, p('data'), issues));
+    return undefined;
+  }
+  if ((a.abi === undefined) === (a.abiRef === undefined)) {
+    issues.push({ code: 'ABI_INVALID', path: p(a.abi === undefined ? 'abi' : 'abiRef'), message: 'the ink! form needs exactly one of "abi" (the metadata.json object) or "abiRef" (a key of options.abis)' });
+    return undefined;
+  }
+  let abiJson: unknown = a.abi;
+  let abiPath = p('abi');
+  let abiRef: string | undefined;
+  if (a.abiRef !== undefined) {
+    abiPath = p('abiRef');
+    if (typeof a.abiRef !== 'string' || a.abiRef.length === 0) {
+      issues.push({ code: 'ABI_INVALID', path: abiPath, message: 'abiRef must be a non-empty string naming an ABI passed in options.abis' });
+      return undefined;
+    }
+    abiRef = a.abiRef;
+    abiJson = options.abis && Object.prototype.hasOwnProperty.call(options.abis, abiRef) ? options.abis[abiRef] : undefined;
+    if (abiJson === undefined) {
+      issues.push({ code: 'ABI_INVALID', path: abiPath, message: `no ABI named "${abiRef}" was passed in options.abis` });
+      return undefined;
+    }
+  }
+  const value = typeof a.value === 'string' ? a.value : undefined;
+  const r = encodeInkMessage(abiJson, a.message, a.args, value, ss58Prefix, base + '.args', issues, abiPath);
+  if (!r) return undefined;
+  if (a.abiHash !== undefined && (typeof a.abiHash !== 'string' || a.abiHash.toLowerCase() !== r.abiHash)) {
+    issues.push({ code: 'ABI_HASH_MISMATCH', path: p('abiHash'), message: `the ABI hashes to ${r.abiHash}, but the manifest pins ${String(a.abiHash)}` });
+    return undefined;
+  }
+  set('data', r.data);
+  set('message', r.message);
+  set('selector', r.selector);
+  set('abiHash', r.abiHash);
+  const cm: ContractMessage = { abiHash: r.abiHash, message: r.message, selector: r.selector, args: r.args };
+  if (abiRef !== undefined) cm.abiRef = abiRef;
+  return cm;
 }
 
 function validateAction(
   action: ManifestAction,
   index: number,
   ss58Prefix: number,
-  issues: CompileIssue[]
+  issues: CompileIssue[],
+  options: CompileOptions = {}
 ): ValidatedAction | undefined {
   const base = `actions[${index}]`;
   const schema = ARG_SCHEMA[action.kind];
@@ -137,6 +208,7 @@ function validateAction(
     encodeValues[k] = enc;
   };
 
+  let contractMessage: ContractMessage | undefined;
   switch (action.kind) {
     case 'assets.transfer':
     case 'assets.mint': {
@@ -157,7 +229,7 @@ function validateAction(
       }
       set('value', parseAmount(a.value, p('value'), issues));
       set('gasLimit', parseAmount(a.gasLimit, p('gasLimit'), issues));
-      set('data', parseHexBytes(a.data, p('data'), issues));
+      contractMessage = contractData(a, base, ss58Prefix, options, issues, (k, v) => set(k, v));
       break;
     }
     case 'revive.call': {
@@ -179,7 +251,8 @@ function validateAction(
       break;
     }
   }
-  return issues.length > before ? undefined : { action, values, encodeValues };
+  if (issues.length > before) return undefined;
+  return contractMessage ? { action, values, encodeValues, contractMessage } : { action, values, encodeValues };
 }
 
 function validateManifestShape(m: unknown, issues: CompileIssue[]): m is Manifest {
@@ -397,7 +470,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
   }
 
   const signer = signerFor(manifest, fp.ss58Prefix, issues);
-  const validated = manifest.actions.map((a, i) => validateAction(a, i, fp.ss58Prefix, issues));
+  const validated = manifest.actions.map((a, i) => validateAction(a, i, fp.ss58Prefix, issues, options));
   if (issues.length) throw new SeamCompileError(issues);
 
   let manifestDigest: Hex;
@@ -444,6 +517,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
         } else step.reason = r.reason;
       }
     }
+    if (v!.contractMessage) step.contractMessage = v!.contractMessage;
     if (step.reason === undefined) delete step.reason;
     steps.push(step);
   });

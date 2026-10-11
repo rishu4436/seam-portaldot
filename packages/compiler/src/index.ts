@@ -4,3 +4,4 @@ export { factsFromMetadata, computeFingerprintDigest, readCapabilities, SEAM_CAP
 export { canonicalJson, digestJson, domainHash, DOMAIN } from './canonical.js';
 export { loadRuntime, readPinnedTypes, parsePinnedTypes, PORTALDOT_SPEC1002_TYPES_PATH, type PinnedTypes, type LoadedRuntime } from './runtime.js';
 export { parseNativeAddress, parseH160, type NativeAddress } from './address.js';
+export { encodeInkMessage, decodeInkMessage, computeAbiHash, loadInkAbi, type InkMessageEncoding } from './ink.js';
