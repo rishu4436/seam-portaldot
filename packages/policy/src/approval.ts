@@ -99,12 +99,20 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
   return { ok: true, approval: { hash, covers: COVERS, expiresAt, used: false, binding } };
 }
 
-/** Remembers approvals that were already submitted, so none can be replayed. */
-export interface ApprovalStore { has(hash: Hex): boolean; markUsed(hash: Hex): void }
+/**
+ * Remembers what was already submitted, so nothing can be replayed. Keys come from usageKey(): the approval hash
+ * for a single submission (atomic, or one call), or "<hash>#<step>" for each step of a sequential plan.
+ */
+export interface ApprovalStore { has(key: string): boolean; markUsed(key: string): void }
 export class InMemoryApprovalStore implements ApprovalStore {
   private used = new Set<string>();
-  has(hash: Hex) { return this.used.has(hash); }
-  markUsed(hash: Hex) { this.used.add(hash); }
+  has(key: string) { return this.used.has(key); }
+  markUsed(key: string) { this.used.add(key); }
+}
+
+/** The key to mark used after a submission: pass the same sendIndex you gave checkBeforeSubmit. */
+export function usageKey(approvalHash: Hex, sendIndex?: number): string {
+  return sendIndex === undefined ? approvalHash : `${approvalHash}#${sendIndex}`;
 }
 
 export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerprint"> {
@@ -117,6 +125,14 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
   signedCalls: Hex[];
   /** system_dryRun result for each signed transaction, in the same order. */
   signedDryRun?: SignedDryRun[];
+  /**
+   * Sequential plans: the index of the one transaction about to be sent. Call the gate again before every step,
+   * after the previous one finalized, with a fresh fingerprint and dry run. Then only this transaction's dry run
+   * must be ok (later ones can't pass yet because their nonce is in the future).
+   */
+  sendIndex?: number;
+  /** Sequential plans: receipt steps for every earlier step; all must have completed and verified. */
+  previousSteps?: ReceiptStep[];
   now: Date;
   store: ApprovalStore;
 }
@@ -126,14 +142,39 @@ export interface SubmitCheck { ok: boolean; reasons: { code: string; message: st
 /**
  * The last gate before broadcasting. Recomputes the binding from what is about to be sent and blocks on any
  * mismatch, an expired or reused approval, a runtime change, or signed bytes that differ from the approved calls.
- * Call store.markUsed(approval.hash) once the transaction is submitted.
+ * Call store.markUsed(usageKey(approval.hash, sendIndex)) once the transaction is submitted.
  */
 export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   const reasons: SubmitCheck["reasons"] = [];
   const { approval, now, store, plan } = input;
 
-  if (store.has(approval.hash) || approval.used) {
-    reasons.push({ code: "approval_reused", message: "Blocked: this approval was already used. Each approval allows exactly one submission." });
+  const i = input.sendIndex;
+  const sequential = plan.mode === "sequential";
+  if (i !== undefined) {
+    const n = callsToSign(plan).length;
+    if (!sequential) reasons.push({ code: "send_index_invalid", message: "Blocked: only sequential plans are sent one step at a time; an atomic plan is one transaction." });
+    else if (!Number.isInteger(i) || i < 0 || i >= n) reasons.push({ code: "send_index_invalid", message: `Blocked: step ${i} doesn't exist in this ${n}-step plan.` });
+    else {
+      for (let j = 0; j < i; j++) {
+        if (!store.has(usageKey(approval.hash, j))) {
+          reasons.push({ code: "out_of_order", message: `Blocked: step ${j + 1} hasn't been sent yet, so step ${i + 1} can't go first.` });
+          break;
+        }
+      }
+      const prev = input.previousSteps ?? [];
+      if (prev.length !== i) reasons.push({ code: "previous_steps_missing", message: `Blocked: results for the ${i} earlier step(s) are needed before step ${i + 1}.` });
+      else {
+        const gate = canRunNextStep(prev);
+        if (!gate.ok) reasons.push({ code: "previous_step_failed", message: `Blocked: ${gate.reason}` });
+      }
+    }
+  } else if (sequential && callsToSign(plan).length > 1 && input.previousSteps?.length) {
+    reasons.push({ code: "send_index_invalid", message: "Blocked: say which step is being sent (sendIndex) when sending a sequential plan step by step." });
+  }
+  if (store.has(usageKey(approval.hash, i)) || store.has(approval.hash) || approval.used) {
+    reasons.push({ code: "approval_reused", message: i === undefined
+      ? "Blocked: this approval was already used. Each approval allows exactly one submission."
+      : `Blocked: step ${i + 1} of this approval was already sent. Each step can be sent once.` });
   }
   if (Date.parse(approval.expiresAt) <= now.getTime()) {
     reasons.push({ code: "approval_expired", message: `Blocked: this approval expired at ${approval.expiresAt}. Approve again.` });
@@ -161,10 +202,14 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   }
 
   const dry = input.signedDryRun ?? [];
-  if (dry.includes("failed")) {
+  const relevant = i === undefined ? dry : [dry[i]];
+  const needed = i === undefined ? signed.length : 1;
+  if (relevant.includes("failed")) {
     reasons.push({ code: "signed_dry_run_failed", message: "Blocked: the dry run of the signed transaction failed, so it would fail on chain." });
-  } else if (input.policy.requireSignedDryRun && (dry.length !== signed.length || dry.some((d) => d !== "ok"))) {
-    reasons.push({ code: "signed_dry_run_missing", message: "Blocked: the policy needs a successful dry run of each signed transaction before sending, and one is missing or unknown." });
+  } else if (input.policy.requireSignedDryRun && (relevant.filter((d) => d !== undefined).length !== needed || relevant.some((d) => d !== "ok"))) {
+    reasons.push({ code: "signed_dry_run_missing", message: i === undefined
+      ? "Blocked: the policy needs a successful dry run of each signed transaction before sending, and one is missing or unknown. For sequential plans, check each step just before sending it (sendIndex)."
+      : `Blocked: the policy needs a successful dry run of step ${i + 1} just before sending it, and it's missing or unknown.` });
   }
 
   return { ok: reasons.length === 0, reasons };
