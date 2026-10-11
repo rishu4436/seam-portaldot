@@ -122,19 +122,26 @@ export function buildSigningRequest(callHex: Hex, facts: RuntimeFacts, input: Si
 
 /**
  * Signing handoff for a compiled plan. `envelope` is the policy's SigningEnvelope (signer, nonce,
- * mortalityBlocks, expiresAt); `checkpoint` is the block the era starts at. Sequential plans get one
+ * mortalityBlocks, checkpoint, expiresAt); the era starts at envelope.checkpoint. Sequential plans get one
  * request per step with nonces envelope.nonce, +1, +2, ...; atomic plans get one request for outerCall.
  */
-export function buildSigningRequests(plan: Plan, facts: RuntimeFacts, envelope: SigningEnvelope, checkpoint: SigningCheckpoint): SigningRequest[] {
+export function buildSigningRequests(plan: Plan, facts: RuntimeFacts, envelope: SigningEnvelope): SigningRequest[] {
   if (plan.fingerprintDigest !== facts.fingerprintDigest) {
     throw new SeamChainError('FACTS_MISMATCH', 'plan was compiled for a different runtime fingerprint than these facts');
   }
   if (accountIdOf(envelope.signer) !== plan.signer.publicKey.toLowerCase()) {
     throw new SeamChainError('ENVELOPE_INVALID', "envelope signer is not the plan's signer");
   }
-  return callsForSigning(plan).map((c, i) =>
-    buildSigningRequest(c.callHex, facts, { signer: envelope.signer, nonce: envelope.nonce + i, mortalityBlocks: envelope.mortalityBlocks, checkpoint }, { index: i, actionIds: c.actionIds })
-  );
+  return signingRequestsForCalls(callsForSigning(plan), facts, envelope);
+}
+
+/** Signing requests for explicit calls (e.g. the SDK's callsToSign(plan)), nonces envelope.nonce + i, era from envelope.checkpoint. */
+export function signingRequestsForCalls(calls: (Hex | { actionIds: string[]; callHex: Hex })[], facts: RuntimeFacts, envelope: SigningEnvelope): SigningRequest[] {
+  if (!envelope.checkpoint) throw new SeamChainError('ENVELOPE_INVALID', 'envelope has no checkpoint block to sign against');
+  return calls.map((c, i) => {
+    const { actionIds, callHex } = typeof c === 'string' ? { actionIds: [], callHex: c } : c;
+    return buildSigningRequest(callHex, facts, { signer: envelope.signer, nonce: envelope.nonce + i, mortalityBlocks: envelope.mortalityBlocks, checkpoint: envelope.checkpoint }, { index: i, actionIds });
+  });
 }
 
 /**

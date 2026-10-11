@@ -3,7 +3,7 @@ import type { Hex } from '@seam/compiler';
 export type { Hex };
 
 // ---------------------------------------------------------------------------------------------------------
-// Shapes owned by Bot 3's policy package (/workspace/seam-policy/src/types.ts, agreed Oct 11, 2026).
+// Shapes owned by Bot 3's policy package (/workspace/seam-policy/src/types.ts @ fddfee3).
 // Mirrored here field-for-field so @seam/chain output plugs straight into evaluatePolicy, createApproval
 // and checkBeforeSubmit. Replace with an import once the monorepo exists. tests/policy.test.ts checks
 // that they really plug in.
@@ -21,7 +21,17 @@ export interface PreflightStep {
 }
 export interface PreflightResult { steps: PreflightStep[]; totalFee: Estimate }
 
-export interface SigningEnvelope { signer: string; nonce: number; mortalityBlocks: number; expiresAt: string }
+export interface SigningEnvelope {
+  signer: string;
+  nonce: number;
+  mortalityBlocks: number;
+  /** The block the mortality window starts from; the wallet signs against its hash. */
+  checkpoint: { number: number; hash: Hex };
+  expiresAt: string;
+}
+
+/** Result of system_dryRun on the actually signed transaction(s), one per signed call. */
+export type SignedDryRun = 'ok' | 'failed' | 'unknown';
 
 // ---------------------------------------------------------------------------------------------------------
 // @seam/chain shapes.

@@ -13,7 +13,7 @@ let keys: Awaited<ReturnType<typeof devKeys>>;
 beforeAll(async () => { keys = await devKeys(); });
 
 function signedPlan(plan = demoPlan(), f: RuntimeFacts = facts, nonce = 0): Hex[] {
-  return buildSigningRequests(plan, f, { signer: ALICE, nonce, mortalityBlocks: 64, expiresAt: 'x' }, CHECKPOINT)
+  return buildSigningRequests(plan, f, { signer: ALICE, nonce, mortalityBlocks: 64, checkpoint: CHECKPOINT, expiresAt: 'x' })
     .map((q) => assembleSignedExtrinsic(q.payload, u8aToHex(keys.alice.sign(hexToU8a(q.signBytesHex), { withType: true })), f));
 }
 const node = (o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {}, f = facts) => new FakeNode({ inputs: snapshotInputs(), facts: f, ...o });
