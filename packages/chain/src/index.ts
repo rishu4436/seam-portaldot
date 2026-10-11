@@ -18,6 +18,8 @@ export {
   chainInputsFromSnapshot,
   tokenInfo,
   type DiscoverOptions,
+  type FactsOptions,
+  type SnapshotExtra,
   type SnapshotFiles
 } from './discover.js';
 export {
@@ -58,7 +60,7 @@ export {
   type InclusionResult,
   type FinalityResult
 } from './submit.js';
-export { DECODE_TYPES, SYSTEM_EVENTS_KEY, decodeRuntime, encodeRuntime, extrinsicHash, describeDispatchError } from './runtime.js';
+export { DECODE_TYPES, SYSTEM_EVENTS_KEY, metadataVersionOf, decodeRuntime, encodeRuntime, extrinsicHash, describeDispatchError } from './runtime.js';
 export {
   createPortaldotAdapter,
   toStepOutcome,
