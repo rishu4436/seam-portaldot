@@ -6,7 +6,7 @@
 import data from "../demo/scenarios.json";
 import type { Approval, Capability, Manifest, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, Hex, Estimate } from "./types";
 
-type Scn = "happy" | "nft" | "upgrade" | "fail";
+type Scn = "happy" | "nft" | "upgrade" | "fail" | "midrun";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const D = data as any;
 let current: Scn = "happy";
@@ -72,6 +72,8 @@ export function approve(_plan: Plan, _policy: PolicyResult, _env: SigningEnvelop
 }
 
 export function submitBlock(): string | undefined { const r = S().run; return r && !r.ok ? r.reason : undefined; }
+export type StepEvent = { index: number; actionId: string; phase: "checking" | "sending" | "done" | "blocked"; detail?: string };
+export function timeline(): StepEvent[] { return S().timeline ?? []; }
 
 export function receipt(_plan: Plan, _policy: PolicyResult, _approval: Approval, _failAt?: string): Receipt {
   const r = S().run.receipt;

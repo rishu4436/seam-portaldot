@@ -96,7 +96,7 @@ export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; pol
 
 export interface Approval { hash: Hex; covers: string[]; expiresAt: string; used: boolean }
 
-export type StepStatus = "finalized" | "included" | "submitted" | "failed" | "not_run";
+export type StepStatus = "finalized" | "included" | "submitted" | "failed" | "not_run" | "checking" | "blocked";
 export type Verification = "verified" | "not_verified" | "unknown";
 
 export interface ReceiptStep {
