@@ -216,7 +216,8 @@ Changing this file changes `typesBundleHash`, and with it the fingerprint and ev
 `fixtures/` holds copies of Bot 4's read-only captures of Portaldot mainnet (spec 1002, tx version 2, SS58 42, POT 14 decimals,
 metadata blake2b `0x8b91f644…5150`), plus one real signed extrinsic used as type evidence. Tests make no network calls.
 
-`fixtures/ink/` holds ink! metadata used by the ABI tests: `erc20.v5.json` (ink! 5, metadata V5) and `flipper.v3.json`
+`fixtures/ink/` holds ink! metadata used by the ABI tests: `seam_demo.v5.json` (our demo contract, a copy of
+`contracts/seam-demo/artifacts/metadata.json` from branch `bot2/demo-contract`), `erc20.v5.json` (ink! 5, metadata V5) and `flipper.v3.json`
 (ink! 3.0.0-rc7, metadata V3), both from the polkadot-js/api test fixtures (Apache-2.0) with the wasm blob removed.
 
 ## Known limits
