@@ -21,6 +21,8 @@ export const GAS_PROOF_SIZE = '1000000';
  * way the compiler would need to (gas_limit = {refTime: gasLimit, proofSize: GAS_PROOF_SIZE},
  * storage_deposit_limit = None), re-selects the mode, rebuilds the batch_all, and recomputes the plan digest with
  * the compiler's own computePlanDigest. Every patched step carries decodedArgs.shim so it is visible in receipts' plans.
+ * decodedArgs.proofSize uses @seam/policy's name (bot3/policy-file: capped by maxProofSize); storage_deposit_limit
+ * None means "no limit", so decodedArgs.storageDepositLimit is left out (the policy only accepts whole numbers there).
  */
 export function shimContractsCall(plan, facts, { atomic = false } = {}) {
   const steps = plan.steps.map((s) => {
@@ -33,7 +35,7 @@ export function shimContractsCall(plan, facts, { atomic = false } = {}) {
     const { reason: _r, ...rest } = s;
     return {
       ...rest, palletIndex: cap.palletIndex, callIndex: cap.callIndex, encodedCall, status: 'ok',
-      decodedArgs: { ...a, gasProofSize: GAS_PROOF_SIZE, storageDepositLimit: 'none', shim: 'devnode V14 Contracts.call shim (compiler cannot fill storage_deposit_limit / Weight V2)' }
+      decodedArgs: { ...a, proofSize: GAS_PROOF_SIZE, shim: 'devnode V14 Contracts.call shim (compiler cannot fill storage_deposit_limit / Weight V2)' }
     };
   });
   if (steps.some((s) => s.status !== 'ok')) return plan;

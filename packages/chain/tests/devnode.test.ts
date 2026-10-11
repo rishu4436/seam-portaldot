@@ -35,6 +35,13 @@ describe.skipIf(!LIVE)('local dev node (SEAM_DEVNODE=1)', () => {
     expect(steps.map((s: any) => s.status)).toEqual(['finalized', 'finalized', 'finalized']);
     expect(new Set(steps.map((s: any) => s.txHash)).size).toBe(3);
     expect(steps[1].events.some((e: string) => e.startsWith('Contracts.ContractEmitted('))).toBe(true);
+    // Weight V2 runtime: every preflight step has a real proof size from payment_queryInfo
+    for (const p of json.preflight.steps) expect(p.proofSize.value).toMatch(/^[1-9][0-9]*$/);
+    expect(json.preflightDetail.transactions.every((t: any) => t.queryInfo.weightVersion === 2)).toBe(true);
+    // the contract call's queried proof size covers the gas_limit proof size; the contract itself needs far less
+    const call = json.preflight.steps[1];
+    const needed = /contract needs proof size (\d+)/.exec(call.note)![1]!;
+    expect(BigInt(call.proofSize.value)).toBeGreaterThan(BigInt(needed));
   }, 240_000);
 
   it('batch_all rollback: the gate blocks the failing batch; sent directly, nothing from steps 1 and 3 sticks', () => {
