@@ -48,7 +48,7 @@ export default function App() {
   const manifest = useMemo(() => api.demoManifest(scenario === "nft"), [scenario]);
 
   const reset = (s: Scenario) => {
-    setScenario(s); setStep(0); setFacts(undefined); setPlan(undefined); setPre(undefined); setPolicy(undefined);
+    setScenario(s); api.setScenario(s); setStep(0); setFacts(undefined); setPlan(undefined); setPre(undefined); setPolicy(undefined);
     setEnv(undefined); setApproval(undefined); setReceipt(undefined); setLockBlock(undefined); setProgress([]);
   };
 
@@ -58,8 +58,7 @@ export default function App() {
   const doApprove = () => { if (plan && policy) { const e = api.envelope(); setEnv(e); setApproval(api.approve(plan, policy, e)); } };
   const doSubmit = () => {
     if (!plan || !policy || !approval || !facts) return;
-    const now = api.discover(endpoint, scenario === "upgrade");
-    if (now.fingerprint.digest !== facts.fingerprint.digest) { setLockBlock(now); setStep(5); return; }
+    if (api.submitBlock()) { setLockBlock(api.discover(endpoint, true)); setStep(5); return; }
     setStep(5);
     const n = plan.steps.length;
     setProgress(Array(n).fill("submitted"));
@@ -106,7 +105,7 @@ export default function App() {
             </div>
           )}
         </header>
-        <div className="banner">Example data. The runtime fingerprint is from a real read of the Portaldot node; hashes, fees and results are placeholders until the SDK is connected.</div>
+        <div className="banner">Plans, policy checks, approvals and receipts are real output from the SEAM compiler, policy engine and SDK, run against a saved snapshot of the Portaldot node. Transaction hashes, blocks and events are simulated until the testnet is live.</div>
 
         {step === 0 && (
           <section className="grid2">
@@ -187,9 +186,9 @@ export default function App() {
               </tbody>
             </table>
             {plan.steps.filter((s) => s.reason).map((s) => <div key={s.actionId} className="note bad"><b>{s.actionId}:</b> {s.reason}</div>)}
-            {plan.mode === "sequential" && <div className="note">Steps run one after another, because batch rollback hasn't been tested on this runtime yet. If a step fails, SEAM stops and never runs the next one.</div>}
+            {plan.modeReason && <div className="note"><b>Why this mode:</b> {plan.modeReason}</div>}
             <div className="digests"><Digest label="Plan digest" value={plan.digest} /><Digest label="Manifest" value={plan.manifestDigest} /><Digest label="Fingerprint" value={plan.fingerprintDigest} /></div>
-            <div className="actions"><button onClick={doChecks}>Run preflight and policy</button></div>
+            <div className="actions">{plan.mode === "unavailable" ? <div className="note bad">SEAM won't send this plan for preflight or signing, because a step can't run on this runtime. Remove the step or connect to a runtime that has it.</div> : <button onClick={doChecks}>Run preflight and policy</button>}</div>
           </section>
         )}
 
@@ -243,7 +242,7 @@ export default function App() {
         {step === 5 && lockBlock && facts && (
           <section className="card blocked">
             <div className="row between"><h3>SEAM blocked this submission</h3><Pill tone="bad">Runtime changed</Pill></div>
-            <p>The chain's runtime changed after you approved, so the prepared transaction could behave differently. Nothing was sent.</p>
+            <p>{api.submitBlock()} Nothing was sent.</p>
             <table className="tbl"><thead><tr><th></th><th>When approved</th><th>Right now</th></tr></thead><tbody>
               <tr><td>Spec version</td><td>{facts.fingerprint.specVersion}</td><td className="bad">{lockBlock.fingerprint.specVersion}</td></tr>
               <tr><td>Metadata hash</td><td><code>{short(facts.fingerprint.metadataHash, 6)}</code></td><td className="bad"><code>{short(lockBlock.fingerprint.metadataHash, 6)}</code></td></tr>
@@ -276,7 +275,7 @@ export default function App() {
               <div className="row between"><h3>Execution receipt</h3>{receipt && <Pill tone={receipt.overall === "verified" ? "ok" : receipt.overall === "partial" ? "warn" : "bad"}>{receipt.overall.replace("_", " ")}</Pill>}</div>
               {!receipt ? <p className="muted">Waiting for finalization…</p> : (
                 <>
-                  <p className="big">{receipt.checks.confirmed} of {receipt.checks.expected} checks confirmed on chain</p>
+                  <p className="big">{receipt.checks.confirmed} of {receipt.checks.expected} steps verified</p>
                   {receipt.steps.map((s) => (
                     <div key={s.actionId} className="rstep">
                       <div className="row between"><b>{s.actionId}</b><Pill tone={triTone(s.verification === "verified" ? "ok" : s.verification === "unknown" ? "unknown" : "bad")}>{s.verification.replace("_", " ")}</Pill></div>

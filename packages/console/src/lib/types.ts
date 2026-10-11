@@ -81,6 +81,8 @@ export interface Plan {
   mode: ExecutionMode;
   steps: PlanStep[];
   digest: Hex;
+  modeReason?: string;
+  explain?: string;
 }
 
 export interface Estimate { value?: string; unknown?: boolean }
@@ -90,7 +92,7 @@ export interface PreflightResult { steps: PreflightStep[]; totalFee: Estimate }
 export interface SigningEnvelope { signer: string; nonce: number; mortalityBlocks: number; expiresAt: string }
 
 export interface PolicyRuleResult { rule: string; outcome: "pass" | "block" | "unknown"; reason: string; actionId?: string }
-export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex }
+export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex; explain?: string }
 
 export interface Approval { hash: Hex; covers: string[]; expiresAt: string; used: boolean }
 
@@ -118,4 +120,5 @@ export interface Receipt {
   overall: "verified" | "partial" | "not_verified";
   checks: { confirmed: number; expected: number };
   digest: Hex;
+  explain?: string;
 }
