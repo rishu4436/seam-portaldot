@@ -204,10 +204,30 @@ atomic plans and a failing step.
 
 ```sh
 npm run devnode -- start          # prebuilt substrate-contracts-node v0.42.0 (sha256-checked), ws://127.0.0.1:9944
-node scripts/devnode/snapshot.mjs # read-only snapshot -> /workspace/seam-evidence/devnode/
+node scripts/devnode/snapshot.mjs # read-only snapshot
 node scripts/devnode/setup.mjs    # //Alice: create + mint asset 1, deploy fixtures/devnode/seam_emitter.wasm
-npm run test:devnode              # SEAM_DEVNODE=1: sequential, rollback, atomic runs (evidence in .../runs/)
+node scripts/devnode/run-sequential.mjs
+node scripts/devnode/run-rollback.mjs
+node scripts/devnode/run-atomic.mjs <rollback-*.json>
+npm run test:devnode              # SEAM_DEVNODE=1: all of the above as tests
 ```
+
+### Evidence
+
+Every script writes to `/workspace/seam-evidence/devnode/` and to the repo's `evidence/devnode/`
+(see `evidence/README.md`: local dev chain, not Portaldot). Run files (`recordingVersion: 2`) record:
+
+- **Inputs:** the full Manifest, runtime facts and fingerprint, policy JSON and rule-by-rule policy result.
+- **Before signing:** preflight (with `proofSize`), signing envelope, approval, and the signing requests (payload and sign bytes).
+- **Gate checks:** one `gateChecks[]` entry per gate check. The SDK's `execute()` doesn't return passing gate results, so
+  each check is recomputed with `checkBeforeSubmit` from the exact inputs the SDK used (captured by wrapping the adapter)
+  and compared with what the SDK did (`agreesWithSdk`).
+- **After submitting:** the SDK step log, node status history, events and receipt.
+- **Rollback only:** SEAM's blocking gate result with its reasons, then the test-only direct submission (status history,
+  decoded events) and the balances before, after the gate, and after.
+
+Evidence never contains signatures, signed extrinsics, seeds or keys: `saveEvidence` refuses such fields and dev
+derivation paths. The signed extrinsic the rollback resends exists in memory only.
 
 Metadata V14, spec `substrate-contracts-node` 100, instant seal (a block per transaction, finalized after 1 s),
 system_properties empty (UNIT/12 is declared via `declaredToken`), no Babe (pass `blockTimeMs`).
