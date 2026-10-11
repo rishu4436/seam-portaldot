@@ -4,7 +4,7 @@ import type { Hex, Plan, PlanStep, RuntimeFacts } from '@seam/compiler';
 import { SeamChainError } from './errors.js';
 import { readHead } from './discover.js';
 import { rpc, toBigInt, toSafeNumber, withClient, type ConnectOptions, type Endpoint, type RpcClient } from './rpc.js';
-import { decodeRuntime, encodeRuntime } from './runtime.js';
+import { decodeRuntime, describeDispatchError, encodeRuntime } from './runtime.js';
 import { callsForSigning } from './signing.js';
 import type { BlockRef, Estimate, PreflightResult, PreflightStep } from './types.js';
 
@@ -68,20 +68,6 @@ async function queryInfo(client: RpcClient, extrinsic: Hex, at: Hex): Promise<Pr
   const w = info.weight as unknown;
   const weight = typeof w === 'object' && w !== null && 'refTime' in w ? toBigInt((w as { refTime: unknown }).refTime) : toBigInt(w);
   return { weight: weight.toString(), class: String(info.class), partialFee: toBigInt(info.partialFee).toString() };
-}
-
-function describeDispatchError(facts: RuntimeFacts, json: unknown): string {
-  try {
-    const { registry } = decodeRuntime(facts);
-    const err = registry.createType('DispatchError', json as never) as unknown as { isModule: boolean; asModule: never; type: string };
-    if (err.isModule) {
-      const m = registry.findMetaError(err.asModule);
-      return `${m.section}.${m.name}${m.docs.length ? `: ${m.docs.join(' ').trim()}` : ''}`;
-    }
-    return err.type;
-  } catch {
-    return JSON.stringify(json);
-  }
 }
 
 async function dryRunSigned(client: RpcClient, facts: RuntimeFacts, extrinsic: Hex, at: Hex): Promise<NonNullable<PreflightTxDetail['dryRun']>> {

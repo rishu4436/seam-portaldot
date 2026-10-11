@@ -85,3 +85,18 @@ export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
 export function extrinsicHash(extrinsicHex: string): Hex {
   return blake2AsHex(hexToU8a(extrinsicHex), 256) as Hex;
 }
+
+/** Plain text for a DispatchError given as JSON or a codec, e.g. "assets.BalanceLow: Account balance must be ...". */
+export function describeDispatchError(facts: RuntimeFacts, json: unknown): string {
+  try {
+    const { registry } = decodeRuntime(facts);
+    const err = registry.createType('DispatchError', json as never) as unknown as { isModule: boolean; asModule: never; type: string };
+    if (err.isModule) {
+      const m = registry.findMetaError(err.asModule);
+      return `${m.section}.${m.name}${m.docs.length ? `: ${m.docs.join(' ').trim()}` : ''}`;
+    }
+    return err.type;
+  } catch {
+    return JSON.stringify(json);
+  }
+}
