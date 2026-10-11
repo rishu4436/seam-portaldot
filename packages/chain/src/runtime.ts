@@ -1,5 +1,5 @@
 import { Metadata, TypeRegistry, expandMetadata } from '@polkadot/types';
-import { hexToU8a } from '@polkadot/util';
+import { compactStripLength, hexToU8a, u8aToHex } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { loadRuntime, parsePinnedTypes, type Hex, type LoadedRuntime, type RuntimeFacts } from '@seam/compiler';
 import { SeamChainError } from './errors.js';
@@ -55,7 +55,16 @@ export interface DecodeRuntime {
 
 const decodeCache = new Map<string, DecodeRuntime>();
 
-/** Pinned types + DECODE_TYPES, on its own registry so encoding is never affected. Cached per fingerprint. */
+/** Metadata version byte (byte 4, after the "meta" magic). */
+export function metadataVersionOf(metadataHex: string): number {
+  return parseInt(metadataHex.slice(10, 12), 16);
+}
+
+/**
+ * Pinned types + DECODE_TYPES, on its own registry so encoding is never affected. Cached per fingerprint.
+ * DECODE_TYPES describe the pre-V14 DispatchError (Module {index: u8, error: u8}) and are only applied to
+ * metadata V13 and older. V14+ metadata carries its own DispatchError in the type lookup.
+ */
 export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   const key = `${facts.fingerprint.metadataHash}:${facts.fingerprint.typesBundleHash}`;
   const hit = decodeCache.get(key);
@@ -63,7 +72,8 @@ export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   encodeRuntime(facts); // integrity check
   const pinned = parsePinnedTypes(facts.source.typesBundle);
   const registry = new TypeRegistry();
-  registry.register({ ...(pinned.types as Record<string, string>), ...(DECODE_TYPES as Record<string, string>) });
+  const legacy = metadataVersionOf(facts.source.metadataHex) <= 13;
+  registry.register({ ...(pinned.types as Record<string, string>), ...(legacy ? (DECODE_TYPES as Record<string, string>) : {}) });
   const metadata = new Metadata(registry, hexToU8a(facts.source.metadataHex));
   registry.setMetadata(metadata);
   registry.setChainProperties(registry.createType<any>('ChainProperties', {
@@ -79,6 +89,14 @@ export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   };
   decodeCache.set(key, rt);
   return rt;
+}
+
+/**
+ * Raw storage key for a decorated storage entry. polkadot.js's decorated entry returns the key with a SCALE
+ * compact length prefix (it is meant to be passed to the RPC layer as Bytes); state_getStorage needs it without.
+ */
+export function storageKey(entry: (...args: unknown[]) => Uint8Array, ...args: unknown[]): Hex {
+  return u8aToHex(compactStripLength(entry(...args))[1]) as Hex;
 }
 
 /** blake2b-256 of the extrinsic bytes: the tx hash the node reports. */

@@ -18,7 +18,9 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:live": "SEAM_LIVE=1 vitest run tests/live.test.ts"
+    "test:live": "SEAM_LIVE=1 vitest run tests/live.test.ts",
+    "test:devnode": "SEAM_DEVNODE=1 vitest run tests/devnode.test.ts",
+    "devnode": "scripts/devnode.sh"
   },
   "license": "MIT",
   "private": true,

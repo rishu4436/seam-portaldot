@@ -1,7 +1,7 @@
 import { hexToU8a, u8aConcat, u8aToHex } from '@polkadot/util';
 import { blake2AsHex, signatureVerify } from '@polkadot/util-crypto';
 import type { Hex, RuntimeFacts } from '@seam/compiler';
-import { SYSTEM_EVENTS_KEY, decodeRuntime, encodeRuntime, type ChainInputs, type RpcClient } from '../src/index.js';
+import { SYSTEM_EVENTS_KEY, decodeRuntime, encodeRuntime, storageKey, type ChainInputs, type RpcClient } from '../src/index.js';
 
 /**
  * In-process stand-in for a Portaldot node, serving the real mainnet snapshot. It answers the RPCs SEAM
@@ -48,7 +48,7 @@ export class FakeNode implements RpcClient {
   }
 
   private assetKey(id: string): string {
-    return u8aToHex((decodeRuntime(this.o.facts).decorated().query as any).assets.asset(id));
+    return storageKey((decodeRuntime(this.o.facts).decorated().query as any).assets.asset, id);
   }
 
   async send<T>(method: string, params: unknown[]): Promise<T> {
