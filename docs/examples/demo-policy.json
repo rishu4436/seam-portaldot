@@ -1,0 +1,6 @@
+{
+  "allowedAssets": ["1", "2"],
+  "allowedContracts": ["5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"],
+  "allowedRecipients": ["5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"],
+  "maxAmountPerAsset": { "1": "10000", "2": "1" }
+}

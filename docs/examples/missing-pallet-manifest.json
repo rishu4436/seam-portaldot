@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "signer": {
+    "type": "ss58",
+    "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    "ss58Prefix": 42
+  },
+  "actions": [
+    {
+      "id": "pay",
+      "kind": "assets.transfer",
+      "args": {
+        "assetId": "1",
+        "amount": "2500",
+        "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+      }
+    },
+    {
+      "id": "call",
+      "kind": "contracts.call",
+      "args": {
+        "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+        "value": "0",
+        "gasLimit": "5000000000",
+        "data": "0x633aa551"
+      }
+    },
+    {
+      "id": "receipt",
+      "kind": "assets.mint",
+      "args": {
+        "assetId": "2",
+        "amount": "1",
+        "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+      }
+    },
+    {
+      "id": "nft",
+      "kind": "nfts.mint",
+      "args": {
+        "collection": "0",
+        "item": "1",
+        "recipient": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+      }
+    }
+  ]
+}

@@ -60,8 +60,14 @@ try {
       const p = flag('--policy'); if (!p) throw new Error('check needs --policy <policy.json>');
       const { plan, facts: f } = compileOrExit(m);
       const result = evaluatePolicy({ policy: definePolicy(read(p)), plan, facts: f, manifest: m.manifest });
-      out(`${explainPlan(plan)}\n\n${explainPolicy(result)}`, { plan, policyResult: result });
-      process.exit(result.allowed ? 0 : 4);
+      // Offline there is no preflight (fees, weight, dry runs need a node). Report everything else, and say so plainly.
+      const rest = result.rules.filter((r) => r.rule !== 'preflight');
+      const offlineOk = rest.every((r) => r.outcome === 'pass');
+      const text = offlineOk && !result.allowed
+        ? `Offline check passed: all ${rest.length} rules that don't need a node passed. Fees, weight and dry runs are checked against a live node before approval.`
+        : explainPolicy({ ...result, rules: rest });
+      out(`${explainPlan(plan)}\n\n${text}`, { plan, policyResult: result, offline: true });
+      process.exit(offlineOk ? 0 : 4);
     }
     case 'verify': {
       if (!file) throw new Error('missing receipt file');
