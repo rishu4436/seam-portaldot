@@ -16,6 +16,7 @@ import { ALICE, ALICE_POLKADOT, BOB, BOB_HEX, demoManifest, expectIssue, metadat
 const ink = (name: string) => JSON.parse(readFileSync(fileURLToPath(new URL(`../fixtures/ink/${name}`, import.meta.url)), 'utf8'));
 const ERC20 = ink('erc20.v5.json'); // ink! 5 metadata (V5), from polkadot-js/api test fixtures
 const FLIPPER = ink('flipper.v3.json'); // ink! 3.0.0-rc7 metadata (V3)
+const SEAM_DEMO = ink('seam_demo.v5.json'); // contracts/seam-demo/artifacts/metadata.json (ink! 5.1.1, branch bot2/demo-contract)
 
 const facts = realFacts();
 const { registry } = loadRuntime(metadataHex, typesBundle);
@@ -93,6 +94,16 @@ describe('contracts.call from an ink! ABI', () => {
   it('an optional abiHash pin must match', () => {
     expect(compile(transfer({ abiHash: computeAbiHash(ERC20) }), facts).steps[1]!.status).toBe('ok');
     expectIssue(() => compile(transfer({ abiHash: `0x${'00'.repeat(32)}` }), facts), 'ABI_HASH_MISMATCH', 'actions[1].args.abiHash');
+  });
+
+  it('encodes the SEAM demo contract settle(order_id: u64, amount: u128) via abiRef', () => {
+    const p = compile(inkCall({ message: 'settle', args: { order_id: 7, amount: '2500000000000000' }, abiRef: 'seam_demo' }), facts, { abis: { seam_demo: SEAM_DEMO } });
+    const s = p.steps[1]!;
+    // 6c337222 = settle; u64 7 LE; u128 2.5e15 LE
+    expect(s.decodedArgs.data).toBe('0x6c337222' + '0700000000000000' + '0040f09bbce108000000000000000000');
+    expect(s.contractMessage).toEqual({ abiHash: computeAbiHash(SEAM_DEMO), abiRef: 'seam_demo', message: 'settle', selector: '0x6c337222', args: { order_id: '7', amount: '2500000000000000' } });
+    expect(decodeInkMessage(SEAM_DEMO, s.decodedArgs.data as `0x${string}`, 42).args).toEqual({ order_id: '7', amount: '2500000000000000' });
+    expectIssue(() => compile(inkCall({ message: 'settle', args: { order_id: (1n << 64n).toString(), amount: '1' }, abi: SEAM_DEMO }), facts), 'ABI_ARGS_INVALID', 'actions[1].args.args.order_id');
   });
 
   it('works with older ink! metadata (V3, ink! 3.0)', () => {
