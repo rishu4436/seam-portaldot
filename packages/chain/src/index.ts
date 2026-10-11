@@ -23,6 +23,7 @@ export {
 export {
   buildSigningRequests,
   buildSigningRequest,
+  signingRequestsForCalls,
   callsForSigning,
   assembleSignedExtrinsic,
   extractSignedCall,
@@ -68,3 +69,4 @@ export {
   type StepOutcome,
   type WalletSigner
 } from './adapter.js';
+export { dryRunSigned, dryRunOne, type SignedDryRunDetail } from './dryrun.js';

@@ -4,11 +4,12 @@ import { discover, readCheckpoint, refetchFingerprint } from './discover.js';
 import { SeamChainError } from './errors.js';
 import { toChainEvent, type ChainEvent } from './events.js';
 import { preflight, type PreflightReport } from './preflight.js';
-import type { ConnectOptions, Endpoint } from './rpc.js';
+import { withClient, type ConnectOptions, type Endpoint } from './rpc.js';
 import { decodeRuntime } from './runtime.js';
-import { assembleSignedExtrinsic, buildSigningRequest, extractSignedCall, type AssembleOptions, type SignerPayloadJSON, type SigningCheckpoint, type SigningRequest } from './signing.js';
+import { dryRunOne, dryRunSigned, type SignedDryRunDetail } from './dryrun.js';
+import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
 import { submitAndWatch, type StatusUpdate, type SubmitResult } from './submit.js';
-import type { PreflightResult, SigningEnvelope } from './types.js';
+import type { PreflightResult, SignedDryRun, SigningEnvelope } from './types.js';
 
 /** Mirrors @seam/sdk StepOutcome (seam-sdk/src/receipt.ts @ 6577346). */
 export interface StepOutcome {
@@ -20,11 +21,17 @@ export interface StepOutcome {
   error?: string;
 }
 
-/** Mirrors @seam/sdk ChainAdapter (seam-sdk/src/flow.ts @ 6577346). */
+/** Mirrors @seam/sdk ChainAdapter (packages/sdk/src/flow.ts @ 4826fd1). */
 export interface ChainAdapter {
   discover(): Promise<RuntimeFacts>;
   readFingerprint(): Promise<RuntimeFingerprint>;
   preflight(plan: Plan): Promise<{ preflight: PreflightResult; envelope: SigningEnvelope }>;
+  /**
+   * system_dryRun of each signed transaction, in order, for checkBeforeSubmit({ signedDryRun }).
+   * In a sequential run, transaction i > 0 is 'unknown' (future nonce) until the earlier ones are on chain;
+   * submit() dry-runs each transaction again right before broadcasting it.
+   */
+  dryRunSigned(signedTxs: Hex[]): Promise<SignedDryRun[]>;
   submit(signedTx: Hex, actionId: string): Promise<StepOutcome>;
 }
 
@@ -47,6 +54,8 @@ export interface PortaldotAdapterOptions extends ConnectOptions {
   now?: () => Date;
   /** How long submit() waits for finality. Default 5 minutes. */
   submitTimeoutMs?: number;
+  /** Dry-run each transaction right before broadcasting it and refuse to send one that fails. Default true. */
+  dryRunBeforeSubmit?: boolean;
   /** Must be true to submit to Portaldot mainnet (never needed for the hackathon). */
   allowMainnet?: boolean;
   onStatus?: (actionId: string, u: StatusUpdate) => void;
@@ -58,17 +67,15 @@ export interface PortaldotAdapter extends ChainAdapter {
   readonly facts: RuntimeFacts | undefined;
   /** Full preflight report of the last preflight() call (fee details, contract dry runs, nonce source). */
   readonly lastPreflight: PreflightReport | undefined;
-  /** Era checkpoint recorded for an envelope returned by preflight(). */
-  checkpointFor(envelope: SigningEnvelope): SigningCheckpoint;
-  /** Signing requests for the calls the SDK hands its wallet (callsToSign(plan)), in order, nonces envelope.nonce + i. */
+  /** Details of the last dryRunSigned() / pre-submit dry run. */
+  readonly lastDryRun: SignedDryRunDetail[] | undefined;
+  /** Signing requests for the calls the SDK hands its wallet (callsToSign(plan)), in order, nonces envelope.nonce + i, era from envelope.checkpoint. */
   signingRequests(calls: Hex[], envelope: SigningEnvelope): SigningRequest[];
   /** Turns a payload signer (e.g. a polkadot.js extension's signPayload) into the SDK's WalletSigner. SEAM never sees keys. */
   walletFrom(signPayload: (payload: SignerPayloadJSON) => Promise<{ signature: string }>, opts?: AssembleOptions): WalletSigner;
   /** Raw submit result of the last submit() (status history, extrinsic index, decoded events with types). */
   readonly lastSubmit: SubmitResult | undefined;
 }
-
-const envelopeKey = (e: SigningEnvelope) => JSON.stringify([e.signer, e.nonce, e.mortalityBlocks, e.expiresAt]);
 
 /** Block time from metadata constants: Babe.ExpectedBlockTime, else 2 x Timestamp.MinimumPeriod. */
 export function blockTimeFromFacts(facts: RuntimeFacts): number | undefined {
@@ -106,7 +113,7 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
   let facts = options.facts;
   let lastPreflight: PreflightReport | undefined;
   let lastSubmit: SubmitResult | undefined;
-  const checkpoints = new Map<string, SigningCheckpoint>();
+  let lastDryRun: SignedDryRunDetail[] | undefined;
   const needFacts = (): RuntimeFacts => {
     if (!facts) throw new SeamChainError('FACTS_MISMATCH', 'call discover() first (or pass options.facts)');
     return facts;
@@ -119,6 +126,7 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
     get facts() { return facts; },
     get lastPreflight() { return lastPreflight; },
     get lastSubmit() { return lastSubmit; },
+    get lastDryRun() { return lastDryRun; },
 
     async discover() {
       const found = await discover(endpoint, discoverOpts);
@@ -146,15 +154,23 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
         signer: encodeAddress(plan.signer.publicKey, f.fingerprint.ss58Prefix),
         nonce: report.nonce,
         mortalityBlocks,
+        checkpoint,
         expiresAt
       };
-      checkpoints.set(envelopeKey(envelope), checkpoint);
       lastPreflight = report;
       return { preflight: report.result, envelope };
     },
 
     async submit(signedTx: Hex, actionId: string) {
       const f = needFacts();
+      if (options.dryRunBeforeSubmit !== false) {
+        const d = await withClient(endpoint, (c) => dryRunOne(c, f, signedTx, 0), options);
+        lastDryRun = [d];
+        if (d.outcome === 'failed') {
+          lastSubmit = undefined;
+          return { actionId, status: 'failed', txHash: d.txHash, events: [], error: `not sent: the dry run right before submitting failed (${d.detail})` };
+        }
+      }
       const opts: Parameters<typeof submitAndWatch>[3] = { ...options, facts: f };
       if (options.submitTimeoutMs !== undefined) opts.timeoutMs = options.submitTimeoutMs;
       const r = await submitAndWatch(endpoint, signedTx, options.onStatus ? (u) => options.onStatus!(actionId, u) : undefined, opts);
@@ -162,18 +178,14 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
       return toStepOutcome(actionId, r);
     },
 
-    checkpointFor(envelope) {
-      const c = checkpoints.get(envelopeKey(envelope));
-      if (!c) throw new SeamChainError('ENVELOPE_INVALID', 'this envelope did not come from preflight(); its era checkpoint is unknown');
-      return c;
+    async dryRunSigned(signedTxs) {
+      const r = await dryRunSigned(endpoint, signedTxs, needFacts(), options);
+      lastDryRun = r.details;
+      return r.results;
     },
 
     signingRequests(calls, envelope) {
-      const f = needFacts();
-      const checkpoint = adapter.checkpointFor(envelope);
-      return calls.map((callHex, i) =>
-        buildSigningRequest(callHex, f, { signer: envelope.signer, nonce: envelope.nonce + i, mortalityBlocks: envelope.mortalityBlocks, checkpoint }, { index: i })
-      );
+      return signingRequestsForCalls(calls, needFacts(), envelope);
     },
 
     walletFrom(signPayload, assembleOpts = {}) {
