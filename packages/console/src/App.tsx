@@ -1,0 +1,297 @@
+import { useMemo, useState } from "react";
+import * as api from "./lib/mock";
+import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
+
+type Scenario = "happy" | "nft" | "upgrade" | "fail";
+const SCENARIOS: { id: Scenario; label: string; hint: string }[] = [
+  { id: "happy", label: "Verified run", hint: "Transfer, ink! call, receipt token" },
+  { id: "nft", label: "Missing pallet", hint: "Asks for nfts.mint on a chain without Nfts" },
+  { id: "upgrade", label: "Runtime changed", hint: "Runtime upgrades after approval" },
+  { id: "fail", label: "Step 2 fails", hint: "Sequential run stops halfway" },
+];
+const STEPS = ["Connect", "Manifest", "Plan", "Checks", "Approve", "Receipt"] as const;
+
+const short = (s?: string, n = 10) => (s ? (s.length > n * 2 ? `${s.slice(0, n)}…${s.slice(-6)}` : s) : "—");
+const human: Record<string, string> = {
+  observed: "Observed", not_observed: "Not observed", unknown: "Unknown",
+  atomic_verified: "Atomic, verified", atomic_unverified: "Atomic, unverified", sequential: "One after another", unavailable: "Can't run",
+};
+
+function Pill({ tone, children }: { tone: "ok" | "bad" | "warn" | "muted" | "info"; children: React.ReactNode }) {
+  return <span className={`pill ${tone}`}>{children}</span>;
+}
+const triTone = (s: string) => (s === "observed" || s === "confirmed" || s === "ok" || s === "pass" ? "ok" : s === "unknown" ? "warn" : "bad");
+
+function Digest({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="digest">
+      <span>{label}</span>
+      <code title={value}>{short(value)}</code>
+      {value && <button className="ghost xs" onClick={() => navigator.clipboard?.writeText(value)}>Copy</button>}
+    </div>
+  );
+}
+
+export default function App() {
+  const [scenario, setScenario] = useState<Scenario>("happy");
+  const [step, setStep] = useState(0);
+  const [endpoint, setEndpoint] = useState("wss://mainnet.portaldot.io");
+  const [facts, setFacts] = useState<RuntimeFacts>();
+  const [plan, setPlan] = useState<Plan>();
+  const [pre, setPre] = useState<PreflightResult>();
+  const [policy, setPolicy] = useState<PolicyResult>();
+  const [env, setEnv] = useState<SigningEnvelope>();
+  const [approval, setApproval] = useState<Approval>();
+  const [receipt, setReceipt] = useState<Receipt>();
+  const [lockBlock, setLockBlock] = useState<RuntimeFacts>();
+  const [progress, setProgress] = useState<StepStatus[]>([]);
+  const manifest = useMemo(() => api.demoManifest(scenario === "nft"), [scenario]);
+
+  const reset = (s: Scenario) => {
+    setScenario(s); setStep(0); setFacts(undefined); setPlan(undefined); setPre(undefined); setPolicy(undefined);
+    setEnv(undefined); setApproval(undefined); setReceipt(undefined); setLockBlock(undefined); setProgress([]);
+  };
+
+  const doDiscover = () => { setFacts(api.discover(endpoint)); };
+  const doCompile = () => { if (facts) { setPlan(api.compile(manifest, facts)); setStep(2); } };
+  const doChecks = () => { if (plan) { setPre(api.preflight(plan)); setPolicy(api.checkPolicy(plan)); setStep(3); } };
+  const doApprove = () => { if (plan && policy) { const e = api.envelope(); setEnv(e); setApproval(api.approve(plan, policy, e)); } };
+  const doSubmit = () => {
+    if (!plan || !policy || !approval || !facts) return;
+    const now = api.discover(endpoint, scenario === "upgrade");
+    if (now.fingerprint.digest !== facts.fingerprint.digest) { setLockBlock(now); setStep(5); return; }
+    setStep(5);
+    const n = plan.steps.length;
+    setProgress(Array(n).fill("submitted"));
+    const r = api.receipt(plan, policy, approval, scenario === "fail" ? "settle" : undefined);
+    r.steps.forEach((s, i) => {
+      setTimeout(() => setProgress((p) => p.map((v, j) => (j === i ? (s.status === "finalized" ? "included" : s.status) : v))), 500 + i * 700);
+      setTimeout(() => setProgress((p) => p.map((v, j) => (j === i ? s.status : v))), 900 + i * 700);
+    });
+    setTimeout(() => { setReceipt(r); setApproval({ ...approval, used: true }); }, 1000 + n * 700);
+  };
+
+  const canGo = [true, !!facts, !!plan, !!policy, !!approval, !!receipt || !!lockBlock];
+
+  return (
+    <div className="shell">
+      <aside className="side">
+        <div className="brand"><div className="logo">S</div><div><b>SEAM</b><small>Execution console</small></div></div>
+        <nav>
+          {STEPS.map((s, i) => (
+            <button key={s} className={`navstep ${i === step ? "on" : ""} ${canGo[i] ? "" : "locked"}`} disabled={!canGo[i]} onClick={() => setStep(i)}>
+              <span className="num">{i + 1}</span>{s}
+            </button>
+          ))}
+        </nav>
+        <div className="scen">
+          <small>Demo scenario</small>
+          {SCENARIOS.map((s) => (
+            <button key={s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
+              <b>{s.label}</b><span>{s.hint}</span>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      <main>
+        <header className="top">
+          <div>
+            <h1>{STEPS[step]}</h1>
+            <p className="sub">One intent, every execution surface, one verified result.</p>
+          </div>
+          {facts && (
+            <div className="fpchip" title={facts.fingerprint.digest}>
+              <span className="dot" /> {facts.fingerprint.specName} spec {facts.fingerprint.specVersion} · tx v{facts.fingerprint.transactionVersion} · <code>{short(facts.fingerprint.digest, 6)}</code>
+            </div>
+          )}
+        </header>
+        <div className="banner">Example data. The runtime fingerprint is from a real read of the Portaldot node; hashes, fees and results are placeholders until the SDK is connected.</div>
+
+        {step === 0 && (
+          <section className="grid2">
+            <div className="card">
+              <h3>Node</h3>
+              <label>RPC endpoint</label>
+              <div className="row"><input value={endpoint} onChange={(e) => setEndpoint(e.target.value)} /><button onClick={doDiscover}>Discover runtime</button></div>
+              {facts && (
+                <>
+                  <h4>Runtime fingerprint</h4>
+                  <dl className="kv">
+                    <dt>Genesis</dt><dd><code>{short(facts.fingerprint.genesisHash)}</code></dd>
+                    <dt>Runtime</dt><dd>{facts.fingerprint.specName} {facts.fingerprint.specVersion}, tx version {facts.fingerprint.transactionVersion}</dd>
+                    <dt>Metadata</dt><dd>v{facts.fingerprint.metadataVersion} · <code>{short(facts.fingerprint.metadataHash)}</code></dd>
+                    <dt>Token</dt><dd>{facts.fingerprint.tokenSymbol}, {facts.fingerprint.tokenDecimals} decimals, SS58 prefix {facts.fingerprint.ss58Prefix}</dd>
+                    <dt>Block</dt><dd>#{facts.discoveredAtBlock.toLocaleString()}</dd>
+                  </dl>
+                  <Digest label="Fingerprint digest" value={facts.fingerprint.digest} />
+                </>
+              )}
+            </div>
+            <div className="card">
+              <h3>Capabilities</h3>
+              {!facts ? <p className="muted">Discover a runtime to see what this chain can actually do.</p> : (
+                <>
+                  <table className="tbl"><tbody>
+                    {facts.capabilities.map((c) => (
+                      <tr key={c.id}><td><code>{c.id}</code></td><td>{c.callIndex ? <small className="muted">[{c.callIndex.join(", ")}]</small> : null}</td><td className="r"><Pill tone={triTone(c.status)}>{human[c.status]}</Pill></td></tr>
+                    ))}
+                  </tbody></table>
+                  <h4>Behaviour</h4>
+                  <table className="tbl"><tbody>
+                    {facts.behaviour.map((b) => (
+                      <tr key={b.id}><td>{b.id.replace(/_/g, " ")}</td><td><small className="muted">{b.note}</small></td><td className="r"><Pill tone={triTone(b.status)}>{b.status}</Pill></td></tr>
+                    ))}
+                  </tbody></table>
+                  <div className="actions"><button onClick={() => setStep(1)}>Next: Manifest</button></div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
+
+        {step === 1 && (
+          <section className="grid2">
+            <div className="card">
+              <h3>Intent</h3>
+              <ol className="flow">
+                {manifest.actions.map((a) => {
+                  const cap = facts?.capabilities.find((c) => c.id === a.requires);
+                  return (
+                    <li key={a.id}><b>{a.kind}</b><span className="muted"> needs </span><code>{a.requires}</code> {cap && <Pill tone={triTone(cap.status)}>{human[cap.status]}</Pill>}</li>
+                  );
+                })}
+              </ol>
+              <Digest label="Manifest digest" value={api.manifestDigest(manifest)} />
+              <div className="actions"><button onClick={doCompile}>Compile plan</button></div>
+            </div>
+            <div className="card"><h3>Manifest</h3><pre className="code">{JSON.stringify(manifest, null, 2)}</pre></div>
+          </section>
+        )}
+
+        {step === 2 && plan && (
+          <section className="card">
+            <div className="row between"><h3>Compiled plan</h3><Pill tone={plan.mode === "unavailable" ? "bad" : "info"}>{human[plan.mode]}</Pill></div>
+            <table className="tbl big">
+              <thead><tr><th>Step</th><th>Call</th><th>Key arguments</th><th>Encoded</th><th className="r">Status</th></tr></thead>
+              <tbody>
+                {plan.steps.map((s) => (
+                  <tr key={s.actionId}>
+                    <td><b>{s.actionId}</b></td>
+                    <td><code>{s.capability}</code>{s.callIndex && <small className="muted"> [{s.callIndex.join(", ")}]</small>}</td>
+                    <td><small>{Object.entries(s.decoded).filter(([, v]) => v).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</small></td>
+                    <td><code>{short(s.encodedCall, 6)}</code></td>
+                    <td className="r">{s.status === "ok" ? <Pill tone="ok">Ready</Pill> : <Pill tone="bad">Unavailable</Pill>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {plan.steps.filter((s) => s.reason).map((s) => <div key={s.actionId} className="note bad"><b>{s.actionId}:</b> {s.reason}</div>)}
+            {plan.mode === "sequential" && <div className="note">Steps run one after another, because batch rollback hasn't been tested on this runtime yet. If a step fails, SEAM stops and never runs the next one.</div>}
+            <div className="digests"><Digest label="Plan digest" value={plan.digest} /><Digest label="Manifest" value={plan.manifestDigest} /><Digest label="Fingerprint" value={plan.fingerprintDigest} /></div>
+            <div className="actions"><button onClick={doChecks}>Run preflight and policy</button></div>
+          </section>
+        )}
+
+        {step === 3 && pre && policy && (
+          <section className="grid2">
+            <div className="card">
+              <h3>Preflight</h3>
+              <table className="tbl"><thead><tr><th>Step</th><th>Weight</th><th>Fee</th><th>Storage</th><th className="r">Dry run</th></tr></thead><tbody>
+                {pre.steps.map((s) => (
+                  <tr key={s.actionId}><td><b>{s.actionId}</b></td><td>{s.weight.value ?? "unknown"}</td><td>{s.fee.value ?? "unknown"}</td><td>{s.storageDeposit.unknown ? <Pill tone="warn">Unknown</Pill> : s.storageDeposit.value}</td><td className="r"><Pill tone={triTone(s.dryRun)}>{s.dryRun}</Pill></td></tr>
+                ))}
+              </tbody></table>
+              <p className="muted">Estimated total fee: <b>{pre.totalFee.value}</b></p>
+            </div>
+            <div className="card">
+              <div className="row between"><h3>Policy</h3>{policy.allowed ? <Pill tone="ok">Allowed</Pill> : <Pill tone="bad">Blocked</Pill>}</div>
+              <ul className="rules">
+                {policy.rules.map((r, i) => (
+                  <li key={i} className={r.outcome}><Pill tone={triTone(r.outcome)}>{r.outcome}</Pill><div><code>{r.rule}</code>{r.actionId && <small className="muted"> · {r.actionId}</small>}<p>{r.reason}</p></div></li>
+                ))}
+              </ul>
+              <Digest label="Policy digest" value={policy.policyDigest} />
+              <div className="actions">
+                {policy.allowed ? <button onClick={() => setStep(4)}>Next: Approve</button> : <div className="note bad">SEAM blocked this plan. Change the Manifest or connect to a runtime that has the missing capability.</div>}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {step === 4 && plan && policy && (
+          <section className="grid2">
+            <div className="card">
+              <h3>What you're approving</h3>
+              <ul className="checks">{(approval?.covers ?? ["Manifest digest", "Plan digest", "Runtime fingerprint", "Policy digest and result", "Preflight result", "Signer, nonce, mortality and expiry"]).map((c) => <li key={c}>{c}</li>)}</ul>
+              <p className="muted">If any of these change after you approve, the approval stops working and SEAM asks you to approve again.</p>
+              {!approval ? <div className="actions"><button onClick={doApprove}>Approve this plan</button></div> : (
+                <>
+                  <Digest label="Approval hash" value={approval.hash} />
+                  <dl className="kv"><dt>Signer</dt><dd><code>{short(env?.signer, 8)}</code></dd><dt>Nonce</dt><dd>{env?.nonce}</dd><dt>Valid for</dt><dd>{env?.mortalityBlocks} blocks, until {new Date(approval.expiresAt).toLocaleTimeString()}</dd></dl>
+                </>
+              )}
+            </div>
+            <div className="card">
+              <h3>Sign with your wallet</h3>
+              <p className="muted">SEAM never holds your keys. Your wallet signs the exact bytes from the approved plan, and SEAM checks the runtime again right before it submits.</p>
+              <button disabled={!approval} onClick={doSubmit}>Sign and submit</button>
+            </div>
+          </section>
+        )}
+
+        {step === 5 && lockBlock && facts && (
+          <section className="card blocked">
+            <div className="row between"><h3>SEAM blocked this submission</h3><Pill tone="bad">Runtime changed</Pill></div>
+            <p>The chain's runtime changed after you approved, so the prepared transaction could behave differently. Nothing was sent.</p>
+            <table className="tbl"><thead><tr><th></th><th>When approved</th><th>Right now</th></tr></thead><tbody>
+              <tr><td>Spec version</td><td>{facts.fingerprint.specVersion}</td><td className="bad">{lockBlock.fingerprint.specVersion}</td></tr>
+              <tr><td>Metadata hash</td><td><code>{short(facts.fingerprint.metadataHash, 6)}</code></td><td className="bad"><code>{short(lockBlock.fingerprint.metadataHash, 6)}</code></td></tr>
+              <tr><td>Fingerprint</td><td><code>{short(facts.fingerprint.digest, 6)}</code></td><td className="bad"><code>{short(lockBlock.fingerprint.digest, 6)}</code></td></tr>
+            </tbody></table>
+            <div className="actions"><button onClick={() => reset("happy")}>Rediscover, recompile and approve again</button></div>
+          </section>
+        )}
+
+        {step === 5 && !lockBlock && plan && (
+          <section className="grid2">
+            <div className="card">
+              <h3>Live tracking</h3>
+              <ol className="track">
+                {plan.steps.map((s, i) => {
+                  const st = progress[i] ?? "not_run";
+                  return (
+                    <li key={s.actionId} className={st}>
+                      <b>{s.actionId}</b> <code>{s.capability}</code>
+                      <div className="stages">{(["submitted", "included", "finalized"] as const).map((x, k) => {
+                        const order = { not_run: -1, submitted: 0, included: 1, finalized: 2, failed: 1 }[st];
+                        return <span key={x} className={k <= order ? (st === "failed" && k === 1 ? "bad" : "on") : ""}>{st === "failed" && k === 1 ? "failed" : x}</span>;
+                      })}</div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+            <div className="card">
+              <div className="row between"><h3>Execution receipt</h3>{receipt && <Pill tone={receipt.overall === "verified" ? "ok" : receipt.overall === "partial" ? "warn" : "bad"}>{receipt.overall.replace("_", " ")}</Pill>}</div>
+              {!receipt ? <p className="muted">Waiting for finalization…</p> : (
+                <>
+                  <p className="big">{receipt.checks.confirmed} of {receipt.checks.expected} checks confirmed on chain</p>
+                  {receipt.steps.map((s) => (
+                    <div key={s.actionId} className="rstep">
+                      <div className="row between"><b>{s.actionId}</b><Pill tone={triTone(s.verification === "verified" ? "ok" : s.verification === "unknown" ? "unknown" : "bad")}>{s.verification.replace("_", " ")}</Pill></div>
+                      <p>{s.reason}</p>
+                      {s.txHash && <small className="muted">tx <code>{short(s.txHash, 8)}</code> · block #{s.block?.number.toLocaleString()} · {s.events.join(", ")}</small>}
+                    </div>
+                  ))}
+                  <div className="digests"><Digest label="Receipt" value={receipt.digest} /><Digest label="Approval" value={receipt.approvalHash} /><Digest label="Plan" value={receipt.planDigest} /><Digest label="Policy" value={receipt.policyDigest} /></div>
+                  <button className="ghost" onClick={() => { const b = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "seam-receipt.json"; a.click(); }}>Download receipt JSON</button>
+                </>
+              )}
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
