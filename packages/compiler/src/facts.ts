@@ -1,6 +1,6 @@
 import { expandMetadata } from '@polkadot/types';
 import { DOMAIN, digestJson } from './canonical.js';
-import { loadRuntime, withoutLookupWarning, type LoadedRuntime } from './runtime.js';
+import { NO_PINNED_TYPES, loadRuntime, withoutLookupWarning, type LoadedRuntime } from './runtime.js';
 import type {
   BatchAllRollback,
   Capability,
@@ -29,8 +29,11 @@ const WRAPPERS = new Set(['Compact', 'Vec', 'Box', 'Option']);
 export interface FactsFromMetadataInput {
   /** 0x-prefixed raw metadata bytes, exactly as returned by state_getMetadata. */
   metadataHex: string;
-  /** Exact text of the pinned type-definitions file (see readPinnedTypes()). */
-  typesBundle: string;
+  /**
+   * Exact text of the pinned type-definitions file (see readPinnedTypes()). Required for metadata V13 runtimes
+   * (Portaldot spec 1002); ignored for V14+ runtimes, whose metadata describes every type.
+   */
+  typesBundle?: string;
   genesisHash: string;
   tokenSymbol: string;
   tokenDecimals: number;
@@ -76,6 +79,7 @@ function argConfidence(types: string[], trusted: Set<string>): 'full' | 'partial
 export function readCapabilities(rt: LoadedRuntime): Record<string, Capability> {
   const { registry, metadata, pinned } = rt;
   const trusted = new Set(Object.keys(pinned.verified ?? {}));
+  const selfDescribing = rt.metadataVersion >= 14;
   const caps: Record<string, Capability> = {};
   for (const pallet of metadata.asLatest.pallets) {
     if (pallet.calls.isNone) continue;
@@ -95,7 +99,8 @@ export function readCapabilities(rt: LoadedRuntime): Record<string, Capability> 
         palletIndex,
         callIndex,
         args,
-        argTypesConfidence: argConfidence(args.map((a) => a.type), trusted)
+        // V14+: every type comes from the metadata's own lookup, so nothing is assumed.
+        argTypesConfidence: selfDescribing ? 'full' : argConfidence(args.map((a) => a.type), trusted)
       };
     }
   }
@@ -131,6 +136,9 @@ export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
   check('specVersion', input.specVersion, specVersion);
   check('transactionVersion', input.transactionVersion, transactionVersion);
   check('ss58Prefix', input.ss58Prefix, ss58Prefix);
+  if (rt.typesBundleHash !== null && rt.pinned.specVersion !== undefined && rt.pinned.specVersion !== specVersion) {
+    throw new Error(`the pinned types file is for spec ${rt.pinned.specVersion}${rt.pinned.chain ? ` (${rt.pinned.chain})` : ''}, this runtime is ${specName} spec ${specVersion}`);
+  }
   if (!/^0x[0-9a-f]{64}$/.test(input.genesisHash)) throw new Error('genesisHash must be 0x + 64 lowercase hex chars');
   if (!Number.isSafeInteger(input.tokenDecimals) || input.tokenDecimals < 0) throw new Error('tokenDecimals must be a non-negative integer');
 
@@ -154,7 +162,7 @@ export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
     fingerprintDigest: computeFingerprintDigest(fingerprint),
     capabilities,
     behaviour: { batchAllRollback },
-    source: { metadataHex: input.metadataHex.trim() as Hex, typesBundle: input.typesBundle }
+    source: { metadataHex: input.metadataHex.trim() as Hex, typesBundle: rt.typesBundleHash === null ? NO_PINNED_TYPES : input.typesBundle! }
   };
   if (input.endpoint !== undefined) facts.endpoint = input.endpoint;
   if (input.blockNumber !== undefined) facts.blockNumber = input.blockNumber;

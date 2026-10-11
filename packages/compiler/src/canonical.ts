@@ -5,7 +5,8 @@ import type { Hex } from './types.js';
 export const DOMAIN = {
   fingerprint: 'seam/fingerprint/v1',
   manifest: 'seam/manifest/v1',
-  plan: 'seam/plan/v1'
+  plan: 'seam/plan/v1',
+  abi: 'seam/abi/v1'
 } as const;
 
 export class NotCanonicalError extends Error {

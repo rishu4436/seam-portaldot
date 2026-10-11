@@ -1,0 +1,27 @@
+[package]
+name = "seam_demo"
+version = "0.1.0"
+authors = ["SEAM team"]
+edition = "2021"
+publish = false
+license = "MIT"
+description = "SEAM demo ink! contract: settle(order_id, amount) stores the last settlement and emits Settled on every call"
+
+[dependencies]
+ink = { version = "=5.1.1", default-features = false }
+
+[lib]
+path = "lib.rs"
+
+[features]
+default = ["std"]
+std = ["ink/std"]
+ink-as-dependency = []
+
+# Same release settings cargo-contract uses for contracts.
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = "z"
+codegen-units = 1
+overflow-checks = false

@@ -3,12 +3,14 @@ import { DOMAIN, NotCanonicalError, digestJson } from './canonical.js';
 import { parseH160, parseNativeAddress } from './address.js';
 import { computeFingerprintDigest } from './facts.js';
 import { loadRuntime, type LoadedRuntime } from './runtime.js';
+import { encodeInkMessage } from './ink.js';
 import {
   SeamCompileError,
   type ActionKind,
   type Capability,
   type CompileIssue,
   type CompileOptions,
+  type ContractMessage,
   type Hex,
   type Manifest,
   type ManifestAction,
@@ -34,7 +36,9 @@ export const BATCH_CAPABILITY = 'Utility.batch_all';
 const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }> = {
   'assets.transfer': { required: ['assetId', 'amount', 'recipient'], optional: [] },
   'assets.mint': { required: ['assetId', 'amount', 'recipient'], optional: [] },
-  'contracts.call': { required: ['contract', 'value', 'gasLimit', 'data'], optional: [] },
+  // contracts.call: exactly one of `data` (raw hex) or `message` (+ `abi` or `abiRef`, optional `args`, `abiHash`).
+  // proofSize / storageDepositLimit are only for runtimes whose Contracts.call takes them (Weight v2, metadata V14+).
+  'contracts.call': { required: ['contract', 'value', 'gasLimit'], optional: ['data', 'message', 'args', 'abi', 'abiRef', 'abiHash', 'proofSize', 'storageDepositLimit'] },
   'revive.call': { required: ['contract', 'value', 'data'], optional: ['gasLimit', 'storageDepositLimit'] },
   'nfts.mint': { required: ['collection', 'item', 'recipient'], optional: [] }
 };
@@ -47,7 +51,8 @@ const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }>
 const ARG_BINDINGS: Partial<Record<ActionKind, Record<string, string>>> = {
   'assets.transfer': { id: 'assetId', target: 'recipient', amount: 'amount' },
   'assets.mint': { id: 'assetId', beneficiary: 'recipient', amount: 'amount' },
-  'contracts.call': { dest: 'contract', value: 'value', gasLimit: 'gasLimit', data: 'data' }
+  // gasLimit binds Weight v1 (u64) directly, or Weight v2 { ref_time: gasLimit, proof_size: proofSize }.
+  'contracts.call': { dest: 'contract', value: 'value', gasLimit: 'gasLimit', storageDepositLimit: 'storageDepositLimit', data: 'data' }
 };
 // Binding keys are camelCase; metadata names (snake_case) are camelCased before lookup.
 
@@ -97,16 +102,84 @@ function parseHexBytes(v: unknown, path: string, issues: CompileIssue[]): Hex | 
 interface ValidatedAction {
   action: ManifestAction;
   /** Normalised values used for encoding and display. */
-  values: Record<string, string>;
-  /** Values as passed to polkadot.js (addresses as AccountId hex). */
-  encodeValues: Record<string, string>;
+  values: Record<string, string | null>;
+  /** Values as passed to polkadot.js (addresses as AccountId hex). null = the manifest explicitly chose None. */
+  encodeValues: Record<string, string | null>;
+  /** ink! ABI form of contracts.call only. */
+  contractMessage?: ContractMessage;
+}
+
+/** Checks the contracts.call `data` / `message` choice and encodes the ABI form. Returns false on error. */
+function contractData(
+  a: Record<string, unknown>,
+  base: string,
+  ss58Prefix: number,
+  options: CompileOptions,
+  issues: CompileIssue[],
+  set: (k: string, v: string | undefined) => void
+): ContractMessage | undefined {
+  const p = (k: string) => `${base}.args.${k}`;
+  const hasData = a.data !== undefined;
+  const hasMsg = a.message !== undefined;
+  if (hasData === hasMsg) {
+    issues.push({
+      code: 'MANIFEST_INVALID',
+      path: p(hasData ? 'message' : 'data'),
+      message: hasData
+        ? 'give either "data" (raw hex) or "message" (ink! ABI form), not both'
+        : 'contracts.call needs either "data" (0x hex: ink! selector + SCALE args) or "message" with "abi"/"abiRef"'
+    });
+    return undefined;
+  }
+  if (hasData) {
+    for (const k of ['args', 'abi', 'abiRef', 'abiHash']) {
+      if (a[k] !== undefined) issues.push({ code: 'MANIFEST_INVALID', path: p(k), message: `"${k}" is only used with "message"; remove it or drop "data"` });
+    }
+    set('data', parseHexBytes(a.data, p('data'), issues));
+    return undefined;
+  }
+  if ((a.abi === undefined) === (a.abiRef === undefined)) {
+    issues.push({ code: 'ABI_INVALID', path: p(a.abi === undefined ? 'abi' : 'abiRef'), message: 'the ink! form needs exactly one of "abi" (the metadata.json object) or "abiRef" (a key of options.abis)' });
+    return undefined;
+  }
+  let abiJson: unknown = a.abi;
+  let abiPath = p('abi');
+  let abiRef: string | undefined;
+  if (a.abiRef !== undefined) {
+    abiPath = p('abiRef');
+    if (typeof a.abiRef !== 'string' || a.abiRef.length === 0) {
+      issues.push({ code: 'ABI_INVALID', path: abiPath, message: 'abiRef must be a non-empty string naming an ABI passed in options.abis' });
+      return undefined;
+    }
+    abiRef = a.abiRef;
+    abiJson = options.abis && Object.prototype.hasOwnProperty.call(options.abis, abiRef) ? options.abis[abiRef] : undefined;
+    if (abiJson === undefined) {
+      issues.push({ code: 'ABI_INVALID', path: abiPath, message: `no ABI named "${abiRef}" was passed in options.abis` });
+      return undefined;
+    }
+  }
+  const value = typeof a.value === 'string' ? a.value : undefined;
+  const r = encodeInkMessage(abiJson, a.message, a.args, value, ss58Prefix, base + '.args', issues, abiPath);
+  if (!r) return undefined;
+  if (a.abiHash !== undefined && (typeof a.abiHash !== 'string' || a.abiHash.toLowerCase() !== r.abiHash)) {
+    issues.push({ code: 'ABI_HASH_MISMATCH', path: p('abiHash'), message: `the ABI hashes to ${r.abiHash}, but the manifest pins ${String(a.abiHash)}` });
+    return undefined;
+  }
+  set('data', r.data);
+  set('message', r.message);
+  set('selector', r.selector);
+  set('abiHash', r.abiHash);
+  const cm: ContractMessage = { abiHash: r.abiHash, message: r.message, selector: r.selector, args: r.args };
+  if (abiRef !== undefined) cm.abiRef = abiRef;
+  return cm;
 }
 
 function validateAction(
   action: ManifestAction,
   index: number,
   ss58Prefix: number,
-  issues: CompileIssue[]
+  issues: CompileIssue[],
+  options: CompileOptions = {}
 ): ValidatedAction | undefined {
   const base = `actions[${index}]`;
   const schema = ARG_SCHEMA[action.kind];
@@ -129,14 +202,15 @@ function validateAction(
 
   const a = action.args;
   const p = (k: string) => `${base}.args.${k}`;
-  const values: Record<string, string> = {};
-  const encodeValues: Record<string, string> = {};
+  const values: Record<string, string | null> = {};
+  const encodeValues: Record<string, string | null> = {};
   const set = (k: string, display: string | undefined, enc: string | undefined = display) => {
     if (display === undefined || enc === undefined) return;
     values[k] = display;
     encodeValues[k] = enc;
   };
 
+  let contractMessage: ContractMessage | undefined;
   switch (action.kind) {
     case 'assets.transfer':
     case 'assets.mint': {
@@ -157,7 +231,15 @@ function validateAction(
       }
       set('value', parseAmount(a.value, p('value'), issues));
       set('gasLimit', parseAmount(a.gasLimit, p('gasLimit'), issues));
-      set('data', parseHexBytes(a.data, p('data'), issues));
+      contractMessage = contractData(a, base, ss58Prefix, options, issues, (k, v) => set(k, v));
+      if (a.proofSize !== undefined) set('proofSize', parseAmount(a.proofSize, p('proofSize'), issues));
+      if (a.storageDepositLimit === null) {
+        // Explicit "no limit": encoded as None where the runtime's argument is an Option.
+        values.storageDepositLimit = null;
+        encodeValues.storageDepositLimit = null;
+      } else if (a.storageDepositLimit !== undefined) {
+        set('storageDepositLimit', parseAmount(a.storageDepositLimit, p('storageDepositLimit'), issues));
+      }
       break;
     }
     case 'revive.call': {
@@ -179,7 +261,8 @@ function validateAction(
       break;
     }
   }
-  return issues.length > before ? undefined : { action, values, encodeValues };
+  if (issues.length > before) return undefined;
+  return contractMessage ? { action, values, encodeValues, contractMessage } : { action, values, encodeValues };
 }
 
 function validateManifestShape(m: unknown, issues: CompileIssue[]): m is Manifest {
@@ -279,6 +362,25 @@ interface EncodeResult {
   rangeIssue?: CompileIssue;
 }
 
+/** Manifest args that only some runtimes' calls take. */
+const OPTIONAL_RUNTIME_ARGS: Partial<Record<ActionKind, string[]>> = {
+  'contracts.call': ['proofSize', 'storageDepositLimit']
+};
+
+function isWeightV2(rawType: string): boolean {
+  try {
+    const t = JSON.parse(rawType);
+    return t && typeof t === 'object' && Object.keys(t).sort().join(',') === 'proofSize,refTime';
+  } catch {
+    return false;
+  }
+}
+
+function weightV2(rt: LoadedRuntime, metaArgs: { name: string; type: string }[]): boolean {
+  const g = metaArgs.find((a) => a.name === 'gasLimit');
+  return !!g && isWeightV2(rt.registry.createType(g.type as any).toRawType());
+}
+
 function encodeStep(rt: LoadedRuntime, kind: ActionKind, cap: Capability, v: ValidatedAction, index: number): EncodeResult {
   const bindings = ARG_BINDINGS[kind];
   const capability = KIND_TO_CAPABILITY[kind];
@@ -289,18 +391,55 @@ function encodeStep(rt: LoadedRuntime, kind: ActionKind, cap: Capability, v: Val
   if (unknownArgs.length) {
     return { ok: false, reason: `${capability} on this runtime takes argument(s) SEAM cannot fill: ${unknownArgs.join(', ')}` };
   }
+  // Arguments the runtime takes but the manifest did not give: unavailable, never guessed.
+  const missing = metaArgs.filter((a) => !(bindings[a.name]! in v.encodeValues)).map((a) => bindings[a.name]!);
+  if (missing.length) {
+    return { ok: false, reason: `${capability} on this runtime takes argument(s) SEAM cannot fill: ${missing.join(', ')}` };
+  }
+  // Manifest args the runtime does not take: an error rather than silently dropping them.
+  const used = new Set(metaArgs.map((a) => bindings[a.name]!));
+  for (const extra of OPTIONAL_RUNTIME_ARGS[kind] ?? []) {
+    if (extra in v.encodeValues && !used.has(extra) && !(extra === 'proofSize' && weightV2(rt, metaArgs))) {
+      return {
+        ok: false,
+        rangeIssue: { code: 'MANIFEST_INVALID', path: `actions[${index}].args.${extra}`, message: `${capability} on this runtime (${metaArgs.map((a) => `${a.name}: ${a.type}`).join(', ')}) has no ${extra}; remove it` }
+      };
+    }
+  }
   const ordered: unknown[] = [];
   for (const a of metaArgs) {
     const seamKey = bindings[a.name]!;
     const raw = v.encodeValues[seamKey]!;
-    const bits = /^(Compact<)?(u\d+|[A-Za-z]*(Balance|Weight|AssetId)[A-Za-z]*)>?$/.test(a.type) ? bitLengthOf(rt, a.type) : undefined;
+    const rawType = rt.registry.createType(a.type as any).toRawType();
+    if (seamKey === 'gasLimit' && isWeightV2(rawType)) {
+      // Weight v2: { ref_time: gasLimit, proof_size: proofSize }, both Compact<u64>.
+      const proof = v.encodeValues.proofSize;
+      if (proof === undefined || proof === null) {
+        return { ok: false, reason: `${capability} on this runtime takes gas_limit as Weight { ref_time, proof_size }; the manifest must give proofSize` };
+      }
+      for (const [k, val] of [['gasLimit', raw], ['proofSize', proof]] as const) {
+        if (BigInt(val!) >= 1n << 64n) {
+          return { ok: false, rangeIssue: { code: 'AMOUNT_INVALID', path: `actions[${index}].args.${k}`, message: `${val} does not fit u64 (Weight ${k === 'gasLimit' ? 'ref_time' : 'proof_size'})` } };
+        }
+      }
+      ordered.push({ refTime: raw, proofSize: proof });
+      continue;
+    }
+    if (raw === null) {
+      if (!/^Option</.test(rawType)) {
+        return { ok: false, rangeIssue: { code: 'MANIFEST_INVALID', path: `actions[${index}].args.${seamKey}`, message: `${seamKey} is ${a.type} on this runtime, not optional; null is not allowed` } };
+      }
+      ordered.push(null);
+      continue;
+    }
+    const inner = a.type.replace(/^Option<(.+)>$/, '$1');
+    const bits = /^(Compact<)?(u\d+|[A-Za-z]*(Balance|Weight|AssetId)[A-Za-z]*)>?$/.test(inner) ? bitLengthOf(rt, inner) : undefined;
     if (bits !== undefined && BigInt(raw) >= 1n << BigInt(bits)) {
       return {
         ok: false,
         rangeIssue: { code: 'AMOUNT_INVALID', path: `actions[${index}].args.${seamKey}`, message: `${raw} does not fit ${a.type} (${bits} bits) on this runtime` }
       };
     }
-    const rawType = rt.registry.createType(a.type as any).toRawType();
     ordered.push(rawType.includes('"Id":"AccountId"') ? { Id: raw } : raw);
   }
   try {
@@ -397,7 +536,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
   }
 
   const signer = signerFor(manifest, fp.ss58Prefix, issues);
-  const validated = manifest.actions.map((a, i) => validateAction(a, i, fp.ss58Prefix, issues));
+  const validated = manifest.actions.map((a, i) => validateAction(a, i, fp.ss58Prefix, issues, options));
   if (issues.length) throw new SeamCompileError(issues);
 
   let manifestDigest: Hex;
@@ -419,7 +558,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
       capability,
       palletIndex: null,
       callIndex: null,
-      decodedArgs: v!.values,
+      decodedArgs: v!.values as Record<string, string>, // storageDepositLimit may be null, see PlanStep
       encodedCall: null,
       status: 'unavailable'
     };
@@ -444,6 +583,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
         } else step.reason = r.reason;
       }
     }
+    if (v!.contractMessage) step.contractMessage = v!.contractMessage;
     if (step.reason === undefined) delete step.reason;
     steps.push(step);
   });
