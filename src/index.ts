@@ -29,6 +29,7 @@ export {
   signedCallsOf,
   checkSignedExtrinsic,
   toMultiSignature,
+  signBytesOf,
   type SigningRequest,
   type SigningCheckpoint,
   type SingleSigningInput,

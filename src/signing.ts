@@ -137,6 +137,17 @@ export function buildSigningRequests(plan: Plan, facts: RuntimeFacts, envelope: 
   );
 }
 
+/**
+ * The exact bytes a key signs for a SignerPayloadJSON: the SCALE payload, or its blake2b-256 when longer
+ * than 256 bytes. What a polkadot.js extension's signPayload signs internally.
+ */
+export function signBytesOf(payload: SignerPayloadJSON, facts: RuntimeFacts): Hex {
+  const { registry } = encodeRuntime(facts);
+  const raw = registry.createType('SignerPayload', { ...payload, runtimeVersion: { specVersion: payload.specVersion, transactionVersion: payload.transactionVersion } }).toRaw();
+  const data = hexToU8a(raw.data);
+  return u8aToHex(data.length > 256 ? blake2AsU8a(data, 256) : data) as Hex;
+}
+
 const SCHEMES = { ed25519: 0, sr25519: 1, ecdsa: 2 } as const;
 export type SignatureScheme = keyof typeof SCHEMES;
 
@@ -179,9 +190,7 @@ export function assembleSignedExtrinsic(payload: SignerPayloadJSON, signature: s
 
   const multi = toMultiSignature(signature, opts.scheme);
   if (opts.verify !== false) {
-    const signed = registry.createType('SignerPayload', { ...payload, runtimeVersion: { specVersion: payload.specVersion, transactionVersion: payload.transactionVersion } }).toRaw();
-    const data = hexToU8a(signed.data);
-    const message = data.length > 256 ? blake2AsU8a(data, 256) : data;
+    const message = hexToU8a(signBytesOf(payload, facts));
     if (!signatureVerify(message, multi, payload.address).isValid) {
       throw new SeamChainError('BAD_SIGNATURE', `signature does not verify for ${payload.address} over this payload`);
     }
