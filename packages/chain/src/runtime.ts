@@ -55,7 +55,16 @@ export interface DecodeRuntime {
 
 const decodeCache = new Map<string, DecodeRuntime>();
 
-/** Pinned types + DECODE_TYPES, on its own registry so encoding is never affected. Cached per fingerprint. */
+/** Metadata version byte (byte 4, after the "meta" magic). */
+export function metadataVersionOf(metadataHex: string): number {
+  return parseInt(metadataHex.slice(10, 12), 16);
+}
+
+/**
+ * Pinned types + DECODE_TYPES, on its own registry so encoding is never affected. Cached per fingerprint.
+ * DECODE_TYPES describe the pre-V14 DispatchError (Module {index: u8, error: u8}) and are only applied to
+ * metadata V13 and older. V14+ metadata carries its own DispatchError in the type lookup.
+ */
 export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   const key = `${facts.fingerprint.metadataHash}:${facts.fingerprint.typesBundleHash}`;
   const hit = decodeCache.get(key);
@@ -63,7 +72,8 @@ export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   encodeRuntime(facts); // integrity check
   const pinned = parsePinnedTypes(facts.source.typesBundle);
   const registry = new TypeRegistry();
-  registry.register({ ...(pinned.types as Record<string, string>), ...(DECODE_TYPES as Record<string, string>) });
+  const legacy = metadataVersionOf(facts.source.metadataHex) <= 13;
+  registry.register({ ...(pinned.types as Record<string, string>), ...(legacy ? (DECODE_TYPES as Record<string, string>) : {}) });
   const metadata = new Metadata(registry, hexToU8a(facts.source.metadataHex));
   registry.setMetadata(metadata);
   registry.setChainProperties(registry.createType<any>('ChainProperties', {

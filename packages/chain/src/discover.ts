@@ -22,7 +22,16 @@ export interface DiscoverOptions extends ConnectOptions {
   typesBundle?: string;
   /** Behaviour metadata cannot show. Default 'unknown' (see @seam/compiler). */
   batchAllRollback?: BatchAllRollback;
+  /**
+   * Token symbol/decimals declared by the caller for a chain whose system_properties omit them
+   * (e.g. substrate-contracts-node --dev returns {}). Used only when the node reports nothing;
+   * if the node does report a value and it differs, discovery fails. Never filled in by SEAM itself.
+   */
+  declaredToken?: { tokenSymbol: string; tokenDecimals: number };
 }
+
+/** Options that shape the facts (everything except connection settings). */
+export type FactsOptions = Omit<DiscoverOptions, keyof ConnectOptions>;
 
 const HASH_RE = /^0x[0-9a-f]{64}$/;
 
@@ -84,10 +93,26 @@ function first<T>(v: T | T[] | undefined): T | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
-/** Token symbol and decimals from system_properties. Missing values are an error, never guessed. */
-export function tokenInfo(properties: ChainPropertiesJson): { tokenSymbol: string; tokenDecimals: number } {
-  const tokenSymbol = first(properties.tokenSymbol);
-  const tokenDecimals = first(properties.tokenDecimals);
+/**
+ * Token symbol and decimals from system_properties. Missing values are an error, never guessed,
+ * unless the caller explicitly declares them (declared values must agree with anything the node reports).
+ */
+export function tokenInfo(
+  properties: ChainPropertiesJson,
+  declared?: { tokenSymbol: string; tokenDecimals: number }
+): { tokenSymbol: string; tokenDecimals: number } {
+  const reportedSymbol = first(properties.tokenSymbol);
+  const reportedDecimals = first(properties.tokenDecimals);
+  if (declared) {
+    if (reportedSymbol !== undefined && reportedSymbol !== declared.tokenSymbol) {
+      throw new SeamChainError('FACTS_MISMATCH', `declared tokenSymbol ${declared.tokenSymbol} but the node reports ${String(reportedSymbol)}`);
+    }
+    if (reportedDecimals !== undefined && reportedDecimals !== declared.tokenDecimals) {
+      throw new SeamChainError('FACTS_MISMATCH', `declared tokenDecimals ${declared.tokenDecimals} but the node reports ${String(reportedDecimals)}`);
+    }
+  }
+  const tokenSymbol = reportedSymbol ?? declared?.tokenSymbol;
+  const tokenDecimals = reportedDecimals ?? declared?.tokenDecimals;
   if (typeof tokenSymbol !== 'string' || tokenSymbol.length === 0) {
     throw new SeamChainError('NODE_MISSING_VALUE', 'system_properties has no tokenSymbol; SEAM will not guess it');
   }
@@ -101,8 +126,8 @@ export function tokenInfo(properties: ChainPropertiesJson): { tokenSymbol: strin
  * Pure: chain inputs -> the compiler's RuntimeFacts. specName/specVersion/transactionVersion/ss58Prefix
  * from the node are passed to factsFromMetadata, which throws if they disagree with the metadata itself.
  */
-export function factsFromChainInputs(inputs: ChainInputs, opts: Omit<DiscoverOptions, keyof ConnectOptions> = {}): RuntimeFacts {
-  const { tokenSymbol, tokenDecimals } = tokenInfo(inputs.properties);
+export function factsFromChainInputs(inputs: ChainInputs, opts: FactsOptions = {}): RuntimeFacts {
+  const { tokenSymbol, tokenDecimals } = tokenInfo(inputs.properties, opts.declaredToken);
   const input: Parameters<typeof factsFromMetadata>[0] = {
     metadataHex: inputs.metadataHex,
     typesBundle: opts.typesBundle ?? readPinnedTypes(),
@@ -125,8 +150,9 @@ export function factsFromChainInputs(inputs: ChainInputs, opts: Omit<DiscoverOpt
 }
 
 /** Pure: chain inputs -> the nine-field fingerprint, via the compiler (so digests match byte for byte). */
-export function fingerprintFromChainInputs(inputs: ChainInputs, typesBundle?: string): FreshFingerprint {
-  const facts = factsFromChainInputs(inputs, typesBundle === undefined ? {} : { typesBundle });
+export function fingerprintFromChainInputs(inputs: ChainInputs, typesBundleOrOpts?: string | FactsOptions): FreshFingerprint {
+  const opts: FactsOptions = typeof typesBundleOrOpts === 'string' ? { typesBundle: typesBundleOrOpts } : typesBundleOrOpts ?? {};
+  const facts = factsFromChainInputs(inputs, opts);
   return { fingerprint: facts.fingerprint, fingerprintDigest: computeFingerprintDigest(facts.fingerprint), atBlock: inputs.head };
 }
 
@@ -139,7 +165,15 @@ export async function discover(endpoint: Endpoint, opts: DiscoverOptions = {}): 
 /** Fresh fingerprint plus the block it was read at. */
 export async function readFingerprint(endpoint: Endpoint, opts: DiscoverOptions = {}): Promise<FreshFingerprint> {
   const inputs = await readChainInputs(endpoint, opts);
-  return fingerprintFromChainInputs(inputs, opts.typesBundle);
+  return fingerprintFromChainInputs(inputs, factsOptionsOf(opts));
+}
+
+function factsOptionsOf(opts: DiscoverOptions): FactsOptions {
+  const out: FactsOptions = {};
+  if (opts.typesBundle !== undefined) out.typesBundle = opts.typesBundle;
+  if (opts.batchAllRollback !== undefined) out.batchAllRollback = opts.batchAllRollback;
+  if (opts.declaredToken !== undefined) out.declaredToken = opts.declaredToken;
+  return out;
 }
 
 /**
@@ -163,8 +197,19 @@ export function signedExtensionsOf(metadataHex: string, typesBundle: string = re
 }
 
 /** Pure: chain inputs -> snapshot JSON in the same format as the first mainnet snapshot. */
-export function snapshotFromChainInputs(inputs: ChainInputs, extra: { rpcMethods?: string[]; fetchedAt?: string; typesBundle?: string } = {}): SnapshotJson {
-  const fp = fingerprintFromChainInputs(inputs, extra.typesBundle);
+export interface SnapshotExtra {
+  rpcMethods?: string[];
+  fetchedAt?: string;
+  typesBundle?: string;
+  /** Recorded in the snapshot as `declaredToken` so a replay can see the values did not come from the node. */
+  declaredToken?: { tokenSymbol: string; tokenDecimals: number };
+}
+
+export function snapshotFromChainInputs(inputs: ChainInputs, extra: SnapshotExtra = {}): SnapshotJson {
+  const fpOpts: FactsOptions = {};
+  if (extra.typesBundle !== undefined) fpOpts.typesBundle = extra.typesBundle;
+  if (extra.declaredToken !== undefined) fpOpts.declaredToken = extra.declaredToken;
+  const fp = fingerprintFromChainInputs(inputs, fpOpts);
   const snap: SnapshotJson = {
     endpoint: inputs.endpoint ?? '',
     block: inputs.head.number,
@@ -178,6 +223,7 @@ export function snapshotFromChainInputs(inputs: ChainInputs, extra: { rpcMethods
   };
   if (extra.fetchedAt) snap.fetchedAt = extra.fetchedAt;
   if (extra.rpcMethods) snap.rpcMethods = extra.rpcMethods;
+  if (extra.declaredToken) snap.declaredToken = { ...extra.declaredToken, source: 'declared by the caller; system_properties did not report it' };
   return snap;
 }
 
@@ -213,9 +259,10 @@ export async function snapshotFromNode(endpoint: Endpoint, outDir: string, opts:
   }), opts);
   const label = endpointLabel(endpoint);
   if (label) inputs.endpoint = label;
-  const extra: { rpcMethods?: string[]; fetchedAt?: string; typesBundle?: string } = { fetchedAt: new Date().toISOString() };
+  const extra: SnapshotExtra = { fetchedAt: new Date().toISOString() };
   if (rpcMethods) extra.rpcMethods = rpcMethods;
   if (opts.typesBundle) extra.typesBundle = opts.typesBundle;
+  if (opts.declaredToken) extra.declaredToken = opts.declaredToken;
   const snapshot = snapshotFromChainInputs(inputs, extra);
   const name = opts.name ?? `${inputs.runtimeVersion.specName}-spec${inputs.runtimeVersion.specVersion}`;
   mkdirSync(outDir, { recursive: true });
