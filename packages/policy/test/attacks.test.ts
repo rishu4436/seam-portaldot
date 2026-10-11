@@ -26,7 +26,7 @@ function submit(run: Run, over: Partial<Parameters<typeof checkBeforeSubmit>[0]>
     approval: run.approval, manifestDigest: run.plan.manifestDigest, plan: run.plan, envelope: run.envelope,
     preflight: run.preflight, policy: run.policy, policyResult: run.policyResult,
     preparedFingerprint: run.fingerprint, currentFingerprint: run.fingerprint,
-    signedCalls: callsToSign(run.plan) as Hex[], now: H.NOW, store: new InMemoryApprovalStore(), ...over,
+    signedCalls: callsToSign(run.plan) as Hex[], signedDryRun: callsToSign(run.plan).map(() => "ok" as const), now: H.NOW, store: new InMemoryApprovalStore(), ...over,
   });
 }
 const codes = (r: { reasons: { code: string }[] }) => r.reasons.map((x) => x.code);
@@ -245,5 +245,32 @@ describe("unknowns and approval rules", () => {
     const run = approvedRun();
     expect(codes(submit(run, { envelope: H.envelope({ nonce: 6 }) }))).toContain("approval_mismatch");
     expect(codes(submit(run, { policy: H.policy({ maxNativeValue: "999" }) }))).toContain("approval_mismatch");
+  });
+  it("needs a checkpoint block in the signing envelope, and binds it", () => {
+    const plan = H.compilePlan();
+    const policy = H.policy();
+    const pr = evaluatePolicy({ policy, plan, facts, preflight: H.preflight(plan) });
+    const noCp = { ...H.envelope(), checkpoint: undefined } as never;
+    expect(createApproval({ manifestDigest: plan.manifestDigest, plan, envelope: noCp, preflight: H.preflight(plan), policy, policyResult: pr, fingerprint: fp, now: H.NOW }).ok).toBe(false);
+    const run = approvedRun();
+    const moved = H.envelope({ checkpoint: { number: 2721456, hash: ("0x" + "77".repeat(32)) as Hex } });
+    expect(codes(submit(run, { envelope: moved }))).toContain("approval_mismatch");
+  });
+  it("requires a successful dry run of the signed transaction at the submit gate", () => {
+    const run = approvedRun();
+    expect(codes(submit(run, { signedDryRun: ["ok", "failed", "ok"] }))).toContain("signed_dry_run_failed");
+    expect(codes(submit(run, { signedDryRun: undefined }))).toContain("signed_dry_run_missing");
+    expect(codes(submit(run, { signedDryRun: ["ok", "unknown", "ok"] }))).toContain("signed_dry_run_missing");
+  });
+  it("Portaldot preset allows unknown storage deposit and pre-sign dry run, nothing else", async () => {
+    const { portaldotPolicy } = await import("../src/index.js");
+    const plan = H.compilePlan();
+    const pf = H.preflight(plan);
+    pf.steps.forEach((s) => { s.storageDeposit = { unknown: true }; s.dryRun = "unknown"; });
+    const base = { allowedAssets: ["1", "2"], allowedContracts: [H.CHARLIE], allowedRecipients: [H.BOB] };
+    expect(evaluatePolicy({ policy: portaldotPolicy(base), plan, facts, preflight: pf }).allowed).toBe(true);
+    expect(evaluatePolicy({ policy: H.policy(), plan, facts, preflight: pf }).allowed).toBe(false);
+    pf.totalFee = { unknown: true };
+    expect(evaluatePolicy({ policy: portaldotPolicy(base), plan, facts, preflight: pf }).allowed).toBe(false);
   });
 });

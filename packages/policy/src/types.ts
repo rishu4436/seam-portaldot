@@ -14,7 +14,17 @@ export interface PreflightStep {
 }
 export interface PreflightResult { steps: PreflightStep[]; totalFee: Estimate }
 
-export interface SigningEnvelope { signer: string; nonce: number; mortalityBlocks: number; expiresAt: string }
+export interface SigningEnvelope {
+  signer: string;
+  nonce: number;
+  mortalityBlocks: number;
+  /** The block the mortality window starts from; the wallet signs against its hash. */
+  checkpoint: { number: number; hash: Hex };
+  expiresAt: string;
+}
+
+/** Result of system_dryRun on the actually signed transaction(s), one per signed call. */
+export type SignedDryRun = "ok" | "failed" | "unknown";
 
 export interface PolicyRuleResult { rule: string; outcome: "pass" | "block" | "unknown"; reason: string; actionId?: string }
 export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex }
