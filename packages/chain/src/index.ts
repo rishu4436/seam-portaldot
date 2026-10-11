@@ -11,6 +11,7 @@ export {
   readFingerprint,
   refetchFingerprint,
   readCheckpoint,
+  readSigningCheckpoint,
   listRpcMethods,
   signedExtensionsOf,
   snapshotFromNode,

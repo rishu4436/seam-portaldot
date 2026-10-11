@@ -5,7 +5,7 @@ import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { u8aToHex, hexToU8a } from '@polkadot/util';
 import {
-  discover, readCheckpoint, signingRequestsForCalls, assembleSignedExtrinsic, submitAndWatch, encodeRuntime,
+  discover, readSigningCheckpoint, signingRequestsForCalls, assembleSignedExtrinsic, submitAndWatch, encodeRuntime,
   PORTALDOT_MAINNET_GENESIS, extrinsicHash
 } from '../../dist/index.js';
 
@@ -52,7 +52,7 @@ function findIndex(rt, pallet, method) {
 
 /** Signs one call with a dev key through SEAM's own signing path and submits it. */
 export async function sendSigned(facts, pair, callHex, { mortalityBlocks = 64, nonce } = {}) {
-  const checkpoint = await readCheckpoint(ENDPOINT);
+  const checkpoint = await readSigningCheckpoint(ENDPOINT);
   const n = nonce ?? (await nextNonce(pair.address));
   const [req] = signingRequestsForCalls([callHex], facts, {
     signer: pair.address, nonce: n, mortalityBlocks, checkpoint, expiresAt: new Date(Date.now() + 600_000).toISOString()

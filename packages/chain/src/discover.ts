@@ -60,6 +60,26 @@ export async function readCheckpoint(endpoint: Endpoint, opts: ConnectOptions = 
   }, opts);
 }
 
+/**
+ * Era checkpoint for a signing envelope: the finalized head, or its parent when the finalized head is also the
+ * best block. Why: system_dryRun applies the extrinsic on top of the best block's state without initializing a
+ * new block, and System.BlockHash has no entry for the current block yet, so a transaction born at the best block
+ * dry-runs as Invalid(AncientBirthBlock) although the pool would accept it. That happens whenever finality keeps
+ * up with the head (instant-seal dev nodes). The parent is finalized too, so nothing is lost.
+ */
+export async function readSigningCheckpoint(endpoint: Endpoint, opts: ConnectOptions = {}): Promise<BlockRef> {
+  return withClient(endpoint, async (client) => {
+    const hash = asHash(await rpc(client, 'chain_getFinalizedHead', []), 'finalized head');
+    const header = await rpc<{ number: unknown; parentHash: unknown } | null>(client, 'chain_getHeader', [hash]);
+    if (!header) throw new SeamChainError('NODE_MISSING_VALUE', `no header for finalized block ${hash}`);
+    const finalized = { number: toSafeNumber(header.number), hash };
+    const best = await readHead(client);
+    const parent = typeof header.parentHash === 'string' ? header.parentHash.toLowerCase() : '';
+    if (best.hash !== finalized.hash || finalized.number === 0 || !HASH_RE.test(parent) || /^0x0+$/.test(parent)) return finalized;
+    return { number: finalized.number - 1, hash: parent as Hex };
+  }, opts);
+}
+
 /** Reads the raw inputs discovery needs, all pinned to the current best block. */
 export async function readChainInputs(endpoint: Endpoint, opts: ConnectOptions = {}): Promise<ChainInputs> {
   return withClient(endpoint, async (client) => {
