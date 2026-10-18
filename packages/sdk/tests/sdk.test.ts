@@ -175,9 +175,10 @@ describe('Seam flow', () => {
     expect(p.policyResult.allowed).toBe(true);
     const run = await seam.execute({ ...p, policy, facts, wallet: honestWallet });
     // flow.ts passes no expected effect, so the contract step stays unknown and the whole run is not 'verified'.
-    expect(run.ok && run.receipt.result).toBe('not_verified');
-    if (run.ok) expect(run.receipt.steps.map((s) => s.verification)).toEqual(['verified', 'unknown', 'verified']);
-    expect(submitted).toEqual(['pay', 'call', 'receipt']);
+    // The policy gate now refuses to continue after an unproven step, so step 3 is never sent: partial.
+    expect(run.ok && run.receipt.result).toBe('partial');
+    if (run.ok) expect(run.receipt.steps.map((s) => s.verification)).toEqual(['verified', 'unknown', 'unknown']);
+    expect(submitted).toEqual(['pay', 'call']);
   });
   it('refuses to reuse an approval', async () => {
     const { chain } = fakeChain(facts);
@@ -227,8 +228,8 @@ describe('Seam flow', () => {
     const p = await prepared(seam);
     const log: string[] = [];
     const run = await seam.execute({ ...p, policy: { ...policy, requireSignedDryRun: true }, facts, wallet: honestWallet, onStep: (e) => log.push(`${e.actionId}:${e.phase}`) });
-    expect(run.ok && run.receipt.result).toBe('not_verified'); // contract step unproven, see SEAM-004
-    expect(log).toEqual(['pay:checking', 'pay:sending', 'pay:done', 'call:checking', 'call:sending', 'call:done', 'receipt:checking', 'receipt:sending', 'receipt:done']);
+    expect(run.ok && run.receipt.result).toBe('partial'); // contract step unproven (SEAM-004), so step 3 is not sent
+    expect(log).toEqual(['pay:checking', 'pay:sending', 'pay:done', 'call:checking', 'call:sending', 'call:done', 'receipt:checking', 'receipt:blocked']);
   });
   it('a runtime upgrade between steps stops the run with a partial receipt', async () => {
     const { chain, submitted } = fakeChain(facts, { fingerprintAfter: { ...facts.fingerprint, specVersion: 1003 }, changeAfterSubmits: 1 });
