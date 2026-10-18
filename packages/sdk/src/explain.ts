@@ -30,9 +30,38 @@ export function explainPolicy(result: PolicyResult): string {
     ...bad.map((r) => `- ${r.actionId ? `${r.actionId}: ` : ''}${r.reason}${r.outcome === 'unknown' ? " (SEAM couldn't confirm this, and unknowns are blocked unless the policy allows them)" : ''}`)].join('\n');
 }
 
+/** Fixed wording for gate block codes that have it. Other codes keep the gate's own message. */
+const BLOCK_WORDING: Record<string, string> = {
+  message_not_allowed: "Blocked: this contract message isn't on the policy's allowed list for that contract, or the call has no message name to check.",
+  abi_hash_missing: "Blocked: the policy pins an interface (ABI) hash for this contract, but this call doesn't carry one, so SEAM can't confirm it is the approved interface.",
+  abi_hash_mismatch: "Blocked: the interface (ABI) used for this call is not the one the policy pins for this contract.",
+};
+
+/** Fixed wording for gate pass codes. Anything else is shown verbatim, never guessed. */
+const PASS_WORDING: Record<string, string> = {
+  message_allowed: 'the contract message is on the policy allowed list',
+  abi_pinned: "the call's interface (ABI) matches the one the policy pins",
+  selector_allowed: 'the 4-byte contract selector is on the policy allowed list',
+};
+
+function explainPassed(check: SubmitCheck): string[] {
+  const failed = new Set(check.reasons.map((r) => r.code));
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const p of check.passed ?? []) {
+    if (failed.has(p.code) || seen.has(p.code)) continue; // a failed check is never described as passed
+    seen.add(p.code);
+    const w = PASS_WORDING[p.code];
+    lines.push(w ? `- ${w} (${p.code}${p.detail ? `: ${p.detail}` : ''})` : `- ${p.code}: ${p.detail}`);
+  }
+  return lines;
+}
+
 export function explainSubmitCheck(check: SubmitCheck): string {
-  if (check.ok) return 'Safe to submit: the approval, runtime and signed bytes all match what was approved.';
-  return ['Not submitted:', ...check.reasons.map((r) => `- ${r.message}`)].join('\n');
+  const passed = explainPassed(check);
+  const tail = passed.length ? ['Checks that passed:', ...passed] : [];
+  if (check.ok) return ['Safe to submit: the approval, runtime and signed bytes all match what was approved.', ...tail].join('\n');
+  return ['Not submitted:', ...check.reasons.map((r) => `- ${BLOCK_WORDING[r.code] ?? r.message}`), ...tail].join('\n');
 }
 
 const STATUS: Record<string, string> = {

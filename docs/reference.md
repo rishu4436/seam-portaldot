@@ -66,6 +66,8 @@ Set by the app, in code or as a JSON file. A file is checked by `parsePolicy`, w
 | `allowedCapabilities` | `"any"` | Runtime calls the app may use. |
 | `allowedAssets`, `allowedContracts`, `allowedRecipients` | `[]` (nothing) | Lists, or `"any"`. |
 | `allowedSelectors` | none | Allowed 4-byte contract messages, per contract. |
+| `allowedMessages` | none | Allowed ink! message names, per contract: a map from contract address to a list of message names, such as `{ "5F…": ["transfer"] }`. A call whose message isn't listed is blocked, and so is a raw-data call with no message name. |
+| `pinnedAbiHashes` | none | A map from contract address to the interface (ABI) hash the call must use. A call with no hash, or a different one, is blocked. |
 | `maxAmountPerAsset` | none | Base-unit cap per asset id. `"*"` applies to any asset not listed. |
 | `maxNativeValue`, `maxGasLimit`, `maxWeight`, `maxFee`, `maxStorageDeposit` | none | Base-unit caps. `maxStorageDeposit` also caps a contract call's own `storageDepositLimit`. A call that sets it to `null` (no limit) is blocked whenever this cap is set. |
 | `maxProofSize` | none | Caps proof size on runtimes with two-part weights. Transfers and mints are checked against the preflight estimate. A contract call is checked against its own `proofSize` limit, because the node's estimate mostly repeats it. So size this cap to cover the proof size in the gas limit you choose, not the contract's real usage: on the test chain a call with a 1,000,000 limit used about 5,400. Portaldot spec 1002 has one-part weights, so proof size is unknown there. |
@@ -97,6 +99,9 @@ These are checked at the last moment, before anything is sent.
 | `signed_dry_run_failed` | The signed transaction failed its dry run, so it would fail on chain. |
 | `signed_dry_run_missing` | The policy needs a successful dry run and it's missing or unknown. |
 | `out_of_order` | A sequential step was sent before the one before it. |
+| `message_not_allowed` | The contract message isn't in the policy's `allowedMessages` for that contract, or the call is raw data with no message name. |
+| `abi_hash_missing` | The policy pins an interface hash (`pinnedAbiHashes`) for this contract, but the call carries none. |
+| `abi_hash_mismatch` | The call's interface hash differs from the one pinned for this contract. |
 | `previous_steps_missing`, `previous_step_failed` | A sequential step can only go after every earlier step finalized and verified. |
 | `send_index_invalid` | The step number is wrong for this plan. |
 
@@ -121,9 +126,22 @@ Step verification:
 
 Result: `verified` only when every step finalized and verified. `partial` when SEAM stopped early, and the first step not run says why. `not_verified` otherwise.
 
+### Checks that passed
+
+The gate result is `{ ok, reasons, passed }`. `passed` is a list of `{ code, detail }`, in the order the checks ran, so a UI or recording can show what was verified. A check that failed is never listed as passed. Codes:
+
+| Code | Meaning |
+|---|---|
+| `message_allowed` | The contract message is in `allowedMessages`. |
+| `abi_pinned` | The call's interface hash matches `pinnedAbiHashes`. |
+| `selector_allowed` | The 4-byte selector is in `allowedSelectors`. |
+| `step_order` | A sequential step is next in order. |
+
+`explainSubmitCheck` lists these in plain words under "Checks that passed:". A code it doesn't know is shown as `code: detail`, unchanged. Code that compares the whole gate result with exact equality should compare fields (or use `toMatchObject`), because `passed` is a new field.
+
 ## Progress callback: `onStep`
 
-`seam.execute({ ..., onStep })` calls `onStep(event)` as it goes. The event is `{ index, actionId, phase, detail?, check? }`. `phase` is `checking`, `sending`, `done` or `blocked`. `check` is the submit-gate result (`SubmitCheck`) for that step: `{ ok: true, ... }` on `sending` and `done`, and `{ ok: false, reasons }` on `blocked`, with the same reasons as `detail`. There is no `check` on `checking`, because the gate hasn't run yet. An atomic plan is one step with `actionId: "batch"`. Old callbacks that ignore `check` keep working.
+`seam.execute({ ..., onStep })` calls `onStep(event)` as it goes. The event is `{ index, actionId, phase, detail?, check? }`. `phase` is `checking`, `sending`, `done` or `blocked`. `check` is the submit-gate result (`SubmitCheck`) for that step: `{ ok: true, reasons: [], passed }` on `sending` and `done`, and `{ ok: false, reasons, passed }` on `blocked`; `passed` lists the checks that passed (see above), with the same reasons as `detail`. There is no `check` on `checking`, because the gate hasn't run yet. An atomic plan is one step with `actionId: "batch"`. Old callbacks that ignore `check` keep working.
 
 ## CLI
 
