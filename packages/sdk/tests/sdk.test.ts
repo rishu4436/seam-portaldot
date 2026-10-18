@@ -25,6 +25,8 @@ const demo = () => defineManifest({
 const ok = (n: number): StepOutcome['block'] => ({ number: n, hash: (`0x${n.toString(16).padStart(64, '0')}`) as Hex });
 const ev = (pallet: string, name: string, ...args: string[]): ChainEvent => ({ pallet, name, args });
 const SUCCESS = ev('System', 'ExtrinsicSuccess', '{}');
+/** SEAM-004: a generic event proves nothing; the caller commits to the exact event the settlement call must emit. */
+const effects = { call: { emittedData: '0x01' as Hex } };
 const goodOutcomes = (): StepOutcome[] => [
   { actionId: 'pay', status: 'finalized', txHash: '0xaa', block: ok(1), events: [ev('Assets', 'Transferred', '1', ALICE_HEX, BOB_HEX, '2500'), SUCCESS] },
   { actionId: 'call', status: 'finalized', txHash: '0xbb', block: ok(2), events: [ev('Contracts', 'ContractEmitted', BOB_HEX, '0x01'), SUCCESS] },
@@ -70,7 +72,7 @@ describe('Receipt', () => {
   const plan = compile(demo(), facts);
 
   it('is verified when every step finalized with exactly the planned events', () => {
-    const r = buildReceipt({ plan, outcomes: goodOutcomes(), policyDigest: '0x01', approvalHash: '0x02' });
+    const r = buildReceipt({ plan, outcomes: goodOutcomes(), policyDigest: '0x01', approvalHash: '0x02', effects });
     expect(r.result).toBe('verified');
     expect(r.coverage).toEqual({ verified: 3, expected: 3 });
     expect(r.approvalHash).toBe('0x02');
@@ -107,7 +109,7 @@ describe('Receipt', () => {
     expect(r.result).toBe('not_verified');
   });
   it('detects a receipt edited after the fact', () => {
-    const r = buildReceipt({ plan, outcomes: goodOutcomes() });
+    const r = buildReceipt({ plan, outcomes: goodOutcomes(), effects });
     expect(checkReceipt({ ...r, result: 'verified', coverage: { verified: 3, expected: 3 } })).toBe(true);
     const failed = buildReceipt({ plan, outcomes: goodOutcomes().slice(0, 1) });
     expect(checkReceipt({ ...failed, result: 'verified' })).toBe(false);
@@ -131,7 +133,7 @@ describe('Explanations', () => {
   });
   it('summarise a receipt', () => {
     const plan = compile(demo(), facts);
-    expect(explainReceipt(buildReceipt({ plan, outcomes: goodOutcomes() }))).toMatch(/^Verified: all 3 steps/);
+    expect(explainReceipt(buildReceipt({ plan, outcomes: goodOutcomes(), effects }))).toMatch(/^Verified: all 3 steps/);
   });
 });
 
@@ -166,13 +168,15 @@ async function prepared(seam: Seam, f: RuntimeFacts = facts) {
 }
 
 describe('Seam flow', () => {
-  it('runs the demo flow end to end and returns a verified receipt', async () => {
+  it('runs the demo flow end to end; the generic contract event is NOT enough for a verified receipt (SEAM-004)', async () => {
     const { chain, submitted } = fakeChain(facts);
     const seam = new Seam(chain);
     const p = await prepared(seam);
     expect(p.policyResult.allowed).toBe(true);
     const run = await seam.execute({ ...p, policy, facts, wallet: honestWallet });
-    expect(run.ok && run.receipt.result).toBe('verified');
+    // flow.ts passes no expected effect, so the contract step stays unknown and the whole run is not 'verified'.
+    expect(run.ok && run.receipt.result).toBe('not_verified');
+    if (run.ok) expect(run.receipt.steps.map((s) => s.verification)).toEqual(['verified', 'unknown', 'verified']);
     expect(submitted).toEqual(['pay', 'call', 'receipt']);
   });
   it('refuses to reuse an approval', async () => {
@@ -223,7 +227,7 @@ describe('Seam flow', () => {
     const p = await prepared(seam);
     const log: string[] = [];
     const run = await seam.execute({ ...p, policy: { ...policy, requireSignedDryRun: true }, facts, wallet: honestWallet, onStep: (e) => log.push(`${e.actionId}:${e.phase}`) });
-    expect(run.ok && run.receipt.result).toBe('verified');
+    expect(run.ok && run.receipt.result).toBe('not_verified'); // contract step unproven, see SEAM-004
     expect(log).toEqual(['pay:checking', 'pay:sending', 'pay:done', 'call:checking', 'call:sending', 'call:done', 'receipt:checking', 'receipt:sending', 'receipt:done']);
   });
   it('a runtime upgrade between steps stops the run with a partial receipt', async () => {
