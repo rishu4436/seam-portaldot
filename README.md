@@ -26,7 +26,7 @@ Needs Node 22 or later (the commands below were run with `npm`, from the repo ro
 ```bash
 npm install
 npm run build
-npm test            # compiler 105, policy 46, sdk 61, chain 54 (+6 skipped)
+npm test            # compiler 111, policy 66, sdk 61, chain 55 (+11 skipped)
 ```
 
 Try the CLI offline, against the bundled Portaldot mainnet snapshot (read-only, no node or wallet needed):
