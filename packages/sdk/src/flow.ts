@@ -3,7 +3,7 @@ import {
   callsToSign, checkBeforeSubmit, createApproval, evaluatePolicy, InMemoryApprovalStore,
   usageKey, type ApprovalStore, type BoundApproval, type ReceiptStep, type Policy, type PolicyResult, type PreflightResult, type SignedDryRun, type SigningEnvelope, type SubmitCheck,
 } from '@seam/policy';
-import { buildReceipt, type Receipt, type StepOutcome } from './receipt.js';
+import { buildReceipt, type ContractEffect, type Receipt, type StepOutcome } from './receipt.js';
 
 /** What SEAM needs from the chain layer (Bot 4's @seam/chain implements this). */
 export interface ChainAdapter {
@@ -72,6 +72,8 @@ export class Seam {
    */
   async execute(p: { plan: Plan; preflight: PreflightResult; envelope: SigningEnvelope; policy: Policy; policyResult: PolicyResult;
     facts: RuntimeFacts; approval: BoundApproval; wallet: WalletSigner; now?: () => Date;
+    /** What each contracts.call must have done (by actionId), committed before the run. Without one a contract step stays unproven. */
+    effects?: Record<string, ContractEffect>;
     onStep?: (e: StepEvent) => void }): Promise<RunResult> {
     const now = p.now ?? (() => new Date());
     const calls = callsToSign(p.plan).filter((c): c is Hex => !!c);
@@ -86,7 +88,7 @@ export class Seam {
     });
     const finish = (outcomes: StepOutcome[], stoppedReason?: string): RunResult => ({
       ok: true, stoppedReason,
-      receipt: buildReceipt({ plan: p.plan, outcomes, policyDigest: p.policyResult.policyDigest, approvalHash: p.approval.hash, stoppedReason }),
+      receipt: buildReceipt({ plan: p.plan, outcomes, policyDigest: p.policyResult.policyDigest, approvalHash: p.approval.hash, stoppedReason, ...(p.effects ? { effects: p.effects } : {}) }),
     });
 
     if (atomic || signed.length === 1) {
@@ -108,7 +110,7 @@ export class Seam {
       // Only this step can dry-run now: later steps carry nonces the chain won't accept until this one lands.
       const [mine] = await this.chain.dryRunSigned([signed[i]!.signedTx]);
       const dry: SignedDryRun[] = signed.map((_, j) => (j === i ? (mine ?? 'unknown') : 'unknown'));
-      const previousSteps = buildReceipt({ plan: p.plan, outcomes }).steps.slice(0, i);
+      const previousSteps = buildReceipt({ plan: p.plan, outcomes, ...(p.effects ? { effects: p.effects } : {}) }).steps.slice(0, i);
       const check = await gate(i, dry, previousSteps);
       if (!check.ok) {
         const reason = check.reasons.map((r) => r.message).join(' ');
@@ -121,7 +123,7 @@ export class Seam {
       const o = await this.chain.submit(signed[i]!.signedTx, id);
       outcomes.push(o);
       p.onStep?.({ index: i, actionId: id, phase: 'done', detail: o.status, check });
-      const step = buildReceipt({ plan: p.plan, outcomes }).steps[i]!;
+      const step = buildReceipt({ plan: p.plan, outcomes, ...(p.effects ? { effects: p.effects } : {}) }).steps[i]!;
       if (o.status !== 'finalized' || step.verification === 'not_verified') {
         return i + 1 < signed.length ? finish(outcomes, `SEAM stopped because step ${i + 1} (${id}) did not complete and verify: ${step.reason}`) : finish(outcomes);
       }
