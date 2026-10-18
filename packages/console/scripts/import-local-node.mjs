@@ -15,6 +15,7 @@ const runFile = (p) => readdirSync(join(DIR, 'runs')).filter((f) => f.startsWith
 const run = (p) => ({ file: `evidence/portaldot-local-node/runs/${runFile(p)}`, d: read(join(DIR, 'runs', runFile(p))) });
 const seq = run('sequential'), ato = run('atomic'), rb = run('rollback'), dep = run('deploy');
 const gates = (d) => d.gateChecks.map((g) => ({ actionId: g.actionId ?? g.index, phase: g.phase, ok: g.check.ok, reasons: g.check.reasons.map((r) => r.code), passed: (g.check.passed ?? []).map((p) => p.code) }));
+const mb = read(join(DIR, 'mainnet-plan-blocked.json'));
 const fail = (m) => { throw new Error('evidence check failed: ' + m); };
 if (summary.deploy.txHash !== dep.d.txHash) fail('deploy tx differs between summary and deploy run');
 if (summary.flows.rollback.dispatchError == null) fail('no rollback dispatch error');
@@ -30,6 +31,12 @@ const out = {
     file: rb.file, result: summary.flows.rollback.result, directTx: summary.flows.rollback.directTx, dispatchError: summary.flows.rollback.dispatchError,
     gateReasons: rb.d.seamGate.reasons.map((r) => ({ code: r.code, message: r.message })), gatePassed: rb.d.seamGate.passed.map((p) => p.code), nothingSent: rb.d.seamGate.nothingSent, dryRun: rb.d.seamGate.dryRun[0].detail,
     bypassNote: rb.d.directSubmit.note, bypassStatuses: rb.d.directSubmit.statuses.map((s) => s.status), state: rb.d.state, batchAllRollback: rb.d.batchAllRollback,
+  },
+  mainnetBlocked: {
+    file: 'evidence/portaldot-local-node/mainnet-plan-blocked.json', label: mb.label, recordedAt: mb.recordedAt, localNode: mb.localNode, plan: mb.plan.source, steps: mb.plan.steps,
+    plannedDigest: mb.plannedFingerprintDigest, localDigest: mb.localFingerprintDigest, differs: mb.fingerprintFieldsThatDiffer, differences: mb.differences,
+    reasons: mb.gate.reasons, passed: mb.gate.passed.map((p) => p.code), placeholders: mb.placeholders, policy: mb.policy, conclusion: mb.conclusion,
+    signed: mb.readOnly.signed, sent: mb.readOnly.sent, mainnetContacted: mb.readOnly.mainnetContacted,
   },
   contractCall: seq.d.manifest.actions.find((a) => a.kind === 'contracts.call').args.data,
 };
