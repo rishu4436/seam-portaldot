@@ -37,6 +37,8 @@ export interface PolicyResult {
   allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex;
   /** Present only when at least one unknown (fee, weight, storage, proof size, dry run) was allowed by the policy: "rule" or "rule:actionId". */
   weakProof?: string[];
+  /** Present when a person must explicitly acknowledge something before an approval can be made (e.g. an atomic-to-sequential downgrade). */
+  approvalRequired?: { code: "mode_downgrade"; reason: string }[];
 }
 
 export interface Approval { hash: Hex; covers: string[]; expiresAt: string; used: boolean }

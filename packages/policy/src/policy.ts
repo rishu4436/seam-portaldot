@@ -138,11 +138,14 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
 
   // Mode.
   if (plan.mode === "unavailable") {
-    block("plan_available", `Blocked: ${plan.modeReason}`);
+    const codes = [...new Set(plan.steps.map((st) => st.reasonCode).filter(Boolean))];
+    block("plan_available", `Blocked: ${plan.modeReason}${codes.length ? ` [${codes.join(", ")}]` : ""}`);
   } else if (!policy.allowedModes.includes(plan.mode)) {
     block("mode_allowed", `Blocked: execution mode ${plan.mode} is not allowed by policy (allowed: ${policy.allowedModes.join(", ")}).`);
   } else if (plan.mode === "atomic_verified" && facts.behaviour.batchAllRollback !== "verified") {
     block("mode_allowed", "Blocked: atomic_verified needs batch_all rollback to be verified on this chain, and it isn't.");
+  } else if (plan.mode === "atomic_verified" && !rollbackProofOk(facts, plan.steps.map((s) => s.kind)).ok) {
+    block("mode_allowed", `Blocked: atomic_verified needs a rollback proof for this chain: ${(rollbackProofOk(facts, plan.steps.map((s) => s.kind)) as { reason: string }).reason}.`);
   } else pass("mode_allowed", `execution mode ${plan.mode} is allowed`);
   if (plan.mode.startsWith("atomic") && !plan.outerCall) block("mode_allowed", "Blocked: an atomic plan has no batch call to sign.");
   if (plan.steps.length === 0) block("plan_available", "Blocked: the plan has no steps.");
@@ -153,7 +156,7 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
   const limits = policy.maxAmountPerAsset;
   for (const step of plan.steps) {
     const id = step.actionId;
-    if (step.status !== "ok") { block("step_available", `Blocked: ${step.reason ?? "this step is unavailable"}.`, id); continue; }
+    if (step.status !== "ok") { block("step_available", `Blocked: ${step.reason ?? "this step is unavailable"}${step.reasonCode ? ` [${step.reasonCode}]` : ""}.`, id); continue; }
 
     const cap = facts.capabilities[step.capability];
     if (!cap || cap.status === "not_observed") block("capability", `Blocked: ${step.capability} is not available on this chain.`, id);
@@ -263,8 +266,40 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
     est("fee_limit", "total fee", preflight.totalFee, policy.maxFee, policy.allowUnknown.fee);
   }
 
+  const approvalRequired: NonNullable<PolicyResult["approvalRequired"]> = [];
+  if (plan.modeDowngrade) {
+    const md = plan.modeDowngrade;
+    if (md.requiresApproval !== true || md.from !== "atomic" || md.to !== "sequential") block("mode_downgrade", "Blocked: the plan's mode downgrade is malformed.");
+    else {
+      approvalRequired.push({ code: "mode_downgrade", reason: `This plan was asked to run atomically but falls back to sequential. ${md.partialExecutionRisk} A person must acknowledge this before approval.` });
+      pass("mode_downgrade", "atomic to sequential downgrade is flagged and needs explicit acknowledgement");
+    }
+  }
+
   const weak = rules.filter((r) => r.weak).map((r) => (r.actionId ? `${r.rule}:${r.actionId}` : r.rule));
-  return { allowed: rules.every((r) => r.outcome === "pass"), rules, policyDigest: policyDigest(policy), ...(weak.length ? { weakProof: weak } : {}) };
+  return { allowed: rules.every((r) => r.outcome === "pass"), rules, policyDigest: policyDigest(policy), ...(weak.length ? { weakProof: weak } : {}), ...(approvalRequired.length ? { approvalRequired } : {}) };
+}
+
+/** Same checks as the compiler's evaluateRollbackProof, re-done here so policy never trusts a bare 'verified' string. */
+export function rollbackProofOk(facts: RuntimeFacts, kinds: readonly string[]): { ok: true } | { ok: false; reason: string } {
+  const proof = facts.behaviour.batchAllRollbackProof;
+  if (!proof || typeof proof !== "object") return { ok: false, reason: "'verified' has no batchAllRollbackProof, so it proves nothing about this chain" };
+  const no = (reason: string) => ({ ok: false as const, reason: `the rollback proof is rejected: ${reason}` });
+  const fp = facts.fingerprint;
+  const hex32 = (v: unknown) => typeof v === "string" && /^0x[0-9a-fA-F]{64}$/.test(v);
+  const eq = (a: unknown, b: string) => typeof a === "string" && a.toLowerCase() === b.toLowerCase();
+  if (!hex32(proof.genesisHash) || !eq(proof.genesisHash, fp.genesisHash)) return no("genesisHash is not this chain");
+  if (!hex32(proof.metadataHash) || !eq(proof.metadataHash, fp.metadataHash)) return no("metadataHash is not this runtime's");
+  if (proof.specVersion !== fp.specVersion) return no("specVersion is not this runtime's");
+  if (proof.fingerprintDigest !== undefined && !eq(proof.fingerprintDigest, facts.fingerprintDigest)) return no("fingerprintDigest does not match the facts");
+  if (!hex32(proof.txHash) && !hex32(proof.blockHash)) return no("txHash or blockHash is required");
+  const present = (v: unknown) => v !== undefined && v !== null && v !== "" && !(typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0);
+  if (!present(proof.preState)) return no("preState evidence is missing");
+  if (!present(proof.postState)) return no("postState evidence is missing");
+  if (!Array.isArray(proof.composition) || proof.composition.length === 0) return no("composition is missing");
+  const missing = [...new Set(kinds)].filter((k) => !(proof.composition as string[]).includes(k));
+  if (missing.length) return no(`composition does not cover ${missing.join(", ")}`);
+  return { ok: true };
 }
 
 /** First blocking or unknown reason, for short messages. */

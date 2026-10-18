@@ -36,8 +36,22 @@ export interface Capability {
 
 export type BatchAllRollback = 'verified' | 'unknown' | 'not_supported';
 
+/** Evidence that Utility.batch_all rolled back on a specific runtime (SEAM-012). A bare 'verified' proves nothing. */
+export interface AtomicRollbackProof {
+  genesisHash: Hex;
+  metadataHash: Hex;
+  specVersion: number;
+  fingerprintDigest?: Hex;
+  txHash?: Hex;
+  blockHash?: Hex;
+  preState: unknown;
+  postState: unknown;
+  composition: ActionKind[];
+}
+
 export interface RuntimeBehaviour {
   batchAllRollback: BatchAllRollback;
+  batchAllRollbackProof?: AtomicRollbackProof;
 }
 
 export interface RuntimeFacts {
@@ -48,6 +62,11 @@ export interface RuntimeFacts {
   behaviour: RuntimeBehaviour;
   /** Informational only, not part of the fingerprint. */
   endpoint?: string;
+  stateVersion?: number;
+  metadataVersion?: number;
+  tokenProvenance?: { tokenSymbol: 'declared' | 'observed'; tokenDecimals: 'declared' | 'observed' };
+  /** Byte length of the signing account on this runtime: 32 (AccountId32, default) or 20 (H160). */
+  signingAccountBytes?: 20 | 32;
   blockNumber?: number;
   /**
    * Raw material the compiler needs to encode calls. Not part of the fingerprint,
@@ -80,6 +99,8 @@ export interface ManifestAction {
 
 export interface Manifest {
   version: 1;
+  /** When true the plan must run atomically; otherwise it is 'unavailable'. */
+  atomicRequired?: boolean;
   chain?: { genesisHash: string; specVersion: number };
   signer: ManifestSigner;
   actions: ManifestAction[];
@@ -110,6 +131,8 @@ export interface PlanStep {
   encodedCall: Hex | null;
   status: 'ok' | 'unavailable';
   reason?: string;
+  /** Stable machine-readable code for why the step is unavailable. */
+  reasonCode?: StepReasonCode;
   /**
    * Present only for a contracts.call written with `message` (ink! ABI form). Covered by planDigest.
    * The raw-`data` form never has it, so its plans and digests are unchanged.
@@ -133,6 +156,16 @@ export interface ContractMessage {
   args: Record<string, InkArgValue>;
 }
 
+/** Stable strings; never rename. */
+export type StepReasonCode = 'NO_OBSERVED_V3_METADATA' | 'ATOMIC_REQUIRED_UNAVAILABLE';
+
+export interface ModeDowngrade {
+  from: 'atomic';
+  to: 'sequential';
+  requiresApproval: true;
+  partialExecutionRisk: string;
+}
+
 export interface Plan {
   planVersion: 1;
   manifestDigest: Hex;
@@ -141,6 +174,8 @@ export interface Plan {
   mode: PlanMode;
   /** Plain-language reason for the chosen mode. */
   modeReason: string;
+  /** Present only when an atomic preference fell back to sequential. A person must approve it. */
+  modeDowngrade?: ModeDowngrade;
   steps: PlanStep[];
   /** Utility.batch_all wrapping every step, present only when mode is atomic_*. */
   outerCall?: { capability: string; palletIndex: number; callIndex: number; encodedCall: Hex };
@@ -177,4 +212,5 @@ export type CompileErrorCode =
   | 'ABI_INVALID'
   | 'ABI_HASH_MISMATCH'
   | 'ABI_MESSAGE_UNKNOWN'
-  | 'ABI_ARGS_INVALID';
+  | 'ABI_ARGS_INVALID'
+  | 'SIGNER_DOMAIN_MISMATCH';

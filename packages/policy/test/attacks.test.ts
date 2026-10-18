@@ -186,7 +186,7 @@ describe("attack cases", () => {
     const unverified = H.compilePlan(H.demoManifest(), facts, { allowAtomicUnverified: true });
     expect(unverified.mode).toBe("atomic_unverified");
     expect(blocked(check(unverified), "mode_allowed")).toBe(true);
-    const verifiedFacts = { ...facts, behaviour: { batchAllRollback: "verified" as const } };
+    const verifiedFacts = H.withRollback(facts);
     const atomic = H.compilePlan(H.demoManifest(), verifiedFacts);
     expect(atomic.mode).toBe("atomic_verified");
     expect(check(atomic, verifiedFacts).allowed).toBe(true);
@@ -295,7 +295,7 @@ describe("unknowns and approval rules", () => {
     expect(codes(submit(run, { store, signedDryRun: ["ok", "ok", "unknown"], sendIndex: 1, previousSteps: [done], currentFingerprint: { ...run.fingerprint, specVersion: 1003 } }))).toContain("runtime_changed");
   });
   it("atomic plans can't be sent step by step", () => {
-    const verifiedFacts = { ...facts, behaviour: { batchAllRollback: "verified" as const } };
+    const verifiedFacts = H.withRollback(facts);
     const atomic = H.compilePlan(H.demoManifest(), verifiedFacts);
     const run = approvedRun(atomic, verifiedFacts);
     expect(codes(submit(run, { sendIndex: 0, previousSteps: [] }))).toContain("send_index_invalid");
