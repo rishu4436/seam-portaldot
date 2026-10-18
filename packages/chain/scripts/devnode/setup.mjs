@@ -26,18 +26,29 @@ if (!(await storage(assetKey))) {
   if (m.status !== 'finalized' || !m.inclusion?.success) throw new Error('mint failed');
 } else log.steps.push({ what: `asset ${ASSET_ID} already exists, skipped create/mint` });
 
-if (!state.contract || state.genesis !== facts.fingerprint.genesisHash || !(await storage(storageKey(dec.decorated().query.contracts.contractInfoOf, state.contract)))) {
-  const wasm = readFileSync(fileURLToPath(new URL('../../fixtures/devnode/seam_emitter.wasm', import.meta.url)));
+// Bot 2's demo ink! contract (contracts/seam-demo/artifacts/seam_demo.contract, ink! 5.1.1). Constructor `new` = 0x9bae9d5e.
+const CONTRACT_FILE = fileURLToPath(new URL('../../../../contracts/seam-demo/artifacts/seam_demo.contract', import.meta.url));
+const bundle = JSON.parse(readFileSync(CONTRACT_FILE, 'utf8'));
+const ctor = bundle.spec.constructors.find((c) => c.label === 'new');
+const wasmHex = bundle.source.wasm;
+const codeHash = bundle.source.hash;
+const stillThere = state.contract && state.contractCodeHash === codeHash && state.genesis === facts.fingerprint.genesisHash
+  && (await storage(storageKey(dec.decorated().query.contracts.contractInfoOf, state.contract)));
+if (!stillThere) {
+  if (state.contract && state.contractCodeHash !== codeHash) state.previousContract = { address: state.contract, note: 'seam_emitter.wat test contract, replaced by seam_demo' };
   const inst = encodeCall(facts, 'Contracts', 'instantiate_with_code', [
-    0, { refTime: 50_000_000_000n, proofSize: 1_000_000n }, null, u8aToHex(wasm), '0x', u8aToHex(new TextEncoder().encode(`seam-${Date.now()}`))
+    0, { refTime: 5_000_000_000n, proofSize: 1_000_000n }, null, wasmHex, ctor.selector, u8aToHex(new TextEncoder().encode(`seam-demo-${Date.now()}`))
   ]);
   const r = await sendSigned(facts, alice, inst);
-  log.steps.push({ what: 'Contracts.instantiate_with_code(seam_emitter.wasm)', ...brief(r) });
+  log.steps.push({ what: `Contracts.instantiate_with_code(seam_demo.contract, constructor new ${ctor.selector}, storage_deposit_limit null)`, codeHash, ...brief(r) });
   const ev = r.inclusion?.events.find((e) => e.pallet === 'Contracts' && e.name === 'Instantiated');
   if (!ev) throw new Error('instantiate failed: ' + JSON.stringify(brief(r)));
   state.contract = ev.args[1];
+  state.contractName = 'seam_demo';
+  state.contractCodeHash = codeHash;
+  state.contractAbi = 'contracts/seam-demo/artifacts/metadata.json';
   state.contractInstantiatedIn = { txHash: r.txHash, block: r.inclusion.number, blockHash: r.inclusion.hash };
-} else log.steps.push({ what: `contract ${state.contract} already deployed, skipped` });
+} else log.steps.push({ what: `contract ${state.contract} (seam_demo) already deployed, skipped` });
 
 state.genesis = facts.fingerprint.genesisHash;
 state.assetId = ASSET_ID;
