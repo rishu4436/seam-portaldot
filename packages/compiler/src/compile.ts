@@ -595,7 +595,9 @@ function encodeStep(
       cap,
       rt.metadataVersion,
       fn.meta.args.map((a, i) => {
-        const rawType = rt.registry.createType(a.type.toString() as any).toRawType();
+        const rawType = rt.registry
+          .createType(a.type.toString() as Parameters<typeof rt.registry.createType>[0])
+          .toRawType();
         return { name: metaArgs[i]!.name, rawType, isWeightV2: isWeightV2(rawType) };
       }),
     );
