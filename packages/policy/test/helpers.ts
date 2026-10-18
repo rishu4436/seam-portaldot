@@ -73,3 +73,16 @@ export const policy = (over = {}) => definePolicy({
   maxStorageDeposit: "0",
   ...over,
 });
+
+/** A rollback proof that matches `facts` and covers every demo action kind (mirrors the compiler test helper). */
+export function proofFor(f: RuntimeFacts, composition: string[] = ["assets.transfer", "assets.mint", "contracts.call"]) {
+  return {
+    genesisHash: f.fingerprint.genesisHash, metadataHash: f.fingerprint.metadataHash, specVersion: f.fingerprint.specVersion,
+    txHash: `0x${"ab".repeat(32)}` as `0x${string}`, blockHash: `0x${"cd".repeat(32)}` as `0x${string}`,
+    preState: { aliceBalance: "100" }, postState: { aliceBalance: "100" }, composition,
+  } as NonNullable<RuntimeFacts["behaviour"]["batchAllRollbackProof"]>;
+}
+/** Facts with a verified batch_all rollback AND a matching proof. */
+export const withRollback = (f: RuntimeFacts): RuntimeFacts => ({ ...f, behaviour: { batchAllRollback: "verified", batchAllRollbackProof: proofFor(f) } });
+/** The deprecated shape: 'verified' with no proof. */
+export const withBareVerified = (f: RuntimeFacts): RuntimeFacts => ({ ...f, behaviour: { batchAllRollback: "verified" } });

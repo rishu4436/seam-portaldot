@@ -23,6 +23,8 @@ export interface ApprovalBinding {
   nonce: number;
   mortalityBlocks: number;
   expiresAt: string;
+  /** Only present when the plan carries a modeDowngrade: digest of it, which the approver acknowledged. */
+  modeDowngradeDigest?: Hex;
 }
 
 export interface BoundApproval extends Approval { binding: ApprovalBinding }
@@ -36,6 +38,8 @@ export interface ApprovalInput {
   policyResult: PolicyResult;
   fingerprint: RuntimeFingerprint;
   now: Date;
+  /** Must be true to approve a plan that has a modeDowngrade (atomic requested, sequential delivered). */
+  acknowledgedDowngrade?: boolean;
 }
 
 const COVERS = ["manifest", "plan", "encoded calls", "runtime fingerprint", "policy", "policy result", "signing envelope", "preflight"];
@@ -67,6 +71,7 @@ function buildBinding(i: Omit<ApprovalInput, "now">, expiresAt: string): Approva
     nonce: i.envelope.nonce,
     mortalityBlocks: i.envelope.mortalityBlocks,
     expiresAt,
+    ...(i.plan.modeDowngrade ? { modeDowngradeDigest: digest("seam/mode-downgrade/v1", i.plan.modeDowngrade) } : {}),
   };
 }
 
@@ -86,6 +91,9 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
     return { ok: false, reason: "Can't approve: the signing envelope's signer is not the plan's signer." };
   }
   if (callsToSign(plan).some((c) => !c)) return { ok: false, reason: "Can't approve: a call has no encoded bytes, so there is nothing exact to sign." };
+  if (plan.modeDowngrade && input.acknowledgedDowngrade !== true) {
+    return { ok: false, reason: `Can't approve: this plan was meant to be atomic but would run step by step. ${plan.modeDowngrade.partialExecutionRisk} Acknowledge the downgrade to approve it.` };
+  }
   const envelopeExpiry = Date.parse(envelope.expiresAt);
   if (!envelope.checkpoint || !Number.isSafeInteger(envelope.checkpoint.number) || !/^0x[0-9a-fA-F]{64}$/.test(envelope.checkpoint.hash ?? "")) {
     return { ok: false, reason: "Can't approve: the signing envelope has no checkpoint block, so the wallet can't sign it." };
@@ -312,6 +320,9 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
     reasons.push({ code: "approval_expired", message: `Blocked: this approval expired at ${approval.binding.expiresAt}. Approve again.` });
   } else ok("approval_valid_time", `the approval is valid until ${approval.binding.expiresAt}`);
 
+  if (plan.modeDowngrade && !approval.binding.modeDowngradeDigest) {
+    reasons.push({ code: "downgrade_not_approved", message: "Blocked: this plan is an atomic-to-sequential downgrade, and the approval doesn't acknowledge it." });
+  }
   const recomputed = buildBinding({ ...input, fingerprint: input.preparedFingerprint }, approval.binding.expiresAt);
   if (digest("seam/approval/v1", approval.binding) !== approval.hash) {
     reasons.push({ code: "approval_tampered", message: "Blocked: the approval's contents don't match its hash." });
