@@ -136,3 +136,21 @@ describe('declaredToken (node without tokenSymbol/tokenDecimals in system_proper
     expect(facts.fingerprintDigest).toBe(snapshotFacts().fingerprintDigest);
   });
 });
+
+describe('discovery records audit facts', () => {
+  it('records stateVersion, observed token provenance, metadataVersion and signingAccountBytes from the node', () => {
+    const inputs = snapshotInputs();
+    inputs.runtimeVersion = { ...inputs.runtimeVersion, stateVersion: 1 };
+    const facts = factsFromChainInputs(inputs);
+    expect(facts.stateVersion).toBe(1);
+    expect(facts.signingAccountBytes).toBe(32);
+    expect(facts.metadataVersion).toBeGreaterThan(0);
+    expect(facts.tokenProvenance).toEqual({ tokenSymbol: 'observed', tokenDecimals: 'observed' });
+  });
+  it('marks declared token facts as declared when the node reports none', () => {
+    const inputs = snapshotInputs();
+    inputs.properties = { ss58Format: inputs.properties.ss58Format };
+    const facts = factsFromChainInputs(inputs, { declaredToken: { tokenSymbol: 'POT', tokenDecimals: 12 } });
+    expect(facts.tokenProvenance).toEqual({ tokenSymbol: 'declared', tokenDecimals: 'declared' });
+  });
+});

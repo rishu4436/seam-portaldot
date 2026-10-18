@@ -1,5 +1,5 @@
 import { encodeAddress } from '@polkadot/util-crypto';
-import type { BatchAllRollback, Hex, Plan, RuntimeFacts, RuntimeFingerprint } from '@seam/compiler';
+import type { AtomicRollbackProof, BatchAllRollback, Hex, Plan, RuntimeFacts, RuntimeFingerprint } from '@seam/compiler';
 import { discover, readSigningCheckpoint, refetchFingerprint } from './discover.js';
 import { SeamChainError } from './errors.js';
 import { toChainEvent, type ChainEvent } from './events.js';
@@ -44,6 +44,8 @@ export interface PortaldotAdapterOptions extends ConnectOptions {
   /** Pinned types file text. Default: the compiler's spec 1002 file. */
   typesBundle?: string;
   batchAllRollback?: BatchAllRollback;
+  /** Rollback test evidence for 'verified' (see DiscoverOptions.batchAllRollbackProof). */
+  batchAllRollbackProof?: AtomicRollbackProof;
   /** Token symbol/decimals for a node whose system_properties omit them (see DiscoverOptions.declaredToken). */
   declaredToken?: { tokenSymbol: string; tokenDecimals: number };
   /** Use these facts instead of the ones discover() returns (e.g. facts from an approved snapshot). */

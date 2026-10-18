@@ -10,7 +10,7 @@ import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { portaldotPolicy } from '@seam/policy';
 import { createPortaldotAdapter, signBytesOf, type ChainAdapter } from '../src/index.js';
 import { FakeNode } from './fakeNode.js';
-import { BOB, CHARLIE, demoManifest, devKeys, snapshotFacts, snapshotInputs } from './helpers.js';
+import { BOB, CHARLIE, demoManifest, devKeys, rollbackProofFor, snapshotFacts, snapshotInputs } from './helpers.js';
 
 const SDK = fileURLToPath(new URL('../../sdk/dist/index.js', import.meta.url));
 const limits = {
@@ -30,7 +30,7 @@ describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (f
     const keys = await devKeys();
     const node = new FakeNode({ inputs: snapshotInputs(), facts: snapshotFacts(), existingAssets: ['1', '2'], ...o });
     // allowMainnet only because the fake node replays the mainnet snapshot; nothing leaves the process.
-    const adapter = createPortaldotAdapter(node, { allowMainnet: true, submitTimeoutMs: 2000, now: () => new Date('2026-10-11T12:00:00Z'), ...(batchAllRollback ? { batchAllRollback } : {}) });
+    const adapter = createPortaldotAdapter(node, { allowMainnet: true, submitTimeoutMs: 2000, now: () => new Date('2026-10-11T12:00:00Z'), ...(batchAllRollback ? { batchAllRollback, batchAllRollbackProof: rollbackProofFor(snapshotFacts()) } : {}) });
     const chain: ChainAdapter = adapter;
     // The user's wallet (TEST ONLY: public //Alice dev seed), as an extension-style signPayload.
     const wallet = adapter.walletFrom(async (payload) => ({

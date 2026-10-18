@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import { compile, type Manifest, type Plan, type RuntimeFacts } from '@seam/compiler';
+import { compile, type AtomicRollbackProof, type Manifest, type Plan, type RuntimeFacts } from '@seam/compiler';
 import { chainInputsFromSnapshot, factsFromChainInputs, type ChainInputs, type SnapshotJson } from '../src/index.js';
 
 const fixture = (name: string) => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
@@ -12,7 +12,14 @@ export const metadataHex = readFileSync(fixture('portaldot-mainnet-metadata.hex'
 export const eventsFixture = JSON.parse(readFileSync(fixture('mainnet-events-2721116.json'), 'utf8'));
 export const snapshotInputs = (): ChainInputs => chainInputsFromSnapshot(snapshot, metadataHex);
 export const snapshotFacts = (over: Partial<RuntimeFacts> = {}): RuntimeFacts => ({ ...factsFromChainInputs(snapshotInputs()), ...over });
-export const verifiedRollback = (f: RuntimeFacts): RuntimeFacts => ({ ...f, behaviour: { batchAllRollback: 'verified' } });
+/** Rollback proof that matches `f` (genesis, metadata hash, spec) and covers the demo plan's call kinds, like compiler tests' withRollback. */
+export const rollbackProofFor = (f: RuntimeFacts): AtomicRollbackProof => ({
+  genesisHash: f.fingerprint.genesisHash, metadataHash: f.fingerprint.metadataHash, specVersion: f.fingerprint.specVersion,
+  txHash: `0x${'ab'.repeat(32)}`, blockHash: `0x${'cd'.repeat(32)}`,
+  preState: { aliceBalance: '100' }, postState: { aliceBalance: '100' },
+  composition: ['assets.transfer', 'assets.mint', 'contracts.call']
+});
+export const verifiedRollback = (f: RuntimeFacts): RuntimeFacts => ({ ...f, behaviour: { batchAllRollback: 'verified', batchAllRollbackProof: rollbackProofFor(f) } });
 
 // Well-known dev accounts (SS58 prefix 42). TEST ONLY: //Alice is a public dev seed, never a real key.
 export const ALICE = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';

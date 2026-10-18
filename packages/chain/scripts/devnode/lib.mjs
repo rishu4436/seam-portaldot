@@ -24,8 +24,28 @@ if (!/^ws:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(ENDPOINT)) {
   throw new Error(`refusing: dev-node scripts only talk to a local node, got ${ENDPOINT}`);
 }
 
-export async function devFacts(batchAllRollback) {
-  const facts = await discover(ENDPOINT, { typesBundle: TYPES_BUNDLE, declaredToken: DECLARED_TOKEN, ...(batchAllRollback ? { batchAllRollback } : {}) });
+/**
+ * Turns a recorded rollback run (run-rollback.mjs / seam-run.mjs evidence) into the compiler's AtomicRollbackProof.
+ * Throws unless that run really showed the rollback; the compiler then checks it against the facts again.
+ */
+export function rollbackProofFromEvidence(facts, ev) {
+  if (ev?.kind !== 'batch_all-rollback' || ev.batchAllRollback !== 'verified') throw new Error('rollback evidence does not show a verified rollback');
+  const d = ev.directSubmit ?? {};
+  const txHash = d.txHash ?? ev.directTxHash;
+  const blockHash = d.block?.hash;
+  if (!txHash && !blockHash) throw new Error('rollback evidence has no tx or block hash');
+  const bal = (s) => s?.asset ?? s?.balances ?? s;
+  return {
+    genesisHash: facts.fingerprint.genesisHash, metadataHash: facts.fingerprint.metadataHash, specVersion: facts.fingerprint.specVersion,
+    fingerprintDigest: facts.fingerprintDigest,
+    ...(txHash ? { txHash } : {}), ...(blockHash ? { blockHash } : {}),
+    preState: bal(ev.state?.before), postState: bal(ev.state?.after),
+    composition: [...new Set(ev.plan.steps.map((s) => s.kind))]
+  };
+}
+
+export async function devFacts(batchAllRollback, batchAllRollbackProof) {
+  const facts = await discover(ENDPOINT, { typesBundle: TYPES_BUNDLE, declaredToken: DECLARED_TOKEN, ...(batchAllRollback ? { batchAllRollback } : {}), ...(batchAllRollbackProof ? { batchAllRollbackProof } : {}) });
   if (facts.fingerprint.genesisHash === PORTALDOT_MAINNET_GENESIS) throw new Error('refusing: this is Portaldot mainnet');
   if (facts.fingerprint.specName !== 'substrate-contracts-node') throw new Error(`not the dev node: ${facts.fingerprint.specName}`);
   return facts;

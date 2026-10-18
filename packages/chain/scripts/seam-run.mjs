@@ -14,7 +14,7 @@ import {
   PORTALDOT_MAINNET_GENESIS, metadataVersionOf
 } from '../dist/index.js';
 import { runFlow, devManifest, devPolicy, ABIS } from './devnode/flow.mjs';
-import { encodeCall, brief } from './devnode/lib.mjs';
+import { encodeCall, brief, rollbackProofFromEvidence } from './devnode/lib.mjs';
 
 export const DEMO_BUNDLE = fileURLToPath(new URL('../../../contracts/seam-demo/artifacts/seam_demo.contract', import.meta.url));
 const MAINNET_HOSTS = /(^|\.)mainnet\.portaldot\.io(:\d+)?(\/|$)/i;
@@ -246,7 +246,7 @@ export async function runAllFlows({ endpoint, discoverOpts, signer, signPayloadF
     log(`sequential: ${out.sequential.result}`);
   }
 
-  let rollbackVerified = false;
+  let rollbackVerified = false; let rollbackProof;
   if (want('rollback') || want('atomic')) {
     const facts = await discover(endpoint, discoverOpts);
     const dec = decodeRuntime(facts);
@@ -275,6 +275,7 @@ export async function runAllFlows({ endpoint, discoverOpts, signer, signPayloadF
       directSubmit: { note: 'test-only bypass of the gate: the same signed bytes the gate refused', statuses: directStatuses, decodedEvents: direct.inclusion?.events, ...brief(direct) },
       state: { before, afterGate, after }, innerEffects: innerEffects.map((e) => `${e.pallet}.${e.name}`),
       batchAllRollback: rolledBack ? 'verified' : 'unknown' };
+    if (rolledBack) rollbackProof = rollbackProofFromEvidence(facts, rb);
     if (want('rollback')) { const file = save(`runs/rollback-${Date.now()}.json`, rb); out.rollback = { file, result: rb.batchAllRollback, directTx: direct.txHash, dispatchError: direct.inclusion?.dispatchError }; log(`rollback: ${rb.batchAllRollback}`); }
     void dec;
   }
@@ -282,7 +283,7 @@ export async function runAllFlows({ endpoint, discoverOpts, signer, signPayloadF
   if (want('atomic')) {
     if (!rollbackVerified) { out.atomic = { skipped: 'rollback was not verified on this runtime, so the verified atomic plan is not allowed' }; }
     else {
-      const facts = await discover(endpoint, { ...discoverOpts, batchAllRollback: 'verified' });
+      const facts = await discover(endpoint, { ...discoverOpts, batchAllRollback: 'verified', batchAllRollbackProof: rollbackProof });
       const manifest = devManifest({ ...common(facts), atomic: true }); const policy = policyFor();
       const r = await runFlow({ facts, manifest, policy, signPayload: signPayloadFor(facts), env: { ...env, endpoint }, atomic: true });
       const file = save(`runs/atomic-${Date.now()}.json`, { kind: 'atomic', recordingVersion: 2, ranAt: new Date().toISOString(), requireSignedDryRun: policy.requireSignedDryRun, rollbackEvidence: out.rollback?.file ? out.rollback.file.split('/').pop() : undefined, ...r });
