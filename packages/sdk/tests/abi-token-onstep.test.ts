@@ -1,3 +1,4 @@
+import { identityDecoding } from './decoding.js';
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync, cpSync } from 'node:fs';
@@ -132,6 +133,7 @@ describe('onStep receives the gate result', () => {
         envelope: { signer: ALICE, nonce: 1, mortalityBlocks: 64, expiresAt: new Date(Date.now() + 300_000).toISOString(), checkpoint: { number: 1, hash: `0x${'ab'.repeat(32)}` } } satisfies SigningEnvelope,
       }),
       dryRunSigned: async (txs: Hex[]) => txs.map((_, i) => (i === 0 ? dry : 'unknown')),
+      ...identityDecoding(ALICE),
       submit: async (_tx: Hex, id: string): Promise<StepOutcome> => ({ actionId: id, status: 'finalized', txHash: '0xaa', block: ok(1),
         events: [{ pallet: 'Assets', name: 'Transferred', args: ['1', ALICE_HEX, BOB_HEX, id === 'a' ? '1' : '2'] }, { pallet: 'System', name: 'ExtrinsicSuccess', args: ['{}'] }] }),
     };
