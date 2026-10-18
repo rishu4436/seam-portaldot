@@ -24,13 +24,21 @@ const files = (dir: string) => readdirSync(`${dir}/runs`).sort();
 const json = (path: string) => JSON.parse(readFileSync(path, 'utf8'));
 const allText = (dir: string) => [`${dir}/runtime-report.json`, `${dir}/testnet-summary.json`, ...files(dir).map((f) => `${dir}/runs/${f}`)].map((f) => readFileSync(f, 'utf8')).join('\n');
 
-describe('testnet-run: refusals (no node needed)', () => {
-  it('refuses the Portaldot mainnet endpoint and non-ws URLs', () => {
-    expect(run(['wss://mainnet.portaldot.io']).out).toMatch(/mainnet/);
-    expect(run(['wss://mainnet.portaldot.io']).code).not.toBe(0);
-    expect(run(['http://example.com']).code).toBe(2);
-    expect(run([]).code).toBe(2);
-  });
+describe('testnet-run: refusals (offline: any socket or DNS attempt fails the child)', () => {
+  const offline = { NODE_OPTIONS: `--import ${pathToFileURL(here('./fixtures/no-network.mjs')).href}` };
+  it('refuses the Portaldot mainnet endpoint (by URL, before any network call) and non-ws URLs', () => {
+    const m = run(['wss://mainnet.portaldot.io'], offline);
+    expect(m.out).toMatch(/refusing: that is the Portaldot mainnet endpoint/);
+    expect(m.out).not.toMatch(/NETWORK ATTEMPTED/);
+    expect(m.code).not.toBe(0);
+    expect(run(['wss://mainnet.portaldot.io:443/ws'], offline).out).toMatch(/mainnet endpoint/);
+    expect(run(['http://example.com'], offline).code).toBe(2);
+    expect(run([], offline).code).toBe(2);
+  }, 60_000);
+  it('the offline harness really blocks the network (a non-mainnet URL fails on the network attempt, not silently)', () => {
+    const r = run(['ws://127.0.0.1:1'], offline);
+    expect(r.code).not.toBe(0);
+  }, 60_000);
 });
 
 describe.skipIf(!LIVE)('testnet-run against the local dev node (SEAM_DEVNODE=1)', () => {
