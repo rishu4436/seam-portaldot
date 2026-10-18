@@ -1,0 +1,207 @@
+{
+ "kind": "v3-capabilities",
+ "readOnly": true,
+ "generatedAt": "2026-10-18T13:18:55.325Z",
+ "rpcMethodsRead": true,
+ "capabilities": [
+  {
+   "item": "Revive",
+   "kind": "pallet",
+   "status": "observed"
+  },
+  {
+   "item": "Contracts",
+   "kind": "pallet",
+   "status": "observed"
+  },
+  {
+   "item": "Nfts",
+   "kind": "pallet",
+   "status": "observed"
+  },
+  {
+   "item": "Assets",
+   "kind": "pallet",
+   "status": "observed"
+  },
+  {
+   "item": "Utility",
+   "kind": "pallet",
+   "status": "observed"
+  },
+  {
+   "item": "Revive.call",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Revive.instantiate",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Revive.instantiate_with_code",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Revive.upload_code",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Revive.map_account",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Contracts.call",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Contracts.instantiate",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Contracts.instantiate_with_code",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Contracts.upload_code",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Nfts.mint",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Assets.transfer_keep_alive",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Assets.mint",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "Utility.batch_all",
+   "kind": "call",
+   "status": "observed"
+  },
+  {
+   "item": "ReviveApi",
+   "kind": "runtimeApi",
+   "status": "observed",
+   "detail": "in runtime version apis (id 0x8c403e5c4a9fd442, v2)"
+  },
+  {
+   "item": "ContractsApi",
+   "kind": "runtimeApi",
+   "status": "observed",
+   "detail": "in runtime version apis (id 0x68b66ba122c93fa7, v2)"
+  },
+  {
+   "item": "state_call",
+   "kind": "rpcMethod",
+   "status": "observed"
+  },
+  {
+   "item": "system_dryRun",
+   "kind": "rpcMethod",
+   "status": "observed"
+  },
+  {
+   "item": "payment_queryInfo",
+   "kind": "rpcMethod",
+   "status": "observed"
+  },
+  {
+   "item": "contracts_call",
+   "kind": "rpcMethod",
+   "status": "absent"
+  },
+  {
+   "item": "AuthorizeCall",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckNonZeroSender",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckSpecVersion",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckTxVersion",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckGenesis",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckMortality",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckNonce",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckWeight",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "ChargeAssetTxPayment",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "CheckMetadataHash",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "EthSetOrigin",
+   "kind": "signedExtension",
+   "status": "observed"
+  },
+  {
+   "item": "WeightReclaim",
+   "kind": "signedExtension",
+   "status": "observed"
+  }
+ ],
+ "endpoint": "wss://test-node-v3.portaldot.dev",
+ "metadataVersions": "0x0c0e0000000f00000010000000",
+ "chain": {
+  "systemChain": "PortaldotV3 Test",
+  "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "specName": "portaldot-v3",
+  "specVersion": 3002,
+  "transactionVersion": 2,
+  "metadataVersion": 14,
+  "atBlock": 89087,
+  "atBlockHash": "0x9c3beb76005aec4161c43755367d61a93cb87539b2014a53a665bbbd845f2b2c",
+  "properties": {
+   "ss58Format": 42,
+   "tokenDecimals": 14,
+   "tokenSymbol": "tPOT"
+  }
+ }
+}
