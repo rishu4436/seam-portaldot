@@ -3,6 +3,7 @@ import {
   callsToSign, checkBeforeSubmit, createApproval, evaluatePolicy, InMemoryApprovalStore,
   usageKey, canRunNextStep, isReservableStore, type ApprovalStore, type BoundApproval, type ReceiptStep, type Policy, type PolicyResult, type PreflightResult, type DecodedSignedExtrinsic, type SignedDryRun, type SigningEnvelope, type SubmitCheck,
 } from '@seam/policy';
+import { FileApprovalStore } from './fileStore.js';
 import { buildReceipt, type ContractEffect, type Receipt, type StepOutcome } from './receipt.js';
 
 /** What SEAM needs from the chain layer (Bot 4's @seam/chain implements this). */
@@ -77,7 +78,14 @@ export class Seam {
    * `defaults` are compile options used by `compile` and `prepare` unless the call passes its own. Put `abis` here
    * once so every Manifest that names an ABI with `abiRef` compiles.
    */
-  constructor(private chain: ChainAdapter, private store: ApprovalStore = new InMemoryApprovalStore(), private defaults: CompileOptions = {}) {}
+  /**
+   * `store` may be an ApprovalStore or a file path: a path gives a durable FileApprovalStore, so a reserved or
+   * uncertain send survives a restart and still blocks reuse until reconciled.
+   */
+  private store: ApprovalStore;
+  constructor(private chain: ChainAdapter, store: ApprovalStore | string = new InMemoryApprovalStore(), private defaults: CompileOptions = {}) {
+    this.store = typeof store === 'string' ? new FileApprovalStore(store) : store;
+  }
 
   private opts(options?: CompileOptions): CompileOptions {
     return { ...this.defaults, ...options, ...(this.defaults.abis || options?.abis ? { abis: { ...this.defaults.abis, ...options?.abis } } : {}) };
