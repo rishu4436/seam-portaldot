@@ -234,3 +234,6 @@ The contract step is written by message name and arguments (`settle`, `abiRef: s
 `storageDepositLimit: null`); @seam/compiler binds the V14 `Contracts.call` shape, so the run scripts no longer patch it.
 The step is verified by `Contracts.ContractEmitted` from the contract. `seam_emitter` (fixtures/devnode, 158-byte
 hand-written Wasm) is only the earlier stand-in.
+## Testnet run
+
+`scripts/testnet-run.mjs RPC_URL` (read-only report; `--yes` plus `SEAM_SIGNER` or `--external ADDRESS` to deploy and run the flows) is described in [docs/testnet-run.md](docs/testnet-run.md), including the browser-wallet steps. Tested on the local dev node only.

@@ -4,6 +4,7 @@
 // Nothing here stores a seed, key or signature: signers are closures, and every file goes through guardedJson().
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady, mnemonicGenerate, encodeAddress } from '@polkadot/util-crypto';
 import { u8aToHex, hexToU8a } from '@polkadot/util';
@@ -99,6 +100,11 @@ export async function runtimeReport(endpoint, discoverOpts = {}) {
     rpc: { methods: rpcMethods.length, contractsCall: rpcMethods.includes('contracts_call'), reviveCall: rpcMethods.includes('revive_call') },
     summary: ''
   };
+  // Bot 2's read-only shape check (packages/compiler/scripts/v3-shape-check.mjs): called, not duplicated. Best effort.
+  try {
+    const out = execFileSync('node', [fileURLToPath(new URL('../../compiler/scripts/v3-shape-check.mjs', import.meta.url)), endpoint, '--json'], { encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    report.shapeCheck = JSON.parse(out);
+  } catch (e) { report.shapeCheck = { unavailable: String(e.stderr || e.message).split('\n').filter(Boolean).slice(-2).join(' ') }; }
   report.summary = `${fp.specName} spec ${fp.specVersion}, metadata V${mdv}, ${pallets.length} pallets; Contracts ${report.has.Contracts ? 'yes' : 'no'}, Revive ${report.has.Revive ? 'yes' : 'no'}; contract call shape: ${shape}; token ${fp.tokenSymbol}/${fp.tokenDecimals}.`;
   return { facts, report };
 }
