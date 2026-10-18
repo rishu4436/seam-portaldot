@@ -16,6 +16,8 @@ export enum SeamCode {
   PlanUnavailable = 'plan_unavailable',
   UnsupportedRuntime = 'unsupported_runtime',
   RuntimeChanged = 'runtime_changed',
+  /** `seam drift` found a difference between two runtimes. Informational, but never exit 0. */
+  RuntimeDrift = 'runtime_drift',
   // policy / approval / gate
   PolicyBlocked = 'policy_blocked',
   ApprovalInvalid = 'approval_invalid',
@@ -60,6 +62,7 @@ export const EXIT: Record<SeamCode, number> = {
   [SeamCode.Partial]: 7, [SeamCode.NotVerified]: 7,
   [SeamCode.TxFailed]: 8,
   [SeamCode.RpcTransport]: 9,
+  [SeamCode.RuntimeDrift]: 10,
 };
 
 export const NEXT_ACTION: Record<SeamCode, string> = {
@@ -74,6 +77,7 @@ export const NEXT_ACTION: Record<SeamCode, string> = {
   [SeamCode.PlanUnavailable]: 'This plan cannot run on this chain. Change the actions or use another runtime.',
   [SeamCode.UnsupportedRuntime]: 'SEAM has no support for this on this runtime. Do not work around it.',
   [SeamCode.RuntimeChanged]: 'The runtime changed. Discover, compile, preflight and approve again.',
+  [SeamCode.RuntimeDrift]: 'Review the changed fingerprint fields and calls. Plans prepared for the old runtime must be prepared and approved again.',
   [SeamCode.PolicyBlocked]: 'Change the plan or the policy deliberately, then prepare and approve again.',
   [SeamCode.ApprovalInvalid]: 'Prepare and approve again.',
   [SeamCode.ApprovalExpired]: 'Prepare and approve again.',
