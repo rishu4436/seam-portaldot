@@ -14,7 +14,7 @@
  */
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 if (env && env.POLKADOTJS_DISABLE_ESM_CJS_WARNING === undefined) {
-  env.POLKADOTJS_DISABLE_ESM_CJS_WARNING = '1';
+  env.POLKADOTJS_DISABLE_ESM_CJS_WARNING = "1";
 }
 
 const NOISE = /^Unable to map \[u8; 32\] to a lookup index$/;
@@ -22,7 +22,7 @@ const NOISE = /^Unable to map \[u8; 32\] to a lookup index$/;
 export function quietly<T>(fn: () => T): T {
   const original = console.warn;
   console.warn = (...args: unknown[]) => {
-    if (args.length === 1 && typeof args[0] === 'string' && NOISE.test(args[0])) return;
+    if (args.length === 1 && typeof args[0] === "string" && NOISE.test(args[0])) return;
     original.apply(console, args as []);
   };
   try {

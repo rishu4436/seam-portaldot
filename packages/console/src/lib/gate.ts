@@ -1,5 +1,12 @@
-export interface GateItem { code: string; detail?: string }
-export interface GateResult { ok: boolean; reasons: { code: string; message?: string }[]; passed?: GateItem[] }
+export interface GateItem {
+  code: string;
+  detail?: string;
+}
+export interface GateResult {
+  ok: boolean;
+  reasons: { code: string; message?: string }[];
+  passed?: GateItem[];
+}
 
 /** Plain wording for submit-gate block codes added with allowedMessages / pinnedAbiHashes. */
 export const BLOCK_WORDING: Record<string, string> = {
@@ -32,8 +39,14 @@ export function passedItems(g?: GateResult): { code: string; text: string; detai
     if (failed.has(p.code) || seen.has(p.code)) continue;
     seen.add(p.code);
     const w = PASS_WORDING[p.code];
-    out.push(w ? { code: p.code, text: w, detail: p.detail } : { code: p.code, text: `${p.code}: ${p.detail ?? ""}` }); // unknown codes verbatim
+    out.push(
+      w
+        ? { code: p.code, text: w, detail: p.detail }
+        : { code: p.code, text: `${p.code}: ${p.detail ?? ""}` },
+    ); // unknown codes verbatim
   }
   return out;
 }
-export function blockText(r: { code: string; message?: string }): string { return BLOCK_WORDING[r.code] ?? (r.message ?? r.code).replace(/^Blocked:\s*/, ""); }
+export function blockText(r: { code: string; message?: string }): string {
+  return BLOCK_WORDING[r.code] ?? (r.message ?? r.code).replace(/^Blocked:\s*/, "");
+}

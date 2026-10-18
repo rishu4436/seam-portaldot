@@ -14,16 +14,16 @@ Standalone for now; it will move into the monorepo as `packages/compiler`.
 ## Quick start
 
 ```ts
-import { readFileSync } from 'node:fs';
-import { compile, factsFromMetadata, readPinnedTypes } from '@seam/compiler';
+import { readFileSync } from "node:fs";
+import { compile, factsFromMetadata, readPinnedTypes } from "@seam/compiler";
 
 const facts = factsFromMetadata({
-  metadataHex: readFileSync('fixtures/portaldot-mainnet-metadata.hex', 'utf8'), // state_getMetadata result
-  typesBundle: readPinnedTypes(),            // types/portaldot-spec1002.json, exact text
-  genesisHash: '0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54',
-  tokenSymbol: 'POT',
+  metadataHex: readFileSync("fixtures/portaldot-mainnet-metadata.hex", "utf8"), // state_getMetadata result
+  typesBundle: readPinnedTypes(), // types/portaldot-spec1002.json, exact text
+  genesisHash: "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+  tokenSymbol: "POT",
   tokenDecimals: 14,
-  batchAllRollback: 'unknown'                // metadata cannot prove this; default 'unknown'
+  batchAllRollback: "unknown", // metadata cannot prove this; default 'unknown'
 });
 
 const plan = compile(manifest, facts, { allowAtomicUnverified: false });
@@ -78,28 +78,42 @@ Other exports: `computePlanDigest(plan)`, `computeManifestDigest(manifest)`, `co
 ```jsonc
 {
   "version": 1,
-  "chain": { "genesisHash": "0x83b5…8a54", "specVersion": 1002 },   // optional; must match facts
+  "chain": { "genesisHash": "0x83b5…8a54", "specVersion": 1002 }, // optional; must match facts
   "signer": { "type": "ss58", "value": "5Grw…utQY", "ss58Prefix": 42 },
   "actions": [
-    { "id": "pay", "kind": "assets.transfer",
-      "args": { "assetId": "1", "amount": "2500000000000000", "recipient": "5FHn…94ty" } },
-    { "id": "call", "kind": "contracts.call",
-      "args": { "contract": "5FHn…94ty", "value": "0", "gasLimit": "5000000000", "data": "0x633aa551" } },
-    { "id": "receipt", "kind": "assets.mint",
-      "args": { "assetId": "2", "amount": "1", "recipient": "5FHn…94ty" } }
-  ]
+    {
+      "id": "pay",
+      "kind": "assets.transfer",
+      "args": { "assetId": "1", "amount": "2500000000000000", "recipient": "5FHn…94ty" },
+    },
+    {
+      "id": "call",
+      "kind": "contracts.call",
+      "args": {
+        "contract": "5FHn…94ty",
+        "value": "0",
+        "gasLimit": "5000000000",
+        "data": "0x633aa551",
+      },
+    },
+    {
+      "id": "receipt",
+      "kind": "assets.mint",
+      "args": { "assetId": "2", "amount": "1", "recipient": "5FHn…94ty" },
+    },
+  ],
 }
 ```
 
 Args per kind (unknown arg names are rejected):
 
-| kind | capability | args |
-|---|---|---|
-| `assets.transfer` | `Assets.transfer_keep_alive` | `assetId`, `amount`, `recipient` |
-| `assets.mint` | `Assets.mint` | `assetId`, `amount`, `recipient` |
-| `contracts.call` | `Contracts.call` | `contract`, `value`, `gasLimit`, and **either** `data` (hex: ink! selector + SCALE args) **or** `message` + `abi`/`abiRef` (+ `args`, optional `abiHash`); on Weight-v2 runtimes also `proofSize` and `storageDepositLimit` (see below) |
-| `revive.call` | `Revive.call` | `contract` (H160), `value`, `data`, optional `gasLimit`, `storageDepositLimit` |
-| `nfts.mint` | `Nfts.mint` | `collection`, `item`, `recipient` |
+| kind              | capability                   | args                                                                                                                                                                                                                                    |
+| ----------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `assets.transfer` | `Assets.transfer_keep_alive` | `assetId`, `amount`, `recipient`                                                                                                                                                                                                        |
+| `assets.mint`     | `Assets.mint`                | `assetId`, `amount`, `recipient`                                                                                                                                                                                                        |
+| `contracts.call`  | `Contracts.call`             | `contract`, `value`, `gasLimit`, and **either** `data` (hex: ink! selector + SCALE args) **or** `message` + `abi`/`abiRef` (+ `args`, optional `abiHash`); on Weight-v2 runtimes also `proofSize` and `storageDepositLimit` (see below) |
+| `revive.call`     | `Revive.call`                | `contract` (H160), `value`, `data`, optional `gasLimit`, `storageDepositLimit`                                                                                                                                                          |
+| `nfts.mint`       | `Nfts.mint`                  | `collection`, `item`, `recipient`                                                                                                                                                                                                       |
 
 - **Amounts** (`amount`, `value`, `gasLimit`, `storageDepositLimit`) are base-unit **strings** of digits. Numbers, floats,
   decimals, signs, exponents and leading zeros are rejected. They're also range-checked against the runtime type
@@ -116,11 +130,18 @@ Instead of hand-encoding `data`, name the message and give the contract's ink! m
 `.contract` bundle; ink! metadata V0 to V5, read offline by `@polkadot/api-contract`'s `Abi`):
 
 ```jsonc
-{ "id": "settle", "kind": "contracts.call",
-  "args": { "contract": "5FHn…94ty", "value": "0", "gasLimit": "5000000000",
-            "message": "settle",
-            "args": { "order_id": 7, "amount": "2500000000000000" },   // or positional: [7, "2500000000000000"]
-            "abi": { /* metadata.json */ } } }                      // or "abiRef": "seam_demo" + options.abis
+{
+  "id": "settle",
+  "kind": "contracts.call",
+  "args": {
+    "contract": "5FHn…94ty",
+    "value": "0",
+    "gasLimit": "5000000000",
+    "message": "settle",
+    "args": { "order_id": 7, "amount": "2500000000000000" }, // or positional: [7, "2500000000000000"]
+    "abi": {/* metadata.json */},
+  },
+} // or "abiRef": "seam_demo" + options.abis
 ```
 
 - **Exactly one** of `data` or `message`. `args`, `abi`, `abiRef`, `abiHash` are only allowed with `message`, and
@@ -158,10 +179,10 @@ digests are identical.
 
 The compiler reads `Contracts.call`'s argument list from the metadata and supports both shapes:
 
-| runtime | Contracts.call args | Manifest |
-|---|---|---|
-| Portaldot spec 1002 (metadata V13, Weight v1) | `dest, value, gas_limit: Compact<u64>, data` | `gasLimit`; `proofSize` / `storageDepositLimit` are refused (`MANIFEST_INVALID`) |
-| e.g. substrate-contracts-node v0.42 (metadata V14, Weight v2) | `dest, value, gas_limit: Weight { ref_time, proof_size }, storage_deposit_limit: Option<Compact<Balance>>, data` | `gasLimit` (= ref_time), **`proofSize`**, **`storageDepositLimit`** |
+| runtime                                                       | Contracts.call args                                                                                              | Manifest                                                                         |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Portaldot spec 1002 (metadata V13, Weight v1)                 | `dest, value, gas_limit: Compact<u64>, data`                                                                     | `gasLimit`; `proofSize` / `storageDepositLimit` are refused (`MANIFEST_INVALID`) |
+| e.g. substrate-contracts-node v0.42 (metadata V14, Weight v2) | `dest, value, gas_limit: Weight { ref_time, proof_size }, storage_deposit_limit: Option<Compact<Balance>>, data` | `gasLimit` (= ref_time), **`proofSize`**, **`storageDepositLimit`**              |
 
 - `proofSize` is a base-unit string (u64). Missing on a Weight-v2 runtime → the step is `unavailable`
   ("…takes gas_limit as Weight { ref_time, proof_size }; the manifest must give proofSize").
@@ -227,14 +248,14 @@ and preflight. (`gasLimit` for `contracts.call` is a call argument the developer
 Portaldot spec 1002 serves **metadata V13**, which doesn't carry full type information, so polkadot.js needs type definitions.
 The file pins them and records what was verified against chain data and what is assumed:
 
-| type | value | status |
-|---|---|---|
-| `Address` / `LookupSource` | `MultiAddress` | **verified**: a real signed mainnet extrinsic (block 2721116) decodes and re-encodes byte-identically (`fixtures/mainnet-extrinsic-2721116.json`) |
-| `AccountId` | AccountId32 | **verified**: same extrinsic |
-| `Balance`, `BalanceOf` | `u128` | **verified**: 16-byte `Balances.ExistentialDeposit` / `Contracts.*Deposit` constants |
-| `Weight` | `u64` | **verified**: 8-byte `Contracts.DeletionWeightLimit` constant |
-| `AssetId` | `u32` | **assumed**: no assets exist on mainnet to check. Compact-encoded, so bytes only differ above 2^32 |
-| `TAssetBalance` (asset balance) | `u64` | **assumed**: same reason |
+| type                            | value          | status                                                                                                                                            |
+| ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Address` / `LookupSource`      | `MultiAddress` | **verified**: a real signed mainnet extrinsic (block 2721116) decodes and re-encodes byte-identically (`fixtures/mainnet-extrinsic-2721116.json`) |
+| `AccountId`                     | AccountId32    | **verified**: same extrinsic                                                                                                                      |
+| `Balance`, `BalanceOf`          | `u128`         | **verified**: 16-byte `Balances.ExistentialDeposit` / `Contracts.*Deposit` constants                                                              |
+| `Weight`                        | `u64`          | **verified**: 8-byte `Contracts.DeletionWeightLimit` constant                                                                                     |
+| `AssetId`                       | `u32`          | **assumed**: no assets exist on mainnet to check. Compact-encoded, so bytes only differ above 2^32                                                |
+| `TAssetBalance` (asset balance) | `u64`          | **assumed**: same reason                                                                                                                          |
 
 Changing this file changes `typesBundleHash`, and with it the fingerprint and every plan digest.
 
@@ -267,7 +288,7 @@ step that is unavailable with its reason. It never signs or submits. (Submitting
 
 ## Known limits
 
-- The ink! ABI form supports the argument types listed above; `Result`, maps and sets as message *arguments* are refused
+- The ink! ABI form supports the argument types listed above; `Result`, maps and sets as message _arguments_ are refused
   with `ABI_ARGS_INVALID` rather than guessed. Return values and events are not decoded by the compiler.
 - `Contracts.call` shapes other than the two above (e.g. a future extra argument) make the step `unavailable` with a reason.
 - polkadot.js prints `Unable to map [u8; 32] to a lookup index` once while converting V13 metadata. It's harmless.

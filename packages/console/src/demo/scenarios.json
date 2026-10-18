@@ -4342,9 +4342,7 @@
               "number": 2721463,
               "hash": "0x0000000000000000000000000000000000000000000000000000000000b10c03"
             },
-            "events": [
-              "System.ExtrinsicFailed(Module, {})"
-            ],
+            "events": ["System.ExtrinsicFailed(Module, {})"],
             "verification": "not_verified",
             "reason": "The transaction failed on chain: Contracts.ContractTrapped."
           },

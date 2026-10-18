@@ -3,7 +3,9 @@
 Teammates' packages were NOT edited (main 241ac8c). Workarounds live in packages/chain (bot4/devnode).
 
 ## @seam/compiler (Bot 2)
+
 UPDATE (bot4/ink-contract): item 1 is resolved. The compiler now binds Weight V2 `proofSize` and `storageDepositLimit` (null = none) and encodes ink! messages from an ABI; the run scripts no longer patch Contracts.call.
+
 1. `compile.ts` ARG_BINDINGS / ARG_SCHEMA `contracts.call` = {dest, value, gasLimit, data}. On V14,
    Contracts.call is `call(dest, value, gas_limit: Weight{ref_time, proof_size}, storage_deposit_limit: Option<Compact<u128>>, data)`.
    Result: step `unavailable` ("takes argument(s) SEAM cannot fill: storageDepositLimit"), so the whole plan is unavailable.
@@ -22,13 +24,15 @@ UPDATE (bot4/ink-contract): item 1 is resolved. The compiler now binds Weight V2
 5. `withoutLookupWarning` comment: V13-specific, harmless on V14.
 
 ## @seam/policy (Bot 3)
+
 6. `maxWeight` is a single number; on Weight V2 chains only ref_time is limited (proof_size not limited).
    @seam/chain reports ref_time as `weight`. Needed (later): optional `maxProofSize`.
 7. `maxGasLimit` compares the scalar gasLimit (ref_time); proof_size of a contract call isn't limited.
 8. `maxNativeValue` doc says "POT base units": token-agnostic in code, fine.
-Everything else (call_index check from encoded bytes, per-step gate, approval binding) worked unchanged on V14.
+   Everything else (call_index check from encoded bytes, per-step gate, approval binding) worked unchanged on V14.
 
 ## @seam/sdk (Bot 5)
+
 9. `offline.ts` factsFromSnapshot: hard-coded file names `portaldot-mainnet-*.json/hex`, default spec-1002 types,
    tokenSymbol/decimals straight from properties (devnode has none -> undefined). Needed: name/typesBundle/declaredToken params.
 10. `Seam.prepare` takes no CompileOptions (allowAtomicUnverified) and no plan override, so atomic_unverified plans and the
@@ -39,9 +43,11 @@ Everything else (call_index check from encoded bytes, per-step gate, approval bi
 12. `cli.ts` default snapshot is the bundled mainnet spec 1002.
 
 ## @seam/console (Bot 1)
+
 13. Default endpoint wss://mainnet.portaldot.io and demo scenarios pinned to spec 1002 / POT / V13 metadata.
 
 ## Own (@seam/chain), fixed on bot4/devnode
+
 - DECODE_TYPES (DispatchError Module {index u8, error u8}) now only for metadata <= V13.
 - payment_queryInfo Weight V2 JSON is snake_case {ref_time, proof_size}: was read as refTime only -> "unknown".
 - contracts_call RPC removed on newer nodes -> ContractsApi_call (v2) via state_call.
