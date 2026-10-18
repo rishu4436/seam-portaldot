@@ -1,0 +1,11 @@
+.ln-banner{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.5);color:#fcd34d;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+.ln-banner small{font-weight:400;opacity:.85;margin-left:6px}
+.ln{display:grid;gap:14px;color:inherit}
+.ln h3,.ln h4{margin:0 0 6px}
+.ln .ln-card{border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:14px 16px;background:rgba(148,163,184,.06)}
+.ln code{font-size:12px;word-break:break-all}
+.ln ul{margin:6px 0;padding-left:18px}
+.ln table{border-collapse:collapse;width:100%;font-size:13px}
+.ln td,.ln th{text-align:left;padding:4px 8px;border-bottom:1px solid rgba(148,163,184,.2);vertical-align:top}
+.ln .ok{color:#4ade80}.ln .bad{color:#fb7185}.ln .pending{color:#fbbf24;font-weight:600}
+.ln .muted{opacity:.7;font-size:12px}

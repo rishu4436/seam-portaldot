@@ -1,5 +1,7 @@
 import dev from "../demo/devnode.json";
 
+import { LocalNodeBanner, LocalNodeEvidence } from "../components/LocalNode";
+
 const REPO = "https://github.com/rishu4436/seam-portaldot";
 const CONSOLE = "./index.html";
 const short = (h: string) => `${h.slice(0, 10)}…${h.slice(-6)}`;
@@ -40,10 +42,11 @@ const QUICK = [
 export default function Landing() {
   return (
     <div className="lp">
+      <LocalNodeBanner />
       <header className="nav">
         <a className="brand" href="#top"><span className="logo">S</span><b>SEAM</b></a>
         <nav>
-          <a href="#pipeline">Pipeline</a><a href="#blocks">What it blocks</a><a href="#proof">Proof</a><a href="#dev">Developers</a>
+          <a href="#pipeline">Pipeline</a><a href="#blocks">What it blocks</a><a href="#local-node">Local node</a><a href="#proof">Proof</a><a href="#dev">Developers</a>
           <a className="btn small" href={CONSOLE}>Open the console</a>
         </nav>
       </header>
@@ -75,6 +78,12 @@ export default function Landing() {
         <div className="codes">
           {BLOCKS.map(([c, d]) => (<div className="code" key={c}><code>{c}</code><p>{d}</p></div>))}
         </div>
+      </section>
+
+      <section id="local-node">
+        <h2>Real run on a local Portaldot node</h2>
+        <p className="sec">Recorded from the organizers' own node binary, copied from <a href={`${REPO}/tree/main/evidence/portaldot-local-node`}>evidence/portaldot-local-node/</a>.</p>
+        <LocalNodeEvidence />
       </section>
 
       <section id="proof">

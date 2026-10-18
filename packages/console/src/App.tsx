@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import * as api from "./lib/mock";
 import * as tc from "./lib/testchain";
 import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
+import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
 import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
 
 type Source = "mainnet" | "testchain";
@@ -99,6 +100,7 @@ export default function App() {
   const [scenario, setScenario] = useState<Scenario>("happy");
   const [gate, setGate] = useState<tc.Rollback>();
   const [step, setStep] = useState(0);
+  const [evidence, setEvidence] = useState(false);
   const [endpoint, setEndpoint] = useState("wss://mainnet.portaldot.io");
   const [facts, setFacts] = useState<RuntimeFacts>();
   const [plan, setPlan] = useState<Plan>();
@@ -161,6 +163,9 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <button className={`scenbtn src ${evidence ? "on" : ""}`} style={{ marginTop: 12 }} onClick={() => setEvidence(!evidence)}>
+          <b>Local Portaldot node, real run</b><span>Spec 1002 evidence view</span>
+        </button>
         <div className="scen">
           <small>Data source</small>
           {SOURCES.map((s) => (
@@ -182,6 +187,8 @@ export default function App() {
       </aside>
 
       <main>
+        <LocalNodeBanner />
+        {evidence ? <LocalNodeEvidence /> : <>
         <header className="top">
           <div>
             <h1>{STEPS[step]}</h1>
@@ -452,6 +459,7 @@ export default function App() {
             </div>
           </section>
         )}
+        </>}
       </main>
     </div>
   );
