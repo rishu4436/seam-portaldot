@@ -185,8 +185,10 @@ atomic plans and a failing step.
 - The `Assets.Asset` storage key comes from metadata hashers via polkadot.js. Mainnet has no assets, so
   "exists" has never been seen live, only "absent".
 - `AssetId` u32 / `TAssetBalance` u64 are assumptions in the compiler's pinned file.
-- Submission, inclusion and finality tracking are tested against the in-process fake node only. Nothing has
-  been submitted to any real chain yet; that waits for a local dev node or the V3 testnet.
+- Submission, inclusion and finality tracking are tested against the in-process fake node, and have been run
+  against two local chains only: substrate-contracts-node `--dev` (spec 100) and the organizers' Portaldot
+  dev node (spec 1002, old Contracts pallet). Nothing has been submitted to Portaldot mainnet or to the V3
+  testnet; V3 and Revive behaviour is not verified. That waits for a V3 RPC URL and a funded test account.
 - `storageDeposit` is never reported by this runtime, so it is always unknown.
 
 ## Notes
