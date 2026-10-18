@@ -8,6 +8,7 @@ export type SeamChainErrorCode =
   | 'PAYLOAD_MISMATCH'
   | 'BAD_SIGNATURE'
   | 'NOT_SIGNED'
+  | 'SIGNED_MISMATCH'
   | 'RUNTIME_CHANGED'
   | 'MAINNET_SUBMIT_REFUSED'
   | 'TIMEOUT';
