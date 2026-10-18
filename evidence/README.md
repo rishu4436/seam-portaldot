@@ -53,3 +53,5 @@ They refuse any endpoint other than localhost, and the Portaldot mainnet genesis
 
 The read-only mainnet snapshot (spec 1002, metadata V13, block 2,721,455) is `fixtures/portaldot-mainnet-snapshot.json`
 and `fixtures/portaldot-mainnet-metadata.hex` at the repo root. Nothing was ever submitted to mainnet.
+
+`portaldot-local-node/`: recordings from the organizers' own Portaldot dev node (spec 1002, metadata V13) run locally. Not the V3 testnet, not mainnet. See its README.
