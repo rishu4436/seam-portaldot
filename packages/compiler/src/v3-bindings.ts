@@ -26,13 +26,15 @@ export interface ShapeArg {
   class: ShapeClass;
   /** Manifest/encode key that feeds it. '__none' means "encode None"; the manifest has no such input. */
   seamKey: string;
+  /** Other camelCased metadata names accepted for the same argument (types are still checked strictly). */
+  aliases?: readonly string[];
 }
 
 export const V3_SHAPES: Partial<Record<ActionKind, readonly ShapeArg[]>> = {
   "revive.call": [
     { name: "dest", class: "h160", seamKey: "contract" },
     { name: "value", class: "balance", seamKey: "value" },
-    { name: "gasLimit", class: "weight", seamKey: "gasLimit" },
+    { name: "gasLimit", class: "weight", seamKey: "gasLimit", aliases: ["weightLimit"] },
     { name: "storageDepositLimit", class: "optBalance", seamKey: "storageDepositLimit" },
     { name: "data", class: "bytes", seamKey: "data" },
   ],
@@ -43,6 +45,16 @@ export const V3_SHAPES: Partial<Record<ActionKind, readonly ShapeArg[]>> = {
     { name: "witnessData", class: "optionNone", seamKey: "__none" },
   ],
 };
+
+/** Metadata argument name -> manifest key, including aliases (e.g. real V3 spec 3002 names the weight `weight_limit`). */
+export function bindingsFor(kind: ActionKind): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const a of V3_SHAPES[kind] ?? []) {
+    out[a.name] = a.seamKey;
+    for (const al of a.aliases ?? []) out[al] = a.seamKey;
+  }
+  return out;
+}
 
 export const V3_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>(["revive.call", "nfts.mint"]);
 
@@ -102,7 +114,7 @@ export function checkV3Shape(
   for (let i = 0; i < shape.length; i++) {
     const want = shape[i]!;
     const got = args[i]!;
-    if (got.name !== want.name) {
+    if (got.name !== want.name && !want.aliases?.includes(got.name)) {
       return `argument ${i} should be "${want.name}" (${want.class}), metadata has "${got.name}" (${observed})`;
     }
     if (!matchesClass(want.class, got.rawType, got.isWeightV2)) {
