@@ -19,6 +19,8 @@ audit item (SEAM-nnn) they close. Nothing here is a Portaldot V3 or Revive claim
 
 - SEAM-010 (SDK side): `verifyNftsMintOutcome` / `verifyReviveCallOutcome` and `buildReceipt({ verdicts })`: fail-closed outcome verifiers, `effect_proven` only for an exact match with an observed event shape; plus fixed wording for `NO_OBSERVED_V3_METADATA` and `V3_ARG_SHAPE_MISMATCH`. Not verified on V3.
 
+- Docs: `seam verify --endpoint` documented as it really behaves: `chain_verified` needs a matching plan, on-chain call bytes equal to the planned call (atomic: outer batch call only), every step present and finalized, and each step re-derived `effect_proven`; no plan or an uncomparable input gives `unknown`. `revive.call` and `nfts.mint` stay `unknown` in live verification. CLI help text updated. Nothing is verified on V3.
+
 ### Docs
 - SEAM-024: README and docs say two local chains were used and neither is the hosted V3 testnet or mainnet; stale counts removed.
 - SEAM-025: added `SECURITY.md`, `CONTRIBUTING.md` and this changelog.
