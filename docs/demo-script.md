@@ -1,4 +1,21 @@
-# Judge demo script (~3 minutes)
+# Judge demo script (3 minutes max)
+
+## Timing (total 180 s = 3:00, at the cap)
+
+| # | Step | Seconds |
+|---|------|---------|
+| - | Opening statement ("Say this first") | 10 |
+| 1 | Manifest compiled from live metadata | 25 |
+| 2 | `npm run test:e2e` (sped-up recording or result) | 20 |
+| 3 | Sequential: one transaction per step | 40 |
+| 4 | Atomic: all or nothing | 25 |
+| 5 | Rollback and a gate block, explained | 50 |
+| 6 | Console and close | 10 |
+| | **Total** | **180** |
+
+Setup (section 0) happens before the demo and is not counted. The earlier version of this script added up to about 3:20; step 2 is now a sped-up recording (as in the video storyboard) rather than a live run, and steps 1 and 4 are tightened by 5 s each.
+
+**PENDING: browser-wallet scene.** No run has been signed in a browser wallet yet. A wallet-signed scene stays PENDING until the Portaldot testnet is up and a real signed run exists. Do not show or invent a tx hash for it; all hashes in this script come from the local chain only. If it is added later, it must fit by trimming another step so the total stays at or under 180 s.
 
 **Say this first (10 s):** "Everything you will see ran on a local substrate-contracts-node dev chain, not Portaldot V3 testnet. The testnet RPC and faucet are pending. The mainnet snapshot is read-only."
 
@@ -11,7 +28,7 @@ npm install && npm run build
 node -e 'const fs=require("fs");const d="evidence/devnode/runs/";for(const [n,f] of [["sequential","sequential-1792301010881"],["atomic","atomic-1792301015006"]]){fs.writeFileSync(`/tmp/${n}-receipt.json`,JSON.stringify(require("./"+d+f+".json").run.receipt))}'
 ```
 
-## 1. One Manifest, compiled from live metadata (30 s)
+## 1. One Manifest, compiled from live metadata (25 s)
 
 ```bash
 npx seam compile docs/examples/missing-pallet-manifest.json
@@ -19,13 +36,13 @@ npx seam compile docs/examples/missing-pallet-manifest.json
 Say: "SEAM reads what the runtime really offers. A missing pallet is a plain answer, not a failed transaction."
 Proves: last lines include `- nft: can't run, because Nfts.mint is not on this runtime (spec 1002).` (against the bundled Portaldot mainnet snapshot).
 
-## 2. Live proof in one command (30 s, optional but strong)
+## 2. Live proof in one command (20 s, shown sped-up or as a result)
 
 ```bash
 npm run test:e2e
 ```
 Say: "This starts a fresh local chain, deploys a demo ink! contract, and runs the sequential, rollback and atomic flows, then cleans up."
-Proves: `Tests  3 passed (3)` (about 15 s; first run downloads the node binary). If time is short, skip this and use the recorded runs below.
+Proves: `Tests  3 passed (3)`. The test time is about 13-17 s (first run downloads the node binary), so do not run it live inside the cap: show a sped-up recording of the run, or show its final `Tests  3 passed (3)` result. Say which one it is. If time is short, skip this and use the recorded runs below.
 
 ## 3. Sequential: one transaction per step (40 s)
 
@@ -45,7 +62,7 @@ Verified: all 3 steps finalized and the chain shows exactly what was planned.
 Say: "Three steps, three transactions. The contract step was called by name (`settle`) with the ABI, and verified by its `ContractEmitted` event. Before each send the gate re-checked everything."
 Proves: the run file's `gateChecks` has a `sending` and `done` entry per step, all `ok: true`, each with a `passed` list (`step_order`, `approval_*`, `runtime_unchanged`, `signed_bytes_match`, `signed_dry_run_ok`).
 
-## 4. Atomic: all or nothing in one transaction (30 s)
+## 4. Atomic: all or nothing in one transaction (25 s)
 
 Recorded run: `evidence/devnode/runs/atomic-1792301015006.json`
 
