@@ -1,0 +1,8 @@
+{
+  "name": "seam-consumer-example",
+  "private": true,
+  "type": "module",
+  "description": "A separate app that uses SEAM only through its public packages (no repo paths)",
+  "scripts": { "start": "node index.mjs" },
+  "dependencies": { "@seam/sdk": "*", "@seam/compiler": "*", "@seam/policy": "*" }
+}

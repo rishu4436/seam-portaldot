@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { factsFromMetadata, readPinnedTypes, type RuntimeFacts } from '@seam/compiler';
 
 export interface SnapshotOptions {
@@ -59,4 +60,12 @@ export function factsFromSnapshot(path: string, opts: SnapshotOptions = {}): Run
     specName: snap.runtime?.specName, specVersion: snap.runtime?.specVersion, transactionVersion: snap.runtime?.transactionVersion,
     ss58Prefix: props.ss58Format ?? undefined, endpoint: snap.endpoint, blockNumber: snap.block,
   });
+}
+
+/**
+ * Folder of the snapshot that ships inside the package: the Portaldot mainnet runtime, spec 1002, read-only data.
+ * Lets an app compile offline without any repo path. It is a recorded runtime, not a live one.
+ */
+export function bundledSnapshotDir(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 }
