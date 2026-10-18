@@ -57,7 +57,7 @@ Now try a Manifest that asks for something this chain doesn't have:
 
 ```bash
 npx seam compile docs/examples/missing-pallet-manifest.json
-# - nft: can't run, because Nfts.mint is not on this runtime (spec 1002).
+# - nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec 1002).
 ```
 
 SEAM reads what the runtime really offers instead of assuming, so a missing pallet becomes a plain answer instead of a failed transaction. Add `--json` to any command to get the raw plan.

@@ -4,6 +4,25 @@
 
 Built for Portaldot Hacker House 2026 (Modular Cloud & Middleware track).
 
+## Use it from your app
+
+[`examples/consumer`](examples/consumer/index.mjs) is the headline usage: a separate app that imports only `@seam/sdk`, `@seam/compiler` and `@seam/policy` (no repo paths, no node, no keys). Run it with `npm run build && npm run smoke:pack`, which packs the packages, installs them into an empty folder and runs it.
+
+```js
+const facts = factsFromSnapshot(bundledSnapshotDir());            // a recorded runtime, offline
+const manifest = defineManifest({ signer, actions: [action.transfer('pay', { assetId: '1', amount: '2500', recipient })] });
+const plan = compile(manifest, facts);                            // exact runtime calls
+console.log(explainPlan(plan), explainPolicy(evaluatePolicy({ policy, plan, facts, manifest })));
+```
+
+Sending it for real goes through approval, an external wallet and a per-step gate: see [docs/quickstart.md](docs/quickstart.md).
+
+## Status, in one place
+
+- **Verified so far:** local runs only, on a `substrate-contracts-node` dev chain and a **local Portaldot dev node, spec 1002**. **Portaldot V3 and Revive are not verified.**
+- **No users and no transaction volume yet.** Nothing here has been used by anyone outside the team.
+- **Business model: a hypothesis, not a result.** SEAM stays open source. One idea to test is a hosted service for teams building on Portaldot (runtime-change monitoring and independent receipt verification). No customer, price or demand has been validated, and no such service exists today ([RuntimeGuard scope](docs/runtimeguard.md)).
+
 > ## Honesty first
 > **Two local chains were used, and neither is the hosted Portaldot V3 testnet or mainnet.** (1) A `substrate-contracts-node` v0.42.0 dev chain (`--dev`, spec 100, metadata V14) and (2) a **local Portaldot dev node (spec 1002, metadata V13)**, see [the section below](#local-portaldot-dev-node-spec-1002-not-the-hosted-testnet). Local success proves the chain engine on those runtimes only. It does **not** show that anything works on the Portaldot V3 runtime, including Revive, and no `atomic_verified` result exists for V3. Portaldot mainnet is only read (a read-only snapshot, spec 1002, metadata V13, block 2,721,455); nothing was ever submitted to it. The V3 testnet RPC and faucet are still pending, so no testnet addresses or transaction hashes exist yet. See [Next step: Portaldot V3 testnet](#next-step-portaldot-v3-testnet) and [docs/testnet-checklist.md](docs/testnet-checklist.md).
 
@@ -35,7 +54,7 @@ Try the CLI offline, against the bundled Portaldot mainnet snapshot (read-only, 
 npx seam digest docs/examples/demo-manifest.json
 npx seam compile docs/examples/demo-manifest.json
 npx seam check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json   # blocked: amount over limit
-npx seam compile docs/examples/missing-pallet-manifest.json                                 # "Nfts.mint is not on this runtime"
+npx seam compile docs/examples/missing-pallet-manifest.json                                 # "Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists"
 ```
 
 Run the whole flow for real on a **throwaway local dev chain** (not Portaldot):
