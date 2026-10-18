@@ -9,16 +9,34 @@ import type { Hex } from "./types.js";
 export function canonicalJson(value: unknown, path = "$"): string {
   if (value === null) return "null";
   switch (typeof value) {
-    case "string": return JSON.stringify(value);
-    case "boolean": return value ? "true" : "false";
+    case "string":
+      return JSON.stringify(value);
+    case "boolean":
+      return value ? "true" : "false";
     case "number":
-      if (!Number.isSafeInteger(value)) throw new TypeError(`${path}: number ${value} is not a safe integer; use a base-unit string`);
+      if (!Number.isSafeInteger(value))
+        throw new TypeError(
+          `${path}: number ${value} is not a safe integer; use a base-unit string`,
+        );
       return String(value);
     case "object": {
-      if (Array.isArray(value)) return "[" + value.map((v, i) => canonicalJson(v === undefined ? null : v, `${path}[${i}]`)).join(",") + "]";
+      if (Array.isArray(value))
+        return (
+          "[" +
+          value
+            .map((v, i) => canonicalJson(v === undefined ? null : v, `${path}[${i}]`))
+            .join(",") +
+          "]"
+        );
       const obj = value as Record<string, unknown>;
-      const keys = Object.keys(obj).filter((k) => obj[k] !== undefined).sort();
-      return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonicalJson(obj[k], `${path}.${k}`)).join(",") + "}";
+      const keys = Object.keys(obj)
+        .filter((k) => obj[k] !== undefined)
+        .sort();
+      return (
+        "{" +
+        keys.map((k) => JSON.stringify(k) + ":" + canonicalJson(obj[k], `${path}.${k}`)).join(",") +
+        "}"
+      );
     }
     default:
       throw new TypeError(`${path}: ${typeof value} cannot be canonicalised`);

@@ -1,5 +1,13 @@
 import type {
-  Approval, RuntimeFingerprint, SignedDryRun, Hex, Plan, PolicyResult, PreflightResult, ReceiptStep, SigningEnvelope,
+  Approval,
+  RuntimeFingerprint,
+  SignedDryRun,
+  Hex,
+  Plan,
+  PolicyResult,
+  PreflightResult,
+  ReceiptStep,
+  SigningEnvelope,
 } from "./types.js";
 import { digest } from "./digest.js";
 import { checkRuntimeLock, fingerprintDigest } from "./runtimeLock.js";
@@ -27,7 +35,9 @@ export interface ApprovalBinding {
   modeDowngradeDigest?: Hex;
 }
 
-export interface BoundApproval extends Approval { binding: ApprovalBinding }
+export interface BoundApproval extends Approval {
+  binding: ApprovalBinding;
+}
 
 export interface ApprovalInput {
   manifestDigest: Hex;
@@ -42,11 +52,21 @@ export interface ApprovalInput {
   acknowledgedDowngrade?: boolean;
 }
 
-const COVERS = ["manifest", "plan", "encoded calls", "runtime fingerprint", "policy", "policy result", "signing envelope", "preflight"];
+const COVERS = [
+  "manifest",
+  "plan",
+  "encoded calls",
+  "runtime fingerprint",
+  "policy",
+  "policy result",
+  "signing envelope",
+  "preflight",
+];
 
 /** The exact call bytes the wallet must sign: the one batch_all for atomic plans, otherwise each step in order. */
 export function callsToSign(plan: Plan): (Hex | null)[] {
-  if (plan.mode === "atomic_verified" || plan.mode === "atomic_unverified") return [plan.outerCall?.encodedCall ?? null];
+  if (plan.mode === "atomic_verified" || plan.mode === "atomic_unverified")
+    return [plan.outerCall?.encodedCall ?? null];
   return plan.steps.map((s) => s.encodedCall);
 }
 
@@ -54,7 +74,8 @@ export function callsDigest(plan: Plan): Hex {
   return digest("seam/calls/v1", callsToSign(plan));
 }
 
-const sameAccount = (a: string, b: string) => (normalizeAccount(a) ?? a.toLowerCase()) === (normalizeAccount(b) ?? b.toLowerCase());
+const sameAccount = (a: string, b: string) =>
+  (normalizeAccount(a) ?? a.toLowerCase()) === (normalizeAccount(b) ?? b.toLowerCase());
 
 function buildBinding(i: Omit<ApprovalInput, "now">, expiresAt: string): ApprovalBinding {
   return {
@@ -71,7 +92,9 @@ function buildBinding(i: Omit<ApprovalInput, "now">, expiresAt: string): Approva
     nonce: i.envelope.nonce,
     mortalityBlocks: i.envelope.mortalityBlocks,
     expiresAt,
-    ...(i.plan.modeDowngrade ? { modeDowngradeDigest: digest("seam/mode-downgrade/v1", i.plan.modeDowngrade) } : {}),
+    ...(i.plan.modeDowngrade
+      ? { modeDowngradeDigest: digest("seam/mode-downgrade/v1", i.plan.modeDowngrade) }
+      : {}),
   };
 }
 
@@ -81,26 +104,56 @@ export type ApprovalOutcome = { ok: true; approval: BoundApproval } | { ok: fals
 export function createApproval(input: ApprovalInput): ApprovalOutcome {
   const { plan, envelope, policy, policyResult, fingerprint, now } = input;
   if (!policyResult.allowed) {
-    const why = policyResult.rules.find((r) => r.outcome !== "pass")?.reason ?? "the policy check did not pass";
+    const why =
+      policyResult.rules.find((r) => r.outcome !== "pass")?.reason ??
+      "the policy check did not pass";
     return { ok: false, reason: `Can't approve: ${why}` };
   }
-  if (planDigest(plan) !== plan.planDigest) return { ok: false, reason: "Can't approve: the plan was changed after it was compiled." };
-  if (policyResult.policyDigest !== policyDigest(policy)) return { ok: false, reason: "Can't approve: the policy result was made with a different policy." };
-  if (plan.fingerprintDigest !== fingerprintDigest(fingerprint)) return { ok: false, reason: "Can't approve: the plan was compiled for a different runtime." };
+  if (planDigest(plan) !== plan.planDigest)
+    return { ok: false, reason: "Can't approve: the plan was changed after it was compiled." };
+  if (policyResult.policyDigest !== policyDigest(policy))
+    return {
+      ok: false,
+      reason: "Can't approve: the policy result was made with a different policy.",
+    };
+  if (plan.fingerprintDigest !== fingerprintDigest(fingerprint))
+    return { ok: false, reason: "Can't approve: the plan was compiled for a different runtime." };
   if (!sameAccount(envelope.signer, plan.signer.publicKey)) {
-    return { ok: false, reason: "Can't approve: the signing envelope's signer is not the plan's signer." };
+    return {
+      ok: false,
+      reason: "Can't approve: the signing envelope's signer is not the plan's signer.",
+    };
   }
-  if (callsToSign(plan).some((c) => !c)) return { ok: false, reason: "Can't approve: a call has no encoded bytes, so there is nothing exact to sign." };
+  if (callsToSign(plan).some((c) => !c))
+    return {
+      ok: false,
+      reason: "Can't approve: a call has no encoded bytes, so there is nothing exact to sign.",
+    };
   if (plan.modeDowngrade && input.acknowledgedDowngrade !== true) {
-    return { ok: false, reason: `Can't approve: this plan was meant to be atomic but would run step by step. ${plan.modeDowngrade.partialExecutionRisk} Acknowledge the downgrade to approve it.` };
+    return {
+      ok: false,
+      reason: `Can't approve: this plan was meant to be atomic but would run step by step. ${plan.modeDowngrade.partialExecutionRisk} Acknowledge the downgrade to approve it.`,
+    };
   }
   const envelopeExpiry = Date.parse(envelope.expiresAt);
-  if (!envelope.checkpoint || !Number.isSafeInteger(envelope.checkpoint.number) || !/^0x[0-9a-fA-F]{64}$/.test(envelope.checkpoint.hash ?? "")) {
-    return { ok: false, reason: "Can't approve: the signing envelope has no checkpoint block, so the wallet can't sign it." };
+  if (
+    !envelope.checkpoint ||
+    !Number.isSafeInteger(envelope.checkpoint.number) ||
+    !/^0x[0-9a-fA-F]{64}$/.test(envelope.checkpoint.hash ?? "")
+  ) {
+    return {
+      ok: false,
+      reason:
+        "Can't approve: the signing envelope has no checkpoint block, so the wallet can't sign it.",
+    };
   }
-  if (Number.isNaN(envelopeExpiry)) return { ok: false, reason: "Can't approve: the signing envelope has no valid expiry time." };
-  if (envelopeExpiry <= now.getTime()) return { ok: false, reason: "Can't approve: the signing envelope has already expired." };
-  const expiresAt = new Date(Math.min(envelopeExpiry, now.getTime() + policy.maxApprovalSeconds * 1000)).toISOString();
+  if (Number.isNaN(envelopeExpiry))
+    return { ok: false, reason: "Can't approve: the signing envelope has no valid expiry time." };
+  if (envelopeExpiry <= now.getTime())
+    return { ok: false, reason: "Can't approve: the signing envelope has already expired." };
+  const expiresAt = new Date(
+    Math.min(envelopeExpiry, now.getTime() + policy.maxApprovalSeconds * 1000),
+  ).toISOString();
 
   const binding = buildBinding(input, expiresAt);
   const hash = digest("seam/approval/v1", binding);
@@ -115,7 +168,10 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
  * in one go, before broadcasting": safe against duplicates, but an RPC failure after it burns the approval.
  * Prefer ReservableApprovalStore (reserve -> broadcast -> commit | release | markUncertain).
  */
-export interface ApprovalStore { has(key: string): boolean; markUsed(key: string): void }
+export interface ApprovalStore {
+  has(key: string): boolean;
+  markUsed(key: string): void;
+}
 
 export type ReservationState = "reserved" | "committed" | "uncertain";
 export interface ReservationRecord {
@@ -150,47 +206,92 @@ export interface ReservableApprovalStore extends ApprovalStore {
   commit(key: string, opts: { txHash: Hex }): void;
   release(key: string): void;
   markUncertain(key: string, opts: { txHash?: Hex; note?: string }): void;
-  reconcile(key: string, opts: { outcome: "broadcast"; txHash: Hex } | { outcome: "not_broadcast" }): void;
+  reconcile(
+    key: string,
+    opts: { outcome: "broadcast"; txHash: Hex } | { outcome: "not_broadcast" },
+  ): void;
   stateOf(key: string): ReservationRecord | undefined;
 }
 
 export function isReservableStore(s: ApprovalStore): s is ReservableApprovalStore {
-  return typeof (s as ReservableApprovalStore).reserve === "function" && typeof (s as ReservableApprovalStore).stateOf === "function";
+  return (
+    typeof (s as ReservableApprovalStore).reserve === "function" &&
+    typeof (s as ReservableApprovalStore).stateOf === "function"
+  );
 }
 
 export class InMemoryApprovalStore implements ReservableApprovalStore {
   private records = new Map<string, ReservationRecord>();
   /** Reserved, committed and uncertain keys all count as "not available" (conservative: never a second send). */
-  has(key: string) { return this.records.has(key); }
+  has(key: string) {
+    return this.records.has(key);
+  }
   /** Legacy: reserve + commit in one step. Final. */
   markUsed(key: string) {
     const prev = this.records.get(key);
-    this.records.set(key, { key, state: "committed", idempotencyKey: prev?.idempotencyKey ?? key, txHash: prev?.txHash, at: new Date().toISOString() });
+    this.records.set(key, {
+      key,
+      state: "committed",
+      idempotencyKey: prev?.idempotencyKey ?? key,
+      txHash: prev?.txHash,
+      at: new Date().toISOString(),
+    });
   }
-  stateOf(key: string) { const r = this.records.get(key); return r ? { ...r } : undefined; }
+  stateOf(key: string) {
+    const r = this.records.get(key);
+    return r ? { ...r } : undefined;
+  }
   reserve(key: string, opts: { idempotencyKey: string; now?: Date }): ReserveResult {
     const existing = this.records.get(key);
-    if (existing) return { ok: false, reason: existing.state, record: { ...existing }, txHash: existing.txHash };
-    const record: ReservationRecord = { key, state: "reserved", idempotencyKey: opts.idempotencyKey, at: (opts.now ?? new Date()).toISOString() };
+    if (existing)
+      return {
+        ok: false,
+        reason: existing.state,
+        record: { ...existing },
+        txHash: existing.txHash,
+      };
+    const record: ReservationRecord = {
+      key,
+      state: "reserved",
+      idempotencyKey: opts.idempotencyKey,
+      at: (opts.now ?? new Date()).toISOString(),
+    };
     this.records.set(key, record);
     return { ok: true, record: { ...record } };
   }
   private need(key: string, op: string, allowed: ReservationState[]): ReservationRecord {
     const r = this.records.get(key);
     if (!r) throw new Error(`${op}: ${key} has no reservation`);
-    if (!allowed.includes(r.state)) throw new Error(`${op}: ${key} is ${r.state}${r.state === "uncertain" ? " and must be reconciled first" : ""}`);
+    if (!allowed.includes(r.state))
+      throw new Error(
+        `${op}: ${key} is ${r.state}${r.state === "uncertain" ? " and must be reconciled first" : ""}`,
+      );
     return r;
   }
-  commit(key: string, opts: { txHash: Hex }) { const r = this.need(key, "commit", ["reserved", "uncertain"]); r.state = "committed"; r.txHash = opts.txHash; }
-  release(key: string) { this.need(key, "release", ["reserved"]); this.records.delete(key); }
+  commit(key: string, opts: { txHash: Hex }) {
+    const r = this.need(key, "commit", ["reserved", "uncertain"]);
+    r.state = "committed";
+    r.txHash = opts.txHash;
+  }
+  release(key: string) {
+    this.need(key, "release", ["reserved"]);
+    this.records.delete(key);
+  }
   markUncertain(key: string, opts: { txHash?: Hex; note?: string }) {
     const r = this.need(key, "markUncertain", ["reserved", "uncertain"]);
-    r.state = "uncertain"; r.txHash = opts.txHash ?? r.txHash; r.note = opts.note ?? r.note;
+    r.state = "uncertain";
+    r.txHash = opts.txHash ?? r.txHash;
+    r.note = opts.note ?? r.note;
   }
-  reconcile(key: string, opts: { outcome: "broadcast"; txHash: Hex } | { outcome: "not_broadcast" }) {
+  reconcile(
+    key: string,
+    opts: { outcome: "broadcast"; txHash: Hex } | { outcome: "not_broadcast" },
+  ) {
     const r = this.need(key, "reconcile", ["uncertain"]);
-    if (opts.outcome === "broadcast") { r.state = "committed"; r.txHash = opts.txHash; }
-    else this.records.delete(key);
+    if (opts.outcome === "broadcast") {
+      r.state = "committed";
+      r.txHash = opts.txHash;
+    } else this.records.delete(key);
   }
 }
 
@@ -271,69 +372,138 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   const sequential = plan.mode === "sequential";
   if (i !== undefined) {
     const n = callsToSign(plan).length;
-    if (!sequential) reasons.push({ code: "send_index_invalid", message: "Blocked: only sequential plans are sent one step at a time; an atomic plan is one transaction." });
-    else if (!Number.isInteger(i) || i < 0 || i >= n) reasons.push({ code: "send_index_invalid", message: `Blocked: step ${i} doesn't exist in this ${n}-step plan.` });
+    if (!sequential)
+      reasons.push({
+        code: "send_index_invalid",
+        message:
+          "Blocked: only sequential plans are sent one step at a time; an atomic plan is one transaction.",
+      });
+    else if (!Number.isInteger(i) || i < 0 || i >= n)
+      reasons.push({
+        code: "send_index_invalid",
+        message: `Blocked: step ${i} doesn't exist in this ${n}-step plan.`,
+      });
     else {
       for (let j = 0; j < i; j++) {
-        const rec = isReservableStore(store) ? store.stateOf(usageKey(approval.hash, j)) : undefined;
-        const sent = isReservableStore(store) ? rec?.state === "committed" : store.has(usageKey(approval.hash, j));
+        const rec = isReservableStore(store)
+          ? store.stateOf(usageKey(approval.hash, j))
+          : undefined;
+        const sent = isReservableStore(store)
+          ? rec?.state === "committed"
+          : store.has(usageKey(approval.hash, j));
         if (!sent) {
-          reasons.push({ code: "out_of_order", message: `Blocked: step ${j + 1} hasn't been sent yet, so step ${i + 1} can't go first.` });
+          reasons.push({
+            code: "out_of_order",
+            message: `Blocked: step ${j + 1} hasn't been sent yet, so step ${i + 1} can't go first.`,
+          });
           break;
         }
       }
-      if (!reasons.some((x) => x.code === "out_of_order")) ok("step_order", `step ${i + 1} is next in order`);
+      if (!reasons.some((x) => x.code === "out_of_order"))
+        ok("step_order", `step ${i + 1} is next in order`);
       const prev = input.previousSteps ?? [];
-      if (prev.length !== i) reasons.push({ code: "previous_steps_missing", message: `Blocked: results for the ${i} earlier step(s) are needed before step ${i + 1}.` });
+      if (prev.length !== i)
+        reasons.push({
+          code: "previous_steps_missing",
+          message: `Blocked: results for the ${i} earlier step(s) are needed before step ${i + 1}.`,
+        });
       else {
         const gate = canRunNextStep(prev);
         if (!gate.ok) {
           reasons.push({ code: "previous_step_failed", message: `Blocked: ${gate.reason}` });
           if (gate.code) reasons.push({ code: gate.code, message: `Blocked: ${gate.reason}` });
-        }
-        else if (i > 0) ok("previous_steps_ok", `the ${i} earlier step(s) finalized and verified`);
+        } else if (i > 0)
+          ok("previous_steps_ok", `the ${i} earlier step(s) finalized and verified`);
       }
     }
   } else if (sequential && callsToSign(plan).length > 1 && input.previousSteps?.length) {
-    reasons.push({ code: "send_index_invalid", message: "Blocked: say which step is being sent (sendIndex) when sending a sequential plan step by step." });
+    reasons.push({
+      code: "send_index_invalid",
+      message:
+        "Blocked: say which step is being sent (sendIndex) when sending a sequential plan step by step.",
+    });
   }
   const keys = [usageKey(approval.hash, i), approval.hash];
-  const recs = isReservableStore(store) ? keys.map((k) => store.stateOf(k)).filter((r): r is ReservationRecord => !!r) : [];
+  const recs = isReservableStore(store)
+    ? keys.map((k) => store.stateOf(k)).filter((r): r is ReservationRecord => !!r)
+    : [];
   const uncertain = recs.find((r) => r.state === "uncertain");
   const reserved = recs.find((r) => r.state === "reserved");
   if (uncertain) {
-    reasons.push({ code: "approval_uncertain", message: "Blocked: an earlier send of this approval has an unknown outcome (it may have been broadcast). Look up its transaction hash / nonce and reconcile before doing anything else." });
+    reasons.push({
+      code: "approval_uncertain",
+      message:
+        "Blocked: an earlier send of this approval has an unknown outcome (it may have been broadcast). Look up its transaction hash / nonce and reconcile before doing anything else.",
+    });
   } else if (reserved) {
-    reasons.push({ code: "approval_reserved", message: "Blocked: another send of this approval is already in progress." });
+    reasons.push({
+      code: "approval_reserved",
+      message: "Blocked: another send of this approval is already in progress.",
+    });
   } else if (keys.some((k) => store.has(k)) || approval.used) {
-    reasons.push({ code: "approval_reused", message: i === undefined
-      ? "Blocked: this approval was already used. Each approval allows exactly one submission."
-      : `Blocked: step ${i + 1} of this approval was already sent. Each step can be sent once.` });
-  } else ok("approval_unused", i === undefined ? "this approval hasn't been used" : `step ${i + 1} of this approval hasn't been sent`);
+    reasons.push({
+      code: "approval_reused",
+      message:
+        i === undefined
+          ? "Blocked: this approval was already used. Each approval allows exactly one submission."
+          : `Blocked: step ${i + 1} of this approval was already sent. Each step can be sent once.`,
+    });
+  } else
+    ok(
+      "approval_unused",
+      i === undefined
+        ? "this approval hasn't been used"
+        : `step ${i + 1} of this approval hasn't been sent`,
+    );
   // The hash covers binding.expiresAt, not the top-level copy, so the bound value is the one that counts.
   const boundExpiry = Date.parse(approval.binding.expiresAt);
   if (approval.expiresAt !== approval.binding.expiresAt) {
-    reasons.push({ code: "approval_tampered", message: "Blocked: the approval's expiry was changed after it was approved." });
+    reasons.push({
+      code: "approval_tampered",
+      message: "Blocked: the approval's expiry was changed after it was approved.",
+    });
   } else if (Number.isNaN(boundExpiry)) {
-    reasons.push({ code: "approval_expired", message: "Blocked: this approval has no valid expiry time. Approve again." });
+    reasons.push({
+      code: "approval_expired",
+      message: "Blocked: this approval has no valid expiry time. Approve again.",
+    });
   } else if (boundExpiry <= now.getTime()) {
-    reasons.push({ code: "approval_expired", message: `Blocked: this approval expired at ${approval.binding.expiresAt}. Approve again.` });
+    reasons.push({
+      code: "approval_expired",
+      message: `Blocked: this approval expired at ${approval.binding.expiresAt}. Approve again.`,
+    });
   } else ok("approval_valid_time", `the approval is valid until ${approval.binding.expiresAt}`);
 
   if (plan.modeDowngrade && !approval.binding.modeDowngradeDigest) {
-    reasons.push({ code: "downgrade_not_approved", message: "Blocked: this plan is an atomic-to-sequential downgrade, and the approval doesn't acknowledge it." });
+    reasons.push({
+      code: "downgrade_not_approved",
+      message:
+        "Blocked: this plan is an atomic-to-sequential downgrade, and the approval doesn't acknowledge it.",
+    });
   }
-  const recomputed = buildBinding({ ...input, fingerprint: input.preparedFingerprint }, approval.binding.expiresAt);
+  const recomputed = buildBinding(
+    { ...input, fingerprint: input.preparedFingerprint },
+    approval.binding.expiresAt,
+  );
   if (digest("seam/approval/v1", approval.binding) !== approval.hash) {
-    reasons.push({ code: "approval_tampered", message: "Blocked: the approval's contents don't match its hash." });
+    reasons.push({
+      code: "approval_tampered",
+      message: "Blocked: the approval's contents don't match its hash.",
+    });
   } else ok("approval_intact", "the approval's contents match its hash");
-  const changed = (Object.keys(recomputed) as (keyof ApprovalBinding)[]).filter((k) => recomputed[k] !== approval.binding[k]);
+  const changed = (Object.keys(recomputed) as (keyof ApprovalBinding)[]).filter(
+    (k) => recomputed[k] !== approval.binding[k],
+  );
   if (changed.length) {
     reasons.push({
       code: "approval_mismatch",
       message: `Blocked: what's about to be sent differs from what was approved (${changed.join(", ")}). Review and approve again.`,
     });
-  } else ok("approval_matches", "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)");
+  } else
+    ok(
+      "approval_matches",
+      "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)",
+    );
 
   const lock = checkRuntimeLock(input.preparedFingerprint, input.currentFingerprint);
   if (!lock.ok) reasons.push({ code: "runtime_changed", message: lock.reason });
@@ -344,56 +514,136 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   let trusted = false;
   if (input.decodeSignedExtrinsic && input.signedExtrinsics) {
     const decoded: (DecodedSignedExtrinsic | null)[] = input.signedExtrinsics.map((x) => {
-      try { return input.decodeSignedExtrinsic!(x); } catch { return null; }
+      try {
+        return input.decodeSignedExtrinsic!(x);
+      } catch {
+        return null;
+      }
     });
     if (decoded.some((d) => !d)) {
-      reasons.push({ code: "signed_extrinsic_undecodable", message: "Blocked: a signed transaction couldn't be fully decoded, so what it does can't be checked." });
+      reasons.push({
+        code: "signed_extrinsic_undecodable",
+        message:
+          "Blocked: a signed transaction couldn't be fully decoded, so what it does can't be checked.",
+      });
       signed = [];
     } else {
       trusted = true;
       const ds = decoded as DecodedSignedExtrinsic[];
       signed = ds.map((d) => d.call.toLowerCase());
-      const wantSigner = normalizeAccount(input.envelope.signer) ?? input.envelope.signer.toLowerCase();
+      const wantSigner =
+        normalizeAccount(input.envelope.signer) ?? input.envelope.signer.toLowerCase();
       ds.forEach((d, n) => {
-        if ((normalizeAccount(d.signer) ?? d.signer.toLowerCase()) !== wantSigner) reasons.push({ code: "signed_signer_mismatch", message: `Blocked: signed transaction ${n + 1} was signed by a different account from the approved signer.` });
-        if (!d.signatureValid) reasons.push({ code: "signed_signature_invalid", message: `Blocked: the signature on signed transaction ${n + 1} is not valid.` });
-        if (d.nonce !== undefined && d.nonce !== input.envelope.nonce + n) reasons.push({ code: "signed_nonce_mismatch", message: `Blocked: signed transaction ${n + 1} uses nonce ${d.nonce}, not the approved ${input.envelope.nonce + n}.` });
-        if (d.genesisHash !== undefined && d.genesisHash.toLowerCase() !== input.preparedFingerprint.genesisHash.toLowerCase()) reasons.push({ code: "signed_chain_mismatch", message: `Blocked: signed transaction ${n + 1} was signed for a different chain.` });
+        if ((normalizeAccount(d.signer) ?? d.signer.toLowerCase()) !== wantSigner)
+          reasons.push({
+            code: "signed_signer_mismatch",
+            message: `Blocked: signed transaction ${n + 1} was signed by a different account from the approved signer.`,
+          });
+        if (!d.signatureValid)
+          reasons.push({
+            code: "signed_signature_invalid",
+            message: `Blocked: the signature on signed transaction ${n + 1} is not valid.`,
+          });
+        if (d.nonce !== undefined && d.nonce !== input.envelope.nonce + n)
+          reasons.push({
+            code: "signed_nonce_mismatch",
+            message: `Blocked: signed transaction ${n + 1} uses nonce ${d.nonce}, not the approved ${input.envelope.nonce + n}.`,
+          });
+        if (
+          d.genesisHash !== undefined &&
+          d.genesisHash.toLowerCase() !== input.preparedFingerprint.genesisHash.toLowerCase()
+        )
+          reasons.push({
+            code: "signed_chain_mismatch",
+            message: `Blocked: signed transaction ${n + 1} was signed for a different chain.`,
+          });
       });
     }
   }
-  if (input.requireTrustedDecoder && !trusted && !reasons.some((r) => r.code === "signed_extrinsic_undecodable")) {
-    reasons.push({ code: "trusted_decoder_required", message: "Blocked: this deployment only accepts signed transactions that SEAM decodes itself from the raw bytes, and no decoder/bytes were given. Wallet-reported call data is not trusted." });
+  if (
+    input.requireTrustedDecoder &&
+    !trusted &&
+    !reasons.some((r) => r.code === "signed_extrinsic_undecodable")
+  ) {
+    reasons.push({
+      code: "trusted_decoder_required",
+      message:
+        "Blocked: this deployment only accepts signed transactions that SEAM decodes itself from the raw bytes, and no decoder/bytes were given. Wallet-reported call data is not trusted.",
+    });
   }
   if (expected.length !== signed.length || expected.some((c, n) => c !== signed[n])) {
-    if (!reasons.some((r) => r.code === "signed_extrinsic_undecodable")) reasons.push({ code: "signed_bytes_mismatch", message: trusted ? "Blocked: the signed transactions contain different call data from the approved plan." : "Blocked: the wallet signed different call data from the approved plan." });
-  } else ok("signed_bytes_match", trusted
-    ? `the ${signed.length} call(s) decoded from the signed transaction bytes are exactly the approved calls`
-    : `the ${signed.length} signed call(s) are byte-for-byte the approved calls (as reported by the wallet; not independently decoded)`);
+    if (!reasons.some((r) => r.code === "signed_extrinsic_undecodable"))
+      reasons.push({
+        code: "signed_bytes_mismatch",
+        message: trusted
+          ? "Blocked: the signed transactions contain different call data from the approved plan."
+          : "Blocked: the wallet signed different call data from the approved plan.",
+      });
+  } else
+    ok(
+      "signed_bytes_match",
+      trusted
+        ? `the ${signed.length} call(s) decoded from the signed transaction bytes are exactly the approved calls`
+        : `the ${signed.length} signed call(s) are byte-for-byte the approved calls (as reported by the wallet; not independently decoded)`,
+    );
 
   const dry = input.signedDryRun ?? [];
   const relevant = i === undefined ? dry : [dry[i]];
   const needed = i === undefined ? signed.length : 1;
   if (relevant.includes("failed")) {
-    reasons.push({ code: "signed_dry_run_failed", message: "Blocked: the dry run of the signed transaction failed, so it would fail on chain." });
-  } else if (input.policy.requireSignedDryRun && (relevant.filter((d) => d !== undefined).length !== needed || relevant.some((d) => d !== "ok"))) {
-    reasons.push({ code: "signed_dry_run_missing", message: i === undefined
-      ? "Blocked: the policy needs a successful dry run of each signed transaction before sending, and one is missing or unknown. For sequential plans, check each step just before sending it (sendIndex)."
-      : `Blocked: the policy needs a successful dry run of step ${i + 1} just before sending it, and it's missing or unknown.` });
-  } else if (!input.policy.requireSignedDryRun && relevant.filter((d) => d !== undefined).length === 0) {
-    ok("signed_dry_run_not_checked", "no dry run of the signed transaction was done; only pre-sign estimates back this send (weaker proof)");
-  } else if (relevant.length > 0 && relevant.filter((d) => d !== undefined).length === needed && relevant.every((d) => d === "ok")) {
-    ok("signed_dry_run_ok", i === undefined ? "the dry run of the signed transaction(s) succeeded" : `the dry run of signed step ${i + 1} succeeded`);
+    reasons.push({
+      code: "signed_dry_run_failed",
+      message: "Blocked: the dry run of the signed transaction failed, so it would fail on chain.",
+    });
+  } else if (
+    input.policy.requireSignedDryRun &&
+    (relevant.filter((d) => d !== undefined).length !== needed || relevant.some((d) => d !== "ok"))
+  ) {
+    reasons.push({
+      code: "signed_dry_run_missing",
+      message:
+        i === undefined
+          ? "Blocked: the policy needs a successful dry run of each signed transaction before sending, and one is missing or unknown. For sequential plans, check each step just before sending it (sendIndex)."
+          : `Blocked: the policy needs a successful dry run of step ${i + 1} just before sending it, and it's missing or unknown.`,
+    });
+  } else if (
+    !input.policy.requireSignedDryRun &&
+    relevant.filter((d) => d !== undefined).length === 0
+  ) {
+    ok(
+      "signed_dry_run_not_checked",
+      "no dry run of the signed transaction was done; only pre-sign estimates back this send (weaker proof)",
+    );
+  } else if (
+    relevant.length > 0 &&
+    relevant.filter((d) => d !== undefined).length === needed &&
+    relevant.every((d) => d === "ok")
+  ) {
+    ok(
+      "signed_dry_run_ok",
+      i === undefined
+        ? "the dry run of the signed transaction(s) succeeded"
+        : `the dry run of signed step ${i + 1} succeeded`,
+    );
   }
 
   return { ok: reasons.length === 0, reasons, passed };
 }
 
 export type NextStepCode =
-  | "step_failed" | "step_not_finalized" | "verification_failed" | "verification_unknown"
-  | "receipt_data_missing" | "contract_outcome_failed";
+  | "step_failed"
+  | "step_not_finalized"
+  | "verification_failed"
+  | "verification_unknown"
+  | "receipt_data_missing"
+  | "contract_outcome_failed";
 
-const FAILURE_EVENTS = ["System.ExtrinsicFailed", "Contracts.ContractTrapped", "Revive.ContractReverted", "Contracts.ContractReverted"];
+const FAILURE_EVENTS = [
+  "System.ExtrinsicFailed",
+  "Contracts.ContractTrapped",
+  "Revive.ContractReverted",
+  "Contracts.ContractReverted",
+];
 
 /**
  * Sequential runs: a dependent step may only start if EVERY earlier step is finalized AND verified, has a tx hash and
@@ -402,14 +652,25 @@ const FAILURE_EVENTS = ["System.ExtrinsicFailed", "Contracts.ContractTrapped", "
  * reported as not_run (see markNotRun). There is deliberately no relaxed mode; if one is ever added it must be a
  * separate, visibly weaker policy and must never be called "verified".
  */
-export function canRunNextStep(previous: ReceiptStep[]): { ok: boolean; reason: string; code?: NextStepCode } {
+export function canRunNextStep(previous: ReceiptStep[]): {
+  ok: boolean;
+  reason: string;
+  code?: NextStepCode;
+} {
   for (const s of previous) {
-    const stop = (code: NextStepCode, why: string) => ({ ok: false as const, code, reason: `Stopped: step ${s.actionId} ${why}, so later steps were not run.` });
+    const stop = (code: NextStepCode, why: string) => ({
+      ok: false as const,
+      code,
+      reason: `Stopped: step ${s.actionId} ${why}, so later steps were not run.`,
+    });
     if (s.status === "failed") return stop("step_failed", "failed");
-    if (s.status !== "finalized") return stop("step_not_finalized", `is ${s.status}, not finalized yet`);
+    if (s.status !== "finalized")
+      return stop("step_not_finalized", `is ${s.status}, not finalized yet`);
     if (s.verification === "not_verified") return stop("verification_failed", "did not verify");
-    if (s.verification !== "verified") return stop("verification_unknown", "finalized but its effect could not be verified");
-    if (!s.txHash || !s.block) return stop("receipt_data_missing", "has no transaction hash or block in its receipt");
+    if (s.verification !== "verified")
+      return stop("verification_unknown", "finalized but its effect could not be verified");
+    if (!s.txHash || !s.block)
+      return stop("receipt_data_missing", "has no transaction hash or block in its receipt");
     const failed = (s.events ?? []).find((e) => FAILURE_EVENTS.includes(e));
     if (failed) return stop("contract_outcome_failed", `reported ${failed}`);
   }
@@ -417,14 +678,33 @@ export function canRunNextStep(previous: ReceiptStep[]): { ok: boolean; reason: 
 }
 
 /** Appends a not_run step (with the stop reason) for every planned action that has no receipt step yet. */
-export function markNotRun(done: ReceiptStep[], plannedActionIds: string[], reason: string): ReceiptStep[] {
+export function markNotRun(
+  done: ReceiptStep[],
+  plannedActionIds: string[],
+  reason: string,
+): ReceiptStep[] {
   const have = new Set(done.map((s) => s.actionId));
-  return [...done, ...plannedActionIds.filter((id) => !have.has(id)).map((actionId): ReceiptStep => ({ actionId, status: "not_run", events: [], verification: "unknown", reason }))];
+  return [
+    ...done,
+    ...plannedActionIds
+      .filter((id) => !have.has(id))
+      .map((actionId): ReceiptStep => ({
+        actionId,
+        status: "not_run",
+        events: [],
+        verification: "unknown",
+        reason,
+      })),
+  ];
 }
 
 /** Overall receipt result: verified only when every step finalized and verified; partial if something didn't run. */
 export function overallResult(steps: ReceiptStep[]): "verified" | "partial" | "not_verified" {
-  if (steps.length > 0 && steps.every((s) => s.status === "finalized" && s.verification === "verified")) return "verified";
+  if (
+    steps.length > 0 &&
+    steps.every((s) => s.status === "finalized" && s.verification === "verified")
+  )
+    return "verified";
   if (steps.some((s) => s.status === "not_run")) return "partial";
   return "not_verified";
 }

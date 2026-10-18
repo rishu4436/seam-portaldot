@@ -13,7 +13,17 @@
     "build": "npm run build -w @seam/compiler && npm run build -w @seam/policy && npm run build -w @seam/chain && npm run build -w @seam/sdk && npm run build -w @seam/console",
     "test": "npm test -w @seam/compiler && npm test -w @seam/policy && npm test -w @seam/sdk && npm test -w @seam/chain && npm test -w @seam/console",
     "smoke:pack": "bash scripts/pack-smoke.sh",
-    "test:e2e": "bash tests/e2e/run.sh"
+    "test:e2e": "bash tests/e2e/run.sh",
+    "lint": "eslint .",
+    "format": "prettier --write packages/policy eslint.config.mjs",
+    "format:check": "prettier --check packages/policy eslint.config.mjs .prettierrc.json"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^15.15.0",
+    "prettier": "^3.9.10",
+    "typescript-eslint": "^8.71.2"
+  }
 }
