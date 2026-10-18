@@ -7,6 +7,8 @@ import { encodeInkMessage } from './ink.js';
 import {
   SeamCompileError,
   type ActionKind,
+  type AtomicRollbackProof,
+  type ModeDowngrade,
   type Capability,
   type CompileIssue,
   type CompileOptions,
@@ -274,6 +276,9 @@ function validateManifestShape(m: unknown, issues: CompileIssue[]): m is Manifes
   if (!isObject(m.signer) || typeof m.signer.value !== 'string' || !['ss58', 'accountId32', 'h160'].includes(m.signer.type as string)) {
     issues.push({ code: 'MANIFEST_INVALID', path: 'signer', message: "signer must be {type: 'ss58'|'accountId32'|'h160', value}" });
   }
+  if (m.atomicRequired !== undefined && typeof m.atomicRequired !== 'boolean') {
+    issues.push({ code: 'MANIFEST_INVALID', path: 'atomicRequired', message: 'atomicRequired must be true or false' });
+  }
   if (m.chain !== undefined && (!isObject(m.chain) || typeof m.chain.genesisHash !== 'string' || typeof m.chain.specVersion !== 'number')) {
     issues.push({ code: 'MANIFEST_INVALID', path: 'chain', message: 'chain must be {genesisHash, specVersion}' });
   }
@@ -314,6 +319,9 @@ function validateFacts(facts: RuntimeFacts, issues: CompileIssue[]): LoadedRunti
   }
   if (!['verified', 'unknown', 'not_supported'].includes(facts.behaviour?.batchAllRollback)) {
     bad("behaviour.batchAllRollback must be 'verified', 'unknown' or 'not_supported'");
+  }
+  if (facts.signingAccountBytes !== undefined && facts.signingAccountBytes !== 20 && facts.signingAccountBytes !== 32) {
+    bad('signingAccountBytes must be 20 or 32');
   }
   let rt: LoadedRuntime;
   try {
@@ -452,15 +460,34 @@ function encodeStep(rt: LoadedRuntime, kind: ActionKind, cap: Capability, v: Val
   }
 }
 
-function signerFor(m: Manifest, ss58Prefix: number, issues: CompileIssue[]): PlanSigner | undefined {
+function domainMismatch(signerBytes: 20 | 32, requiredBytes: 20 | 32): CompileIssue {
+  const name = (n: number) => (n === 20 ? 'H160' : 'AccountId32');
+  return {
+    code: 'SIGNER_DOMAIN_MISMATCH',
+    path: 'signer',
+    message:
+      `the manifest signer is a ${signerBytes}-byte ${name(signerBytes)} account, but this runtime's facts require a ${requiredBytes}-byte ${name(requiredBytes)} signing account. ` +
+      'SEAM does not convert between the 20-byte and 32-byte domains (no implicit conversion, padding or hashing); supply a signer in the required domain.'
+  };
+}
+
+function signerFor(m: Manifest, ss58Prefix: number, issues: CompileIssue[], requiredBytes: 20 | 32): PlanSigner | undefined {
   const s = m.signer;
   if (s.type === 'h160') {
+    if (requiredBytes !== 20) {
+      issues.push(domainMismatch(20, requiredBytes));
+      return undefined;
+    }
     if (!m.actions.every((a) => a.kind === 'revive.call')) {
       issues.push({ code: 'ADDRESS_TYPE', path: 'signer', message: 'an h160 signer can only be used for revive.call; native calls need an AccountId32 signer' });
       return undefined;
     }
     const h = parseH160(s.value, 'signer.value', issues);
     return h ? { type: 'h160', value: h, publicKey: h } : undefined;
+  }
+  if (requiredBytes !== 32) {
+    issues.push(domainMismatch(32, requiredBytes));
+    return undefined;
   }
   if (s.ss58Prefix !== undefined && s.ss58Prefix !== ss58Prefix) {
     issues.push({ code: 'SS58_PREFIX', path: 'signer.ss58Prefix', message: `signer declares SS58 prefix ${s.ss58Prefix}, this chain uses ${ss58Prefix}` });
@@ -479,35 +506,84 @@ function signerFor(m: Manifest, ss58Prefix: number, issues: CompileIssue[]): Pla
   return { type: s.type, value: s.type === 'ss58' ? a.ss58 : a.accountId, publicKey: a.accountId };
 }
 
+const NO_V3_METADATA_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>(['revive.call', 'nfts.mint']);
+
+const PARTIAL_EXECUTION_RISK =
+  'Steps would run one after another instead of in one all-or-nothing batch. If a later step fails, earlier steps stay on chain and are not rolled back, so the result can be partly executed.';
+
+/**
+ * Checks an atomic rollback proof against the facts and the kinds in the plan. Only a proof that matches
+ * this chain (genesis), this runtime (metadata hash, spec version) and covers every kind in the plan counts.
+ */
+export function evaluateRollbackProof(facts: RuntimeFacts, kinds: readonly ActionKind[]): { ok: true } | { ok: false; reason: string } {
+  const proof = facts.behaviour.batchAllRollbackProof as AtomicRollbackProof | undefined;
+  if (proof === undefined) {
+    return { ok: false, reason: "the facts say 'verified' with no proof object (deprecated bare string; it proves nothing about this chain)" };
+  }
+  const no = (reason: string) => ({ ok: false as const, reason: `the rollback proof is rejected: ${reason}` });
+  if (!isObject(proof)) return no('proof is not an object');
+  const fp = facts.fingerprint;
+  const hex32 = (v: unknown) => typeof v === 'string' && /^0x[0-9a-fA-F]{64}$/.test(v);
+  const eq = (a: unknown, b: string) => typeof a === 'string' && a.toLowerCase() === b.toLowerCase();
+  if (!hex32(proof.genesisHash) || !eq(proof.genesisHash, fp.genesisHash)) return no(`genesisHash ${String(proof.genesisHash)} is not this chain (${fp.genesisHash})`);
+  if (!hex32(proof.metadataHash) || !eq(proof.metadataHash, fp.metadataHash)) return no(`metadataHash ${String(proof.metadataHash)} is not this runtime's (${fp.metadataHash})`);
+  if (proof.specVersion !== fp.specVersion) return no(`specVersion ${String(proof.specVersion)} is not this runtime's (${fp.specVersion})`);
+  if (proof.fingerprintDigest !== undefined && !eq(proof.fingerprintDigest, facts.fingerprintDigest)) return no('fingerprintDigest does not match the facts');
+  if (!hex32(proof.txHash) && !hex32(proof.blockHash)) return no('txHash or blockHash (0x + 64 hex) is required');
+  const present = (v: unknown) => v !== undefined && v !== null && !(typeof v === 'string' && v === '') && !(isObject(v) && Object.keys(v).length === 0);
+  if (!present(proof.preState)) return no('preState evidence is missing');
+  if (!present(proof.postState)) return no('postState evidence is missing');
+  if (!Array.isArray(proof.composition) || proof.composition.length === 0) return no('composition (the call kinds that were tested) is missing');
+  const missing = [...new Set(kinds)].filter((k) => !proof.composition.includes(k));
+  if (missing.length) return no(`composition covers ${proof.composition.join(', ')} but this plan also uses ${missing.join(', ')}`);
+  return { ok: true };
+}
+
+interface ModeChoice {
+  mode: PlanMode;
+  modeReason: string;
+  /** Set when a batch was not possible; says why. compile() turns it into a downgrade or an atomicRequired block. */
+  atomicBlock?: string;
+}
+
 function selectMode(
   steps: PlanStep[],
   actions: ManifestAction[],
   facts: RuntimeFacts,
-  options: CompileOptions
-): { mode: PlanMode; modeReason: string } {
+  options: CompileOptions,
+  atomicRequired: boolean
+): ModeChoice {
   const unavailable = steps.filter((s) => s.status === 'unavailable');
   if (unavailable.length) {
     return { mode: 'unavailable', modeReason: `Cannot run: ${unavailable.map((s) => `step "${s.actionId}": ${s.reason}`).join('; ')}` };
   }
   if (actions.some((a) => a.preferredMode === 'sequential')) {
-    return { mode: 'sequential', modeReason: 'The manifest asks for sequential execution.' };
+    return { mode: 'sequential', modeReason: 'The manifest asks for sequential execution.', atomicBlock: atomicRequired ? 'the manifest also asks for sequential execution (preferredMode "sequential" conflicts with atomicRequired)' : undefined };
   }
   const wantsAtomic = actions.some((a) => a.preferredMode === 'atomic');
-  const fallback = (why: string) => ({
-    mode: 'sequential' as const,
-    modeReason: wantsAtomic ? `Atomic execution was requested but is not available: ${why}. Steps run one after another; a failure stops later steps.` : `${why}. Steps run one after another; a failure stops later steps.`
+  const fallback = (why: string): ModeChoice => ({
+    mode: 'sequential',
+    modeReason: wantsAtomic ? `Atomic execution was requested but is not available: ${why}. Steps run one after another; a failure stops later steps.` : `${why}. Steps run one after another; a failure stops later steps.`,
+    atomicBlock: why
   });
   const batch = facts.capabilities[BATCH_CAPABILITY];
   if (!batch || batch.status !== 'observed') return fallback(`${BATCH_CAPABILITY} is not on this runtime`);
   const rollback = facts.behaviour.batchAllRollback;
+  let unverifiedWhy = `${BATCH_CAPABILITY} exists but its rollback on failure is not verified`;
+  let unverifiedNote = 'rollback on failure has NOT been verified on this runtime';
   if (rollback === 'verified') {
-    return { mode: 'atomic_verified', modeReason: `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has been verified on this runtime.` };
-  }
-  if (rollback === 'unknown') {
-    if (options.allowAtomicUnverified) {
-      return { mode: 'atomic_unverified', modeReason: `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has NOT been verified on this runtime (allowed by allowAtomicUnverified).` };
+    const proof = evaluateRollbackProof(facts, actions.map((a) => a.kind));
+    if (proof.ok) {
+      return { mode: 'atomic_verified', modeReason: `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has been verified on this runtime.` };
     }
-    return fallback(`${BATCH_CAPABILITY} exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway)`);
+    unverifiedWhy = `${BATCH_CAPABILITY} rollback is claimed verified but ${proof.reason}`;
+    unverifiedNote = `rollback on failure is NOT proven for this runtime (${proof.reason})`;
+  }
+  if (rollback === 'unknown' || rollback === 'verified') {
+    if (options.allowAtomicUnverified) {
+      return { mode: 'atomic_unverified', modeReason: `All steps go in one ${BATCH_CAPABILITY}; ${unverifiedNote} (allowed by allowAtomicUnverified).` };
+    }
+    return fallback(`${unverifiedWhy} (set allowAtomicUnverified to batch anyway)`);
   }
   return fallback(`${BATCH_CAPABILITY} does not roll back on failure on this runtime`);
 }
@@ -535,7 +611,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
     }
   }
 
-  const signer = signerFor(manifest, fp.ss58Prefix, issues);
+  const signer = signerFor(manifest, fp.ss58Prefix, issues, facts.signingAccountBytes ?? 32);
   const validated = manifest.actions.map((a, i) => validateAction(a, i, fp.ss58Prefix, issues, options));
   if (issues.length) throw new SeamCompileError(issues);
 
@@ -562,7 +638,13 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
       encodedCall: null,
       status: 'unavailable'
     };
-    if (!cap || cap.status === 'not_observed') {
+    if (NO_V3_METADATA_KINDS.has(action.kind)) {
+      // TODO(SEAM-006/007): needs REAL observed Portaldot V3 metadata for Revive (call: dest/value/weight/storage deposit/data)
+      // and Nfts (mint: collection/item/mint_to/witness). Until a V3 runtime's metadata is captured and pinned as a fixture,
+      // encoding either kind would be guessing the layout. Remove this branch only together with fixture-backed encoders + tests.
+      step.reason = `${capability} cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec ${fp.specVersion})`;
+      step.reasonCode = 'NO_OBSERVED_V3_METADATA';
+    } else if (!cap || cap.status === 'not_observed') {
       step.reason = `${capability} is not on this runtime (spec ${fp.specVersion})`;
     } else if (cap.status === 'unknown') {
       step.reason = `${capability} could not be confirmed on this runtime (spec ${fp.specVersion}); discovery did not finish reading it`;
@@ -590,10 +672,23 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
   if (issues.length) throw new SeamCompileError(issues);
 
   const effectiveActions = manifest.actions;
-  let { mode, modeReason } = selectMode(steps, effectiveActions, facts, options);
+  const choice = selectMode(steps, effectiveActions, facts, options, manifest.atomicRequired === true);
+  let { mode, modeReason } = choice;
+  let modeDowngrade: ModeDowngrade | undefined;
   if (steps.length === 1 && (mode === 'atomic_verified' || mode === 'atomic_unverified')) {
     mode = 'sequential';
     modeReason = 'Single step: it is atomic on its own, so no batch is needed.';
+  } else if (steps.length > 1 && choice.atomicBlock !== undefined && manifest.atomicRequired === true) {
+    mode = 'unavailable';
+    modeReason = `Atomic execution is required (atomicRequired) but is not available: ${choice.atomicBlock}. No calls are produced.`;
+    for (const st of steps) {
+      st.encodedCall = null;
+      st.status = 'unavailable';
+      st.reason = 'not executable: atomic execution is required but not available';
+      st.reasonCode = 'ATOMIC_REQUIRED_UNAVAILABLE';
+    }
+  } else if (steps.length > 1 && choice.atomicBlock !== undefined && effectiveActions.some((a) => a.preferredMode === 'atomic')) {
+    modeDowngrade = { from: 'atomic', to: 'sequential', requiresApproval: true, partialExecutionRisk: PARTIAL_EXECUTION_RISK };
   }
 
   const plan: Omit<Plan, 'planDigest'> & { planDigest?: Hex } = {
@@ -603,6 +698,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
     signer: signer!,
     mode,
     modeReason,
+    ...(modeDowngrade ? { modeDowngrade } : {}),
     steps
   };
 

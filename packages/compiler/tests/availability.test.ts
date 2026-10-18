@@ -13,14 +13,15 @@ describe('capabilities missing from the runtime', () => {
     const p = compile(single({ id: 'nft', kind: 'nfts.mint', args: { collection: 0, item: 1, recipient: BOB } }), facts);
     expect(p.mode).toBe('unavailable');
     expect(p.steps[0]).toMatchObject({ status: 'unavailable', capability: 'Nfts.mint', palletIndex: null, callIndex: null, encodedCall: null });
-    expect(p.steps[0]!.reason).toBe('Nfts.mint is not on this runtime (spec 1002)');
+    expect(p.steps[0]!.reason).toMatch(/^Nfts\.mint cannot be compiled: no observed V3 Revive\/Nfts metadata exists/);
+    expect(p.steps[0]!.reasonCode).toBe('NO_OBSERVED_V3_METADATA');
     expect(p.outerCall).toBeUndefined();
   });
 
   it('revive.call -> step unavailable with a plain reason', () => {
     const p = compile(single({ id: 'r', kind: 'revive.call', args: { contract: H160, value: '0', data: '0x00' } }), facts);
     expect(p.mode).toBe('unavailable');
-    expect(p.steps[0]!.reason).toBe('Revive.call is not on this runtime (spec 1002)');
+    expect(p.steps[0]!.reason).toMatch(/^Revive\.call cannot be compiled: no observed V3 Revive\/Nfts metadata exists/);
   });
 
   it('one unavailable step makes the whole plan unavailable, other steps still shown encoded', () => {
@@ -28,7 +29,7 @@ describe('capabilities missing from the runtime', () => {
     m.actions.push({ id: 'nft', kind: 'nfts.mint', args: { collection: '0', item: '1', recipient: BOB } });
     const p = compile(m, facts);
     expect(p.mode).toBe('unavailable');
-    expect(p.modeReason).toContain('step "nft": Nfts.mint is not on this runtime (spec 1002)');
+    expect(p.modeReason).toContain('step "nft": Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists');
     expect(p.steps.slice(0, 3).every((s) => s.status === 'ok' && s.encodedCall)).toBe(true);
     expect(p.outerCall).toBeUndefined();
   });

@@ -2,6 +2,7 @@ import { expandMetadata } from '@polkadot/types';
 import { DOMAIN, digestJson } from './canonical.js';
 import { NO_PINNED_TYPES, loadRuntime, withoutLookupWarning, type LoadedRuntime } from './runtime.js';
 import type {
+  AtomicRollbackProof,
   BatchAllRollback,
   Capability,
   CapabilityArg,
@@ -44,6 +45,16 @@ export interface FactsFromMetadataInput {
   ss58Prefix?: number;
   /** Behaviour that metadata cannot show. Defaults to 'unknown' (or 'not_supported' when Utility.batch_all is absent). */
   batchAllRollback?: BatchAllRollback;
+  /** Evidence for 'verified'; without a matching proof the compiler will not produce atomic_verified. */
+  batchAllRollbackProof?: AtomicRollbackProof;
+  /** state_version from RuntimeVersion. Recorded in facts only; not part of the fingerprint. */
+  stateVersion?: number;
+  /** Optional; must equal the metadata version read from the bytes. */
+  metadataVersion?: number;
+  /** Whether tokenSymbol/tokenDecimals were 'declared' by the caller (default) or 'observed' on chain. */
+  tokenProvenance?: { tokenSymbol: 'declared' | 'observed'; tokenDecimals: 'declared' | 'observed' };
+  /** 32 (AccountId32, default) or 20 (H160) signing account size on this runtime. */
+  signingAccountBytes?: 20 | 32;
   endpoint?: string;
   blockNumber?: number;
 }
@@ -136,6 +147,10 @@ export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
   check('specVersion', input.specVersion, specVersion);
   check('transactionVersion', input.transactionVersion, transactionVersion);
   check('ss58Prefix', input.ss58Prefix, ss58Prefix);
+  check('metadataVersion', input.metadataVersion, rt.metadataVersion);
+  if (input.stateVersion !== undefined && !(Number.isInteger(input.stateVersion) && input.stateVersion >= 0)) {
+    throw new Error('stateVersion must be a non-negative integer');
+  }
   if (rt.typesBundleHash !== null && rt.pinned.specVersion !== undefined && rt.pinned.specVersion !== specVersion) {
     throw new Error(`the pinned types file is for spec ${rt.pinned.specVersion}${rt.pinned.chain ? ` (${rt.pinned.chain})` : ''}, this runtime is ${specName} spec ${specVersion}`);
   }
@@ -161,9 +176,14 @@ export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
     fingerprint,
     fingerprintDigest: computeFingerprintDigest(fingerprint),
     capabilities,
-    behaviour: { batchAllRollback },
+    behaviour: input.batchAllRollbackProof ? { batchAllRollback, batchAllRollbackProof: input.batchAllRollbackProof } : { batchAllRollback },
+    // Not part of the fingerprint (fingerprint schema stays V1); see types.ts.
+    metadataVersion: rt.metadataVersion,
+    tokenProvenance: input.tokenProvenance ?? { tokenSymbol: 'declared', tokenDecimals: 'declared' },
     source: { metadataHex: input.metadataHex.trim() as Hex, typesBundle: rt.typesBundleHash === null ? NO_PINNED_TYPES : input.typesBundle! }
   };
+  if (input.stateVersion !== undefined) facts.stateVersion = input.stateVersion;
+  if (input.signingAccountBytes !== undefined) facts.signingAccountBytes = input.signingAccountBytes;
   if (input.endpoint !== undefined) facts.endpoint = input.endpoint;
   if (input.blockNumber !== undefined) facts.blockNumber = input.blockNumber;
   return facts;
