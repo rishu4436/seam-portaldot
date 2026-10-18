@@ -23,7 +23,7 @@ Status is **done** or **pending**, based on what is in the repo at `180332a` (Oc
 - [ ] Testnet info (V3 RPC, faucet). Owner: Rishu. Pending.
 - [x] `scripts/testnet-run.mjs`. Owner: Bot 4, branch `bot4/testnet-ready`. Done (merged). Tested on the local dev node only; not yet run on Portaldot V3. Docs: `packages/chain/docs/testnet-run.md`.
 - [ ] Addresses and tx hashes file under `evidence/` (testnet). Owner: Bot 4. Pending. Today `evidence/devnode/` holds local-chain recordings only.
-- [ ] Architecture diagram (required at check-in). Owner: Bot 1. Pending.
+- [x] Architecture diagram (required at check-in). Owner: Bot 1. Done (`docs/architecture.md`).
 - [ ] Demo video of 3 minutes or less, showing the real product and how it uses Portaldot. Owner: Bot 1. Storyboard drafted in `docs/pitch/video-storyboard.md`; recording pending (needs the real testnet run).
 - [ ] Pitch deck: problem, why Portaldot, proof it works. Owner: Bot 1. Outline drafted in `docs/pitch/deck-outline.md`; slides pending.
 - [x] No secrets in the repo. Owner: Bot 6. Done as of `180332a`: a grep over tracked files for private-key blocks, AWS and `sk-`/`xai-` style keys, and `api_key`/`secret`/`mnemonic = "..."` assignments found nothing, and no `.env` or `.pem` files are tracked. This was a quick scan, not a full audit. Re-run it before submitting.
