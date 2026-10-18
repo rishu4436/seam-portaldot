@@ -271,3 +271,11 @@ step that is unavailable with its reason. It never signs or submits. (Submitting
   with `ABI_ARGS_INVALID` rather than guessed. Return values and events are not decoded by the compiler.
 - `Contracts.call` shapes other than the two above (e.g. a future extra argument) make the step `unavailable` with a reason.
 - polkadot.js prints `Unable to map [u8; 32] to a lookup index` once while converting V13 metadata. It's harmless.
+
+## Audit notes (SEAM-006/007/009/011/012/013)
+
+- `Manifest.atomicRequired` (boolean, optional; in the manifest digest only when present). Required atomic that cannot be met -> plan `mode: 'unavailable'`, every step `encodedCall: null`, `reasonCode: 'ATOMIC_REQUIRED_UNAVAILABLE'`. `preferredMode: 'atomic'` that falls back sets `Plan.modeDowngrade` (`requiresApproval: true`).
+- `atomic_verified` needs `facts.behaviour.batchAllRollbackProof` matching genesis + metadataHash + specVersion and covering the plan's action kinds. A bare `'verified'` string is the deprecated path: at best `atomic_unverified` (with `allowAtomicUnverified`), never `atomic_verified`.
+- `SIGNER_DOMAIN_MISMATCH`: 20-byte H160 signer vs 32-byte AccountId32 signing account (`facts.signingAccountBytes`, default 32). No conversion.
+- Facts now also carry `metadataVersion`, optional `stateVersion` and `tokenProvenance` (declared/observed). None of them feed the fingerprint; fingerprint schema is unchanged (V1), so `fingerprintDigest` is byte-identical.
+- TODO (SEAM-006/007): `revive.call` and `nfts.mint` always compile to an unavailable step (`reasonCode: 'NO_OBSERVED_V3_METADATA'`). To implement them we need real, captured Portaldot V3 metadata containing the Revive and Nfts pallets, pinned as a fixture, then fixture-backed encoders with tests. Nothing is guessed until then.

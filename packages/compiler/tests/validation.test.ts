@@ -14,13 +14,14 @@ describe('address checks', () => {
   it('rejects an H160 recipient for a native call', () => {
     expectIssue(() => compile(withArg(0, 'recipient', H160), facts), 'ADDRESS_TYPE', 'actions[0].args.recipient');
   });
-  it('rejects an H160 signer for native calls', () => {
-    expectIssue(() => compile({ ...m(), signer: { type: 'h160', value: H160 } }, facts), 'ADDRESS_TYPE', 'signer');
+  it('rejects an H160 signer for native calls (domain mismatch on a 32-byte runtime; ADDRESS_TYPE on a 20-byte one)', () => {
+    expectIssue(() => compile({ ...m(), signer: { type: 'h160', value: H160 } }, facts), 'SIGNER_DOMAIN_MISMATCH', 'signer');
+    expectIssue(() => compile({ ...m(), signer: { type: 'h160', value: H160 } }, { ...facts, signingAccountBytes: 20 }), 'ADDRESS_TYPE', 'signer');
   });
   it('allows an H160 signer only when every action is revive.call', () => {
     const p = compile(
       { version: 1, signer: { type: 'h160', value: H160 }, actions: [{ id: 'r', kind: 'revive.call', args: { contract: H160, value: '0', data: '0x' } }] },
-      facts
+      { ...facts, signingAccountBytes: 20 }
     );
     expect(p.signer.type).toBe('h160');
     expect(p.mode).toBe('unavailable'); // Revive is not on spec 1002
