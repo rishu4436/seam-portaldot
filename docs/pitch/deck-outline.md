@@ -25,7 +25,7 @@ Honesty rule: all live proof is a local dev chain (spec 100). No Portaldot V3 te
 
 5. **Built from the chain's own metadata**
    - Pallet and call indexes come from live metadata, never hard-coded; ink! calls by message name + pinned ABI.
-   - A missing pallet is a plain answer: `Nfts.mint is not on this runtime (spec 1002)`.
+   - An action SEAM cannot honestly compile is a plain answer, not a guess: `Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists` (spec 1002).
    - Visual: terminal screenshot of `seam compile` on the missing-pallet Manifest (last line highlighted).
 
 6. **What it blocks (real codes)**
