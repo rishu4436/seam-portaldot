@@ -1,0 +1,56 @@
+{
+ "setupAt": "2026-10-18T05:13:50.076Z",
+ "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+ "steps": [
+  {
+   "what": "asset 1 already exists, skipped create/mint"
+  },
+  {
+   "what": "Contracts.instantiate_with_code(seam_demo.contract, constructor new 0x9bae9d5e, storage_deposit_limit null)",
+   "codeHash": "0x1fa93c546eaf0e392aca9ffcb6e5acadf674f5e39d70b058fd7228a98f606128",
+   "txHash": "0x68e123ee63a62afc829aa2d5ed3307306b131a70915a815780b80ed3d503a74f",
+   "status": "finalized",
+   "history": [
+    "submitted",
+    "in_block",
+    "finalized"
+   ],
+   "block": {
+    "number": 32,
+    "hash": "0x052d2825e0aa56aa9afeb0acd1e5ecff03990974094d8a65d35a98a4044bbb96"
+   },
+   "extrinsicIndex": 1,
+   "success": true,
+   "events": [
+    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 7409596702)",
+    "Contracts.CodeStored(0x1fa93c546eaf0e392aca9ffcb6e5acadf674f5e39d70b058fd7228a98f606128, 309110000000, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d)",
+    "System.NewAccount(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a)",
+    "Balances.Endowed(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 1000000000)",
+    "Balances.Transfer(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 1000000000)",
+    "Contracts.Instantiated(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a)",
+    "Contracts.StorageDepositTransferredAndHeld(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 100610000000)",
+    "Contracts.StorageDepositTransferredAndHeld(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 100045000000)",
+    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4817069368)",
+    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2592527334, 0)",
+    "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16521,\"refTime\":2593947280}})"
+   ]
+  }
+ ],
+ "state": {
+  "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
+  "contractInstantiatedIn": {
+   "txHash": "0x68e123ee63a62afc829aa2d5ed3307306b131a70915a815780b80ed3d503a74f",
+   "block": 32,
+   "blockHash": "0x052d2825e0aa56aa9afeb0acd1e5ecff03990974094d8a65d35a98a4044bbb96"
+  },
+  "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+  "assetId": 1,
+  "previousContract": {
+   "address": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+   "note": "seam_emitter.wat test contract, replaced by seam_demo"
+  },
+  "contractName": "seam_demo",
+  "contractCodeHash": "0x1fa93c546eaf0e392aca9ffcb6e5acadf674f5e39d70b058fd7228a98f606128",
+  "contractAbi": "contracts/seam-demo/artifacts/metadata.json"
+ }
+}
