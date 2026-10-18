@@ -77,3 +77,7 @@ export { dryRunSigned, dryRunOne, type SignedDryRunDetail } from './dryrun.js';
 export { lookupExtrinsic, type TxLookup, type LookupOptions } from './lookup.js';
 export { checkSigningWindow, type WindowCheck, type WindowReason } from './window.js';
 export type { SimulationCoverage, CoverageBasis } from './preflight.js';
+export {
+  discoverV3, capabilitiesFromModel, capabilitiesMarkdown, runtimeModelFromInputs, runtimeApiId, readOnlyClient, READ_ONLY_RPC_METHODS,
+  type CapabilityStatus, type CapabilityEntry, type RuntimeModel, type V3Capabilities, type DiscoverV3Result
+} from './capabilities.js';
