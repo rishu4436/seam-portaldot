@@ -280,7 +280,7 @@ export function LivePanel({
   plan?: Plan;
   facts?: RuntimeFacts;
   approval?: Approval;
-  hostLoader?: () => Promise<LiveHost | undefined>;
+  hostLoader?: (facts?: unknown) => Promise<LiveHost | undefined>;
 } = {}) {
   const [url, setUrl] = useState<string>(import.meta.env.VITE_V3_RPC_URL ?? "");
   const [out, setOut] = useState<LiveOutcome>();
@@ -299,7 +299,7 @@ export function LivePanel({
       if (u) {
         const b = await import("../lib/browserChain");
         const rpc = b.transportFor(u);
-        const host = await hostLoader();
+        const host = await hostLoader(facts);
         const call = planCall(plan);
         const gateMsg = !call.ok
           ? call.message
