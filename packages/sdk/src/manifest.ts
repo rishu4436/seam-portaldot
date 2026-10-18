@@ -22,7 +22,8 @@ export function parseManifest(input: string | unknown): ParseResult {
   }
   const issues: ManifestIssue[] = [];
   if (!isObj(raw)) return { ok: false, issues: [{ path: '$', message: 'a Manifest must be a JSON object' }] };
-  for (const k of Object.keys(raw)) if (!['version', 'chain', 'signer', 'actions'].includes(k)) issues.push({ path: `$.${k}`, message: `unknown field "${k}"` });
+  for (const k of Object.keys(raw)) if (!['version', 'chain', 'signer', 'actions', 'atomicRequired'].includes(k)) issues.push({ path: `$.${k}`, message: `unknown field "${k}"` });
+  if (raw.atomicRequired !== undefined && typeof raw.atomicRequired !== 'boolean') issues.push({ path: '$.atomicRequired', message: 'atomicRequired must be true or false' });
   if (raw.version !== 1) issues.push({ path: '$.version', message: 'version must be 1' });
 
   if (raw.chain !== undefined) {
@@ -110,7 +111,7 @@ export const action = {
   contractCall: (id: string, args: ContractCallArgs): ManifestAction => ({ id, kind: 'contracts.call', args: args as unknown as ManifestAction['args'] }),
 };
 
-export function defineManifest(m: { signer: ManifestSigner; actions: ManifestAction[]; chain?: Manifest['chain'] }): Manifest {
+export function defineManifest(m: { signer: ManifestSigner; actions: ManifestAction[]; chain?: Manifest['chain']; atomicRequired?: boolean }): Manifest {
   const r = parseManifest({ version: 1, ...m });
   if (!r.ok) throw new Error(r.issues.map((i) => `${i.path}: ${i.message}`).join('; '));
   return r.manifest;
