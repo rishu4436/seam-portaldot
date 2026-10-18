@@ -1,13 +1,13 @@
 {
- "importedAt": "2026-10-18T05:12:41.247Z",
+ "importedAt": "2026-10-18T05:17:10.730Z",
  "source": {
   "dir": "evidence/devnode",
   "readme": "evidence/README.md",
   "files": [
-   "sequential-1791721839556.json",
-   "rollback-1791721841443.json",
-   "atomic-1791721843650.json",
-   "setup-1791720817312.json"
+   "sequential-1792300477774.json",
+   "rollback-1792300479791.json",
+   "atomic-1792300481962.json",
+   "setup-1792300431212.json"
   ]
  },
  "node": {
@@ -33,59 +33,50 @@
   "metadataVersion": 14
  },
  "setup": {
-  "file": "evidence/devnode/runs/setup-1791720817312.json",
+  "file": "evidence/devnode/runs/setup-1792300431212.json",
   "steps": [
    {
-    "what": "Assets.create(1, Alice, min_balance 1)",
-    "txHash": "0xfceb08534c1dd192b2645d3656f46e125cc34a464f5d748a732d50d6d6eb3c04",
-    "block": {
-     "number": 1,
-     "hash": "0xb2e55d30fae6bc72098c3fb727823010a7d5e73852362cb69e776430aa03c439"
-    },
-    "success": true
+    "what": "asset 1 already exists, skipped create/mint"
    },
    {
-    "what": "Assets.mint(1, Alice, 1000000000000)",
-    "txHash": "0x847dd270d80a4dca64425e2a9e998f31971fafeb079e283c62243253267c33dc",
+    "what": "Contracts.instantiate_with_code(seam_demo.contract, constructor new 0x9bae9d5e, storage_deposit_limit null)",
+    "txHash": "0x68e123ee63a62afc829aa2d5ed3307306b131a70915a815780b80ed3d503a74f",
     "block": {
-     "number": 2,
-     "hash": "0xa43a4a9b1cd4384415ab340464aca6c4f101f73b243e284e81203ab2c0c8244b"
-    },
-    "success": true
-   },
-   {
-    "what": "Contracts.instantiate_with_code(seam_emitter.wasm)",
-    "txHash": "0x361413adf3465fcb5948bdbd370a5ca9ec4082a52f6ff53e4e688e1a4bc2ac31",
-    "block": {
-     "number": 3,
-     "hash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9"
+     "number": 32,
+     "hash": "0x052d2825e0aa56aa9afeb0acd1e5ecff03990974094d8a65d35a98a4044bbb96"
     },
     "success": true
    }
   ],
   "state": {
-   "contract": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+   "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
    "contractInstantiatedIn": {
-    "txHash": "0x361413adf3465fcb5948bdbd370a5ca9ec4082a52f6ff53e4e688e1a4bc2ac31",
-    "block": 3,
-    "blockHash": "0x1dba56a72965201b2a616e207c08f1ab500d05bf53c8ef319e321d15f4d4f3c9"
+    "txHash": "0x68e123ee63a62afc829aa2d5ed3307306b131a70915a815780b80ed3d503a74f",
+    "block": 32,
+    "blockHash": "0x052d2825e0aa56aa9afeb0acd1e5ecff03990974094d8a65d35a98a4044bbb96"
    },
    "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
-   "assetId": 1
+   "assetId": 1,
+   "previousContract": {
+    "address": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+    "note": "seam_emitter.wat test contract, replaced by seam_demo"
+   },
+   "contractName": "seam_demo",
+   "contractCodeHash": "0x1fa93c546eaf0e392aca9ffcb6e5acadf674f5e39d70b058fd7228a98f606128",
+   "contractAbi": "contracts/seam-demo/artifacts/metadata.json"
   }
  },
  "sequential": {
   "id": "sequential",
   "kind": "sequential",
   "recordingVersion": 2,
-  "ranAt": "2026-10-11T12:30:39.556Z",
-  "evidenceFile": "evidence/devnode/runs/sequential-1791721839556.json",
-  "runsOfThisKind": 2,
+  "ranAt": "2026-10-18T05:14:37.774Z",
+  "evidenceFile": "evidence/devnode/runs/sequential-1792300477774.json",
+  "runsOfThisKind": 4,
   "endpoint": "ws://127.0.0.1:9944",
   "requireSignedDryRun": true,
-  "compiledMode": "unavailable",
-  "compiledModeReason": "Cannot run: step \"call\": Contracts.call on this runtime takes argument(s) SEAM cannot fill: storageDepositLimit",
-  "shimmed": true,
+  "compiledMode": "sequential",
+  "compiledModeReason": "Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
   "manifest": {
    "version": 1,
    "chain": {
@@ -110,10 +101,17 @@
      "id": "call",
      "kind": "contracts.call",
      "args": {
-      "contract": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+      "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
       "value": "0",
       "gasLimit": "5000000000",
-      "data": "0x5345414d"
+      "proofSize": "1000000",
+      "storageDepositLimit": null,
+      "message": "settle",
+      "args": {
+       "order_id": 7,
+       "amount": "2500"
+      },
+      "abiRef": "seam_demo"
      }
     },
     {
@@ -127,7 +125,7 @@
     }
    ]
   },
-  "manifestDigest": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54",
+  "manifestDigest": "0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f",
   "facts": {
    "fingerprint": {
     "genesisHash": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
@@ -138,33 +136,33 @@
     "ss58Prefix": 42,
     "tokenSymbol": "UNIT",
     "tokenDecimals": 12,
-    "typesBundleHash": "0x4387cb3953e535bb47e5ea34a027b2c3a73742093a677f054e47b0adb5689810"
+    "typesBundleHash": null
    },
-   "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+   "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
    "capabilities": {
     "Assets.approve_transfer": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 22,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.block": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 31,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.burn": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 7,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.cancel_approval": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 23,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.clear_metadata": {
      "status": "observed",
@@ -176,7 +174,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.destroy_accounts": {
      "status": "observed",
@@ -200,13 +198,13 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 21,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_cancel_approval": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 24,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_clear_metadata": {
      "status": "observed",
@@ -218,7 +216,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_set_metadata": {
      "status": "observed",
@@ -230,13 +228,13 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 10,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.freeze": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 11,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.freeze_asset": {
      "status": "observed",
@@ -248,7 +246,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.refund": {
      "status": "observed",
@@ -260,7 +258,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 30,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.set_metadata": {
      "status": "observed",
@@ -278,7 +276,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 16,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.start_destroy": {
      "status": "observed",
@@ -290,7 +288,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 12,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.thaw_asset": {
      "status": "observed",
@@ -308,37 +306,37 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 29,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_all": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 32,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_approved": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 25,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_keep_alive": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_ownership": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 15,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.burn": {
      "status": "observed",
@@ -350,67 +348,67 @@
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_set_balance": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_transfer": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_unreserve": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_all": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 4,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_allow_death": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_keep_alive": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.upgrade_accounts": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.call": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.call_old_weight": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate_old_weight": {
      "status": "observed",
@@ -422,7 +420,7 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 7,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate_with_code_old_weight": {
      "status": "observed",
@@ -434,7 +432,7 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.remove_code": {
      "status": "observed",
@@ -446,13 +444,13 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.upload_code": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Nfts.mint": {
      "status": "not_observed"
@@ -461,25 +459,25 @@
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.instantiate": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.instantiate_with_code": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.migrate": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.remove_code": {
      "status": "observed",
@@ -491,7 +489,7 @@
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.upload_code": {
      "status": "observed",
@@ -509,7 +507,7 @@
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Sudo.sudo": {
      "status": "observed",
@@ -521,13 +519,13 @@
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Sudo.sudo_unchecked_weight": {
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "System.apply_authorized_upgrade": {
      "status": "observed",
@@ -623,7 +621,7 @@
      "status": "observed",
      "palletIndex": 2,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Utility.force_batch": {
      "status": "observed",
@@ -635,26 +633,26 @@
      "status": "observed",
      "palletIndex": 2,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     }
    },
    "behaviour": {
     "batchAllRollback": "unknown"
    },
    "endpoint": "ws://127.0.0.1:9944",
-   "blockNumber": 23
+   "blockNumber": 35
   },
   "plan": {
    "planVersion": 1,
-   "manifestDigest": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54",
-   "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+   "manifestDigest": "0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f",
+   "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
    "signer": {
     "type": "ss58",
     "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
     "publicKey": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
    },
    "mode": "sequential",
-   "modeReason": "[devnode shim] Steps run one after another; a failure stops later steps.",
+   "modeReason": "Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
    "steps": [
     {
      "actionId": "pay",
@@ -678,16 +676,29 @@
      "palletIndex": 8,
      "callIndex": 6,
      "decodedArgs": {
-      "contract": "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7",
-      "contractAccountId": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+      "contract": "5GU36XTXmBgJoUx5YqfdupT9bfZ6V8NEUBHKe4pVYsC9PqmD",
+      "contractAccountId": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
       "value": "0",
       "gasLimit": "5000000000",
-      "data": "0x5345414d",
+      "data": "0x6c3372220700000000000000c4090000000000000000000000000000",
+      "message": "settle",
+      "selector": "0x6c337222",
+      "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
       "proofSize": "1000000",
-      "shim": "devnode V14 Contracts.call shim (compiler cannot fill storage_deposit_limit / Weight V2)"
+      "storageDepositLimit": null
      },
-     "encodedCall": "0x08060088e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98000700f2052a0102093d0000105345414d",
-     "status": "ok"
+     "encodedCall": "0x080600c2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a000700f2052a0102093d0000706c3372220700000000000000c4090000000000000000000000000000",
+     "status": "ok",
+     "contractMessage": {
+      "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
+      "message": "settle",
+      "selector": "0x6c337222",
+      "args": {
+       "order_id": "7",
+       "amount": "2500"
+      },
+      "abiRef": "seam_demo"
+     }
     },
     {
      "actionId": "mint",
@@ -705,9 +716,9 @@
      "status": "ok"
     }
    ],
-   "planDigest": "0x591c900f6c636ae24dffe35a0ab1b085db4e336bd91c2889ff148125f9bb4a0d"
+   "planDigest": "0x02cdc56e1c230202b2653a6b52dcd59f1e9c8e50806e5e3bae39b2bb634b75b8"
   },
-  "planText": "Plan for 3 steps: steps run one at a time, and SEAM stops at the first one that fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- call: contracts.call is ready (Contracts.call).\n- mint: assets.mint is ready (Assets.mint).\nWhy this mode: [devnode shim] Steps run one after another; a failure stops later steps.",
+  "planText": "Plan for 3 steps: steps run one at a time, and SEAM stops at the first one that fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- call: contracts.call is ready (Contracts.call).\n- mint: assets.mint is ready (Assets.mint).\nWhy this mode: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
   "preflight": {
    "steps": [
     {
@@ -716,7 +727,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646900826"
+      "value": "646779676"
      },
      "storageDeposit": {
       "unknown": true
@@ -733,7 +744,7 @@
       "value": "5518582000"
      },
      "fee": {
-      "value": "5623282238"
+      "value": "5622044295"
      },
      "storageDeposit": {
       "unknown": true
@@ -742,7 +753,7 @@
       "value": "1004291"
      },
      "dryRun": "ok",
-     "note": "contract dry run ok via ContractsApi_call (gas required refTime 5516733, proofSize 1148); state at this block, before earlier steps run; storage deposit: not reported by this runtime; contract needs proof size 1148 (ContractsApi_call gas_required)"
+     "note": "contract dry run ok via ContractsApi_call (gas required refTime 680988168, proofSize 67144); state at this block, before earlier steps run; storage deposit: not reported by this runtime; contract needs proof size 67144 (ContractsApi_call gas_required)"
     },
     {
      "actionId": "mint",
@@ -750,7 +761,7 @@
       "value": "273273000"
      },
      "fee": {
-      "value": "380229588"
+      "value": "380168286"
      },
      "storageDeposit": {
       "unknown": true
@@ -763,22 +774,22 @@
     }
    ],
    "totalFee": {
-    "value": "6650412652"
+    "value": "6648992257"
    }
   },
   "preflightAt": {
-   "number": 23,
-   "hash": "0xc13a31638e9c32897a68d58d31b64952676c41ca2354a11df0ab4e3d5b8f8491"
+   "number": 35,
+   "hash": "0xbaaf56053638fb39ba87f21ddcf0d725843588aecca1e2f2425fb268fc031a20"
   },
   "envelope": {
    "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-   "nonce": 23,
+   "nonce": 35,
    "mortalityBlocks": 64,
    "checkpoint": {
-    "number": 22,
-    "hash": "0x34d3fac09eb1d89ec967c3c65d0bf0ee1be98b468dcb781a516d9ac07ea9428d"
+    "number": 34,
+    "hash": "0x67f91feb2896326bed320834316af89767ecfeaa73c0026705fd7ad539222db7"
    },
-   "expiresAt": "2026-10-11T12:36:54.378Z"
+   "expiresAt": "2026-10-18T05:20:52.632Z"
   },
   "policy": {
    "version": "seam/policy/v1",
@@ -787,7 +798,7 @@
     "1"
    ],
    "allowedContracts": [
-    "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98"
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a"
    ],
    "allowedRecipients": [
     "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
@@ -804,6 +815,11 @@
    "allowUnknown": {
     "storageDeposit": true,
     "dryRun": true
+   },
+   "allowedSelectors": {
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": [
+     "0x6c337222"
+    ]
    },
    "maxAmountPerAsset": {
     "1": "1000000000000"
@@ -866,6 +882,12 @@
      "actionId": "call"
     },
     {
+     "rule": "storage_limit",
+     "outcome": "pass",
+     "reason": "no storage deposit limit set, and the policy sets none either",
+     "actionId": "call"
+    },
+    {
      "rule": "capability",
      "outcome": "pass",
      "reason": "Assets.mint is observed and allowed",
@@ -946,14 +968,14 @@
     {
      "rule": "fee_limit",
      "outcome": "pass",
-     "reason": "total fee 6650412652 is within limits"
+     "reason": "total fee 6648992257 is within limits"
     }
    ],
-   "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599"
+   "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025"
   },
-  "policyText": "Allowed: all 23 policy checks passed.",
+  "policyText": "Allowed: all 24 policy checks passed.",
   "approval": {
-   "hash": "0xf7a0591c41736c28bbdcdf42d8fff77a6d47112e5bb0794fafd3380a65481077",
+   "hash": "0x6dda55fce134f1fe514027a8e8318078efa388043b3c161408470d08a8c5e6af",
    "covers": [
     "manifest",
     "plan",
@@ -964,28 +986,28 @@
     "signing envelope",
     "preflight"
    ],
-   "expiresAt": "2026-10-11T12:36:54.378Z",
+   "expiresAt": "2026-10-18T05:20:52.632Z",
    "used": false,
    "binding": {
-    "manifestDigest": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54",
-    "planDigest": "0x591c900f6c636ae24dffe35a0ab1b085db4e336bd91c2889ff148125f9bb4a0d",
-    "planContentDigest": "0x01af220b66cb5af6dff41be358c6a2cf86e02f38593d5c84f82c3285d0e1b4ec",
-    "callsDigest": "0x11efa863d8a9041c98de4f44e3fca1cedc86915731d4084168db1da0be246629",
-    "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-    "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599",
-    "policyResultDigest": "0x78c373de649d1abd006236e78e07aa92dc3a953ac29616590909aef9e27e8322",
-    "envelopeDigest": "0x6c1f73cea96bf38c22b2d176ddc154b77d0d8eb1437afdfea74e692a65ac44a1",
-    "preflightDigest": "0x6114deb4315342ab84955cd45fdb640b7405755ba5c0c787571f81824a00ba33",
+    "manifestDigest": "0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f",
+    "planDigest": "0x02cdc56e1c230202b2653a6b52dcd59f1e9c8e50806e5e3bae39b2bb634b75b8",
+    "planContentDigest": "0x7b6e9c91ce5b9f82f8f4c70c17443c82de5e0169b971de29c4bca542e736f68e",
+    "callsDigest": "0xc7f2b48f66b0445aefcf7088fe95791d268c524c4e61e3156b55b5e90c22648c",
+    "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
+    "policyResultDigest": "0xe05e8a98dd86a15ce590eeddf9ba748e7713e488786bed9475a201d5dac811fa",
+    "envelopeDigest": "0xf9fce64c9830f8bfb951b47ba9330d8c7234c8215adc0e849d889c6f81a8a4c9",
+    "preflightDigest": "0xcce2f746675c88397bc653be2e2f14688d7a0234d1f0ceb76972fb9a6b6518cb",
     "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "nonce": 23,
+    "nonce": 35,
     "mortalityBlocks": 64,
-    "expiresAt": "2026-10-11T12:36:54.378Z"
+    "expiresAt": "2026-10-18T05:20:52.632Z"
    }
   },
   "signing": {
    "count": 3,
    "specVersion": "0x00000064",
-   "era": "0x6501",
+   "era": "0x2502",
    "signedExtensions": [
     "CheckNonZeroSender",
     "CheckSpecVersion",
@@ -1003,7 +1025,7 @@
     "index": 0,
     "actionId": "pay",
     "sendIndex": 0,
-    "checkedAt": "2026-10-11T12:30:36.481Z",
+    "checkedAt": "2026-10-18T05:14:34.706Z",
     "sdkOutcome": "sent",
     "result": {
      "ok": true,
@@ -1026,8 +1048,8 @@
     ],
     "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
     "inputs": {
-     "preparedFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-     "currentFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
      "runtimeUnchanged": true,
      "signedDryRun": [
       "ok",
@@ -1036,7 +1058,7 @@
      ],
      "dryRunDetails": [
       {
-       "txHash": "0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e",
+       "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
        "outcome": "ok",
        "detail": "dispatch ok"
       }
@@ -1048,7 +1070,7 @@
     "index": 1,
     "actionId": "call",
     "sendIndex": 1,
-    "checkedAt": "2026-10-11T12:30:37.516Z",
+    "checkedAt": "2026-10-18T05:14:35.735Z",
     "sdkOutcome": "sent",
     "result": {
      "ok": true,
@@ -1071,8 +1093,8 @@
     ],
     "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
     "inputs": {
-     "preparedFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-     "currentFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
      "runtimeUnchanged": true,
      "signedDryRun": [
       "unknown",
@@ -1081,7 +1103,7 @@
      ],
      "dryRunDetails": [
       {
-       "txHash": "0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f",
+       "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
        "outcome": "ok",
        "detail": "dispatch ok"
       }
@@ -1090,7 +1112,7 @@
       {
        "actionId": "pay",
        "status": "finalized",
-       "block": 24
+       "block": 36
       }
      ]
     }
@@ -1099,7 +1121,7 @@
     "index": 2,
     "actionId": "mint",
     "sendIndex": 2,
-    "checkedAt": "2026-10-11T12:30:38.541Z",
+    "checkedAt": "2026-10-18T05:14:36.762Z",
     "sdkOutcome": "sent",
     "result": {
      "ok": true,
@@ -1122,8 +1144,8 @@
     ],
     "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
     "inputs": {
-     "preparedFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-     "currentFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
      "runtimeUnchanged": true,
      "signedDryRun": [
       "unknown",
@@ -1132,7 +1154,7 @@
      ],
      "dryRunDetails": [
       {
-       "txHash": "0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d",
+       "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
        "outcome": "ok",
        "detail": "dispatch ok"
       }
@@ -1141,12 +1163,12 @@
       {
        "actionId": "pay",
        "status": "finalized",
-       "block": 24
+       "block": 36
       },
       {
        "actionId": "call",
        "status": "finalized",
-       "block": 25
+       "block": 37
       }
      ]
     }
@@ -1157,16 +1179,16 @@
     "index": 0,
     "actionId": "pay",
     "phase": "checking",
-    "at": "2026-10-11T12:30:36.464Z"
+    "at": "2026-10-18T05:14:34.693Z"
    },
    {
     "index": 0,
     "actionId": "pay",
     "phase": "sending",
-    "at": "2026-10-11T12:30:36.483Z",
+    "at": "2026-10-18T05:14:34.707Z",
     "dryRun": [
      {
-      "txHash": "0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e",
+      "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
       "outcome": "ok",
       "detail": "dispatch ok"
      }
@@ -1177,22 +1199,22 @@
     "actionId": "pay",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-11T12:30:37.502Z"
+    "at": "2026-10-18T05:14:35.721Z"
    },
    {
     "index": 1,
     "actionId": "call",
     "phase": "checking",
-    "at": "2026-10-11T12:30:37.502Z"
+    "at": "2026-10-18T05:14:35.721Z"
    },
    {
     "index": 1,
     "actionId": "call",
     "phase": "sending",
-    "at": "2026-10-11T12:30:37.517Z",
+    "at": "2026-10-18T05:14:35.736Z",
     "dryRun": [
      {
-      "txHash": "0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f",
+      "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
       "outcome": "ok",
       "detail": "dispatch ok"
      }
@@ -1203,22 +1225,22 @@
     "actionId": "call",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-11T12:30:38.529Z"
+    "at": "2026-10-18T05:14:36.748Z"
    },
    {
     "index": 2,
     "actionId": "mint",
     "phase": "checking",
-    "at": "2026-10-11T12:30:38.530Z"
+    "at": "2026-10-18T05:14:36.748Z"
    },
    {
     "index": 2,
     "actionId": "mint",
     "phase": "sending",
-    "at": "2026-10-11T12:30:38.542Z",
+    "at": "2026-10-18T05:14:36.763Z",
     "dryRun": [
      {
-      "txHash": "0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d",
+      "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
       "outcome": "ok",
       "detail": "dispatch ok"
      }
@@ -1229,95 +1251,95 @@
     "actionId": "mint",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-11T12:30:39.555Z"
+    "at": "2026-10-18T05:14:37.773Z"
    }
   ],
   "statuses": [
    {
     "actionId": "pay",
     "status": "submitted",
-    "txHash": "0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e",
-    "at": "2026-10-11T12:30:36.540Z"
+    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
+    "at": "2026-10-18T05:14:34.760Z"
    },
    {
     "actionId": "pay",
     "status": "in_block",
-    "txHash": "0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e",
-    "blockHash": "0x9f8688cd5c82dc1abcdedb835659579b7625413e1610fcdfbc33511a1c09305c",
-    "at": "2026-10-11T12:30:36.540Z"
+    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
+    "blockHash": "0xc658c35b986f18fe398506aa4d7a016cfd8b24b7e0cbc6f6d33a82c25655909d",
+    "at": "2026-10-18T05:14:34.760Z"
    },
    {
     "actionId": "pay",
     "status": "finalized",
-    "txHash": "0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e",
-    "blockHash": "0x9f8688cd5c82dc1abcdedb835659579b7625413e1610fcdfbc33511a1c09305c",
-    "at": "2026-10-11T12:30:37.501Z"
+    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
+    "blockHash": "0xc658c35b986f18fe398506aa4d7a016cfd8b24b7e0cbc6f6d33a82c25655909d",
+    "at": "2026-10-18T05:14:35.720Z"
    },
    {
     "actionId": "call",
     "status": "submitted",
-    "txHash": "0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f",
-    "at": "2026-10-11T12:30:37.525Z"
+    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
+    "at": "2026-10-18T05:14:35.784Z"
    },
    {
     "actionId": "call",
     "status": "in_block",
-    "txHash": "0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f",
-    "blockHash": "0xa7870077bec256729a52e024ca88560efd0f76e36026a9484aca180d5f369bd5",
-    "at": "2026-10-11T12:30:37.567Z"
+    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
+    "blockHash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd",
+    "at": "2026-10-18T05:14:35.784Z"
    },
    {
     "actionId": "call",
     "status": "finalized",
-    "txHash": "0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f",
-    "blockHash": "0xa7870077bec256729a52e024ca88560efd0f76e36026a9484aca180d5f369bd5",
-    "at": "2026-10-11T12:30:38.529Z"
+    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
+    "blockHash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd",
+    "at": "2026-10-18T05:14:36.747Z"
    },
    {
     "actionId": "mint",
     "status": "submitted",
-    "txHash": "0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d",
-    "at": "2026-10-11T12:30:38.595Z"
+    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
+    "at": "2026-10-18T05:14:36.812Z"
    },
    {
     "actionId": "mint",
     "status": "in_block",
-    "txHash": "0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d",
-    "blockHash": "0x46437095e1f65daf67c8d07b4d5da249eebccadea708a9a8af35d1af602e8682",
-    "at": "2026-10-11T12:30:38.595Z"
+    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
+    "blockHash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29",
+    "at": "2026-10-18T05:14:36.812Z"
    },
    {
     "actionId": "mint",
     "status": "finalized",
-    "txHash": "0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d",
-    "blockHash": "0x46437095e1f65daf67c8d07b4d5da249eebccadea708a9a8af35d1af602e8682",
-    "at": "2026-10-11T12:30:39.555Z"
+    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
+    "blockHash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29",
+    "at": "2026-10-18T05:14:37.772Z"
    }
   ],
   "run": {
    "ok": true,
    "receipt": {
     "receiptVersion": 1,
-    "manifestDigest": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54",
-    "planDigest": "0x591c900f6c636ae24dffe35a0ab1b085db4e336bd91c2889ff148125f9bb4a0d",
-    "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-    "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599",
-    "approvalHash": "0xf7a0591c41736c28bbdcdf42d8fff77a6d47112e5bb0794fafd3380a65481077",
+    "manifestDigest": "0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f",
+    "planDigest": "0x02cdc56e1c230202b2653a6b52dcd59f1e9c8e50806e5e3bae39b2bb634b75b8",
+    "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
+    "approvalHash": "0x6dda55fce134f1fe514027a8e8318078efa388043b3c161408470d08a8c5e6af",
     "mode": "sequential",
     "steps": [
      {
       "actionId": "pay",
       "status": "finalized",
-      "txHash": "0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e",
+      "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
       "block": {
-       "number": 24,
-       "hash": "0x9f8688cd5c82dc1abcdedb835659579b7625413e1610fcdfbc33511a1c09305c"
+       "number": 36,
+       "hash": "0xc658c35b986f18fe398506aa4d7a016cfd8b24b7e0cbc6f6d33a82c25655909d"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646900826)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646779676)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646900826, 0)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646779676, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":6208,\"refTime\":647133000}})"
       ],
       "verification": "verified",
@@ -1326,18 +1348,18 @@
      {
       "actionId": "call",
       "status": "finalized",
-      "txHash": "0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f",
+      "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
       "block": {
-       "number": 25,
-       "hash": "0xa7870077bec256729a52e024ca88560efd0f76e36026a9484aca180d5f369bd5"
+       "number": 37,
+       "hash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 5623178988)",
-       "Contracts.ContractEmitted(0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98, 0x5345414d5345414d)",
-       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98)",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4992241355)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 630937633, 0)",
-       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":5439,\"refTime\":631172733}})"
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 5621941069)",
+       "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
+       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a)",
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4316104272)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1305836797, 0)",
+       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":55120,\"refTime\":1306644168}})"
       ],
       "verification": "verified",
       "reason": "The call succeeded and the contract emitted an event."
@@ -1345,16 +1367,16 @@
      {
       "actionId": "mint",
       "status": "finalized",
-      "txHash": "0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d",
+      "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
       "block": {
-       "number": 26,
-       "hash": "0x46437095e1f65daf67c8d07b4d5da249eebccadea708a9a8af35d1af602e8682"
+       "number": 38,
+       "hash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380219362)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380158071)",
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380219362, 0)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380158071, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":3675,\"refTime\":380347000}})"
       ],
       "verification": "verified",
@@ -1366,22 +1388,50 @@
      "verified": 3,
      "expected": 3
     },
-    "receiptDigest": "0x2343dc1076bd80d29d19f14f083f5dc95a228104c206a91cf83d1446694706b9"
+    "receiptDigest": "0x9a7d8c1e7c92129a03b0cedda2930ae847b02729575a3fc049aec3090a53e650"
    }
   },
-  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d",
+  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
   "usedProofSize": {
    "pay": {
     "value": "6208",
-    "txHash": "0xac82cc22f81a9c4bb592fd37afbfffa74d3a802dccde64b76ce452fae9ba5a5e"
+    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f"
    },
    "call": {
-    "value": "5439",
-    "txHash": "0x431a4f37892068343c4e76ff8579e66ca7b5a3bd2de0153c2475f076552d286f"
+    "value": "55120",
+    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae"
    },
    "mint": {
     "value": "3675",
-    "txHash": "0x290e3a16305ca82e231dbf119c6163cb66306b9e87006c66215027c13cfad06d"
+    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be"
+   }
+  },
+  "decodedEmitted": {
+   "call": {
+    "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
+    "event": "Settled",
+    "signatureTopic": "0x7ed8c671bb851ee2349b5a1282a2740936f1faf4ff0f59e2e566910f44b9039b",
+    "fields": [
+     {
+      "name": "caller",
+      "type": "AccountId",
+      "indexed": true,
+      "value": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+     },
+     {
+      "name": "order_id",
+      "type": "u64",
+      "indexed": true,
+      "value": "7"
+     },
+     {
+      "name": "amount",
+      "type": "Balance",
+      "indexed": false,
+      "value": "2500"
+     }
+    ],
+    "abi": "contracts/seam-demo/artifacts/metadata.json"
    }
   }
  },
@@ -1389,14 +1439,13 @@
   "id": "atomic",
   "kind": "atomic",
   "recordingVersion": 2,
-  "ranAt": "2026-10-11T12:30:43.650Z",
-  "evidenceFile": "evidence/devnode/runs/atomic-1791721843650.json",
-  "runsOfThisKind": 2,
+  "ranAt": "2026-10-18T05:14:41.962Z",
+  "evidenceFile": "evidence/devnode/runs/atomic-1792300481962.json",
+  "runsOfThisKind": 3,
   "endpoint": "ws://127.0.0.1:9944",
   "requireSignedDryRun": true,
-  "compiledMode": "unavailable",
-  "compiledModeReason": "Cannot run: step \"call\": Contracts.call on this runtime takes argument(s) SEAM cannot fill: storageDepositLimit",
-  "shimmed": true,
+  "compiledMode": "atomic_verified",
+  "compiledModeReason": "All steps go in one Utility.batch_all; rollback on failure has been verified on this runtime.",
   "manifest": {
    "version": 1,
    "chain": {
@@ -1422,10 +1471,17 @@
      "id": "call",
      "kind": "contracts.call",
      "args": {
-      "contract": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+      "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
       "value": "0",
       "gasLimit": "5000000000",
-      "data": "0x5345414d"
+      "proofSize": "1000000",
+      "storageDepositLimit": null,
+      "message": "settle",
+      "args": {
+       "order_id": 7,
+       "amount": "2500"
+      },
+      "abiRef": "seam_demo"
      },
      "preferredMode": "atomic"
     },
@@ -1441,7 +1497,7 @@
     }
    ]
   },
-  "manifestDigest": "0x6c6d72beed28214097f7ebaa34d66b7606986b57910f49675a20e21c571d941f",
+  "manifestDigest": "0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1",
   "facts": {
    "fingerprint": {
     "genesisHash": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
@@ -1452,33 +1508,33 @@
     "ss58Prefix": 42,
     "tokenSymbol": "UNIT",
     "tokenDecimals": 12,
-    "typesBundleHash": "0x4387cb3953e535bb47e5ea34a027b2c3a73742093a677f054e47b0adb5689810"
+    "typesBundleHash": null
    },
-   "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+   "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
    "capabilities": {
     "Assets.approve_transfer": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 22,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.block": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 31,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.burn": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 7,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.cancel_approval": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 23,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.clear_metadata": {
      "status": "observed",
@@ -1490,7 +1546,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.destroy_accounts": {
      "status": "observed",
@@ -1514,13 +1570,13 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 21,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_cancel_approval": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 24,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_clear_metadata": {
      "status": "observed",
@@ -1532,7 +1588,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_set_metadata": {
      "status": "observed",
@@ -1544,13 +1600,13 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 10,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.freeze": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 11,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.freeze_asset": {
      "status": "observed",
@@ -1562,7 +1618,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.refund": {
      "status": "observed",
@@ -1574,7 +1630,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 30,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.set_metadata": {
      "status": "observed",
@@ -1592,7 +1648,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 16,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.start_destroy": {
      "status": "observed",
@@ -1604,7 +1660,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 12,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.thaw_asset": {
      "status": "observed",
@@ -1622,37 +1678,37 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 29,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_all": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 32,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_approved": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 25,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_keep_alive": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_ownership": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 15,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.burn": {
      "status": "observed",
@@ -1664,67 +1720,67 @@
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_set_balance": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_transfer": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_unreserve": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_all": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 4,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_allow_death": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_keep_alive": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.upgrade_accounts": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.call": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.call_old_weight": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate_old_weight": {
      "status": "observed",
@@ -1736,7 +1792,7 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 7,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate_with_code_old_weight": {
      "status": "observed",
@@ -1748,7 +1804,7 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.remove_code": {
      "status": "observed",
@@ -1760,13 +1816,13 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.upload_code": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Nfts.mint": {
      "status": "not_observed"
@@ -1775,25 +1831,25 @@
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.instantiate": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.instantiate_with_code": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.migrate": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.remove_code": {
      "status": "observed",
@@ -1805,7 +1861,7 @@
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.upload_code": {
      "status": "observed",
@@ -1823,7 +1879,7 @@
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Sudo.sudo": {
      "status": "observed",
@@ -1835,13 +1891,13 @@
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Sudo.sudo_unchecked_weight": {
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "System.apply_authorized_upgrade": {
      "status": "observed",
@@ -1937,7 +1993,7 @@
      "status": "observed",
      "palletIndex": 2,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Utility.force_batch": {
      "status": "observed",
@@ -1949,26 +2005,26 @@
      "status": "observed",
      "palletIndex": 2,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     }
    },
    "behaviour": {
     "batchAllRollback": "verified"
    },
    "endpoint": "ws://127.0.0.1:9944",
-   "blockNumber": 27
+   "blockNumber": 39
   },
   "plan": {
    "planVersion": 1,
-   "manifestDigest": "0x6c6d72beed28214097f7ebaa34d66b7606986b57910f49675a20e21c571d941f",
-   "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+   "manifestDigest": "0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1",
+   "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
    "signer": {
     "type": "ss58",
     "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
     "publicKey": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
    },
    "mode": "atomic_verified",
-   "modeReason": "[devnode shim] All steps go in one Utility.batch_all; rollback on failure has been verified on this runtime.",
+   "modeReason": "All steps go in one Utility.batch_all; rollback on failure has been verified on this runtime.",
    "steps": [
     {
      "actionId": "pay",
@@ -1992,16 +2048,29 @@
      "palletIndex": 8,
      "callIndex": 6,
      "decodedArgs": {
-      "contract": "5FAC2MSq8hGdNfzBNoihrSzQFZ8Uijt8uRu8SCxJrgyLBDo7",
-      "contractAccountId": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+      "contract": "5GU36XTXmBgJoUx5YqfdupT9bfZ6V8NEUBHKe4pVYsC9PqmD",
+      "contractAccountId": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
       "value": "0",
       "gasLimit": "5000000000",
-      "data": "0x5345414d",
+      "data": "0x6c3372220700000000000000c4090000000000000000000000000000",
+      "message": "settle",
+      "selector": "0x6c337222",
+      "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
       "proofSize": "1000000",
-      "shim": "devnode V14 Contracts.call shim (compiler cannot fill storage_deposit_limit / Weight V2)"
+      "storageDepositLimit": null
      },
-     "encodedCall": "0x08060088e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98000700f2052a0102093d0000105345414d",
-     "status": "ok"
+     "encodedCall": "0x080600c2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a000700f2052a0102093d0000706c3372220700000000000000c4090000000000000000000000000000",
+     "status": "ok",
+     "contractMessage": {
+      "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
+      "message": "settle",
+      "selector": "0x6c337222",
+      "args": {
+       "order_id": "7",
+       "amount": "2500"
+      },
+      "abiRef": "seam_demo"
+     }
     },
     {
      "actionId": "mint",
@@ -2023,11 +2092,11 @@
     "capability": "Utility.batch_all",
     "palletIndex": 2,
     "callIndex": 2,
-    "encodedCall": "0x02020c0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48112708060088e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98000700f2052a0102093d0000105345414d0a06040090b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe221c"
+    "encodedCall": "0x02020c0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a481127080600c2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a000700f2052a0102093d0000706c3372220700000000000000c40900000000000000000000000000000a06040090b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe221c"
    },
-   "planDigest": "0x78d7ef72206cd256172add79760d34e99d78f325b66062e00268292ed537d228"
+   "planDigest": "0x0664a32365cd84c8649392ddbda96f9773f15385f5aadb3ccbeba770a1808e3d"
   },
-  "planText": "Plan for 3 steps: all steps run in one transaction, and the chain has been shown to undo everything if any step fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- call: contracts.call is ready (Contracts.call).\n- mint: assets.mint is ready (Assets.mint).\nWhy this mode: [devnode shim] All steps go in one Utility.batch_all; rollback on failure has been verified on this runtime.",
+  "planText": "Plan for 3 steps: all steps run in one transaction, and the chain has been shown to undo everything if any step fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- call: contracts.call is ready (Contracts.call).\n- mint: assets.mint is ready (Assets.mint).\nWhy this mode: All steps go in one Utility.batch_all; rollback on failure has been verified on this runtime.",
   "preflight": {
    "steps": [
     {
@@ -2036,7 +2105,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646860420"
+      "value": "646739297"
      },
      "storageDeposit": {
       "unknown": true
@@ -2053,7 +2122,7 @@
       "value": "5518582000"
      },
      "fee": {
-      "value": "5622869342"
+      "value": "5621631679"
      },
      "storageDeposit": {
       "unknown": true
@@ -2062,7 +2131,7 @@
       "value": "1004291"
      },
      "dryRun": "ok",
-     "note": "contract dry run ok via ContractsApi_call (gas required refTime 5516733, proofSize 1148); state at this block, before earlier steps run; atomic: weight and fee here are for this call on its own; the batch is charged once (totalFee); storage deposit: not reported by this runtime; contract needs proof size 1148 (ContractsApi_call gas_required)"
+     "note": "contract dry run ok via ContractsApi_call (gas required refTime 680988168, proofSize 67144); state at this block, before earlier steps run; atomic: weight and fee here are for this call on its own; the batch is charged once (totalFee); storage deposit: not reported by this runtime; contract needs proof size 67144 (ContractsApi_call gas_required)"
     },
     {
      "actionId": "mint",
@@ -2070,7 +2139,7 @@
       "value": "273273000"
      },
      "fee": {
-      "value": "380209142"
+      "value": "380147853"
      },
      "storageDeposit": {
       "unknown": true
@@ -2083,22 +2152,22 @@
     }
    ],
    "totalFee": {
-    "value": "6514188425"
+    "value": "6512750759"
    }
   },
   "preflightAt": {
-   "number": 27,
-   "hash": "0x61ce43f8f504dce017283874c90a2bf3b8f06db3de7079da82e6cc3c57d3956f"
+   "number": 39,
+   "hash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343"
   },
   "envelope": {
    "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-   "nonce": 27,
+   "nonce": 39,
    "mortalityBlocks": 64,
    "checkpoint": {
-    "number": 26,
-    "hash": "0x46437095e1f65daf67c8d07b4d5da249eebccadea708a9a8af35d1af602e8682"
+    "number": 38,
+    "hash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29"
    },
-   "expiresAt": "2026-10-11T12:37:00.521Z"
+   "expiresAt": "2026-10-18T05:20:58.899Z"
   },
   "policy": {
    "version": "seam/policy/v1",
@@ -2107,7 +2176,7 @@
     "1"
    ],
    "allowedContracts": [
-    "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98"
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a"
    ],
    "allowedRecipients": [
     "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
@@ -2124,6 +2193,11 @@
    "allowUnknown": {
     "storageDeposit": true,
     "dryRun": true
+   },
+   "allowedSelectors": {
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": [
+     "0x6c337222"
+    ]
    },
    "maxAmountPerAsset": {
     "1": "1000000000000"
@@ -2186,6 +2260,12 @@
      "actionId": "call"
     },
     {
+     "rule": "storage_limit",
+     "outcome": "pass",
+     "reason": "no storage deposit limit set, and the policy sets none either",
+     "actionId": "call"
+    },
+    {
      "rule": "capability",
      "outcome": "pass",
      "reason": "Assets.mint is observed and allowed",
@@ -2266,14 +2346,14 @@
     {
      "rule": "fee_limit",
      "outcome": "pass",
-     "reason": "total fee 6514188425 is within limits"
+     "reason": "total fee 6512750759 is within limits"
     }
    ],
-   "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599"
+   "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025"
   },
-  "policyText": "Allowed: all 23 policy checks passed.",
+  "policyText": "Allowed: all 24 policy checks passed.",
   "approval": {
-   "hash": "0x0fe4708a0c08599769a22a877ee074c8af25fb3b0b2d413273ee72cf7426bcf6",
+   "hash": "0x92832fecb2455745de35cdffa49399f62986df67470e3c42ac8c69756fc9076e",
    "covers": [
     "manifest",
     "plan",
@@ -2284,28 +2364,28 @@
     "signing envelope",
     "preflight"
    ],
-   "expiresAt": "2026-10-11T12:37:00.521Z",
+   "expiresAt": "2026-10-18T05:20:58.899Z",
    "used": false,
    "binding": {
-    "manifestDigest": "0x6c6d72beed28214097f7ebaa34d66b7606986b57910f49675a20e21c571d941f",
-    "planDigest": "0x78d7ef72206cd256172add79760d34e99d78f325b66062e00268292ed537d228",
-    "planContentDigest": "0x1c1797749cac5eaf5f25afe69580276bd9f18f0e4e009f1072e48a55070d60d2",
-    "callsDigest": "0x28fdfe1d93c4ea30216b0f4da5370d71cea68878610b0c0b9dac9ef2d27ffed6",
-    "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-    "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599",
-    "policyResultDigest": "0x9a4971a2188b4117fe8235daed896114764c8570b62ca197e5f89661f6683c9a",
-    "envelopeDigest": "0xf20243076b1fa0901231be1ae82fec730c1fc5fd5bfdd125197f4deac6d3aada",
-    "preflightDigest": "0x084484f7f2d8daa573103fa04ae2ee13196409d70cedb137f3e4209350927425",
+    "manifestDigest": "0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1",
+    "planDigest": "0x0664a32365cd84c8649392ddbda96f9773f15385f5aadb3ccbeba770a1808e3d",
+    "planContentDigest": "0xf5d53023719885ce6053da735f6e8b1ce1b93db01bae93605eca22414e7870fc",
+    "callsDigest": "0xccca0f7aaa9f7a13b89407d6de83eb2f104051fc9a3f7f810f6a6331f8590f8c",
+    "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
+    "policyResultDigest": "0xa0e7f507ccac300b7bae790cef0956a0852bf76c875e462a9d5f0f35ad6aa5c7",
+    "envelopeDigest": "0xc4d0955ecc820e703b6afd8cc0f66090023c1e4322164afe88dae1d211860a0e",
+    "preflightDigest": "0x8ec453d605f7fcd1efacc2626431594bfee446bf79d51b9ef2612928dcac029d",
     "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "nonce": 27,
+    "nonce": 39,
     "mortalityBlocks": 64,
-    "expiresAt": "2026-10-11T12:37:00.521Z"
+    "expiresAt": "2026-10-18T05:20:58.899Z"
    }
   },
   "signing": {
    "count": 1,
    "specVersion": "0x00000064",
-   "era": "0xa501",
+   "era": "0x6502",
    "signedExtensions": [
     "CheckNonZeroSender",
     "CheckSpecVersion",
@@ -2323,7 +2403,7 @@
     "index": 0,
     "actionId": "batch",
     "sendIndex": null,
-    "checkedAt": "2026-10-11T12:30:42.623Z",
+    "checkedAt": "2026-10-18T05:14:40.945Z",
     "sdkOutcome": "sent",
     "result": {
      "ok": true,
@@ -2346,15 +2426,15 @@
     ],
     "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
     "inputs": {
-     "preparedFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-     "currentFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
      "runtimeUnchanged": true,
      "signedDryRun": [
       "ok"
      ],
      "dryRunDetails": [
       {
-       "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
+       "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
        "outcome": "ok",
        "detail": "dispatch ok"
       }
@@ -2367,16 +2447,16 @@
     "index": 0,
     "actionId": "batch",
     "phase": "checking",
-    "at": "2026-10-11T12:30:42.562Z"
+    "at": "2026-10-18T05:14:40.933Z"
    },
    {
     "index": 0,
     "actionId": "batch",
     "phase": "sending",
-    "at": "2026-10-11T12:30:42.624Z",
+    "at": "2026-10-18T05:14:40.946Z",
     "dryRun": [
      {
-      "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
+      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
       "outcome": "ok",
       "detail": "dispatch ok"
      }
@@ -2387,63 +2467,63 @@
     "actionId": "batch",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-11T12:30:43.649Z"
+    "at": "2026-10-18T05:14:41.961Z"
    }
   ],
   "statuses": [
    {
     "actionId": "batch",
     "status": "submitted",
-    "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
-    "at": "2026-10-11T12:30:42.691Z"
+    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
+    "at": "2026-10-18T05:14:40.996Z"
    },
    {
     "actionId": "batch",
     "status": "in_block",
-    "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
-    "blockHash": "0xfebc5adc949f67c80f704f8f05e1f1dc46f2008b1deb703ffb43e3117eea1686",
-    "at": "2026-10-11T12:30:42.691Z"
+    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
+    "blockHash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de",
+    "at": "2026-10-18T05:14:40.996Z"
    },
    {
     "actionId": "batch",
     "status": "finalized",
-    "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
-    "blockHash": "0xfebc5adc949f67c80f704f8f05e1f1dc46f2008b1deb703ffb43e3117eea1686",
-    "at": "2026-10-11T12:30:43.648Z"
+    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
+    "blockHash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de",
+    "at": "2026-10-18T05:14:41.960Z"
    }
   ],
   "run": {
    "ok": true,
    "receipt": {
     "receiptVersion": 1,
-    "manifestDigest": "0x6c6d72beed28214097f7ebaa34d66b7606986b57910f49675a20e21c571d941f",
-    "planDigest": "0x78d7ef72206cd256172add79760d34e99d78f325b66062e00268292ed537d228",
-    "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-    "policyDigest": "0xe0679fc340692a64ee47e56d5e18e26ede39a022b959eaec6f1088ae88eab599",
-    "approvalHash": "0x0fe4708a0c08599769a22a877ee074c8af25fb3b0b2d413273ee72cf7426bcf6",
+    "manifestDigest": "0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1",
+    "planDigest": "0x0664a32365cd84c8649392ddbda96f9773f15385f5aadb3ccbeba770a1808e3d",
+    "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
+    "approvalHash": "0x92832fecb2455745de35cdffa49399f62986df67470e3c42ac8c69756fc9076e",
     "mode": "atomic_verified",
     "steps": [
      {
       "actionId": "pay",
       "status": "finalized",
-      "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
+      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
       "block": {
-       "number": 28,
-       "hash": "0xfebc5adc949f67c80f704f8f05e1f1dc46f2008b1deb703ffb43e3117eea1686"
+       "number": 40,
+       "hash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6514188425)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6512750759)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Utility.ItemCompleted()",
-       "Contracts.ContractEmitted(0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98, 0x5345414d5345414d)",
-       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98)",
+       "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
+       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a)",
        "Utility.ItemCompleted()",
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Utility.ItemCompleted()",
        "Utility.BatchCompleted()",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4991961116)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1522227309, 0)",
-       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19319,\"refTime\":1522942070}})"
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4315862133)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196888626, 0)",
+       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":69000,\"refTime\":2198413505}})"
       ],
       "verification": "verified",
       "reason": "Transfer confirmed: asset, amount and account all match the plan."
@@ -2451,24 +2531,24 @@
      {
       "actionId": "call",
       "status": "finalized",
-      "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
+      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
       "block": {
-       "number": 28,
-       "hash": "0xfebc5adc949f67c80f704f8f05e1f1dc46f2008b1deb703ffb43e3117eea1686"
+       "number": 40,
+       "hash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6514188425)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6512750759)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Utility.ItemCompleted()",
-       "Contracts.ContractEmitted(0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98, 0x5345414d5345414d)",
-       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98)",
+       "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
+       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a)",
        "Utility.ItemCompleted()",
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Utility.ItemCompleted()",
        "Utility.BatchCompleted()",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4991961116)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1522227309, 0)",
-       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19319,\"refTime\":1522942070}})"
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4315862133)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196888626, 0)",
+       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":69000,\"refTime\":2198413505}})"
       ],
       "verification": "verified",
       "reason": "The call succeeded and the contract emitted an event."
@@ -2476,24 +2556,24 @@
      {
       "actionId": "mint",
       "status": "finalized",
-      "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
+      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
       "block": {
-       "number": 28,
-       "hash": "0xfebc5adc949f67c80f704f8f05e1f1dc46f2008b1deb703ffb43e3117eea1686"
+       "number": 40,
+       "hash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6514188425)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6512750759)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Utility.ItemCompleted()",
-       "Contracts.ContractEmitted(0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98, 0x5345414d5345414d)",
-       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98)",
+       "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
+       "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a)",
        "Utility.ItemCompleted()",
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Utility.ItemCompleted()",
        "Utility.BatchCompleted()",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4991961116)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1522227309, 0)",
-       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19319,\"refTime\":1522942070}})"
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4315862133)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196888626, 0)",
+       "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":69000,\"refTime\":2198413505}})"
       ],
       "verification": "verified",
       "reason": "Mint confirmed: asset, amount and account all match the plan."
@@ -2504,37 +2584,116 @@
      "verified": 3,
      "expected": 3
     },
-    "receiptDigest": "0x7a790000d6723cddcf7b7484a509ba77ba87b9082b502d9d7cafdb0df9794f22"
+    "receiptDigest": "0xdcc91224fa942f72957b8253b9b9c107e07a3995b1da38d25cc6479964afcc1a"
    }
   },
-  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7",
+  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
   "usedProofSize": {
    "pay": {
-    "value": "19319",
-    "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7"
+    "value": "69000",
+    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5"
    },
    "call": {
-    "value": "19319",
-    "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7"
+    "value": "69000",
+    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5"
    },
    "mint": {
-    "value": "19319",
-    "txHash": "0xb4f0d34bc84b7645835aa18712aee51832ffeb871d909f087eb5aedcc03ed6a7"
+    "value": "69000",
+    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5"
    }
   },
-  "rollbackEvidence": "runs/rollback-1791721841443.json"
+  "decodedEmitted": {
+   "pay": {
+    "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
+    "event": "Settled",
+    "signatureTopic": "0x7ed8c671bb851ee2349b5a1282a2740936f1faf4ff0f59e2e566910f44b9039b",
+    "fields": [
+     {
+      "name": "caller",
+      "type": "AccountId",
+      "indexed": true,
+      "value": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+     },
+     {
+      "name": "order_id",
+      "type": "u64",
+      "indexed": true,
+      "value": "7"
+     },
+     {
+      "name": "amount",
+      "type": "Balance",
+      "indexed": false,
+      "value": "2500"
+     }
+    ],
+    "abi": "contracts/seam-demo/artifacts/metadata.json"
+   },
+   "call": {
+    "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
+    "event": "Settled",
+    "signatureTopic": "0x7ed8c671bb851ee2349b5a1282a2740936f1faf4ff0f59e2e566910f44b9039b",
+    "fields": [
+     {
+      "name": "caller",
+      "type": "AccountId",
+      "indexed": true,
+      "value": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+     },
+     {
+      "name": "order_id",
+      "type": "u64",
+      "indexed": true,
+      "value": "7"
+     },
+     {
+      "name": "amount",
+      "type": "Balance",
+      "indexed": false,
+      "value": "2500"
+     }
+    ],
+    "abi": "contracts/seam-demo/artifacts/metadata.json"
+   },
+   "mint": {
+    "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
+    "event": "Settled",
+    "signatureTopic": "0x7ed8c671bb851ee2349b5a1282a2740936f1faf4ff0f59e2e566910f44b9039b",
+    "fields": [
+     {
+      "name": "caller",
+      "type": "AccountId",
+      "indexed": true,
+      "value": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+     },
+     {
+      "name": "order_id",
+      "type": "u64",
+      "indexed": true,
+      "value": "7"
+     },
+     {
+      "name": "amount",
+      "type": "Balance",
+      "indexed": false,
+      "value": "2500"
+     }
+    ],
+    "abi": "contracts/seam-demo/artifacts/metadata.json"
+   }
+  },
+  "rollbackEvidence": "runs/rollback-1792300479791.json"
  },
  "rollback": {
   "id": "rollback",
   "kind": "batch_all-rollback",
   "recordingVersion": 2,
-  "ranAt": "2026-10-11T12:30:41.442Z",
-  "evidenceFile": "evidence/devnode/runs/rollback-1791721841443.json",
-  "runsOfThisKind": 2,
+  "ranAt": "2026-10-18T05:14:39.790Z",
+  "evidenceFile": "evidence/devnode/runs/rollback-1792300479791.json",
+  "runsOfThisKind": 3,
   "endpoint": "ws://127.0.0.1:9944",
   "compiledMode": "atomic_unverified",
   "compiledModeReason": "All steps go in one Utility.batch_all; rollback on failure has NOT been verified on this runtime (allowed by allowAtomicUnverified).",
-  "shimmed": false,
   "manifest": {
    "version": 1,
    "chain": {
@@ -2589,33 +2748,33 @@
     "ss58Prefix": 42,
     "tokenSymbol": "UNIT",
     "tokenDecimals": 12,
-    "typesBundleHash": "0x4387cb3953e535bb47e5ea34a027b2c3a73742093a677f054e47b0adb5689810"
+    "typesBundleHash": null
    },
-   "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+   "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
    "capabilities": {
     "Assets.approve_transfer": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 22,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.block": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 31,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.burn": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 7,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.cancel_approval": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 23,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.clear_metadata": {
      "status": "observed",
@@ -2627,7 +2786,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.destroy_accounts": {
      "status": "observed",
@@ -2651,13 +2810,13 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 21,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_cancel_approval": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 24,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_clear_metadata": {
      "status": "observed",
@@ -2669,7 +2828,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.force_set_metadata": {
      "status": "observed",
@@ -2681,13 +2840,13 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 10,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.freeze": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 11,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.freeze_asset": {
      "status": "observed",
@@ -2699,7 +2858,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.refund": {
      "status": "observed",
@@ -2711,7 +2870,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 30,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.set_metadata": {
      "status": "observed",
@@ -2729,7 +2888,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 16,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.start_destroy": {
      "status": "observed",
@@ -2741,7 +2900,7 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 12,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.thaw_asset": {
      "status": "observed",
@@ -2759,37 +2918,37 @@
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 29,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_all": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 32,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_approved": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 25,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_keep_alive": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Assets.transfer_ownership": {
      "status": "observed",
      "palletIndex": 10,
      "callIndex": 15,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.burn": {
      "status": "observed",
@@ -2801,67 +2960,67 @@
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_set_balance": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_transfer": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.force_unreserve": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_all": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 4,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_allow_death": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.transfer_keep_alive": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Balances.upgrade_accounts": {
      "status": "observed",
      "palletIndex": 4,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.call": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.call_old_weight": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 8,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate_old_weight": {
      "status": "observed",
@@ -2873,7 +3032,7 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 7,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.instantiate_with_code_old_weight": {
      "status": "observed",
@@ -2885,7 +3044,7 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 9,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.remove_code": {
      "status": "observed",
@@ -2897,13 +3056,13 @@
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Contracts.upload_code": {
      "status": "observed",
      "palletIndex": 8,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Nfts.mint": {
      "status": "not_observed"
@@ -2912,25 +3071,25 @@
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 0,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.instantiate": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.instantiate_with_code": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.migrate": {
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 6,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.remove_code": {
      "status": "observed",
@@ -2942,7 +3101,7 @@
      "status": "observed",
      "palletIndex": 9,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Revive.upload_code": {
      "status": "observed",
@@ -2960,7 +3119,7 @@
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 2,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Sudo.sudo": {
      "status": "observed",
@@ -2972,13 +3131,13 @@
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Sudo.sudo_unchecked_weight": {
      "status": "observed",
      "palletIndex": 7,
      "callIndex": 1,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "System.apply_authorized_upgrade": {
      "status": "observed",
@@ -3074,7 +3233,7 @@
      "status": "observed",
      "palletIndex": 2,
      "callIndex": 3,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     },
     "Utility.force_batch": {
      "status": "observed",
@@ -3086,19 +3245,19 @@
      "status": "observed",
      "palletIndex": 2,
      "callIndex": 5,
-     "argTypesConfidence": "partial"
+     "argTypesConfidence": "full"
     }
    },
    "behaviour": {
     "batchAllRollback": "unknown"
    },
    "endpoint": "ws://127.0.0.1:9944",
-   "blockNumber": 26
+   "blockNumber": 38
   },
   "plan": {
    "planVersion": 1,
    "manifestDigest": "0xe5714dd7f0e7af237841f9cb3eed2d0a6e275728ac2ef516caf54db6b212404a",
-   "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+   "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
    "signer": {
     "type": "ss58",
     "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
@@ -3159,7 +3318,7 @@
     "callIndex": 2,
     "encodedCall": "0x02020c0a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48140a0904008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a480f00404c948b32030a06040090b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe220c"
    },
-   "planDigest": "0xaa166fd1d27d12b248beac8eaede71e830dcda85e0fc041bba5ff2ca4f44d096"
+   "planDigest": "0x864b1aadac6a84a952f30d17e59427b18c9a224c0eb42861fcbedc591a964a35"
   },
   "planText": "Plan for 3 steps: all steps run in one transaction, but it hasn't been proven that the chain undoes everything on failure.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- overdraw: assets.transfer is ready (Assets.transfer_keep_alive).\n- mint: assets.mint is ready (Assets.mint).\nWhy this mode: All steps go in one Utility.batch_all; rollback on failure has NOT been verified on this runtime (allowed by allowAtomicUnverified).",
   "preflight": {
@@ -3170,7 +3329,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646870506"
+      "value": "646749381"
      },
      "storageDeposit": {
       "unknown": true
@@ -3187,7 +3346,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646870513"
+      "value": "646749388"
      },
      "storageDeposit": {
       "unknown": true
@@ -3204,7 +3363,7 @@
       "value": "273273000"
      },
      "fee": {
-      "value": "380214246"
+      "value": "380152956"
      },
      "storageDeposit": {
       "unknown": true
@@ -3217,22 +3376,22 @@
     }
    ],
    "totalFee": {
-    "value": "1538206251"
+    "value": "1537885119"
    }
   },
   "preflightAt": {
-   "number": 26,
-   "hash": "0x46437095e1f65daf67c8d07b4d5da249eebccadea708a9a8af35d1af602e8682"
+   "number": 38,
+   "hash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29"
   },
   "envelope": {
    "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-   "nonce": 26,
+   "nonce": 38,
    "mortalityBlocks": 64,
    "checkpoint": {
-    "number": 25,
-    "hash": "0xa7870077bec256729a52e024ca88560efd0f76e36026a9484aca180d5f369bd5"
+    "number": 37,
+    "hash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd"
    },
-   "expiresAt": "2026-10-11T12:36:58.357Z"
+   "expiresAt": "2026-10-18T05:20:56.712Z"
   },
   "policy": {
    "version": "seam/policy/v1",
@@ -3259,6 +3418,11 @@
    "allowUnknown": {
     "storageDeposit": true,
     "dryRun": true
+   },
+   "allowedSelectors": {
+    "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty": [
+     "0x6c337222"
+    ]
    },
    "maxAmountPerAsset": {
     "1": "1000000000000000"
@@ -3413,14 +3577,14 @@
     {
      "rule": "fee_limit",
      "outcome": "pass",
-     "reason": "total fee 1538206251 is within limits"
+     "reason": "total fee 1537885119 is within limits"
     }
    ],
-   "policyDigest": "0x8dc599b6e779bf787fb4f665fe23bd745fd9d099d21b0f4c15d808a4a62e432a"
+   "policyDigest": "0x0d16df65ccbe8648a1158f62dc5a07aee751925d729d986b1878b809a1eec665"
   },
   "policyText": "Allowed: all 25 policy checks passed.",
   "approval": {
-   "hash": "0x4aaea7607393fa76a18f024c055d92be71800b2b97b0069dd545f1f9137e868a",
+   "hash": "0x324b07e98442e8ebdeca7d96addf5a68af3b0e886ecb250c60959d960f3e047c",
    "covers": [
     "manifest",
     "plan",
@@ -3431,28 +3595,28 @@
     "signing envelope",
     "preflight"
    ],
-   "expiresAt": "2026-10-11T12:36:58.357Z",
+   "expiresAt": "2026-10-18T05:20:56.712Z",
    "used": false,
    "binding": {
     "manifestDigest": "0xe5714dd7f0e7af237841f9cb3eed2d0a6e275728ac2ef516caf54db6b212404a",
-    "planDigest": "0xaa166fd1d27d12b248beac8eaede71e830dcda85e0fc041bba5ff2ca4f44d096",
-    "planContentDigest": "0x10eb8da11ea66c5c3454f67dc23718d31e0f562f09a6d01263432d5d23e3f7cb",
+    "planDigest": "0x864b1aadac6a84a952f30d17e59427b18c9a224c0eb42861fcbedc591a964a35",
+    "planContentDigest": "0xbe8647ab47bbd72e07c034e77ff1f222af91c0bb7450fa579c81c2822a4aed12",
     "callsDigest": "0x4a90a1675adfa404d917a08a74e7a50cb92e71bba3daa880123677d67469a27c",
-    "fingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-    "policyDigest": "0x8dc599b6e779bf787fb4f665fe23bd745fd9d099d21b0f4c15d808a4a62e432a",
-    "policyResultDigest": "0x57fdee8c91c92c0d927d1f0ee7c26d79b56f0366bc433784a4747210c9d6b73e",
-    "envelopeDigest": "0x1996877411b85b93ed93b56b5007d0645e0a1f6ec6402841a54be2fa3f6c273b",
-    "preflightDigest": "0xf1d7061269fdec87c0d0ec18d484008f3ad4f930c21d9902f7b2c32899d93d46",
+    "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+    "policyDigest": "0x0d16df65ccbe8648a1158f62dc5a07aee751925d729d986b1878b809a1eec665",
+    "policyResultDigest": "0x8ecafe548af89524bce3c585cbc505f296bd2d528ba25bb013b1904359f40d75",
+    "envelopeDigest": "0xddafed713ebfdde8c9736018119258d1be6433caa9bb9586b153ceb2ea11f443",
+    "preflightDigest": "0x59750427905be4484a286913e4d15bdf55ad5bad2a8ee2709b7b56b9ed31c471",
     "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "nonce": 26,
+    "nonce": 38,
     "mortalityBlocks": 64,
-    "expiresAt": "2026-10-11T12:36:58.357Z"
+    "expiresAt": "2026-10-18T05:20:56.712Z"
    }
   },
   "signing": {
    "count": 1,
    "specVersion": "0x00000064",
-   "era": "0x9501",
+   "era": "0x5502",
    "signedExtensions": [
     "CheckNonZeroSender",
     "CheckSpecVersion",
@@ -3470,7 +3634,7 @@
     "index": 0,
     "actionId": "batch",
     "sendIndex": null,
-    "checkedAt": "2026-10-11T12:30:40.400Z",
+    "checkedAt": "2026-10-18T05:14:38.765Z",
     "sdkOutcome": "blocked",
     "result": {
      "ok": false,
@@ -3498,15 +3662,15 @@
     ],
     "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
     "inputs": {
-     "preparedFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
-     "currentFingerprintDigest": "0xcbaa34b90d26da672a3033c2586a466fa1eb10841379740fb36880eafde52048",
+     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
+     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
      "runtimeUnchanged": true,
      "signedDryRun": [
       "failed"
      ],
      "dryRunDetails": [
       {
-       "txHash": "0x7fe6dd38b8b2fe4e3396f5b4cb26a8067d3c81f0f5975fb95b2472eeb689a4c1",
+       "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
        "outcome": "failed",
        "detail": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount."
       }
@@ -3519,7 +3683,7 @@
     "index": 0,
     "actionId": "batch",
     "phase": "checking",
-    "at": "2026-10-11T12:30:40.388Z"
+    "at": "2026-10-18T05:14:38.748Z"
    }
   ],
   "statuses": [],
@@ -3540,7 +3704,7 @@
    ],
    "dryRun": [
     {
-     "txHash": "0x7fe6dd38b8b2fe4e3396f5b4cb26a8067d3c81f0f5975fb95b2472eeb689a4c1",
+     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
      "outcome": "failed",
      "detail": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
      "raw": "0x0001030a00000000"
@@ -3550,7 +3714,7 @@
   },
   "directSubmit": {
    "note": "test-only bypass of the gate, local dev chain; the same signed bytes the gate refused",
-   "txHash": "0x7fe6dd38b8b2fe4e3396f5b4cb26a8067d3c81f0f5975fb95b2472eeb689a4c1",
+   "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
    "status": "finalized",
    "history": [
     "submitted",
@@ -3560,65 +3724,65 @@
    "statuses": [
     {
      "status": "submitted",
-     "txHash": "0x7fe6dd38b8b2fe4e3396f5b4cb26a8067d3c81f0f5975fb95b2472eeb689a4c1",
-     "at": "2026-10-11T12:30:40.455Z"
+     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
+     "at": "2026-10-18T05:14:38.824Z"
     },
     {
      "status": "in_block",
-     "txHash": "0x7fe6dd38b8b2fe4e3396f5b4cb26a8067d3c81f0f5975fb95b2472eeb689a4c1",
-     "blockHash": "0x61ce43f8f504dce017283874c90a2bf3b8f06db3de7079da82e6cc3c57d3956f",
-     "at": "2026-10-11T12:30:40.455Z"
+     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
+     "blockHash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343",
+     "at": "2026-10-18T05:14:38.824Z"
     },
     {
      "status": "finalized",
-     "txHash": "0x7fe6dd38b8b2fe4e3396f5b4cb26a8067d3c81f0f5975fb95b2472eeb689a4c1",
-     "blockHash": "0x61ce43f8f504dce017283874c90a2bf3b8f06db3de7079da82e6cc3c57d3956f",
-     "at": "2026-10-11T12:30:41.423Z"
+     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
+     "blockHash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343",
+     "at": "2026-10-18T05:14:39.782Z"
     }
    ],
    "block": {
-    "number": 27,
-    "hash": "0x61ce43f8f504dce017283874c90a2bf3b8f06db3de7079da82e6cc3c57d3956f"
+    "number": 39,
+    "hash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343"
    },
    "extrinsicIndex": 1,
    "success": false,
    "dispatchError": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
    "events": [
-    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1538206251)",
-    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 278300415)",
-    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1259905836, 0)",
+    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1537885119)",
+    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 278237967)",
+    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1259647152, 0)",
     "System.ExtrinsicFailed({\"module\":{\"error\":\"0x00000000\",\"index\":10}}, {\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16413,\"refTime\":1260466516}})"
    ]
   },
   "state": {
    "before": {
-    "block": 26,
-    "aliceNonce": 26,
+    "block": 38,
+    "aliceNonce": 38,
     "asset": {
-     "alice": "999999977500",
-     "bob": "22500",
-     "charlie": "63",
-     "supply": "1000000000063"
+     "alice": "999999967500",
+     "bob": "32500",
+     "charlie": "91",
+     "supply": "1000000000091"
     }
    },
    "afterGate": {
-    "block": 26,
-    "aliceNonce": 26,
+    "block": 38,
+    "aliceNonce": 38,
     "asset": {
-     "alice": "999999977500",
-     "bob": "22500",
-     "charlie": "63",
-     "supply": "1000000000063"
+     "alice": "999999967500",
+     "bob": "32500",
+     "charlie": "91",
+     "supply": "1000000000091"
     }
    },
    "after": {
-    "block": 27,
-    "aliceNonce": 27,
+    "block": 39,
+    "aliceNonce": 39,
     "asset": {
-     "alice": "999999977500",
-     "bob": "22500",
-     "charlie": "63",
-     "supply": "1000000000063"
+     "alice": "999999967500",
+     "bob": "32500",
+     "charlie": "91",
+     "supply": "1000000000091"
     }
    }
   },
@@ -3628,6 +3792,11 @@
  },
  "checks": [
   {
+   "what": "setup: deploy transaction of the contract the run calls is recorded",
+   "ok": true,
+   "detail": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a vs 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a"
+  },
+  {
    "what": "rollback: saved Manifest hashes to the recorded digest",
    "ok": true,
    "detail": "0xe5714dd7f0e7af237841f9cb3eed2d0a6e275728ac2ef516caf54db6b212404a vs 0xe5714dd7f0e7af237841f9cb3eed2d0a6e275728ac2ef516caf54db6b212404a"
@@ -3635,7 +3804,7 @@
   {
    "what": "rollback: plan digest recomputes",
    "ok": true,
-   "detail": "0xaa166fd1d27d12b248beac8eaede71e830dcda85e0fc041bba5ff2ca4f44d096 vs 0xaa166fd1d27d12b248beac8eaede71e830dcda85e0fc041bba5ff2ca4f44d096"
+   "detail": "0x864b1aadac6a84a952f30d17e59427b18c9a224c0eb42861fcbedc591a964a35 vs 0x864b1aadac6a84a952f30d17e59427b18c9a224c0eb42861fcbedc591a964a35"
   },
   {
    "what": "rollback: asset balances and supply identical before and after the bypass",
@@ -3660,12 +3829,12 @@
   {
    "what": "sequential: saved Manifest hashes to the recorded digest",
    "ok": true,
-   "detail": "0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54 vs 0xff291a5cc405b2ab14ca67674c910a76199e857b623e13eea537de6443d71c54"
+   "detail": "0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f vs 0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f"
   },
   {
    "what": "sequential: plan digest recomputes",
    "ok": true,
-   "detail": "0x591c900f6c636ae24dffe35a0ab1b085db4e336bd91c2889ff148125f9bb4a0d vs 0x591c900f6c636ae24dffe35a0ab1b085db4e336bd91c2889ff148125f9bb4a0d"
+   "detail": "0x02cdc56e1c230202b2653a6b52dcd59f1e9c8e50806e5e3bae39b2bb634b75b8 vs 0x02cdc56e1c230202b2653a6b52dcd59f1e9c8e50806e5e3bae39b2bb634b75b8"
   },
   {
    "what": "atomic: receipt digest intact (checkReceipt)",
@@ -3675,12 +3844,12 @@
   {
    "what": "atomic: saved Manifest hashes to the recorded digest",
    "ok": true,
-   "detail": "0x6c6d72beed28214097f7ebaa34d66b7606986b57910f49675a20e21c571d941f vs 0x6c6d72beed28214097f7ebaa34d66b7606986b57910f49675a20e21c571d941f"
+   "detail": "0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1 vs 0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1"
   },
   {
    "what": "atomic: plan digest recomputes",
    "ok": true,
-   "detail": "0x78d7ef72206cd256172add79760d34e99d78f325b66062e00268292ed537d228 vs 0x78d7ef72206cd256172add79760d34e99d78f325b66062e00268292ed537d228"
+   "detail": "0x0664a32365cd84c8649392ddbda96f9773f15385f5aadb3ccbeba770a1808e3d vs 0x0664a32365cd84c8649392ddbda96f9773f15385f5aadb3ccbeba770a1808e3d"
   }
  ]
 }
