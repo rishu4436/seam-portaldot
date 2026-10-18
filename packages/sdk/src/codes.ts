@@ -99,7 +99,7 @@ export const outcome = (code: SeamCode): SeamOutcome => ({ code, exitCode: EXIT[
  * finalized, has a tx hash and block, and is verified. An `uncertain` step wins over everything else.
  */
 export function classifyReceipt(r: Receipt): SeamOutcome {
-  if (r.steps.some((s) => (s.status as string) === 'uncertain')) return outcome(SeamCode.Uncertain);
+  if (r.steps.some((s) => s.status === 'uncertain')) return outcome(SeamCode.Uncertain);
   if (r.steps.some((s) => s.status === 'failed' || s.code === 'tx_failed')) return outcome(SeamCode.TxFailed);
   if (r.result === 'verified') return outcome(SeamCode.Verified);
   if (r.result === 'partial') return outcome(SeamCode.Partial);

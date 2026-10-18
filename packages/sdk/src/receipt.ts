@@ -4,9 +4,9 @@ import { overallResult, type ReceiptStep, type StepStatus } from '@seam/policy';
 
 /**
  * Step status as the SDK reports it. `uncertain` means a broadcast may or may not have happened (RPC timeout after the
- * approval was consumed): never retried automatically, never verified. The policy package's StepStatus has no such word.
+ * approval was consumed): never retried automatically, never verified. Same as the policy package's StepStatus.
  */
-export type SdkStepStatus = StepStatus | 'uncertain';
+export type SdkStepStatus = StepStatus;
 
 /**
  * How much of a step the chain has actually shown, lowest to highest:
@@ -21,10 +21,7 @@ export type VerifierCoverage = 'none' | 'call_dispatched' | 'extrinsic_finalized
 export type StepCode =
   | 'unsupported_runtime' | 'effect_unproven' | 'effect_mismatch' | 'not_finalized' | 'tx_failed' | 'no_trace' | 'uncertain' | 'not_run';
 
-/**
- * A receipt step. Its `status` can be 'uncertain' at runtime (see SdkStepStatus) but is typed as the policy package's
- * StepStatus until Bot 3 widens it there, so flow.ts and the submit gate keep compiling. Compare against SdkStepStatus.
- */
+/** A receipt step: the policy package's ReceiptStep plus how much the chain showed and why it is unknown or not verified. */
 export type SdkReceiptStep = ReceiptStep & { coverage: VerifierCoverage; code?: StepCode };
 
 /** What the caller expects a contracts.call to have done, committed before the run. SEAM does not guess this from the ABI. */
@@ -95,7 +92,7 @@ export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOu
   }
   const events = outcome.events.map(fmt);
   const r = (verification: ReceiptStep['verification'], coverage: VerifierCoverage, reason: string, code?: StepCode): SdkReceiptStep => ({
-    ...base, status: outcome.status as StepStatus, txHash: outcome.txHash, block: outcome.block, events, verification, coverage, reason, ...(code ? { code } : {}),
+    ...base, status: outcome.status, txHash: outcome.txHash, block: outcome.block, events, verification, coverage, reason, ...(code ? { code } : {}),
   });
   if (outcome.status === 'failed' || outcome.events.some((e) => e.pallet === 'System' && e.name === 'ExtrinsicFailed')) {
     return r('not_verified', 'none', `The transaction failed on chain${outcome.error ? `: ${outcome.error}` : ''}.`, 'tx_failed');
