@@ -165,9 +165,9 @@ describe("SEAM-003 offline integrity vs live chain verification", () => {
     );
     expect(v.status).toBe("unknown");
   });
-  it("without a plan the signer/call cannot be checked, which is stated, and not_run steps are skipped", async () => {
+  it("without a plan the signer/call cannot be checked, which is stated, and the result stays unknown (fail closed)", async () => {
     const v = await verifyReceiptLive(real, honestChain());
-    expect(v.status).toBe("chain_verified");
+    expect(v.status).toBe("unknown");
     expect(v.notes.join(" ")).toMatch(/no plan/i);
   });
 });

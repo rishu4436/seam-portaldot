@@ -40,7 +40,9 @@ const lc = (s?: string) => (s ?? "").toLowerCase();
  * Re-reads the chain and checks, for every step the receipt says ran: the block is on the canonical chain and at or below
  * the finalized head, the block holds the transaction, the signer and call are the planned ones (needs `plan`), and the
  * events the receipt lists are the events the chain shows. Missing data or a failing read is `unknown`, never verified.
- * `chain_verified` means the receipt's recorded facts match the chain; read the receipt's `result` for what they prove.
+ * `chain_verified` needs ALL of: a `plan`; the on-chain call bytes equal to the planned call (each step's call, or for atomic
+ * plans the outer batch call); no planned step missing or not run; and every step re-derived as `effect_proven` from the chain's own
+ * events (for contract calls this needs the `effects` assertion). No plan, an uncomparable call or a missing assertion gives `unknown`; a mismatch gives `failed`.
  */
 export async function verifyReceiptLive(
   receipt: Receipt,
@@ -60,17 +62,29 @@ export async function verifyReceiptLive(
     };
   if (plan && plan.planDigest !== receipt.planDigest)
     problems.push("The plan given is not the plan this receipt is for (plan digest differs).");
-  if (!plan)
-    notes.push(
-      "No plan was given, so the signer and call of each transaction were not compared with what was planned.",
-    );
   const atomic = receipt.mode === "atomic_verified" || receipt.mode === "atomic_unverified";
-  if (atomic && plan)
-    notes.push(
-      "Atomic receipt: signer and events were checked; the batch call bytes were not compared step by step.",
-    );
-
+  // Fail closed: chain_verified is only reachable with a plan, a planned-vs-on-chain call comparison and proven effects.
   let unknown = false;
+  if (!plan) {
+    notes.push(
+      "No plan was given, so the signer and call of each transaction were not compared with what was planned. Without a plan the result cannot be chain_verified.",
+    );
+    unknown = true;
+  } else {
+    if (plan.mode !== receipt.mode)
+      problems.push(`The receipt's mode is ${receipt.mode}, the plan's mode is ${plan.mode}.`);
+    if (atomic && !plan.outerCall?.encodedCall) {
+      notes.push(
+        "Atomic plan has no outer batch call to compare, so the on-chain batch call cannot be checked.",
+      );
+      unknown = true;
+    }
+    const ran = new Set(receipt.steps.map((x) => x.actionId));
+    for (const ps of plan.steps)
+      if (!ran.has(ps.actionId))
+        problems.push(`${ps.actionId}: a step of the plan is missing from the receipt.`);
+  }
+
   let finalized: number;
   try {
     finalized = await reader.finalizedNumber();
@@ -85,10 +99,18 @@ export async function verifyReceiptLive(
 
   for (const s of receipt.steps) {
     const mine = problems.length;
+    let stepUnknown = false;
+    const flag = () => {
+      unknown = true;
+      stepUnknown = true;
+    };
     const mark = (st: LiveVerification["steps"][number]["status"]) =>
       steps.push({ actionId: s.actionId, status: st });
     if (s.status === "not_run") {
-      notes.push(`${s.actionId}: not run, nothing to check.`);
+      notes.push(
+        `${s.actionId}: not run, nothing to check; the planned effect did not happen, so the run cannot be chain_verified.`,
+      );
+      flag();
       mark("skipped");
       continue;
     }
@@ -96,7 +118,7 @@ export async function verifyReceiptLive(
       notes.push(
         `${s.actionId}: receipt status is ${s.status}, not finalized, so it cannot be chain_verified.`,
       );
-      unknown = true;
+      flag();
       mark("unknown");
       continue;
     }
@@ -110,7 +132,7 @@ export async function verifyReceiptLive(
         notes.push(
           `${s.actionId}: block ${s.block.number} is above the finalized head ${finalized}.`,
         );
-        unknown = true;
+        flag();
         mark("unknown");
         continue;
       }
@@ -133,18 +155,29 @@ export async function verifyReceiptLive(
         if (!atomic && !planStep) problems.push(`${s.actionId}: not a step of the plan.`);
         if (tx.signer === undefined) {
           notes.push(`${s.actionId}: the signer could not be read from the block.`);
-          unknown = true;
+          flag();
         } else if (lc(tx.signer) !== lc(plan.signer.publicKey))
           problems.push(
             `${s.actionId}: signed by ${tx.signer}, the plan's signer is ${plan.signer.publicKey}.`,
           );
-        if (!atomic && planStep?.encodedCall) {
-          if (tx.callHex === undefined) {
-            notes.push(`${s.actionId}: the call could not be read from the block.`);
-            unknown = true;
-          } else if (lc(tx.callHex) !== lc(planStep.encodedCall))
-            problems.push(`${s.actionId}: the call on chain is not the planned call.`);
-        }
+        if (atomic && !planStep) problems.push(`${s.actionId}: not a step of the plan.`);
+        // The call that was planned: the outer batch call for atomic plans, the step's own call for sequential ones.
+        const planned = atomic ? plan.outerCall?.encodedCall : planStep?.encodedCall;
+        const what = atomic ? "the batch call" : "the call";
+        if (!planned) {
+          if (!atomic && planStep) {
+            notes.push(
+              `${s.actionId}: the plan has no encoded call for this step, so ${what} cannot be compared.`,
+            );
+            flag();
+          }
+        } else if (tx.callHex === undefined) {
+          notes.push(`${s.actionId}: ${what} could not be read from the block.`);
+          flag();
+        } else if (lc(tx.callHex) !== lc(planned))
+          problems.push(
+            `${s.actionId}: ${what} on chain is not the planned ${atomic ? "batch call" : "call"}.`,
+          );
       }
       const chainEvents = tx.events.map(fmt);
       if (chainEvents.length !== s.events.length || chainEvents.some((e, i) => e !== s.events[i])) {
@@ -167,14 +200,22 @@ export async function verifyReceiptLive(
           problems.push(
             `${s.actionId}: the receipt says ${s.verification}, the chain's events give ${again.verification}.`,
           );
+        else if (again.coverage !== "effect_proven" || again.verification !== "verified") {
+          notes.push(
+            `${s.actionId}: the chain's events give coverage ${again.coverage}, not effect_proven (no complete state assertion), so it is not chain_verified.`,
+          );
+          flag();
+          mark("unknown");
+          continue;
+        }
       }
     } catch (e) {
       notes.push(`${s.actionId}: could not read the chain: ${(e as Error).message}`);
-      unknown = true;
+      flag();
       mark("unknown");
       continue;
     }
-    mark(problems.length > mine ? "failed" : "chain_verified");
+    mark(problems.length > mine ? "failed" : plan && !stepUnknown ? "chain_verified" : "unknown");
   }
   if (
     !steps.some(
