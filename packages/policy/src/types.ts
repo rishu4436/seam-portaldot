@@ -28,8 +28,16 @@ export interface SigningEnvelope {
 /** Result of system_dryRun on the actually signed transaction(s), one per signed call. */
 export type SignedDryRun = "ok" | "failed" | "unknown";
 
-export interface PolicyRuleResult { rule: string; outcome: "pass" | "block" | "unknown"; reason: string; actionId?: string }
-export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex }
+export interface PolicyRuleResult {
+  rule: string; outcome: "pass" | "block" | "unknown"; reason: string; actionId?: string;
+  /** Set (true) only when an unknown was explicitly allowed by the policy: the rule passed on weaker proof. */
+  weak?: boolean;
+}
+export interface PolicyResult {
+  allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex;
+  /** Present only when at least one unknown (fee, weight, storage, proof size, dry run) was allowed by the policy: "rule" or "rule:actionId". */
+  weakProof?: string[];
+}
 
 export interface Approval { hash: Hex; covers: string[]; expiresAt: string; used: boolean }
 
