@@ -3,6 +3,39 @@ import type { Hex, Plan, PlanStep } from '@seam/compiler';
 import { overallResult, type ReceiptStep, type StepStatus } from '@seam/policy';
 
 /**
+ * Step status as the SDK reports it. `uncertain` means a broadcast may or may not have happened (RPC timeout after the
+ * approval was consumed): never retried automatically, never verified. The policy package's StepStatus has no such word.
+ */
+export type SdkStepStatus = StepStatus | 'uncertain';
+
+/**
+ * How much of a step the chain has actually shown, lowest to highest:
+ * none < call_dispatched (in a block, ExtrinsicSuccess, not final) < extrinsic_finalized (final, ExtrinsicSuccess)
+ * < contract_emitted (final, and the addressed contract emitted some event) < effect_proven (the requested effect itself:
+ * the exact expected decoded event, or a state readback that matches).
+ * Only `effect_proven` (or the pallet's own exact event for Assets) may be called verified.
+ */
+export type VerifierCoverage = 'none' | 'call_dispatched' | 'extrinsic_finalized' | 'contract_emitted' | 'effect_proven';
+
+/** Why a step is unknown / not verified, in a form code can switch on. */
+export type StepCode =
+  | 'unsupported_runtime' | 'effect_unproven' | 'effect_mismatch' | 'not_finalized' | 'tx_failed' | 'no_trace' | 'uncertain' | 'not_run';
+
+/**
+ * A receipt step. Its `status` can be 'uncertain' at runtime (see SdkStepStatus) but is typed as the policy package's
+ * StepStatus until Bot 3 widens it there, so flow.ts and the submit gate keep compiling. Compare against SdkStepStatus.
+ */
+export type SdkReceiptStep = ReceiptStep & { coverage: VerifierCoverage; code?: StepCode };
+
+/** What the caller expects a contracts.call to have done, committed before the run. SEAM does not guess this from the ABI. */
+export interface ContractEffect {
+  /** Exact `data` bytes of the ContractEmitted event the call must produce (event selector and arguments included). */
+  emittedData?: Hex;
+  /** A value read back from the contract after the call. `actual` undefined/null means it could not be read. */
+  stateReadback?: { expected: string; actual?: string | null };
+}
+
+/**
  * One event read back from the chain for a step's transaction. Args are positional, as the runtime defines them
  * (spec 1002 uses metadata v13, which has no field names): accounts as 0x AccountId32 hex, numbers as decimal strings.
  */
@@ -11,7 +44,7 @@ export interface ChainEvent { pallet: string; name: string; args: string[] }
 /** What the chain layer reports for one step after submitting and tracking it. */
 export interface StepOutcome {
   actionId: string;
-  status: StepStatus;
+  status: SdkStepStatus;
   txHash?: Hex;
   block?: { number: number; hash: Hex };
   events: ChainEvent[];
@@ -27,7 +60,7 @@ export interface Receipt {
   policyDigest: Hex | null;
   approvalHash: Hex | null;
   mode: Plan['mode'];
-  steps: ReceiptStep[];
+  steps: SdkReceiptStep[];
   result: 'verified' | 'partial' | 'not_verified';
   /** How many steps were confirmed against the chain, out of how many the plan had. */
   coverage: { verified: number; expected: number };
@@ -55,38 +88,69 @@ export function expectedEvent(step: PlanStep, signerAccountId: Hex): ChainEvent 
 }
 
 /** Checks one step's outcome against the plan. Missing evidence is never reported as success. */
-export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOutcome | undefined): ReceiptStep {
+export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOutcome | undefined, effect?: ContractEffect): SdkReceiptStep {
   const base = { actionId: step.actionId };
   if (!outcome || outcome.status === 'not_run') {
-    return { ...base, status: 'not_run', events: [], verification: 'unknown', reason: 'Not run, because an earlier step did not complete.' };
+    return { ...base, status: 'not_run', events: [], verification: 'unknown', coverage: 'none', code: 'not_run', reason: 'Not run, because an earlier step did not complete.' };
   }
   const events = outcome.events.map(fmt);
-  const r = (verification: ReceiptStep['verification'], reason: string): ReceiptStep => ({
-    ...base, status: outcome.status, txHash: outcome.txHash, block: outcome.block, events, verification, reason,
+  const r = (verification: ReceiptStep['verification'], coverage: VerifierCoverage, reason: string, code?: StepCode): SdkReceiptStep => ({
+    ...base, status: outcome.status as StepStatus, txHash: outcome.txHash, block: outcome.block, events, verification, coverage, reason, ...(code ? { code } : {}),
   });
   if (outcome.status === 'failed' || outcome.events.some((e) => e.pallet === 'System' && e.name === 'ExtrinsicFailed')) {
-    return r('not_verified', `The transaction failed on chain${outcome.error ? `: ${outcome.error}` : ''}.`);
+    return r('not_verified', 'none', `The transaction failed on chain${outcome.error ? `: ${outcome.error}` : ''}.`, 'tx_failed');
   }
-  if (outcome.status === 'submitted') return r('unknown', 'Submitted but not yet in a block, so nothing can be checked yet.');
-  if (!outcome.txHash || !outcome.block) return r('unknown', 'No transaction hash or block was reported, so the result cannot be traced.');
+  if (outcome.status === 'uncertain') return r('unknown', 'none', 'SEAM could not tell whether this transaction was broadcast. It was not retried; check the chain for the transaction before doing anything else.', 'uncertain');
+  if (outcome.status === 'submitted') return r('unknown', 'none', 'Submitted but not yet in a block, so nothing can be checked yet.', 'not_finalized');
+  if (!outcome.txHash || !outcome.block) return r('unknown', 'none', 'No transaction hash or block was reported, so the result cannot be traced.', 'no_trace');
   if (!outcome.events.some((e) => e.pallet === 'System' && e.name === 'ExtrinsicSuccess')) {
-    return r('not_verified', 'The block has no success event for this transaction.');
+    return r('not_verified', 'none', 'The block has no success event for this transaction.', 'tx_failed');
   }
+  const final = outcome.status === 'finalized';
+  const base1: VerifierCoverage = final ? 'extrinsic_finalized' : 'call_dispatched';
   const want = expectedEvent(step, signerAccountId);
-  if (!want) return r('unknown', `SEAM has no check yet for ${step.kind}.`);
-  if (step.kind === 'contracts.call') {
-    const hit = outcome.events.some((e) => e.pallet === 'Contracts' && e.name === 'ContractEmitted' && lc(e.args[0]) === lc(want.args[0]));
-    return hit
-      ? r('verified', 'The call succeeded and the contract emitted an event.')
-      : r('unknown', "The call succeeded, but the contract emitted no event, so its effect wasn't confirmed.");
+  if (!want) {
+    return r('unknown', base1, `SEAM has no check for ${step.kind} on this runtime (unsupported_runtime). The extrinsic succeeded, but its effect was not checked.`, 'unsupported_runtime');
   }
+  if (step.kind === 'contracts.call') return verifyContractCall(r, outcome, want, final, base1, effect);
   const hit = outcome.events.some((e) => e.pallet === want.pallet && e.name === want.name && sameArgs(e.args, want.args));
   if (hit) {
     const what = step.kind === 'assets.transfer' ? 'Transfer' : 'Mint';
-    return r(outcome.status === 'finalized' ? 'verified' : 'unknown',
-      outcome.status === 'finalized' ? `${what} confirmed: asset, amount and account all match the plan.` : `${what} found in a block that isn't finalized yet.`);
+    return final
+      ? r('verified', 'effect_proven', `${what} confirmed: asset, amount and account all match the plan.`)
+      : r('unknown', base1, `${what} found in a block that isn't finalized yet.`, 'not_finalized');
   }
-  return r('not_verified', `Expected ${fmt(want)} but the chain did not show it. The transaction succeeded, but not as planned.`);
+  return r('not_verified', base1, `Expected ${fmt(want)} but the chain did not show it. The transaction succeeded, but not as planned.`, 'effect_mismatch');
+}
+
+function verifyContractCall(
+  r: (v: ReceiptStep['verification'], c: VerifierCoverage, reason: string, code?: StepCode) => SdkReceiptStep,
+  outcome: StepOutcome, want: ChainEvent, final: boolean, base1: VerifierCoverage, effect?: ContractEffect,
+): SdkReceiptStep {
+  const emitted = outcome.events.filter((e) => e.pallet === 'Contracts' && e.name === 'ContractEmitted' && lc(e.args[0]) === lc(want.args[0]));
+  const cov: VerifierCoverage = final && emitted.length ? 'contract_emitted' : base1;
+  if (!final) return r('unknown', cov, "The call is in a block that isn't finalized yet, so its effect cannot be proven.", 'not_finalized');
+  if (!effect || (effect.emittedData === undefined && !effect.stateReadback)) {
+    return r('unknown', cov, emitted.length
+      ? 'The call succeeded and the contract emitted an event, but SEAM was given no expected event or state to compare, so the requested effect is not proven.'
+      : 'The call succeeded, but the contract emitted no event and no state was checked, so its effect was not confirmed.', 'effect_unproven');
+  }
+  const checks: ('pass' | 'fail' | 'unknown')[] = [];
+  const why: string[] = [];
+  if (effect.emittedData !== undefined) {
+    if (emitted.some((e) => lc(e.args[1]) === lc(effect.emittedData))) checks.push('pass');
+    else if (emitted.length) { checks.push('fail'); why.push('the contract emitted an event, but not the expected one'); }
+    else { checks.push('unknown'); why.push('the expected contract event is missing'); }
+  }
+  if (effect.stateReadback) {
+    const { expected, actual } = effect.stateReadback;
+    if (actual === undefined || actual === null) { checks.push('unknown'); why.push('the contract state could not be read back'); }
+    else if (actual === expected) checks.push('pass');
+    else { checks.push('fail'); why.push(`contract state reads ${actual}, expected ${expected}`); }
+  }
+  if (checks.includes('fail')) return r('not_verified', cov, `The call succeeded, but the requested effect is not on chain: ${why.join('; ')}.`, 'effect_mismatch');
+  if (checks.includes('unknown')) return r('unknown', cov, `The requested effect could not be confirmed: ${why.join('; ')}.`, 'effect_unproven');
+  return r('verified', 'effect_proven', 'The call succeeded and the expected contract event and/or state readback match.');
 }
 
 export interface ReceiptInput {
@@ -96,12 +160,14 @@ export interface ReceiptInput {
   approvalHash?: Hex;
   /** Why a sequential run stopped early. Shown on the first step that was not run. */
   stoppedReason?: string;
+  /** Per actionId: what a contracts.call must have done. Without it a contract call can reach `contract_emitted` at most, never verified. */
+  effects?: Record<string, ContractEffect>;
 }
 
-export function buildReceipt({ plan, outcomes, policyDigest, approvalHash, stoppedReason }: ReceiptInput): Receipt {
+export function buildReceipt({ plan, outcomes, policyDigest, approvalHash, stoppedReason, effects }: ReceiptInput): Receipt {
   const byId = new Map(outcomes.map((o) => [o.actionId, o]));
   const atomic = plan.mode === 'atomic_verified' || plan.mode === 'atomic_unverified';
-  const steps = plan.steps.map((s) => verifyStep(s, plan.signer.publicKey, atomic ? (byId.get(s.actionId) ?? byId.get('batch')) : byId.get(s.actionId)));
+  const steps = plan.steps.map((s) => verifyStep(s, plan.signer.publicKey, atomic ? (byId.get(s.actionId) ?? byId.get('batch')) : byId.get(s.actionId), effects?.[s.actionId]));
   const firstNotRun = steps.find((s) => s.status === 'not_run');
   if (stoppedReason && firstNotRun) firstNotRun.reason = `Not run. ${stoppedReason}`;
   const body = {
