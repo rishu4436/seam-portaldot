@@ -1,6 +1,7 @@
 import { stringCamelCase } from "@polkadot/util";
 import { DOMAIN, NotCanonicalError, digestJson } from "./canonical.js";
 import { parseH160, parseNativeAddress } from "./address.js";
+import { V3_KINDS, V3_SHAPES, checkV3Shape } from "./v3-bindings.js";
 import { computeFingerprintDigest } from "./facts.js";
 import { loadRuntime, type LoadedRuntime } from "./runtime.js";
 import { encodeInkMessage } from "./ink.js";
@@ -21,6 +22,7 @@ import {
   type PlanSigner,
   type PlanStep,
   type RuntimeFacts,
+  type StepReasonCode,
 } from "./types.js";
 
 /** SEAM action kind -> runtime capability. Indexes are never hard-coded; they come from metadata. */
@@ -55,7 +57,7 @@ const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }>
   },
   "revive.call": {
     required: ["contract", "value", "data"],
-    optional: ["gasLimit", "storageDepositLimit"],
+    optional: ["gasLimit", "proofSize", "storageDepositLimit"],
   },
   "nfts.mint": { required: ["collection", "item", "recipient"], optional: [] },
 };
@@ -65,6 +67,10 @@ const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }>
  * If the runtime's call has an argument not listed here, the step is unavailable
  * (SEAM never guesses a value for an argument it does not understand).
  */
+function bindingsOf(kind: ActionKind): Record<string, string> {
+  return Object.fromEntries((V3_SHAPES[kind] ?? []).map((a) => [a.name, a.seamKey]));
+}
+
 const ARG_BINDINGS: Partial<Record<ActionKind, Record<string, string>>> = {
   "assets.transfer": { id: "assetId", target: "recipient", amount: "amount" },
   "assets.mint": { id: "assetId", beneficiary: "recipient", amount: "amount" },
@@ -76,6 +82,9 @@ const ARG_BINDINGS: Partial<Record<ActionKind, Record<string, string>>> = {
     storageDepositLimit: "storageDepositLimit",
     data: "data",
   },
+  // revive.call / nfts.mint: derived from V3_SHAPES (v3-bindings.ts); used only after the metadata's argument shape is verified.
+  "revive.call": bindingsOf("revive.call"),
+  "nfts.mint": bindingsOf("nfts.mint"),
 };
 // Binding keys are camelCase; metadata names (snake_case) are camelCased before lookup.
 
@@ -341,11 +350,17 @@ function validateAction(
       set("value", parseAmount(a.value, p("value"), issues));
       set("data", parseHexBytes(a.data, p("data"), issues));
       if (a.gasLimit !== undefined) set("gasLimit", parseAmount(a.gasLimit, p("gasLimit"), issues));
-      if (a.storageDepositLimit !== undefined)
+      if (a.proofSize !== undefined)
+        set("proofSize", parseAmount(a.proofSize, p("proofSize"), issues));
+      if (a.storageDepositLimit === null) {
+        values.storageDepositLimit = null;
+        encodeValues.storageDepositLimit = null;
+      } else if (a.storageDepositLimit !== undefined) {
         set(
           "storageDepositLimit",
           parseAmount(a.storageDepositLimit, p("storageDepositLimit"), issues),
         );
+      }
       break;
     }
     case "nfts.mint": {
@@ -534,12 +549,14 @@ interface EncodeResult {
   ok: boolean;
   encodedCall?: Hex;
   reason?: string;
+  reasonCode?: StepReasonCode;
   rangeIssue?: CompileIssue;
 }
 
 /** Manifest args that only some runtimes' calls take. */
 const OPTIONAL_RUNTIME_ARGS: Partial<Record<ActionKind, string[]>> = {
   "contracts.call": ["proofSize", "storageDepositLimit"],
+  "revive.call": ["proofSize", "storageDepositLimit"],
 };
 
 function isWeightV2(rawType: string): boolean {
@@ -571,6 +588,25 @@ function encodeStep(
     name: stringCamelCase(a.name.toString()),
     type: a.type.toString(),
   }));
+  if (V3_KINDS.has(kind)) {
+    // Fail closed: the call is encoded only if the metadata's own argument list matches the shape contract.
+    const mismatch = checkV3Shape(
+      kind,
+      cap,
+      rt.metadataVersion,
+      fn.meta.args.map((a, i) => {
+        const rawType = rt.registry.createType(a.type.toString() as any).toRawType();
+        return { name: metaArgs[i]!.name, rawType, isWeightV2: isWeightV2(rawType) };
+      }),
+    );
+    if (mismatch) {
+      return {
+        ok: false,
+        reasonCode: "V3_ARG_SHAPE_MISMATCH",
+        reason: `${capability} is on this runtime but its argument shape is not one SEAM can verify: ${mismatch}`,
+      };
+    }
+  }
   const unknownArgs = metaArgs.filter((a) => !(a.name in bindings)).map((a) => a.name);
   if (unknownArgs.length) {
     return {
@@ -580,7 +616,7 @@ function encodeStep(
   }
   // Arguments the runtime takes but the manifest did not give: unavailable, never guessed.
   const missing = metaArgs
-    .filter((a) => !(bindings[a.name]! in v.encodeValues))
+    .filter((a) => bindings[a.name] !== "__none" && !(bindings[a.name]! in v.encodeValues))
     .map((a) => bindings[a.name]!);
   if (missing.length) {
     return {
@@ -609,6 +645,10 @@ function encodeStep(
   const ordered: unknown[] = [];
   for (const a of metaArgs) {
     const seamKey = bindings[a.name]!;
+    if (seamKey === "__none") {
+      ordered.push(null); // Option argument SEAM never fills (shape check proved it is an Option)
+      continue;
+    }
     const raw = v.encodeValues[seamKey]!;
     const rawType = rt.registry.createType(a.type as any).toRawType();
     if (seamKey === "gasLimit" && isWeightV2(rawType)) {
@@ -748,6 +788,16 @@ function signerFor(
   const a = parseNativeAddress(s.value, ss58Prefix, "signer.value", issues);
   if (!a) return undefined;
   return { type: s.type, value: s.type === "ss58" ? a.ss58 : a.accountId, publicKey: a.accountId };
+}
+
+/**
+ * True only when the facts observe the capability with integer indices AND the supplied metadata really has that
+ * pallet/call there. Forged or stale facts fall back to NO_OBSERVED_V3_METADATA (the pre-existing behaviour).
+ */
+function v3Observed(rt: LoadedRuntime, capability: string, cap: Capability | undefined): boolean {
+  if (!cap || cap.status !== "observed") return false;
+  if (!Number.isInteger(cap.palletIndex) || !Number.isInteger(cap.callIndex)) return false;
+  return capabilityOrigin(rt, capability, cap) === undefined;
 }
 
 const NO_V3_METADATA_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>([
@@ -950,7 +1000,7 @@ export function compile(
       encodedCall: null,
       status: "unavailable",
     };
-    if (NO_V3_METADATA_KINDS.has(action.kind)) {
+    if (NO_V3_METADATA_KINDS.has(action.kind) && !v3Observed(rt, capability, cap)) {
       // TODO(SEAM-006/007): needs REAL observed Portaldot V3 metadata for Revive (call: dest/value/weight/storage deposit/data)
       // and Nfts (mint: collection/item/mint_to/witness). Until a V3 runtime's metadata is captured and pinned as a fixture,
       // encoding either kind would be guessing the layout. Remove this branch only together with fixture-backed encoders + tests.
@@ -977,7 +1027,10 @@ export function compile(
         else if (r.ok) {
           step.encodedCall = r.encodedCall!;
           step.status = "ok";
-        } else step.reason = r.reason;
+        } else {
+          step.reason = r.reason;
+          if (r.reasonCode) step.reasonCode = r.reasonCode;
+        }
       }
     }
     if (v!.contractMessage) step.contractMessage = v!.contractMessage;
