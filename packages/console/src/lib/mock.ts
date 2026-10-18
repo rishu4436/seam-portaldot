@@ -2,7 +2,7 @@ import type { GateResult } from "./gate";
 // Console data adapter. Every plan, policy result, approval and receipt here was
 // produced by the REAL @seam/compiler, @seam/policy and @seam/sdk, run offline
 // against Bot 4's saved Portaldot node snapshot (see scripts/gen-demo.mjs).
-// Simulated until we have a testnet: the chain's replies (tx hashes, blocks,
+// Simulated (no V3 testnet run yet): the chain's replies (tx hashes, blocks,
 // events). Fees and weights are Bot 4's real payment_queryInfo results.
 import data from "../demo/scenarios.json";
 import type { Approval, Capability, Manifest, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, Hex, Estimate } from "./types";
@@ -30,7 +30,7 @@ export function discover(endpoint: string, upgraded = false): RuntimeFacts {
     fingerprint: { ...fp, metadataVersion: 13, typesFileHash: fp.typesBundleHash, digest: upgraded ? ("0x" + "f".repeat(8) + "upgraded".padEnd(56, "0")) as Hex : f.fingerprintDigest },
     capabilities: caps,
     behaviour: [
-      { id: "batch_all_rollback", status: f.behaviour.batchAllRollback === "verified" ? "confirmed" : "unknown", note: "Needs a real test run on a dev node or testnet." },
+      { id: "batch_all_rollback", status: f.behaviour.batchAllRollback === "verified" ? "confirmed" : "unknown", note: "Needs a real test run on a V3 testnet." },
       { id: "fee_estimate", status: "confirmed", note: "Live fees read from the Portaldot node." },
       { id: "contract_dry_run", status: "confirmed", note: "contracts_call is available on the node." },
       { id: "storage_deposit", status: "unknown", note: "This runtime doesn't report storage deposits." },
