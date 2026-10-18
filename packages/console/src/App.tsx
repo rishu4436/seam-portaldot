@@ -188,7 +188,7 @@ export default function App() {
 
       <main>
         <LocalNodeBanner />
-        {evidence ? <LocalNodeEvidence /> : <>
+        {evidence ? <LocalNodeEvidence banner={false} /> : <>
         <header className="top">
           <div>
             <h1>{STEPS[step]}</h1>
