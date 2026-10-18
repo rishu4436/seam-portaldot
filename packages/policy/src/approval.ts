@@ -102,17 +102,106 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
 /**
  * Remembers what was already submitted, so nothing can be replayed. Keys come from usageKey(): the approval hash
  * for a single submission (atomic, or one call), or "<hash>#<step>" for each step of a sequential plan.
+ *
+ * The original interface (has / markUsed) is kept so existing callers keep working. markUsed is "reserve and commit
+ * in one go, before broadcasting": safe against duplicates, but an RPC failure after it burns the approval.
+ * Prefer ReservableApprovalStore (reserve -> broadcast -> commit | release | markUncertain).
  */
 export interface ApprovalStore { has(key: string): boolean; markUsed(key: string): void }
-export class InMemoryApprovalStore implements ApprovalStore {
-  private used = new Set<string>();
-  has(key: string) { return this.used.has(key); }
-  markUsed(key: string) { this.used.add(key); }
+
+export type ReservationState = "reserved" | "committed" | "uncertain";
+export interface ReservationRecord {
+  key: string;
+  state: ReservationState;
+  /** Caller-chosen id for this send attempt; persist it so a retry after a crash can be matched to the attempt. */
+  idempotencyKey: string;
+  txHash?: Hex;
+  note?: string;
+  at: string;
+}
+export type ReserveResult =
+  | { ok: true; record: ReservationRecord }
+  | { ok: false; reason: ReservationState; record: ReservationRecord; txHash?: Hex };
+
+/**
+ * Atomic reserve / commit / release / uncertain lifecycle for one send (one usageKey).
+ *
+ *   reserve(key)            -> before signing/broadcasting. Fails if the key is reserved, committed or uncertain.
+ *   commit(key, {txHash})   -> the node accepted the transaction (acknowledged hash).
+ *   release(key)            -> it was definitely NOT broadcast (e.g. validation failed locally); key becomes reservable again.
+ *   markUncertain(key, ..)  -> broadcast outcome ambiguous (timeout, crash after send). Blocks reuse AND release until
+ *                              reconcile() records what really happened. Never blindly retry: first look the tx hash/nonce up.
+ *   reconcile(key, outcome) -> uncertain -> committed (outcome "broadcast", with txHash) or removed (outcome "not_broadcast").
+ *
+ * InMemoryApprovalStore gives at-most-once semantics inside ONE process. It forgets everything on restart, so a
+ * restarted process can send the same approval again; hosted / multi-user deployments must implement this
+ * interface on durable storage with an atomic compare-and-set in reserve() and persist idempotencyKey + txHash.
+ */
+export interface ReservableApprovalStore extends ApprovalStore {
+  reserve(key: string, opts: { idempotencyKey: string; now?: Date }): ReserveResult;
+  commit(key: string, opts: { txHash: Hex }): void;
+  release(key: string): void;
+  markUncertain(key: string, opts: { txHash?: Hex; note?: string }): void;
+  reconcile(key: string, opts: { outcome: "broadcast"; txHash: Hex } | { outcome: "not_broadcast" }): void;
+  stateOf(key: string): ReservationRecord | undefined;
+}
+
+export function isReservableStore(s: ApprovalStore): s is ReservableApprovalStore {
+  return typeof (s as ReservableApprovalStore).reserve === "function" && typeof (s as ReservableApprovalStore).stateOf === "function";
+}
+
+export class InMemoryApprovalStore implements ReservableApprovalStore {
+  private records = new Map<string, ReservationRecord>();
+  /** Reserved, committed and uncertain keys all count as "not available" (conservative: never a second send). */
+  has(key: string) { return this.records.has(key); }
+  /** Legacy: reserve + commit in one step. Final. */
+  markUsed(key: string) {
+    const prev = this.records.get(key);
+    this.records.set(key, { key, state: "committed", idempotencyKey: prev?.idempotencyKey ?? key, txHash: prev?.txHash, at: new Date().toISOString() });
+  }
+  stateOf(key: string) { const r = this.records.get(key); return r ? { ...r } : undefined; }
+  reserve(key: string, opts: { idempotencyKey: string; now?: Date }): ReserveResult {
+    const existing = this.records.get(key);
+    if (existing) return { ok: false, reason: existing.state, record: { ...existing }, txHash: existing.txHash };
+    const record: ReservationRecord = { key, state: "reserved", idempotencyKey: opts.idempotencyKey, at: (opts.now ?? new Date()).toISOString() };
+    this.records.set(key, record);
+    return { ok: true, record: { ...record } };
+  }
+  private need(key: string, op: string, allowed: ReservationState[]): ReservationRecord {
+    const r = this.records.get(key);
+    if (!r) throw new Error(`${op}: ${key} has no reservation`);
+    if (!allowed.includes(r.state)) throw new Error(`${op}: ${key} is ${r.state}${r.state === "uncertain" ? " and must be reconciled first" : ""}`);
+    return r;
+  }
+  commit(key: string, opts: { txHash: Hex }) { const r = this.need(key, "commit", ["reserved", "uncertain"]); r.state = "committed"; r.txHash = opts.txHash; }
+  release(key: string) { this.need(key, "release", ["reserved"]); this.records.delete(key); }
+  markUncertain(key: string, opts: { txHash?: Hex; note?: string }) {
+    const r = this.need(key, "markUncertain", ["reserved", "uncertain"]);
+    r.state = "uncertain"; r.txHash = opts.txHash ?? r.txHash; r.note = opts.note ?? r.note;
+  }
+  reconcile(key: string, opts: { outcome: "broadcast"; txHash: Hex } | { outcome: "not_broadcast" }) {
+    const r = this.need(key, "reconcile", ["uncertain"]);
+    if (opts.outcome === "broadcast") { r.state = "committed"; r.txHash = opts.txHash; }
+    else this.records.delete(key);
+  }
 }
 
 /** The key to mark used after a submission: pass the same sendIndex you gave checkBeforeSubmit. */
 export function usageKey(approvalHash: Hex, sendIndex?: number): string {
   return sendIndex === undefined ? approvalHash : `${approvalHash}#${sendIndex}`;
+}
+
+/** What a trusted decoder reports about one signed extrinsic. Optional fields are only checked when present. */
+export interface DecodedSignedExtrinsic {
+  /** SCALE-encoded call inside the extrinsic (pallet index, call index, args), as 0x hex. */
+  call: Hex;
+  signer: string;
+  nonce?: number;
+  tip?: string;
+  /** Genesis hash the signature commits to, if the decoder can recover it. */
+  genesisHash?: Hex;
+  /** True only if the signature verifies for the signer over this payload. */
+  signatureValid: boolean;
 }
 
 export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerprint"> {
@@ -121,8 +210,22 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
   preparedFingerprint: RuntimeFingerprint;
   /** Fingerprint read from the node right before submission. */
   currentFingerprint: RuntimeFingerprint;
-  /** The encoded calls the wallet actually signed, in order. */
+  /**
+   * The encoded calls the wallet REPORTED it signed, in order. Wallet-controlled: only used when no trusted decoder
+   * is given. Prefer signedExtrinsics + decodeSignedExtrinsic (SEAM-001).
+   */
   signedCalls: Hex[];
+  /** The raw signed extrinsic bytes, in order, exactly as they will be submitted. */
+  signedExtrinsics?: Hex[];
+  /**
+   * A trusted decoder (e.g. @seam/chain's signed-extrinsic parser) that returns the call actually inside the bytes,
+   * its signer, nonce and whether the signature verifies. When given together with signedExtrinsics, signedCalls is
+   * IGNORED and the decoded calls are what get compared with the approved plan. Must return null (or throw) for
+   * anything it can't fully decode; the gate then fails closed.
+   */
+  decodeSignedExtrinsic?: (extrinsic: Hex) => DecodedSignedExtrinsic | null;
+  /** Block (fail closed) unless signedExtrinsics + decodeSignedExtrinsic are provided. Hosted deployments should set this. */
+  requireTrustedDecoder?: boolean;
   /** system_dryRun result for each signed transaction, in the same order. */
   signedDryRun?: SignedDryRun[];
   /**
@@ -164,7 +267,9 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
     else if (!Number.isInteger(i) || i < 0 || i >= n) reasons.push({ code: "send_index_invalid", message: `Blocked: step ${i} doesn't exist in this ${n}-step plan.` });
     else {
       for (let j = 0; j < i; j++) {
-        if (!store.has(usageKey(approval.hash, j))) {
+        const rec = isReservableStore(store) ? store.stateOf(usageKey(approval.hash, j)) : undefined;
+        const sent = isReservableStore(store) ? rec?.state === "committed" : store.has(usageKey(approval.hash, j));
+        if (!sent) {
           reasons.push({ code: "out_of_order", message: `Blocked: step ${j + 1} hasn't been sent yet, so step ${i + 1} can't go first.` });
           break;
         }
@@ -174,14 +279,25 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
       if (prev.length !== i) reasons.push({ code: "previous_steps_missing", message: `Blocked: results for the ${i} earlier step(s) are needed before step ${i + 1}.` });
       else {
         const gate = canRunNextStep(prev);
-        if (!gate.ok) reasons.push({ code: "previous_step_failed", message: `Blocked: ${gate.reason}` });
-        else if (i > 0) ok("previous_steps_ok", `the ${i} earlier step(s) completed and verified`);
+        if (!gate.ok) {
+          reasons.push({ code: "previous_step_failed", message: `Blocked: ${gate.reason}` });
+          if (gate.code) reasons.push({ code: gate.code, message: `Blocked: ${gate.reason}` });
+        }
+        else if (i > 0) ok("previous_steps_ok", `the ${i} earlier step(s) finalized and verified`);
       }
     }
   } else if (sequential && callsToSign(plan).length > 1 && input.previousSteps?.length) {
     reasons.push({ code: "send_index_invalid", message: "Blocked: say which step is being sent (sendIndex) when sending a sequential plan step by step." });
   }
-  if (store.has(usageKey(approval.hash, i)) || store.has(approval.hash) || approval.used) {
+  const keys = [usageKey(approval.hash, i), approval.hash];
+  const recs = isReservableStore(store) ? keys.map((k) => store.stateOf(k)).filter((r): r is ReservationRecord => !!r) : [];
+  const uncertain = recs.find((r) => r.state === "uncertain");
+  const reserved = recs.find((r) => r.state === "reserved");
+  if (uncertain) {
+    reasons.push({ code: "approval_uncertain", message: "Blocked: an earlier send of this approval has an unknown outcome (it may have been broadcast). Look up its transaction hash / nonce and reconcile before doing anything else." });
+  } else if (reserved) {
+    reasons.push({ code: "approval_reserved", message: "Blocked: another send of this approval is already in progress." });
+  } else if (keys.some((k) => store.has(k)) || approval.used) {
     reasons.push({ code: "approval_reused", message: i === undefined
       ? "Blocked: this approval was already used. Each approval allows exactly one submission."
       : `Blocked: step ${i + 1} of this approval was already sent. Each step can be sent once.` });
@@ -213,10 +329,36 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   else ok("runtime_unchanged", "the runtime is the one the plan was prepared for");
 
   const expected = callsToSign(plan).map((c) => (c ?? "").toLowerCase());
-  const signed = input.signedCalls.map((c) => c.toLowerCase());
-  if (expected.length !== signed.length || expected.some((c, i) => c !== signed[i])) {
-    reasons.push({ code: "signed_bytes_mismatch", message: "Blocked: the wallet signed different call data from the approved plan." });
-  } else ok("signed_bytes_match", `the ${signed.length} signed call(s) are byte-for-byte the approved calls`);
+  let signed = input.signedCalls.map((c) => c.toLowerCase());
+  let trusted = false;
+  if (input.decodeSignedExtrinsic && input.signedExtrinsics) {
+    const decoded: (DecodedSignedExtrinsic | null)[] = input.signedExtrinsics.map((x) => {
+      try { return input.decodeSignedExtrinsic!(x); } catch { return null; }
+    });
+    if (decoded.some((d) => !d)) {
+      reasons.push({ code: "signed_extrinsic_undecodable", message: "Blocked: a signed transaction couldn't be fully decoded, so what it does can't be checked." });
+      signed = [];
+    } else {
+      trusted = true;
+      const ds = decoded as DecodedSignedExtrinsic[];
+      signed = ds.map((d) => d.call.toLowerCase());
+      const wantSigner = normalizeAccount(input.envelope.signer) ?? input.envelope.signer.toLowerCase();
+      ds.forEach((d, n) => {
+        if ((normalizeAccount(d.signer) ?? d.signer.toLowerCase()) !== wantSigner) reasons.push({ code: "signed_signer_mismatch", message: `Blocked: signed transaction ${n + 1} was signed by a different account from the approved signer.` });
+        if (!d.signatureValid) reasons.push({ code: "signed_signature_invalid", message: `Blocked: the signature on signed transaction ${n + 1} is not valid.` });
+        if (d.nonce !== undefined && d.nonce !== input.envelope.nonce + n) reasons.push({ code: "signed_nonce_mismatch", message: `Blocked: signed transaction ${n + 1} uses nonce ${d.nonce}, not the approved ${input.envelope.nonce + n}.` });
+        if (d.genesisHash !== undefined && d.genesisHash.toLowerCase() !== input.preparedFingerprint.genesisHash.toLowerCase()) reasons.push({ code: "signed_chain_mismatch", message: `Blocked: signed transaction ${n + 1} was signed for a different chain.` });
+      });
+    }
+  }
+  if (input.requireTrustedDecoder && !trusted && !reasons.some((r) => r.code === "signed_extrinsic_undecodable")) {
+    reasons.push({ code: "trusted_decoder_required", message: "Blocked: this deployment only accepts signed transactions that SEAM decodes itself from the raw bytes, and no decoder/bytes were given. Wallet-reported call data is not trusted." });
+  }
+  if (expected.length !== signed.length || expected.some((c, n) => c !== signed[n])) {
+    if (!reasons.some((r) => r.code === "signed_extrinsic_undecodable")) reasons.push({ code: "signed_bytes_mismatch", message: trusted ? "Blocked: the signed transactions contain different call data from the approved plan." : "Blocked: the wallet signed different call data from the approved plan." });
+  } else ok("signed_bytes_match", trusted
+    ? `the ${signed.length} call(s) decoded from the signed transaction bytes are exactly the approved calls`
+    : `the ${signed.length} signed call(s) are byte-for-byte the approved calls (as reported by the wallet; not independently decoded)`);
 
   const dry = input.signedDryRun ?? [];
   const relevant = i === undefined ? dry : [dry[i]];
@@ -227,6 +369,8 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
     reasons.push({ code: "signed_dry_run_missing", message: i === undefined
       ? "Blocked: the policy needs a successful dry run of each signed transaction before sending, and one is missing or unknown. For sequential plans, check each step just before sending it (sendIndex)."
       : `Blocked: the policy needs a successful dry run of step ${i + 1} just before sending it, and it's missing or unknown.` });
+  } else if (!input.policy.requireSignedDryRun && relevant.filter((d) => d !== undefined).length === 0) {
+    ok("signed_dry_run_not_checked", "no dry run of the signed transaction was done; only pre-sign estimates back this send (weaker proof)");
   } else if (relevant.length > 0 && relevant.filter((d) => d !== undefined).length === needed && relevant.every((d) => d === "ok")) {
     ok("signed_dry_run_ok", i === undefined ? "the dry run of the signed transaction(s) succeeded" : `the dry run of signed step ${i + 1} succeeded`);
   }
@@ -234,14 +378,37 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   return { ok: reasons.length === 0, reasons, passed };
 }
 
+export type NextStepCode =
+  | "step_failed" | "step_not_finalized" | "verification_failed" | "verification_unknown"
+  | "receipt_data_missing" | "contract_outcome_failed";
+
+const FAILURE_EVENTS = ["System.ExtrinsicFailed", "Contracts.ContractTrapped", "Revive.ContractReverted", "Contracts.ContractReverted"];
+
 /**
- * Sequential runs: a step may only start if every earlier step finalized (or was included) and wasn't found
- * to be wrong. After a failure SEAM stops, and later steps are reported as not run.
+ * Sequential runs: a dependent step may only start if EVERY earlier step is finalized AND verified, has a tx hash and
+ * block, and shows no failure event. Anything else blocks: included (not final), submitted, unknown verification
+ * (e.g. an unsupported verifier), not_verified, failed, missing receipt data. SEAM stops there and later steps are
+ * reported as not_run (see markNotRun). There is deliberately no relaxed mode; if one is ever added it must be a
+ * separate, visibly weaker policy and must never be called "verified".
  */
-export function canRunNextStep(previous: ReceiptStep[]): { ok: boolean; reason: string } {
-  const bad = previous.find((s) => !(s.status === "finalized" || s.status === "included") || s.verification === "not_verified");
-  if (!bad) return { ok: true, reason: "all earlier steps completed" };
-  return { ok: false, reason: `Stopped: step ${bad.actionId} ${bad.status === "failed" ? "failed" : bad.verification === "not_verified" ? "did not verify" : `is ${bad.status}`}, so later steps were not run.` };
+export function canRunNextStep(previous: ReceiptStep[]): { ok: boolean; reason: string; code?: NextStepCode } {
+  for (const s of previous) {
+    const stop = (code: NextStepCode, why: string) => ({ ok: false as const, code, reason: `Stopped: step ${s.actionId} ${why}, so later steps were not run.` });
+    if (s.status === "failed") return stop("step_failed", "failed");
+    if (s.status !== "finalized") return stop("step_not_finalized", `is ${s.status}, not finalized yet`);
+    if (s.verification === "not_verified") return stop("verification_failed", "did not verify");
+    if (s.verification !== "verified") return stop("verification_unknown", "finalized but its effect could not be verified");
+    if (!s.txHash || !s.block) return stop("receipt_data_missing", "has no transaction hash or block in its receipt");
+    const failed = (s.events ?? []).find((e) => FAILURE_EVENTS.includes(e));
+    if (failed) return stop("contract_outcome_failed", `reported ${failed}`);
+  }
+  return { ok: true, reason: "all earlier steps finalized and verified" };
+}
+
+/** Appends a not_run step (with the stop reason) for every planned action that has no receipt step yet. */
+export function markNotRun(done: ReceiptStep[], plannedActionIds: string[], reason: string): ReceiptStep[] {
+  const have = new Set(done.map((s) => s.actionId));
+  return [...done, ...plannedActionIds.filter((id) => !have.has(id)).map((actionId): ReceiptStep => ({ actionId, status: "not_run", events: [], verification: "unknown", reason }))];
 }
 
 /** Overall receipt result: verified only when every step finalized and verified; partial if something didn't run. */
