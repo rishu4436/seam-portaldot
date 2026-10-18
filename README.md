@@ -142,3 +142,7 @@ This is a **local Portaldot dev node, spec 1002**: the organizers' own `portaldo
 The testnet script `scripts/testnet-run.mjs` is merged but has only run against the local dev node. Nothing has run on Portaldot V3, and the real polkadot.js extension is untested (only a stand-in wallet).
 
 Blocked only on the V3 testnet **RPC URL** and **faucet**. Once we have them: read the runtime, re-lock the fingerprint, re-check the compiler against V3 (does it still use the old contracts pallet?), run the demo flow, and record contract addresses and transaction hashes. Exact steps: [docs/testnet-checklist.md](docs/testnet-checklist.md).
+
+## License
+
+Apache-2.0. Copyright 2026 Rishu Kumar Gupta. See [LICENSE](LICENSE).
