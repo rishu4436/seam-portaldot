@@ -1,0 +1,6 @@
+dist
+node_modules
+coverage
+evidence
+fixtures
+package-lock.json
