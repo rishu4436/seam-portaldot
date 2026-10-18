@@ -15,7 +15,10 @@ import {
   type Provenance,
   type TxState,
 } from "../lib/modes";
-import { runLive, v3RpcUrl, type LiveOutcome } from "../lib/live";
+import { runLive, v3RpcUrl, type LiveOutcome, type LiveDeps } from "../lib/live";
+import { planCall, fingerprintMatches } from "../lib/liverequest";
+import { loadLiveHost, type LiveHost } from "../lib/host";
+import type { Approval, Plan, RuntimeFacts } from "../lib/types";
 import { finalityView } from "../lib/finality";
 import {
   policyLimitGroups,
@@ -233,7 +236,10 @@ export function RejectionNotice({
 }
 
 export function FinalityPanel({ out }: { out: LiveOutcome }) {
-  const v = finalityView(out);
+  const v = finalityView(
+    out,
+    out.block ? { blockNumber: out.block.number, blockHash: out.block.hash } : {},
+  );
   if (v.key === "none") return null;
   return (
     <div className="finality" role="group" aria-label="Transaction confirmation">
@@ -265,31 +271,79 @@ export function FinalityPanel({ out }: { out: LiveOutcome }) {
   );
 }
 
-export function LivePanel() {
+export function LivePanel({
+  plan,
+  facts,
+  approval,
+  hostLoader = loadLiveHost,
+}: {
+  plan?: Plan;
+  facts?: RuntimeFacts;
+  approval?: Approval;
+  hostLoader?: () => Promise<LiveHost | undefined>;
+} = {}) {
   const [url, setUrl] = useState<string>(import.meta.env.VITE_V3_RPC_URL ?? "");
   const [out, setOut] = useState<LiveOutcome>();
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [attempts, setAttempts] = useState(3);
   const ok = !!v3RpcUrl(url);
-  // Real browser JSON-RPC client and extension signer, both created lazily on click. With no valid URL runLive blocks before any of them is used.
-  // The signed-bytes verifier and extrinsic assembler are host-injected (they need @seam/chain / SCALE), so without them LIVE stays blocked before signing.
+  // The request comes from the compiled plan already in the console. Signature checks and extrinsic assembly come from the
+  // injected LiveHost (planned: @seam/chain/browser); the console has no local copy, so without a host LIVE blocks before signing.
   const run = async () => {
     setBusy(true);
     setDismissed(false);
     try {
       const u = v3RpcUrl(url);
-      // Lazy browser entry: only loaded once a valid URL is submitted.
-      let deps = {};
+      let deps: LiveDeps = {};
       if (u) {
         const b = await import("../lib/browserChain");
+        const rpc = b.transportFor(u);
+        const host = await hostLoader();
+        const call = planCall(plan);
+        const gateMsg = !call.ok
+          ? call.message
+          : !approval
+            ? "The plan is not approved yet."
+            : approval.used
+              ? "This approval was already used."
+              : undefined;
         deps = {
-          chain: b.createBrowserChainClient(b.transportFor(u)),
-          signer: b.createExtensionSigner(),
+          chain: b.createBrowserChainClient(rpc, {
+            extrinsicHash: host?.extrinsicHash,
+            feeExtrinsic: host?.feeEstimateExtrinsic,
+          }),
           maxRpcAttempts: attempts,
         };
+        if (host) {
+          deps.verifyBinding = host.verifyBinding;
+          deps.signer = b.createExtensionSigner({
+            assemble: (sig, _p, req) => host.assemble(sig, req),
+          });
+        }
+        deps.prepare = async (fp) => {
+          if (!call.ok || gateMsg)
+            return { ok: false, reason: "unavailable", message: gateMsg ?? "No request." };
+          if (!host)
+            return {
+              ok: false,
+              reason: "unavailable",
+              message:
+                "The signature verifier and extrinsic assembler are not installed in this build, so nothing can be signed.",
+            };
+          const m = fingerprintMatches(fp, facts);
+          if (!m.ok) return m;
+          const ctx = await b.readSigningContext(rpc, call.value.signer);
+          if (!ctx.ok) return ctx;
+          return host.buildRequest({
+            signer: call.value.signer,
+            callHex: call.value.callHex,
+            actionIds: call.value.actionIds,
+            context: ctx.value,
+          });
+        };
       }
-      setOut(await runLive(url, {}, deps));
+      setOut(await runLive(url, undefined, deps));
     } finally {
       setBusy(false);
     }

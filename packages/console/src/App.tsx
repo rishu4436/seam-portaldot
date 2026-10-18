@@ -507,7 +507,7 @@ export default function App() {
         </div>
         <ModeBadge mode={mode} />
         {mode === "live" ? (
-          <LivePanel />
+          <LivePanel plan={plan} facts={facts} approval={approval} />
         ) : (
           <>
             <LocalNodeBanner />
