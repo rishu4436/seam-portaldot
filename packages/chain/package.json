@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
     }
   },
   "files": [
@@ -35,6 +39,7 @@
     "@polkadot/keyring": "^14.0.3",
     "@seam/policy": "file:../policy",
     "@types/node": "^26.6.5",
+    "esbuild": "^0.21.5",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
   }
