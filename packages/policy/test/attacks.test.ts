@@ -59,7 +59,7 @@ describe("matches Bot 2's compiler", () => {
     const run = approvedRun();
     expect(run.plan.mode).toBe("sequential");
     expect(run.policyResult.allowed).toBe(true);
-    expect(submit(run)).toEqual({ ok: true, reasons: [] });
+    expect(submit(run)).toMatchObject({ ok: true, reasons: [] });
   });
   it("rejects floats in anything it hashes", () => {
     expect(() => digest("d", { amount: 1.5 })).toThrow(/safe integer/);

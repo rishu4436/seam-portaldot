@@ -16,6 +16,14 @@ export interface Policy {
   allowedRecipients: AllowList;
   /** Optional: allowed 4-byte message selectors per contract (key: contract address). */
   allowedSelectors?: Record<string, string[]>;
+  /**
+   * Optional: allowed contract message names per contract (key: contract address), e.g. { [addr]: ["settle"] }.
+   * Needs the plan step to carry contractMessage (a contracts.call written with `message` and an ABI); a raw-`data`
+   * call has no name, so it is blocked for a contract listed here.
+   */
+  allowedMessages?: Record<string, string[]>;
+  /** Optional: required ABI hash per contract (key: contract address). A call using any other ABI, or none, is blocked. */
+  pinnedAbiHashes?: Record<string, string>;
   /** Max amount per asset id; "*" applies to any asset not listed. */
   maxAmountPerAsset?: Record<string, string>;
   /** Max native value (POT base units) sent with any step, e.g. to a contract. */
@@ -77,6 +85,12 @@ export function planDigest(plan: Plan): Hex {
 
 const isUint = (s: string | undefined): s is string => typeof s === "string" && /^\d+$/.test(s);
 const hex2 = (n: number) => n.toString(16).padStart(2, "0");
+
+function forContract<T>(map: Record<string, T> | undefined, contract: string): T | undefined {
+  if (!map) return undefined;
+  const c = normalizeAccount(contract) ?? contract.toLowerCase();
+  return Object.entries(map).find(([k]) => (normalizeAccount(k) ?? k.toLowerCase()) === c)?.[1];
+}
 
 function inList(list: AllowList, value: string, normalize = false): boolean {
   if (list === "any") return true;
@@ -172,6 +186,23 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
         if (sel) {
           const s = (d.data ?? "").toLowerCase().slice(0, 10);
           if (!sel[1].map((x) => x.toLowerCase()).includes(s)) block("selector_allowed", `Blocked: contract message ${s || "(none)"} is not on the allowed list for this contract.`, id);
+          else pass("selector_allowed", `contract message ${s} is allowed`, id);
+        }
+        // The compiler records the name and interface hash in step.contractMessage; decodedArgs.message / abiHash are read too.
+        const dm = d as Record<string, string | undefined>;
+        const cm = step.contractMessage ?? (dm.message !== undefined || dm.abiHash !== undefined
+          ? { message: dm.message as string, abiHash: dm.abiHash as string } : undefined);
+        const names = forContract(policy.allowedMessages, d.contract);
+        if (names) {
+          if (!cm || cm.message === undefined) block("message_not_allowed", "Blocked: this contract only allows named messages, and this call has no message name (it was written as raw data).", id);
+          else if (!names.includes(cm.message)) block("message_not_allowed", `Blocked: contract message "${cm.message}" is not on the allowed list for this contract (allowed: ${names.join(", ") || "none"}).`, id);
+          else pass("message_allowed", `contract message "${cm.message}" is allowed`, id);
+        }
+        const pinned = forContract(policy.pinnedAbiHashes, d.contract);
+        if (pinned !== undefined) {
+          if (!cm || cm.abiHash === undefined) block("abi_hash_missing", "Blocked: this contract's interface is pinned, and this call carries no interface (ABI) to check it against.", id);
+          else if (cm.abiHash.toLowerCase() !== pinned.toLowerCase()) block("abi_hash_mismatch", `Blocked: this call's contract interface hash ${cm.abiHash} is not the pinned ${pinned}.`, id);
+          else pass("abi_pinned", "contract interface (ABI) matches the pinned hash", id);
         }
       }
     }
