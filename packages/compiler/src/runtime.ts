@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { Metadata, TypeRegistry } from '@polkadot/types';
-import { blake2_256, hexBytes, utf8Bytes } from './canonical.js';
-import type { Hex } from './types.js';
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { Metadata, TypeRegistry } from "@polkadot/types";
+import { blake2_256, hexBytes, utf8Bytes } from "./canonical.js";
+import type { Hex } from "./types.js";
 
 /** Parsed form of a pinned type-definitions file (see types/portaldot-spec1002.json). */
 export interface PinnedTypes {
@@ -17,16 +17,23 @@ export interface PinnedTypes {
   assumed?: Record<string, string>;
 }
 
-export const PORTALDOT_SPEC1002_TYPES_PATH = fileURLToPath(new URL('../types/portaldot-spec1002.json', import.meta.url));
+export const PORTALDOT_SPEC1002_TYPES_PATH = fileURLToPath(
+  new URL("../types/portaldot-spec1002.json", import.meta.url),
+);
 
 /** Reads a pinned types file as exact text (its bytes are hashed into the fingerprint). */
 export function readPinnedTypes(path: string = PORTALDOT_SPEC1002_TYPES_PATH): string {
-  return readFileSync(path, 'utf8');
+  return readFileSync(path, "utf8");
 }
 
 export function parsePinnedTypes(text: string): PinnedTypes {
   const parsed = JSON.parse(text) as PinnedTypes;
-  if (!parsed || typeof parsed !== 'object' || typeof parsed.types !== 'object' || parsed.types === null) {
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    typeof parsed.types !== "object" ||
+    parsed.types === null
+  ) {
     throw new Error('pinned types file must be a JSON object with a "types" object');
   }
   return parsed;
@@ -52,7 +59,8 @@ export const NO_PINNED_TYPES = '{"types":{}}';
 /** Metadata version: byte 4 of the raw metadata, after the "meta" magic. */
 export function metadataVersionOf(metadataHex: string): number {
   const h = metadataHex.trim();
-  if (!/^0x6d657461[0-9a-fA-F]{2}/.test(h)) throw new Error('metadata must start with the "meta" magic (0x6d657461)');
+  if (!/^0x6d657461[0-9a-fA-F]{2}/.test(h))
+    throw new Error('metadata must start with the "meta" magic (0x6d657461)');
   return parseInt(h.slice(10, 12), 16);
 }
 
@@ -72,8 +80,10 @@ const cache = new Map<string, LoadedRuntime>();
 export function loadRuntime(metadataHex: string, typesBundle?: string | null): LoadedRuntime {
   const metadataVersion = metadataVersionOf(metadataHex);
   const legacy = metadataVersion <= 13;
-  if (legacy && (typeof typesBundle !== 'string' || typesBundle.length === 0)) {
-    throw new Error(`metadata V${metadataVersion} is not self-describing; a pinned types file is required`);
+  if (legacy && (typeof typesBundle !== "string" || typesBundle.length === 0)) {
+    throw new Error(
+      `metadata V${metadataVersion} is not self-describing; a pinned types file is required`,
+    );
   }
   const metaBytes = hexBytes(metadataHex.trim());
   const metadataHash = blake2_256(metaBytes);
@@ -83,8 +93,14 @@ export function loadRuntime(metadataHex: string, typesBundle?: string | null): L
   if (hit) return hit;
 
   const pinned = legacy ? parsePinnedTypes(typesBundle!) : parsePinnedTypes(NO_PINNED_TYPES);
-  if (legacy && pinned.metadataVersion !== undefined && pinned.metadataVersion !== metadataVersion) {
-    throw new Error(`the pinned types file is for metadata V${pinned.metadataVersion}, this runtime serves V${metadataVersion}`);
+  if (
+    legacy &&
+    pinned.metadataVersion !== undefined &&
+    pinned.metadataVersion !== metadataVersion
+  ) {
+    throw new Error(
+      `the pinned types file is for metadata V${pinned.metadataVersion}, this runtime serves V${metadataVersion}`,
+    );
   }
   const registry = new TypeRegistry();
   registry.register(pinned.types as Record<string, string>);
@@ -93,7 +109,14 @@ export function loadRuntime(metadataHex: string, typesBundle?: string | null): L
     metadata = new Metadata(registry, metaBytes);
     registry.setMetadata(metadata);
   });
-  const loaded: LoadedRuntime = { registry, metadata, metadataHash, typesBundleHash, pinned, metadataVersion };
+  const loaded: LoadedRuntime = {
+    registry,
+    metadata,
+    metadataHash,
+    typesBundleHash,
+    pinned,
+    metadataVersion,
+  };
   cache.set(key, loaded);
   return loaded;
 }
@@ -104,7 +127,7 @@ export function loadRuntime(metadataHex: string, typesBundle?: string | null): L
 export function withoutLookupWarning<T>(fn: () => T): T {
   const warn = console.warn;
   console.warn = (...a: unknown[]) => {
-    if (typeof a[0] === 'string' && /^Unable to map .* to a lookup index$/.test(a[0])) return;
+    if (typeof a[0] === "string" && /^Unable to map .* to a lookup index$/.test(a[0])) return;
     warn(...a);
   };
   try {

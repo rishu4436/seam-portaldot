@@ -1,9 +1,15 @@
-import { Metadata, TypeRegistry, expandMetadata } from '@polkadot/types';
-import { compactStripLength, hexToU8a, u8aToHex } from '@polkadot/util';
-import { blake2AsHex } from '@polkadot/util-crypto';
-import { loadRuntime, parsePinnedTypes, type Hex, type LoadedRuntime, type RuntimeFacts } from '@seam/compiler';
-import { SeamChainError } from './errors.js';
-import { quietly } from './quiet.js';
+import { Metadata, TypeRegistry, expandMetadata } from "@polkadot/types";
+import { compactStripLength, hexToU8a, u8aToHex } from "@polkadot/util";
+import { blake2AsHex } from "@polkadot/util-crypto";
+import {
+  loadRuntime,
+  parsePinnedTypes,
+  type Hex,
+  type LoadedRuntime,
+  type RuntimeFacts,
+} from "@seam/compiler";
+import { SeamChainError } from "./errors.js";
+import { quietly } from "./quiet.js";
 
 /**
  * Extra type definitions used ONLY to decode what the node sends back (events, dispatch errors, dry-run
@@ -18,30 +24,48 @@ import { quietly } from './quiet.js';
  * Substrate 3.x/4.0-dev order and are an assumption (they would only appear in a failed extrinsic).
  */
 export const DECODE_TYPES: Record<string, unknown> = {
-  DispatchErrorModule: { index: 'u8', error: 'u8' },
+  DispatchErrorModule: { index: "u8", error: "u8" },
   DispatchError: {
     _enum: {
-      Other: 'Null',
-      CannotLookup: 'Null',
-      BadOrigin: 'Null',
-      Module: 'DispatchErrorModule',
-      ConsumerRemaining: 'Null',
-      NoProviders: 'Null',
-      Token: 'TokenError',
-      Arithmetic: 'ArithmeticError'
-    }
+      Other: "Null",
+      CannotLookup: "Null",
+      BadOrigin: "Null",
+      Module: "DispatchErrorModule",
+      ConsumerRemaining: "Null",
+      NoProviders: "Null",
+      Token: "TokenError",
+      Arithmetic: "ArithmeticError",
+    },
   },
-  TokenError: { _enum: ['NoFunds', 'WouldDie', 'BelowMinimum', 'CannotCreate', 'UnknownAsset', 'Frozen', 'Underflow', 'Overflow'] },
-  ArithmeticError: { _enum: ['Underflow', 'Overflow', 'DivisionByZero'] }
+  TokenError: {
+    _enum: [
+      "NoFunds",
+      "WouldDie",
+      "BelowMinimum",
+      "CannotCreate",
+      "UnknownAsset",
+      "Frozen",
+      "Underflow",
+      "Overflow",
+    ],
+  },
+  ArithmeticError: { _enum: ["Underflow", "Overflow", "DivisionByZero"] },
 };
 
-export const SYSTEM_EVENTS_KEY: Hex = '0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7';
+export const SYSTEM_EVENTS_KEY: Hex =
+  "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7";
 
 /** The compiler's pinned runtime (same registry compile() encodes with). Used to build and read extrinsics. */
 export function encodeRuntime(facts: RuntimeFacts): LoadedRuntime {
   const rt = loadRuntime(facts.source.metadataHex, facts.source.typesBundle);
-  if (rt.metadataHash !== facts.fingerprint.metadataHash || rt.typesBundleHash !== facts.fingerprint.typesBundleHash) {
-    throw new SeamChainError('FACTS_MISMATCH', 'facts.source does not hash to the fingerprint (metadata or types file was changed)');
+  if (
+    rt.metadataHash !== facts.fingerprint.metadataHash ||
+    rt.typesBundleHash !== facts.fingerprint.typesBundleHash
+  ) {
+    throw new SeamChainError(
+      "FACTS_MISMATCH",
+      "facts.source does not hash to the fingerprint (metadata or types file was changed)",
+    );
   }
   return rt;
 }
@@ -73,19 +97,24 @@ export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   const pinned = parsePinnedTypes(facts.source.typesBundle);
   const registry = new TypeRegistry();
   const legacy = metadataVersionOf(facts.source.metadataHex) <= 13;
-  registry.register({ ...(pinned.types as Record<string, string>), ...(legacy ? (DECODE_TYPES as Record<string, string>) : {}) });
+  registry.register({
+    ...(pinned.types as Record<string, string>),
+    ...(legacy ? (DECODE_TYPES as Record<string, string>) : {}),
+  });
   const metadata = new Metadata(registry, hexToU8a(facts.source.metadataHex));
   registry.setMetadata(metadata);
-  registry.setChainProperties(registry.createType<any>('ChainProperties', {
-    ss58Format: facts.fingerprint.ss58Prefix,
-    tokenDecimals: [facts.fingerprint.tokenDecimals],
-    tokenSymbol: [facts.fingerprint.tokenSymbol]
-  }));
+  registry.setChainProperties(
+    registry.createType<any>("ChainProperties", {
+      ss58Format: facts.fingerprint.ss58Prefix,
+      tokenDecimals: [facts.fingerprint.tokenDecimals],
+      tokenSymbol: [facts.fingerprint.tokenSymbol],
+    }),
+  );
   let expanded: ReturnType<typeof expandMetadata> | undefined;
   const rt: DecodeRuntime = {
     registry,
     metadata,
-    decorated: () => (expanded ??= quietly(() => expandMetadata(registry, metadata)))
+    decorated: () => (expanded ??= quietly(() => expandMetadata(registry, metadata))),
   };
   decodeCache.set(key, rt);
   return rt;
@@ -108,10 +137,14 @@ export function extrinsicHash(extrinsicHex: string): Hex {
 export function describeDispatchError(facts: RuntimeFacts, json: unknown): string {
   try {
     const { registry } = decodeRuntime(facts);
-    const err = registry.createType('DispatchError', json as never) as unknown as { isModule: boolean; asModule: never; type: string };
+    const err = registry.createType("DispatchError", json as never) as unknown as {
+      isModule: boolean;
+      asModule: never;
+      type: string;
+    };
     if (err.isModule) {
       const m = registry.findMetaError(err.asModule);
-      return `${m.section}.${m.name}${m.docs.length ? `: ${m.docs.join(' ').trim()}` : ''}`;
+      return `${m.section}.${m.name}${m.docs.length ? `: ${m.docs.join(" ").trim()}` : ""}`;
     }
     return err.type;
   } catch {

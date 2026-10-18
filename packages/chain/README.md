@@ -29,26 +29,30 @@ Errors are `SeamChainError` with a `code` (`RPC_FAILED`, `NODE_MISSING_VALUE`, `
 `MAINNET_SUBMIT_REFUSED`, ...).
 
 ### 1. Discovery
-| function | returns |
-|---|---|
-| `discover(endpoint, { typesBundle?, batchAllRollback? })` | the compiler's `RuntimeFacts` (via `factsFromMetadata` with the pinned types) |
-| `readChainInputs(endpoint)` | raw `ChainInputs`: metadata, runtime version, genesis, properties, head, **all pinned to one block hash** |
-| `factsFromChainInputs(inputs)` / `fingerprintFromChainInputs(inputs)` | pure versions (no network) |
-| `snapshotFromNode(endpoint, outDir, { name? })` | writes `<name>-metadata.hex` + `<name>-snapshot.json` in the same format as the mainnet evidence, plus `signedExtensions`, `rpcMethods`, `fetchedAt` and `fingerprintDigest`. Use it for the V3 testnet. |
-| `chainInputsFromSnapshot(snapshotJson, metadataHex)` | replays a saved snapshot offline (checks the metadata hash) |
-| `readCheckpoint(endpoint)` | finalized head `{ number, hash }`: the era checkpoint for signing |
-| `listRpcMethods`, `signedExtensionsOf`, `tokenInfo` | helpers |
+
+| function                                                              | returns                                                                                                                                                                                                  |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discover(endpoint, { typesBundle?, batchAllRollback? })`             | the compiler's `RuntimeFacts` (via `factsFromMetadata` with the pinned types)                                                                                                                            |
+| `readChainInputs(endpoint)`                                           | raw `ChainInputs`: metadata, runtime version, genesis, properties, head, **all pinned to one block hash**                                                                                                |
+| `factsFromChainInputs(inputs)` / `fingerprintFromChainInputs(inputs)` | pure versions (no network)                                                                                                                                                                               |
+| `snapshotFromNode(endpoint, outDir, { name? })`                       | writes `<name>-metadata.hex` + `<name>-snapshot.json` in the same format as the mainnet evidence, plus `signedExtensions`, `rpcMethods`, `fetchedAt` and `fingerprintDigest`. Use it for the V3 testnet. |
+| `chainInputsFromSnapshot(snapshotJson, metadataHex)`                  | replays a saved snapshot offline (checks the metadata hash)                                                                                                                                              |
+| `readCheckpoint(endpoint)`                                            | finalized head `{ number, hash }`: the era checkpoint for signing                                                                                                                                        |
+| `listRpcMethods`, `signedExtensionsOf`, `tokenInfo`                   | helpers                                                                                                                                                                                                  |
 
 The spec name, spec version, transaction version and SS58 prefix reported by the node are cross-checked
 against the metadata by `factsFromMetadata`. A missing `tokenSymbol`/`tokenDecimals` is an error and is never guessed.
 
 ### 2. Recheck before submission
+
 `refetchFingerprint(endpoint): RuntimeFingerprint`. It re-reads everything and returns the nine-field
 fingerprint. `readFingerprint` returns it with `fingerprintDigest` and `atBlock`. The digest is computed by
 the compiler's `computeFingerprintDigest`, so it matches Bot 2 and Bot 3 byte for byte (tested).
 
 ### 3. Preflight
+
 `preflight(endpoint, plan, facts, { nonce?, at?, signedExtrinsics? }): PreflightReport`
+
 - `result`: the agreed `PreflightResult` (`steps[{ actionId, weight, fee, storageDeposit, dryRun, note }]`, `totalFee`).
 - `nonce` comes from `system_accountNextIndex` (`nonceSource: 'node'`), or from the caller.
 - Fee and weight come from `payment_queryInfo` on a **fake-signed** extrinsic per transaction (nonce +i for
@@ -64,30 +68,32 @@ the compiler's `computeFingerprintDigest`, so it matches Bot 2 and Bot 3 byte fo
 - Refuses (`RUNTIME_CHANGED`) if the node's spec or transaction version differs from the facts.
 
 ### 4. Signing handoff
-| function | what |
-|---|---|
-| `buildSigningRequests(plan, facts, envelope)` | era from `envelope.checkpoint`; one `SigningRequest` per transaction: the `outerCall` batch_all for atomic plans, or each step with nonce `envelope.nonce + i`. Each request has `payload` (polkadot.js-extension `SignerPayloadJSON` for `signer.signPayload`), `raw` (`SignerPayloadRaw`), `signingPayloadHex` (SCALE payload) and `signBytesHex` (exact bytes the key signs, which is the blake2b-256 of the payload when it is over 256 bytes), plus `callHex`, `nonce`, `era` |
-| `buildSigningRequest(callHex, facts, { signer, nonce, mortalityBlocks, checkpoint })` | the same for one call |
-| `signingRequestsForCalls(calls, facts, envelope)` | the same for explicit calls (the SDK wallet's `callsToSign(plan)`) |
-| `dryRunSigned(endpoint, signedTxs, facts)` | `system_dryRun` of each signed transaction → `{ results: ('ok'\|'failed'\|'unknown')[], details }` for `checkBeforeSubmit({ signedDryRun })`. In a sequential run, transaction i > 0 with a future nonce is `'unknown'` (the earlier ones aren't on chain yet) |
-| `signBytesOf(payload, facts)` | the bytes a key signs for a payload (for raw-signing wallets) |
-| `assembleSignedExtrinsic(payload, signature, facts, { scheme?, verify? })` | signed extrinsic hex. Refuses a payload for another genesis, spec or tx version, a non-zero tip, or other signed extensions. By default it **verifies the signature** first. Typed (65/66-byte) signatures are taken as given. An untyped 64-byte one needs `scheme`. |
-| `extractSignedCall(extrinsicHex, facts)` | `{ callHex, capability, palletIndex, callIndex, signer { accountId, ss58 }, nonce, era, tip, signature, signatureScheme, txHash }`: what is **actually inside** the extrinsic |
-| `signedCallsOf(extrinsics, facts)` | `Hex[]` → Bot 3's `checkBeforeSubmit({ signedCalls })` |
-| `checkSignedExtrinsic(extrinsicHex, request, facts)` | compares call, signer, nonce, era and tip, and verifies the signature over the extrinsic's own contents. Returns `{ ok, mismatches[] }` |
+
+| function                                                                              | what                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `buildSigningRequests(plan, facts, envelope)`                                         | era from `envelope.checkpoint`; one `SigningRequest` per transaction: the `outerCall` batch_all for atomic plans, or each step with nonce `envelope.nonce + i`. Each request has `payload` (polkadot.js-extension `SignerPayloadJSON` for `signer.signPayload`), `raw` (`SignerPayloadRaw`), `signingPayloadHex` (SCALE payload) and `signBytesHex` (exact bytes the key signs, which is the blake2b-256 of the payload when it is over 256 bytes), plus `callHex`, `nonce`, `era` |
+| `buildSigningRequest(callHex, facts, { signer, nonce, mortalityBlocks, checkpoint })` | the same for one call                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `signingRequestsForCalls(calls, facts, envelope)`                                     | the same for explicit calls (the SDK wallet's `callsToSign(plan)`)                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `dryRunSigned(endpoint, signedTxs, facts)`                                            | `system_dryRun` of each signed transaction → `{ results: ('ok'\|'failed'\|'unknown')[], details }` for `checkBeforeSubmit({ signedDryRun })`. In a sequential run, transaction i > 0 with a future nonce is `'unknown'` (the earlier ones aren't on chain yet)                                                                                                                                                                                                                     |
+| `signBytesOf(payload, facts)`                                                         | the bytes a key signs for a payload (for raw-signing wallets)                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `assembleSignedExtrinsic(payload, signature, facts, { scheme?, verify? })`            | signed extrinsic hex. Refuses a payload for another genesis, spec or tx version, a non-zero tip, or other signed extensions. By default it **verifies the signature** first. Typed (65/66-byte) signatures are taken as given. An untyped 64-byte one needs `scheme`.                                                                                                                                                                                                              |
+| `extractSignedCall(extrinsicHex, facts)`                                              | `{ callHex, capability, palletIndex, callIndex, signer { accountId, ss58 }, nonce, era, tip, signature, signatureScheme, txHash }`: what is **actually inside** the extrinsic                                                                                                                                                                                                                                                                                                      |
+| `signedCallsOf(extrinsics, facts)`                                                    | `Hex[]` → Bot 3's `checkBeforeSubmit({ signedCalls })`                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `checkSignedExtrinsic(extrinsicHex, request, facts)`                                  | compares call, signer, nonce, era and tip, and verifies the signature over the extrinsic's own contents. Returns `{ ok, mismatches[] }`                                                                                                                                                                                                                                                                                                                                            |
 
 Tip is always 0. `mortalityBlocks` must be a power of two from 4 to 65536. polkadot.js silently rounds
 other values, and SEAM signs exactly what was approved. Don't use a polkadot.js extension's `signRaw` for
 transactions, because it wraps data in `<Bytes>`. Use `signPayload`.
 
 ### 5. Submit and track
-| function | what |
-|---|---|
+
+| function                                                                              | what                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `submitAndWatch(endpoint, signedHex, onStatus, { facts, timeoutMs?, allowMainnet? })` | `author_submitAndWatchExtrinsic`. `onStatus` gets `submitted` → `in_block` → `finalized`, or `retracted` / `dropped` / `invalid` / `usurped` / `finality_timeout`. Returns `{ txHash, status, history, timedOut, error?, inclusion: { number, hash, extrinsicIndex, events, success, dispatchError? } }` |
-| `readEvents(endpoint, blockHash, extrinsicIndex, facts)` | System.Events at that block, filtered to that extrinsic. Refuses a block whose spec differs from the pinned one |
-| `readInclusion(endpoint, blockHash, txHash, facts)` | the same, finding the index by tx hash |
-| `waitFinalized(endpoint, blockHash, { timeoutMs })` | `{ finalized, block, reason?: 'timeout' \| 'not_canonical' }` |
-| `decodeBlockEvents(eventsHex, facts)` / `outcomeForExtrinsic(...)` | offline decoding |
+| `readEvents(endpoint, blockHash, extrinsicIndex, facts)`                              | System.Events at that block, filtered to that extrinsic. Refuses a block whose spec differs from the pinned one                                                                                                                                                                                          |
+| `readInclusion(endpoint, blockHash, txHash, facts)`                                   | the same, finding the index by tx hash                                                                                                                                                                                                                                                                   |
+| `waitFinalized(endpoint, blockHash, { timeoutMs })`                                   | `{ finalized, block, reason?: 'timeout' \| 'not_canonical' }`                                                                                                                                                                                                                                            |
+| `decodeBlockEvents(eventsHex, facts)` / `outcomeForExtrinsic(...)`                    | offline decoding                                                                                                                                                                                                                                                                                         |
 
 Events come back as `{ pallet, name, args, eventIndex, extrinsicIndex, argTypes, topics }`. `pallet` is the
 metadata name (`Assets`, `System`). `args` are positional (V13 has no field names): accounts as 0x
@@ -99,7 +105,9 @@ Before broadcasting, `submitAndWatch` checks that the node's genesis equals the 
 **refuses Portaldot mainnet** unless `allowMainnet: true` is set.
 
 ### Bot 5's `ChainAdapter`
+
 `createPortaldotAdapter(endpoint, options)` implements `@seam/sdk`'s `ChainAdapter` exactly:
+
 - `discover()` → `RuntimeFacts`. With `options.facts` it checks that the node still matches them.
 - `readFingerprint()` → fresh `RuntimeFingerprint`
 - `preflight(plan)` → `{ preflight: PreflightResult, envelope: SigningEnvelope }`. The envelope's signer is
@@ -125,7 +133,7 @@ Extras: `signingRequests(calls, envelope)`, `lastDryRun`, `walletFrom(signPayloa
 an extension-style `signPayload` into the SDK's `WalletSigner`), `lastPreflight`, `lastSubmit`.
 
 ```ts
-const chain = createPortaldotAdapter('wss://<v3-testnet>');
+const chain = createPortaldotAdapter("wss://<v3-testnet>");
 const seam = new Seam(chain);
 const facts = await seam.discover();
 const prepared = await seam.prepare(manifest, facts, policy);
@@ -135,6 +143,7 @@ const run = await seam.execute({ ...prepared, policy, facts, approval: approval.
 ```
 
 ## How Bot 3's submit gate uses it
+
 ```ts
 checkBeforeSubmit({
   ...approvedInputs,
@@ -144,10 +153,12 @@ checkBeforeSubmit({
   ...
 });
 ```
+
 `tests/policy.test.ts` runs this with the real package. It passes for honest inputs and blocks a swapped
 signed call (`signed_bytes_mismatch`) and a changed runtime (`runtime_changed`).
 
 ## How Bot 5's receipt uses it
+
 `submit()` / `readEvents()` return `{ pallet, name, args }` events read from System.Events at the inclusion
 block. The receipt compares `Assets.Transferred(assetId, from, to, amount)`, `Assets.Issued(assetId,
 beneficiary, amount)` and `Contracts.ContractEmitted(contract, data)` against the plan's decoded args.
@@ -156,7 +167,9 @@ Anyone can re-verify later with `readEvents(endpoint, block.hash, extrinsicIndex
 atomic plans and a failing step.
 
 ## Real vs assumed
+
 **Real (checked against wss://mainnet.portaldot.io, read-only):**
+
 - Snapshot: block 2,721,455, spec 1002, tx version 2, metadata V13, SS58 42, POT with 14 decimals.
   Live discovery at block ~2,721,485 gives the **same fingerprint digest**
   `0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896`.
@@ -180,6 +193,7 @@ atomic plans and a failing step.
   the fingerprint are untouched.
 
 **Assumed / not yet checkable:**
+
 - `DispatchError` variants 6–7 (Token, Arithmetic) use the Substrate 3.x order. They only matter for a
   failed extrinsic with that error.
 - The `Assets.Asset` storage key comes from metadata hashers via polkadot.js. Mainnet has no assets, so
@@ -192,6 +206,7 @@ atomic plans and a failing step.
 - `storageDeposit` is never reported by this runtime, so it is always unknown.
 
 ## Notes
+
 - **One copy of polkadot.js.** `.npmrc` sets `install-links=true`, so `file:../seam-compiler` is
   installed as a copy and shares this package's single `@polkadot/types`/`util`. After changing the
   compiler, rebuild it, then run `rm -rf node_modules/@seam/compiler && npm install` (npm caches the copy).
@@ -236,6 +251,7 @@ The contract step is written by message name and arguments (`settle`, `abiRef: s
 `storageDepositLimit: null`); @seam/compiler binds the V14 `Contracts.call` shape, so the run scripts no longer patch it.
 The step is verified by `Contracts.ContractEmitted` from the contract. `seam_emitter` (fixtures/devnode, 158-byte
 hand-written Wasm) is only the earlier stand-in.
+
 ## Testnet run
 
 `scripts/testnet-run.mjs RPC_URL` (read-only report; `--yes` plus `SEAM_SIGNER` or `--external ADDRESS` to deploy and run the flows) is described in [docs/testnet-run.md](docs/testnet-run.md), including the browser-wallet steps. Tested on the local dev node only.

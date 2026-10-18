@@ -3,14 +3,39 @@
 
 export type Mode = "live" | "recorded" | "offline";
 
-export const MODES: { id: Mode; label: string; badge: string; hint: string; tone: "warn" | "info" | "muted" }[] = [
-  { id: "live", label: "LIVE V3", badge: "LIVE V3", hint: "Real V3 RPC and your wallet. Blocked until a V3 RPC URL is configured and a chain client is wired.", tone: "warn" },
-  { id: "recorded", label: "RECORDED LOCAL EVIDENCE", badge: "RECORDED LOCAL EVIDENCE", hint: "Replay of a real run on a local Portaldot dev node, spec 1002. Not the public testnet.", tone: "info" },
-  { id: "offline", label: "OFFLINE DEMO", badge: "OFFLINE DEMO", hint: "Synthetic data from a saved snapshot. Timings and hashes are simulated.", tone: "muted" },
+export const MODES: {
+  id: Mode;
+  label: string;
+  badge: string;
+  hint: string;
+  tone: "warn" | "info" | "muted";
+}[] = [
+  {
+    id: "live",
+    label: "LIVE V3",
+    badge: "LIVE V3",
+    hint: "Real V3 RPC and your wallet. Blocked until a V3 RPC URL is configured and a chain client is wired.",
+    tone: "warn",
+  },
+  {
+    id: "recorded",
+    label: "RECORDED LOCAL EVIDENCE",
+    badge: "RECORDED LOCAL EVIDENCE",
+    hint: "Replay of a real run on a local Portaldot dev node, spec 1002. Not the public testnet.",
+    tone: "info",
+  },
+  {
+    id: "offline",
+    label: "OFFLINE DEMO",
+    badge: "OFFLINE DEMO",
+    hint: "Synthetic data from a saved snapshot. Timings and hashes are simulated.",
+    tone: "muted",
+  },
 ];
 
 /** Final SDK name (packages/sdk/src/receipt.ts VerifierCoverage): how much of a step the chain has shown, lowest to highest. */
-export type Coverage = "none" | "call_dispatched" | "extrinsic_finalized" | "contract_emitted" | "effect_proven";
+export type Coverage =
+  "none" | "call_dispatched" | "extrinsic_finalized" | "contract_emitted" | "effect_proven";
 export const COVERAGE_LABEL: Record<Coverage, string> = {
   none: "Nothing shown by the chain",
   call_dispatched: "In a block, not final",
@@ -20,7 +45,8 @@ export const COVERAGE_LABEL: Record<Coverage, string> = {
 };
 
 /** Preflight simulation basis (packages/chain preflight.ts CoverageBasis / wholePlan). Separate from receipt coverage. */
-export type SimulationBasis = "none" | "signed_dry_run" | "contract_dry_run" | "asset_existence_check" | "fee_estimate_only";
+export type SimulationBasis =
+  "none" | "signed_dry_run" | "contract_dry_run" | "asset_existence_check" | "fee_estimate_only";
 export const SIMULATION_LABEL: Record<SimulationBasis, string> = {
   none: "Not simulated",
   signed_dry_run: "Signed transaction dry-run",
@@ -30,7 +56,10 @@ export const SIMULATION_LABEL: Record<SimulationBasis, string> = {
 };
 
 export type Provenance = "integrity_checked" | "chain_verified" | "unknown" | "failed";
-export const PROVENANCE_LABEL: Record<Provenance, { text: string; tone: "ok" | "warn" | "bad" | "info" }> = {
+export const PROVENANCE_LABEL: Record<
+  Provenance,
+  { text: string; tone: "ok" | "warn" | "bad" | "info" }
+> = {
   integrity_checked: { text: "Integrity only, not on-chain proof", tone: "info" },
   chain_verified: { text: "Chain verified", tone: "ok" },
   unknown: { text: "Unknown", tone: "warn" },
@@ -38,8 +67,19 @@ export const PROVENANCE_LABEL: Record<Provenance, { text: string; tone: "ok" | "
 };
 
 /** SDK/policy StepStatus plus console-only "rejected" (wallet) and "unknown". */
-export type TxState = "not_run" | "submitted" | "included" | "finalized" | "failed" | "uncertain" | "rejected" | "unknown";
-export const TX_STATE_LABEL: Record<TxState, { text: string; tone: "ok" | "warn" | "bad" | "info" | "muted" }> = {
+export type TxState =
+  | "not_run"
+  | "submitted"
+  | "included"
+  | "finalized"
+  | "failed"
+  | "uncertain"
+  | "rejected"
+  | "unknown";
+export const TX_STATE_LABEL: Record<
+  TxState,
+  { text: string; tone: "ok" | "warn" | "bad" | "info" | "muted" }
+> = {
   not_run: { text: "Not run", tone: "muted" },
   submitted: { text: "Submitted", tone: "info" },
   included: { text: "Included, not final", tone: "info" },
@@ -50,7 +90,15 @@ export const TX_STATE_LABEL: Record<TxState, { text: string; tone: "ok" | "warn"
   unknown: { text: "Unknown", tone: "warn" },
 };
 
-export type SigningStatus = "not_started" | "awaiting_wallet" | "signed" | "rejected" | "unavailable" | "binding_unchecked" | "binding_ok" | "binding_mismatch";
+export type SigningStatus =
+  | "not_started"
+  | "awaiting_wallet"
+  | "signed"
+  | "rejected"
+  | "unavailable"
+  | "binding_unchecked"
+  | "binding_ok"
+  | "binding_mismatch";
 export const SIGNING_LABEL: Record<SigningStatus, string> = {
   not_started: "Not started",
   awaiting_wallet: "Waiting for wallet",
@@ -63,17 +111,29 @@ export const SIGNING_LABEL: Record<SigningStatus, string> = {
 };
 
 /** Optional compiler field: a plan that downgraded atomic to sequential. */
-export interface ModeDowngrade { from: "atomic"; to: "sequential"; requiresApproval: boolean; partialExecutionRisk?: string }
+export interface ModeDowngrade {
+  from: "atomic";
+  to: "sequential";
+  requiresApproval: boolean;
+  partialExecutionRisk?: string;
+}
 
 /** Policy flags that mean the send is backed by weaker proof. */
 export const WEAK_PROOF_CODES = ["signed_dry_run_not_checked"] as const;
 export function isWeakProof(x: { weakProof?: string[]; gatePassedCodes?: string[] }): boolean {
-  return (x.weakProof?.length ?? 0) > 0 || (x.gatePassedCodes ?? []).some((c) => (WEAK_PROOF_CODES as readonly string[]).includes(c));
+  return (
+    (x.weakProof?.length ?? 0) > 0 ||
+    (x.gatePassedCodes ?? []).some((c) => (WEAK_PROOF_CODES as readonly string[]).includes(c))
+  );
 }
 
 /** Mirror of packages/sdk codes.ts SeamCode values the console can show; the console never computes its own "verified". */
 export type SeamCode = "verified" | "partial" | "not_verified" | "tx_failed" | "uncertain";
-export interface ReceiptLike { result?: "verified" | "partial" | "not_verified"; overall?: "verified" | "partial" | "not_verified"; steps: { status: string; code?: string }[] }
+export interface ReceiptLike {
+  result?: "verified" | "partial" | "not_verified";
+  overall?: "verified" | "partial" | "not_verified";
+  steps: { status: string; code?: string }[];
+}
 /** Same rules as the SDK's classifyReceipt (uncertain > failed > result). Verified only if the receipt's result says so. */
 export function classifyReceipt(r: ReceiptLike): SeamCode {
   if (r.steps.some((s) => s.status === "uncertain")) return "uncertain";

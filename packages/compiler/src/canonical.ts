@@ -1,16 +1,19 @@
-import { blake2AsHex } from '@polkadot/util-crypto';
-import { stringToU8a, u8aConcat, hexToU8a } from '@polkadot/util';
-import type { Hex } from './types.js';
+import { blake2AsHex } from "@polkadot/util-crypto";
+import { stringToU8a, u8aConcat, hexToU8a } from "@polkadot/util";
+import type { Hex } from "./types.js";
 
 export const DOMAIN = {
-  fingerprint: 'seam/fingerprint/v1',
-  manifest: 'seam/manifest/v1',
-  plan: 'seam/plan/v1',
-  abi: 'seam/abi/v1'
+  fingerprint: "seam/fingerprint/v1",
+  manifest: "seam/manifest/v1",
+  plan: "seam/plan/v1",
+  abi: "seam/abi/v1",
 } as const;
 
 export class NotCanonicalError extends Error {
-  constructor(readonly path: string, message: string) {
+  constructor(
+    readonly path: string,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -20,25 +23,30 @@ export class NotCanonicalError extends Error {
  * keys with undefined values dropped. Only integers (safe range) are allowed as numbers,
  * so floats can never sneak into a digest.
  */
-export function canonicalJson(value: unknown, path = '$'): string {
-  if (value === null) return 'null';
+export function canonicalJson(value: unknown, path = "$"): string {
+  if (value === null) return "null";
   switch (typeof value) {
-    case 'string':
+    case "string":
       return JSON.stringify(value);
-    case 'boolean':
-      return value ? 'true' : 'false';
-    case 'number':
+    case "boolean":
+      return value ? "true" : "false";
+    case "number":
       if (!Number.isSafeInteger(value)) {
-        throw new NotCanonicalError(path, `number ${value} is not a safe integer; use a base-unit string`);
+        throw new NotCanonicalError(
+          path,
+          `number ${value} is not a safe integer; use a base-unit string`,
+        );
       }
       return String(value);
-    case 'object': {
+    case "object": {
       if (Array.isArray(value)) {
-        return `[${value.map((v, i) => canonicalJson(v === undefined ? null : v, `${path}[${i}]`)).join(',')}]`;
+        return `[${value.map((v, i) => canonicalJson(v === undefined ? null : v, `${path}[${i}]`)).join(",")}]`;
       }
       const obj = value as Record<string, unknown>;
-      const keys = Object.keys(obj).filter((k) => obj[k] !== undefined).sort();
-      return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(obj[k], `${path}.${k}`)}`).join(',')}}`;
+      const keys = Object.keys(obj)
+        .filter((k) => obj[k] !== undefined)
+        .sort();
+      return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(obj[k], `${path}.${k}`)}`).join(",")}}`;
     }
     default:
       throw new NotCanonicalError(path, `${typeof value} cannot be canonicalised`);

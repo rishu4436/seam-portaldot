@@ -45,9 +45,14 @@ export interface RuntimeFacts {
 }
 
 export type AddressType = "SS58" | "AccountId32" | "H160";
-export interface TypedAddress { type: AddressType; value: string; ss58Prefix?: number }
+export interface TypedAddress {
+  type: AddressType;
+  value: string;
+  ss58Prefix?: number;
+}
 
-export type ActionKind = "assets.transfer" | "assets.mint" | "contracts.call" | "revive.call" | "nfts.mint";
+export type ActionKind =
+  "assets.transfer" | "assets.mint" | "contracts.call" | "revive.call" | "nfts.mint";
 
 export interface ManifestAction {
   id: string;
@@ -71,7 +76,18 @@ export interface PlanStep {
   capability: string;
   callIndex?: [number, number];
   encodedCall?: Hex;
-  decoded: { assetId?: string; amount?: string; recipient?: string; contract?: string; value?: string; message?: string; selector?: string; abiHash?: string; abiRef?: string; args?: string };
+  decoded: {
+    assetId?: string;
+    amount?: string;
+    recipient?: string;
+    contract?: string;
+    value?: string;
+    message?: string;
+    selector?: string;
+    abiHash?: string;
+    abiRef?: string;
+    args?: string;
+  };
   status: "ok" | "unavailable";
   reason?: string;
   /** Set when a run script filled this step by hand because the compiler can't encode it on this runtime yet. */
@@ -91,18 +107,61 @@ export interface Plan {
   modeDowngrade?: import("./modes").ModeDowngrade;
 }
 
-export interface Estimate { value?: string; unknown?: boolean }
-export interface PreflightStep { actionId: string; weight: Estimate; /** Weight V2 proof_size (bytes). Unknown on runtimes that don't report it (e.g. Portaldot spec 1002), never 0. */ proofSize?: Estimate; fee: Estimate; storageDeposit: Estimate; dryRun: "ok" | "failed" | "unknown"; note?: string }
-export interface PreflightResult { steps: PreflightStep[]; totalFee: Estimate }
+export interface Estimate {
+  value?: string;
+  unknown?: boolean;
+}
+export interface PreflightStep {
+  actionId: string;
+  weight: Estimate;
+  /** Weight V2 proof_size (bytes). Unknown on runtimes that don't report it (e.g. Portaldot spec 1002), never 0. */ proofSize?: Estimate;
+  fee: Estimate;
+  storageDeposit: Estimate;
+  dryRun: "ok" | "failed" | "unknown";
+  note?: string;
+}
+export interface PreflightResult {
+  steps: PreflightStep[];
+  totalFee: Estimate;
+}
 
-export interface SigningEnvelope { signer: string; nonce: number; mortalityBlocks: number; expiresAt: string }
+export interface SigningEnvelope {
+  signer: string;
+  nonce: number;
+  mortalityBlocks: number;
+  expiresAt: string;
+}
 
-export interface PolicyRuleResult { rule: string; outcome: "pass" | "block" | "unknown"; reason: string; actionId?: string }
-export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex; explain?: string; /** Rule ids (rule or rule:actionId) that passed only on weaker proof. */ weakProof?: string[] }
+export interface PolicyRuleResult {
+  rule: string;
+  outcome: "pass" | "block" | "unknown";
+  reason: string;
+  actionId?: string;
+}
+export interface PolicyResult {
+  allowed: boolean;
+  rules: PolicyRuleResult[];
+  policyDigest: Hex;
+  explain?: string;
+  /** Rule ids (rule or rule:actionId) that passed only on weaker proof. */ weakProof?: string[];
+}
 
-export interface Approval { hash: Hex; covers: string[]; expiresAt: string; used: boolean }
+export interface Approval {
+  hash: Hex;
+  covers: string[];
+  expiresAt: string;
+  used: boolean;
+}
 
-export type StepStatus = "finalized" | "included" | "submitted" | "failed" | "not_run" | "uncertain" | "checking" | "blocked";
+export type StepStatus =
+  | "finalized"
+  | "included"
+  | "submitted"
+  | "failed"
+  | "not_run"
+  | "uncertain"
+  | "checking"
+  | "blocked";
 export type Verification = "verified" | "not_verified" | "unknown";
 
 export interface ReceiptStep {

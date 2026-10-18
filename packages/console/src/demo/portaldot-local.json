@@ -1,336 +1,325 @@
 {
- "source": "evidence/portaldot-local-node",
- "node": {
-  "endpoint": "ws://127.0.0.1:9966",
-  "specName": "portaldot",
-  "specVersion": 1002,
-  "transactionVersion": 2,
-  "metadataVersion": 13,
-  "genesisHash": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5",
-  "fingerprintDigest": "0xfbc5239f39694b547ff94be59bfd6ae75fe139b5f8dabf57aecd58750e929310",
-  "fingerprintStableOnRefetch": true,
-  "token": {
-   "symbol": "POT",
-   "decimals": 14,
-   "source": "node, or declared on the command line if the node reports none"
+  "source": "evidence/portaldot-local-node",
+  "node": {
+    "endpoint": "ws://127.0.0.1:9966",
+    "specName": "portaldot",
+    "specVersion": 1002,
+    "transactionVersion": 2,
+    "metadataVersion": 13,
+    "genesisHash": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5",
+    "fingerprintDigest": "0xfbc5239f39694b547ff94be59bfd6ae75fe139b5f8dabf57aecd58750e929310",
+    "fingerprintStableOnRefetch": true,
+    "token": {
+      "symbol": "POT",
+      "decimals": 14,
+      "source": "node, or declared on the command line if the node reports none"
+    },
+    "hasContracts": true,
+    "hasRevive": false,
+    "hasAssets": true,
+    "hasUtility": true,
+    "palletCount": 31
   },
-  "hasContracts": true,
-  "hasRevive": false,
-  "hasAssets": true,
-  "hasUtility": true,
-  "palletCount": 31
- },
- "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
- "startedAt": "2026-10-18T06:49:50.964Z",
- "finishedAt": "2026-10-18T06:52:48.678Z",
- "deploy": {
-  "txHash": "0xa635cbebe1acfcc49a75db37ed44299b3ab5dc1bfffca1aa4d6905b1c92b1554",
-  "block": 79,
-  "blockHash": "0x00e5d6ebae1240b2d92c2d43e0eb04d1df7cc44b6c9c55f496aa408f07a54db8",
-  "contract": "0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822",
-  "codeHash": "0xd5d63afabb5e27133f20e22e812df7e233c0c7cd75c76908343f65add6781352",
-  "status": "finalized",
-  "dryRun": "ok",
-  "file": "evidence/portaldot-local-node/runs/deploy-1792306243286.json"
- },
- "sequential": {
-  "file": "evidence/portaldot-local-node/runs/sequential-1792306333993.json",
-  "result": "verified",
-  "compiledMode": "sequential",
-  "steps": [
-   {
-    "id": "pay",
+  "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+  "startedAt": "2026-10-18T06:49:50.964Z",
+  "finishedAt": "2026-10-18T06:52:48.678Z",
+  "deploy": {
+    "txHash": "0xa635cbebe1acfcc49a75db37ed44299b3ab5dc1bfffca1aa4d6905b1c92b1554",
+    "block": 79,
+    "blockHash": "0x00e5d6ebae1240b2d92c2d43e0eb04d1df7cc44b6c9c55f496aa408f07a54db8",
+    "contract": "0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822",
+    "codeHash": "0xd5d63afabb5e27133f20e22e812df7e233c0c7cd75c76908343f65add6781352",
     "status": "finalized",
-    "tx": "0x82c91cdd372a218fad14a5b60ece0bc038b5c8de7e2a8b2f4423bbcb4ef41966",
-    "block": 88
-   },
-   {
-    "id": "call",
-    "status": "finalized",
-    "tx": "0xa732384a54946cda2a2652cbcfb5c40ace510575a6363533ee98e0d5be72578d",
-    "block": 91
-   },
-   {
-    "id": "mint",
-    "status": "finalized",
-    "tx": "0x8d1494c2d8114c0e12a5fd74d486444ae930d01dbb4a623eba24279321db5aaa",
-    "block": 94
-   }
-  ],
-  "gate": [
-   {
-    "actionId": "pay",
-    "phase": "sending",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "step_order",
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   },
-   {
-    "actionId": "pay",
-    "phase": "done",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "step_order",
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   },
-   {
-    "actionId": "call",
-    "phase": "sending",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "step_order",
-     "previous_steps_ok",
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   },
-   {
-    "actionId": "call",
-    "phase": "done",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "step_order",
-     "previous_steps_ok",
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   },
-   {
-    "actionId": "mint",
-    "phase": "sending",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "step_order",
-     "previous_steps_ok",
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   },
-   {
-    "actionId": "mint",
-    "phase": "done",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "step_order",
-     "previous_steps_ok",
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   }
-  ],
-  "receipt": "verified"
- },
- "atomic": {
-  "file": "evidence/portaldot-local-node/runs/atomic-1792306368675.json",
-  "result": "verified",
-  "compiledMode": "atomic_verified",
-  "steps": [
-   {
-    "id": "pay",
-    "status": "finalized",
-    "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
-    "block": 100
-   },
-   {
-    "id": "call",
-    "status": "finalized",
-    "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
-    "block": 100
-   },
-   {
-    "id": "mint",
-    "status": "finalized",
-    "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
-    "block": 100
-   }
-  ],
-  "gate": [
-   {
-    "actionId": "batch",
-    "phase": "sending",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   },
-   {
-    "actionId": "batch",
-    "phase": "done",
-    "ok": true,
-    "reasons": [],
-    "passed": [
-     "approval_unused",
-     "approval_valid_time",
-     "approval_intact",
-     "approval_matches",
-     "runtime_unchanged",
-     "signed_bytes_match",
-     "signed_dry_run_ok"
-    ]
-   }
-  ],
-  "receipt": "verified"
- },
- "rollback": {
-  "file": "evidence/portaldot-local-node/runs/rollback-1792306351342.json",
-  "result": "verified",
-  "directTx": "0x96e4dee879da27b20ebe9493152a9b28d1fd46672c05d81b4110838fcdac4eaf",
-  "dispatchError": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
-  "gateReasons": [
-   {
-    "code": "signed_dry_run_failed",
-    "message": "Blocked: the dry run of the signed transaction failed, so it would fail on chain."
-   }
-  ],
-  "gatePassed": [
-   "approval_unused",
-   "approval_valid_time",
-   "approval_intact",
-   "approval_matches",
-   "runtime_unchanged",
-   "signed_bytes_match"
-  ],
-  "nothingSent": true,
-  "dryRun": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
-  "bypassNote": "test-only bypass of the gate: the same signed bytes the gate refused",
-  "bypassStatuses": [
-   "submitted",
-   "in_block",
-   "finalized"
-  ],
-  "state": {
-   "before": {
-    "block": 96,
-    "signerNonce": 19,
-    "exists": true,
-    "balances": {
-     "signer": "999999997500",
-     "recipientA": "2500",
-     "recipientB": "7"
-    },
-    "supply": "1000000000007"
-   },
-   "afterGate": {
-    "block": 96,
-    "signerNonce": 19,
-    "exists": true,
-    "balances": {
-     "signer": "999999997500",
-     "recipientA": "2500",
-     "recipientB": "7"
-    },
-    "supply": "1000000000007"
-   },
-   "after": {
-    "block": 99,
-    "signerNonce": 20,
-    "exists": true,
-    "balances": {
-     "signer": "999999997500",
-     "recipientA": "2500",
-     "recipientB": "7"
-    },
-    "supply": "1000000000007"
-   }
+    "dryRun": "ok",
+    "file": "evidence/portaldot-local-node/runs/deploy-1792306243286.json"
   },
-  "batchAllRollback": "verified"
- },
- "mainnetBlocked": {
-  "file": "evidence/portaldot-local-node/mainnet-plan-blocked.json",
-  "label": "local Portaldot dev node, spec 1002, not V3 testnet, not mainnet",
-  "recordedAt": "2026-10-18T07:08:12.383Z",
-  "localNode": "ws://127.0.0.1:9966",
-  "plan": "docs/examples/demo-manifest.json compiled against packages/chain/fixtures/portaldot-mainnet-snapshot.json",
-  "steps": [
-   "pay",
-   "call",
-   "receipt"
-  ],
-  "plannedDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-  "localDigest": "0xfbc5239f39694b547ff94be59bfd6ae75fe139b5f8dabf57aecd58750e929310",
-  "differs": [
-   "genesisHash",
-   "metadataHash"
-  ],
-  "differences": [
-   {
-    "field": "genesisHash",
-    "planned": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
-    "local": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5"
-   },
-   {
-    "field": "metadataHash",
-    "planned": "0x8b91f644a913a1008086c2e0732a8a2184c1da79909e9384d432c3c5ffac5150",
-    "local": "0xc52f4da1d07f910d5bbfff1b5399bf8562e9a24c956c8703fef32b0cfb0e9106"
-   }
-  ],
-  "reasons": [
-   {
-    "code": "runtime_changed",
-    "message": "Blocked: the chain itself (genesis hash), the runtime metadata changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
-   }
-  ],
-  "passed": [
-   "approval_unused",
-   "approval_valid_time",
-   "approval_intact",
-   "approval_matches",
-   "signed_bytes_match"
-  ],
-  "placeholders": "preflight and signing envelope are offline placeholders (the plan's runtime is not reachable); approval is a real createApproval over them",
-  "policy": "docs/examples/demo-policy.json with requireSignedDryRun false (so the signed dry run is not what is being shown)",
-  "conclusion": "BLOCKED by the submit gate: runtime_changed",
-  "signed": false,
-  "sent": false,
-  "mainnetContacted": false
- },
- "contractCall": "0x6c3372220700000000000000c4090000000000000000000000000000"
+  "sequential": {
+    "file": "evidence/portaldot-local-node/runs/sequential-1792306333993.json",
+    "result": "verified",
+    "compiledMode": "sequential",
+    "steps": [
+      {
+        "id": "pay",
+        "status": "finalized",
+        "tx": "0x82c91cdd372a218fad14a5b60ece0bc038b5c8de7e2a8b2f4423bbcb4ef41966",
+        "block": 88
+      },
+      {
+        "id": "call",
+        "status": "finalized",
+        "tx": "0xa732384a54946cda2a2652cbcfb5c40ace510575a6363533ee98e0d5be72578d",
+        "block": 91
+      },
+      {
+        "id": "mint",
+        "status": "finalized",
+        "tx": "0x8d1494c2d8114c0e12a5fd74d486444ae930d01dbb4a623eba24279321db5aaa",
+        "block": 94
+      }
+    ],
+    "gate": [
+      {
+        "actionId": "pay",
+        "phase": "sending",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "step_order",
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      },
+      {
+        "actionId": "pay",
+        "phase": "done",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "step_order",
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      },
+      {
+        "actionId": "call",
+        "phase": "sending",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "step_order",
+          "previous_steps_ok",
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      },
+      {
+        "actionId": "call",
+        "phase": "done",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "step_order",
+          "previous_steps_ok",
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      },
+      {
+        "actionId": "mint",
+        "phase": "sending",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "step_order",
+          "previous_steps_ok",
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      },
+      {
+        "actionId": "mint",
+        "phase": "done",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "step_order",
+          "previous_steps_ok",
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      }
+    ],
+    "receipt": "verified"
+  },
+  "atomic": {
+    "file": "evidence/portaldot-local-node/runs/atomic-1792306368675.json",
+    "result": "verified",
+    "compiledMode": "atomic_verified",
+    "steps": [
+      {
+        "id": "pay",
+        "status": "finalized",
+        "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
+        "block": 100
+      },
+      {
+        "id": "call",
+        "status": "finalized",
+        "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
+        "block": 100
+      },
+      {
+        "id": "mint",
+        "status": "finalized",
+        "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
+        "block": 100
+      }
+    ],
+    "gate": [
+      {
+        "actionId": "batch",
+        "phase": "sending",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      },
+      {
+        "actionId": "batch",
+        "phase": "done",
+        "ok": true,
+        "reasons": [],
+        "passed": [
+          "approval_unused",
+          "approval_valid_time",
+          "approval_intact",
+          "approval_matches",
+          "runtime_unchanged",
+          "signed_bytes_match",
+          "signed_dry_run_ok"
+        ]
+      }
+    ],
+    "receipt": "verified"
+  },
+  "rollback": {
+    "file": "evidence/portaldot-local-node/runs/rollback-1792306351342.json",
+    "result": "verified",
+    "directTx": "0x96e4dee879da27b20ebe9493152a9b28d1fd46672c05d81b4110838fcdac4eaf",
+    "dispatchError": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
+    "gateReasons": [
+      {
+        "code": "signed_dry_run_failed",
+        "message": "Blocked: the dry run of the signed transaction failed, so it would fail on chain."
+      }
+    ],
+    "gatePassed": [
+      "approval_unused",
+      "approval_valid_time",
+      "approval_intact",
+      "approval_matches",
+      "runtime_unchanged",
+      "signed_bytes_match"
+    ],
+    "nothingSent": true,
+    "dryRun": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
+    "bypassNote": "test-only bypass of the gate: the same signed bytes the gate refused",
+    "bypassStatuses": ["submitted", "in_block", "finalized"],
+    "state": {
+      "before": {
+        "block": 96,
+        "signerNonce": 19,
+        "exists": true,
+        "balances": {
+          "signer": "999999997500",
+          "recipientA": "2500",
+          "recipientB": "7"
+        },
+        "supply": "1000000000007"
+      },
+      "afterGate": {
+        "block": 96,
+        "signerNonce": 19,
+        "exists": true,
+        "balances": {
+          "signer": "999999997500",
+          "recipientA": "2500",
+          "recipientB": "7"
+        },
+        "supply": "1000000000007"
+      },
+      "after": {
+        "block": 99,
+        "signerNonce": 20,
+        "exists": true,
+        "balances": {
+          "signer": "999999997500",
+          "recipientA": "2500",
+          "recipientB": "7"
+        },
+        "supply": "1000000000007"
+      }
+    },
+    "batchAllRollback": "verified"
+  },
+  "mainnetBlocked": {
+    "file": "evidence/portaldot-local-node/mainnet-plan-blocked.json",
+    "label": "local Portaldot dev node, spec 1002, not V3 testnet, not mainnet",
+    "recordedAt": "2026-10-18T07:08:12.383Z",
+    "localNode": "ws://127.0.0.1:9966",
+    "plan": "docs/examples/demo-manifest.json compiled against packages/chain/fixtures/portaldot-mainnet-snapshot.json",
+    "steps": ["pay", "call", "receipt"],
+    "plannedDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
+    "localDigest": "0xfbc5239f39694b547ff94be59bfd6ae75fe139b5f8dabf57aecd58750e929310",
+    "differs": ["genesisHash", "metadataHash"],
+    "differences": [
+      {
+        "field": "genesisHash",
+        "planned": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+        "local": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5"
+      },
+      {
+        "field": "metadataHash",
+        "planned": "0x8b91f644a913a1008086c2e0732a8a2184c1da79909e9384d432c3c5ffac5150",
+        "local": "0xc52f4da1d07f910d5bbfff1b5399bf8562e9a24c956c8703fef32b0cfb0e9106"
+      }
+    ],
+    "reasons": [
+      {
+        "code": "runtime_changed",
+        "message": "Blocked: the chain itself (genesis hash), the runtime metadata changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+      }
+    ],
+    "passed": [
+      "approval_unused",
+      "approval_valid_time",
+      "approval_intact",
+      "approval_matches",
+      "signed_bytes_match"
+    ],
+    "placeholders": "preflight and signing envelope are offline placeholders (the plan's runtime is not reachable); approval is a real createApproval over them",
+    "policy": "docs/examples/demo-policy.json with requireSignedDryRun false (so the signed dry run is not what is being shown)",
+    "conclusion": "BLOCKED by the submit gate: runtime_changed",
+    "signed": false,
+    "sent": false,
+    "mainnetContacted": false
+  },
+  "contractCall": "0x6c3372220700000000000000c4090000000000000000000000000000"
 }
