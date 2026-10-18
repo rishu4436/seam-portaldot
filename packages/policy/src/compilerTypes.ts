@@ -161,7 +161,7 @@ export interface ContractMessage {
 }
 
 /** Stable strings; never rename. */
-export type StepReasonCode = "NO_OBSERVED_V3_METADATA" | "ATOMIC_REQUIRED_UNAVAILABLE";
+export type StepReasonCode = "NO_OBSERVED_V3_METADATA" | "V3_ARG_SHAPE_MISMATCH" | "ATOMIC_REQUIRED_UNAVAILABLE";
 
 export interface ModeDowngrade {
   from: "atomic";
