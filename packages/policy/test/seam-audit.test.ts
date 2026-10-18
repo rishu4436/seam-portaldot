@@ -45,6 +45,7 @@ describe("SEAM-002: dependent steps need finalized + verified", () => {
     ["included + unknown", { status: "included", verification: "unknown" }, "step_not_finalized"],
     ["included + verified", { status: "included" }, "step_not_finalized"],
     ["submitted + verified", { status: "submitted" }, "step_not_finalized"],
+    ["uncertain + verified", { status: "uncertain" }, "step_not_finalized"],
     ["not_run", { status: "not_run" }, "step_not_finalized"],
     ["finalized but not_verified", { verification: "not_verified" }, "verification_failed"],
     ["failed contract outcome", { status: "failed", verification: "not_verified", events: ["Contracts.ContractTrapped"] }, "step_failed"],
