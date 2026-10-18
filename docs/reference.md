@@ -150,6 +150,11 @@ The gate result is `{ ok, reasons, passed }`. `passed` is a list of `{ code, det
 
 `seam.execute({ ..., onStep })` calls `onStep(event)` as it goes. The event is `{ index, actionId, phase, detail?, check? }`. `phase` is `checking`, `sending`, `done` or `blocked`. `check` is the submit-gate result (`SubmitCheck`) for that step: `{ ok: true, reasons: [], passed }` on `sending` and `done`, and `{ ok: false, reasons, passed }` on `blocked`; `passed` lists the checks that passed (see above), with the same reasons as `detail`. There is no `check` on `checking`, because the gate hasn't run yet. An atomic plan is one step with `actionId: "batch"`. Old callbacks that ignore `check` keep working.
 
+
+## Outcome verdicts: `execute({ verdicts })`
+
+`seam.execute({ ..., verdicts })` takes an optional `Record<actionId, OutcomeVerdict>` (from `verifyReviveCallOutcome` / `verifyNftsMintOutcome`, computed by the caller from the events it observed). `execute` passes it to every receipt it builds, the same way as `effects`, including the per-step receipts that decide whether the next step may run. It never computes a verdict itself. Without `verdicts` nothing changes: `revive.call` and `nfts.mint` steps stay `unsupported_runtime`. A verdict is `effect_proven` only under the verifier's own rules (observed event shape); nothing here is verified on Portaldot V3.
+
 ## CLI
 
 | Command | What it does | Exit code |
