@@ -28,7 +28,7 @@ function gate(run: Run, over: Partial<Parameters<typeof checkBeforeSubmit>[0]> =
   });
 }
 const codes = (r: { reasons: { code: string }[] }) => r.reasons.map((x) => x.code);
-const done = (actionId: string): ReceiptStep => ({ actionId, status: "finalized", events: ["x"], verification: "verified", reason: "ok" });
+const done = (actionId: string): ReceiptStep => ({ actionId, status: "finalized", txHash: ("0x" + "11".repeat(32)) as Hex, block: { number: 10, hash: ("0x" + "11".repeat(32)) as Hex }, events: ["x"], verification: "verified", reason: "ok" });
 
 describe("adversarial submit gate", () => {
   it("blocks an approval whose expiry was extended by hand", () => {

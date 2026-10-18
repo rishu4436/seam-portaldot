@@ -47,3 +47,10 @@ npm run build
 ```
 
 Runtime facts, Manifest and Plan types are copied from the compiler into `src/compilerTypes.ts`; they become an import once the monorepo exists.
+
+## Audit hardening (SEAM-001/002/005/017)
+
+- **Sequential steps** (`canRunNextStep`): a dependent step starts only after every earlier step is `finalized` + `verified` with a tx hash and block and no failure event. Blocks return a `code` (`step_failed`, `step_not_finalized`, `verification_failed`, `verification_unknown`, `receipt_data_missing`, `contract_outcome_failed`). `markNotRun()` appends `not_run` steps for everything after the stop.
+- **Approval store**: `ReservableApprovalStore` adds `reserve -> commit | release | markUncertain -> reconcile`, with idempotency key and tx hash. `InMemoryApprovalStore` is at-most-once within one process only; it forgets everything on restart. Hosted use needs a durable store with atomic reserve. `markUsed` still works (reserve+commit, final). Call the gate *before* `reserve`.
+- **Weaker proof**: unknowns allowed by policy are flagged (`rule.weak`, `PolicyResult.weakProof`); a send with no signed dry run reports `signed_dry_run_not_checked`.
+- **Signed bytes**: pass `signedExtrinsics` + `decodeSignedExtrinsic` (trusted decoder) so the gate compares the call decoded from the bytes, plus signer, nonce, signature, genesis. `signedCalls` is then ignored. `requireTrustedDecoder: true` fails closed without them.
