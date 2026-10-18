@@ -2,6 +2,35 @@
 
 > **STATUS: PENDING. Nothing here has been run on Portaldot V3 testnet.** We do not yet have the V3 testnet RPC URL or faucet. Do not treat any step below as done. Items marked "unverified" are things we expect but have not confirmed.
 
+## Local Portaldot dev node (spec 1002), not the hosted testnet
+
+This is a **local Portaldot dev node, spec 1002**: the organizers' own `portaldot_dev` binary run on one machine with a throwaway chain (`--dev --tmp`, state deleted on exit). It is **not the hosted V3 testnet** and **not mainnet**. The only key used is the public `//Alice` dev account as a local test signer. Recordings: [`evidence/portaldot-local-node`](../evidence/portaldot-local-node/README.md).
+
+**Runtime report** ([`runtime-report.json`](../evidence/portaldot-local-node/runtime-report.json), read-only):
+- Runtime `portaldot` spec **1002**, transaction version **2**, metadata **V13**, ss58 prefix 42, 31 pallets, genesis `0xa07fa01c...b398a5` (a dev genesis, not mainnet's).
+- Old rent-based `Contracts` pallet: `Contracts.call` takes a single `gas_limit: Compact<Weight>` and **no** `storage_deposit_limit`. **No `Revive`**, no `Nfts`. `Assets`, `Utility` and `Balances` are present.
+- Fingerprint digest `0xfbc5239f...` was stable on refetch. It differs from the mainnet snapshot's digest (`0xfa84b636...`), so a plan prepared against the mainnet snapshot is blocked at the runtime-lock gate on this node. Bot 3's gate tests cover this case; it is not a recorded run in the evidence folder.
+- The node reports no token properties, so the run declared `--token POT:14` (the mainnet spec-1002 snapshot's values, not read from the node).
+
+**Signed run with the public `//Alice` dev account** ([`testnet-summary.json`](../evidence/portaldot-local-node/testnet-summary.json), run files in [`evidence/portaldot-local-node/runs`](../evidence/portaldot-local-node/runs)). The gate's `sending` and `done` checks passed (`ok: true`) at every step of the sequential and atomic flows:
+
+| Flow | Result | Tx hash(es) and blocks |
+|------|--------|-----------------------|
+| Sequential (3 txs, gated each step) | verified | pay `0x82c91cdd372a218fad14a5b60ece0bc038b5c8de7e2a8b2f4423bbcb4ef41966` (block 88); call `0xa732384a54946cda2a2652cbcfb5c40ace510575a6363533ee98e0d5be72578d` (block 91); mint `0x8d1494c2d8114c0e12a5fd74d486444ae930d01dbb4a623eba24279321db5aaa` (block 94) |
+| Atomic (one `Utility.batch_all`) | verified, `atomic_verified` | all three steps share `0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8` (block 100) |
+| Rollback | verified | direct tx `0x96e4dee879da27b20ebe9493152a9b28d1fd46672c05d81b4110838fcdac4eaf`: gate **blocked** it (`signed_dry_run_failed`); sent anyway as a test-only bypass it failed with `assets.BalanceLow`; balances unchanged, no inner effects |
+| Contract deploy (setup) | ok, finalized | tx `0xa635cbebe1acfcc49a75db37ed44299b3ab5dc1bfffca1aa4d6905b1c92b1554` (block 79), contract `0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822` |
+
+**Limits (state these):**
+- The ink! 5 demo contract (`seam_demo`) **cannot run on this old pallet**: it imports `seal0.input`, `seal2.set_storage` and so on, while this runtime exposes the old `seal_*` API. Its deploy fails the signed dry run (`dispatch failed: Other`, nothing sent).
+- So the contract step is a **raw-data call** (`0x6c337222...`, shaped like `settle(7, 2500)`) to a small hand-written Wasm emitter (`seam_emitter_seal`). It is **not contract-by-message**. The emitted event data is `"SEAM"` plus that input.
+- The contract deploy remains an **unchecked setup step**: it goes through the dry-run and gate path, but policy does not evaluate it and the compiler has no instantiate action.
+- A mainnet-built plan is blocked at the gate on this node (fingerprint differs, see above).
+- The old pallet needed an endowment above the subsistence threshold (`--endowment 2e15`); recipients were funded with 2x the existential deposit (1e14).
+- Still **PENDING**: the hosted V3 testnet (no RPC or faucet yet) and a run signed in a real polkadot.js wallet.
+
+Everything below is still **PENDING** for the hosted V3 testnet; the local node run above ticks no box below.
+
 ## Needed from Portaldot (blockers)
 - [ ] V3 testnet WebSocket RPC URL (`wss://...`).
 - [ ] Faucet (to fund the signer and pay fees).

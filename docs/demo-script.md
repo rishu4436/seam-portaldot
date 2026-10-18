@@ -19,6 +19,8 @@ Setup (section 0) happens before the demo and is not counted. The earlier versio
 
 **Contract deploy: say it is an "unchecked setup step".** If the deploy is mentioned or shown, label it that way: it is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action. Policy covers the compiled plan steps only.
 
+**Local Portaldot dev node (spec 1002), optional evidence, not part of the 180 s table.** Recorded runs from a local Portaldot dev node (not the hosted testnet) are in [`evidence/portaldot-local-node`](../evidence/portaldot-local-node/README.md): sequential pay block 88, call block 91, mint block 94; atomic block 100 (tx `0xb3ded1ac...`); rollback gated with `signed_dry_run_failed`, bypass failed with `assets.BalanceLow`. If shown, say "local Portaldot dev node, spec 1002", and that the contract step is a raw-data call to a small hand-written Wasm emitter, **not** contract-by-message, because the ink! 5 demo contract cannot run on this old pallet. The contract deploy is an unchecked setup step. Wallet signing and the hosted V3 testnet stay PENDING. Full hashes: README section "Local Portaldot dev node (spec 1002), not the hosted testnet".
+
 **Say this first (10 s):** "Everything you will see ran on a local substrate-contracts-node dev chain, not Portaldot V3 testnet. The testnet RPC and faucet are pending. The mainnet snapshot is read-only."
 
 All outputs below were produced by running the command on the repo at the time of writing. Tx hashes and block numbers exist only on that local chain and change on every fresh run. Evidence files are in [`evidence/devnode/runs`](../evidence/README.md).
@@ -115,6 +117,7 @@ Say: "The console shows the same flow. Next step is the Portaldot V3 testnet: [t
 (The console starts with this command; what it shows was not re-verified for this script.)
 
 ## Honest limits to state if asked
+- A second set of recordings came from a local Portaldot dev node (spec 1002, metadata V13, //Alice, throwaway chain): not the hosted testnet. The contract step there is a raw-data call to a hand-written Wasm emitter, not contract-by-message, and a mainnet-built plan is blocked at the gate on that node (fingerprint differs).
 - Local dev chain only, spec 100 / metadata V14; signed with the public `//Alice` dev account.
 - No Portaldot V3 testnet run, no testnet addresses or tx hashes yet.
 - No run signed in a real browser wallet yet.
