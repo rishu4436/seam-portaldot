@@ -1,6 +1,6 @@
 import { hexToU8a, u8aConcat, u8aToHex } from "@polkadot/util";
-import { encodeAddress } from "@polkadot/util-crypto";
-import type { Hex, Plan, PlanStep, RuntimeFacts } from "@seam/compiler";
+import { encodeAddress, keccakAsU8a } from "@polkadot/util-crypto";
+import type { Hex, Plan, PlanStep, RuntimeFacts, StepReasonCode } from "@seam/compiler";
 import { SeamChainError } from "./errors.js";
 import { readHead } from "./discover.js";
 import {
@@ -15,6 +15,7 @@ import {
 import { decodeRuntime, describeDispatchError, encodeRuntime, storageKey } from "./runtime.js";
 import { callsForSigning } from "./signing.js";
 import { dryRunOne } from "./dryrun.js";
+import { runtimeApiId } from "./capabilities.js";
 import type { BlockRef, Estimate, PreflightResult, PreflightStep } from "./types.js";
 
 export interface PreflightOptions extends ConnectOptions {
@@ -56,14 +57,70 @@ export interface PreflightTxDetail {
  *   contract_dry_run      ContractsApi_call of this call alone against current state
  *   asset_existence_check only that the asset exists; not balances, permissions or later state
  *   fee_estimate_only     payment_queryInfo only; the call itself was not executed
+ *   unobserved            revive.call / nfts.mint: no real Portaldot V3 metadata has ever been observed, so nothing
+ *                         said about these steps is evidence of anything. Never upgraded, whatever the node returns.
  */
 export type CoverageBasis =
-  "signed_dry_run" | "contract_dry_run" | "asset_existence_check" | "fee_estimate_only";
+  | "signed_dry_run"
+  | "contract_dry_run"
+  | "asset_existence_check"
+  | "fee_estimate_only"
+  | "unobserved";
 export interface SimulationCoverage {
   /** 'signed_dry_run' only for an atomic plan whose real signed batch dry-ran ok. Otherwise 'none'. Never 'none' hidden behind per-step ok. */
   wholePlan: "signed_dry_run" | "none";
-  steps: { actionId: string; basis: CoverageBasis; proves: string }[];
+  steps: {
+    actionId: string;
+    basis: CoverageBasis;
+    proves: string;
+    /** Compiler reason code of an unavailable revive.call / nfts.mint step, passed through unchanged. */
+    reasonCode?: StepReasonCode;
+  }[];
   summary: string;
+}
+
+/** The two step kinds whose layout SEAM has never observed on a real Portaldot V3 chain. */
+export const V3_PREFLIGHT_KINDS: readonly string[] = ["revive.call", "nfts.mint"];
+const isV3Step = (s: PlanStep) => V3_PREFLIGHT_KINDS.includes(s.kind);
+
+/** What preflight did and did not do for one revive.call / nfts.mint step. */
+export interface V3StepPreflight {
+  actionId: string;
+  kind: "revive.call" | "nfts.mint";
+  /** 'encoded': the compiler produced a call. 'unavailable': it did not; reasonCode/reason are the compiler's, unchanged. */
+  compiler: "encoded" | "unavailable";
+  reasonCode?: StepReasonCode;
+  reason?: string;
+  simulation: {
+    /** True only when the node was actually asked to estimate or dry-run this call. */
+    attempted: boolean;
+    /** Which node methods answered, e.g. 'payment_queryInfo', 'system_dryRun'. */
+    via: string[];
+    /** Always a statement of limits; never a claim that the call would succeed. */
+    note: string;
+  };
+  /** Whether state_getRuntimeVersion lists ReviveApi. SEAM never calls ReviveApi_call: its layout is unverified. */
+  reviveApi?: "listed" | "not_listed" | "unknown";
+}
+
+/**
+ * Revive needs the signer's account mapped (Revive.map_account) before it can act. 'unknown' unless the metadata
+ * shows the pallet's map_account call AND an OriginalAccount storage entry that, read from chain state, maps the
+ * signer's derived H160 back to the signer. Anything else (missing, unreadable, different account) is 'unknown',
+ * never 'mapped'. The derivation is the generic pallet-revive rule, NOT verified against Portaldot V3.
+ */
+export interface AccountMappingInfo {
+  status: "unknown" | "mapped";
+  mapAccountInMetadata: boolean;
+  reason: string;
+}
+
+export interface V3PreflightInfo {
+  steps: V3StepPreflight[];
+  /** Present when the plan has a revive.call step. */
+  accountMapping?: AccountMappingInfo;
+  /** Set when the node could not be read for an unavailable plan; atBlock and nonce are then placeholders. */
+  chainReadError?: string;
 }
 
 export interface PreflightReport {
@@ -78,6 +135,8 @@ export interface PreflightReport {
   transactions: PreflightTxDetail[];
   /** Raw contracts_call responses per contracts.call step. */
   contractDryRuns: Record<string, unknown>;
+  /** Present only when the plan has revive.call / nfts.mint steps. */
+  v3?: V3PreflightInfo;
 }
 
 const known = (value: bigint | string): Estimate => ({ value: value.toString() });
@@ -318,6 +377,178 @@ async function assetExists(
   }
 }
 
+type DecoratedLoose = {
+  tx?: { revive?: { mapAccount?: unknown } };
+  query?: { revive?: { originalAccount?: Parameters<typeof storageKey>[0] } };
+};
+
+const NOT_MAPPED_UNKNOWN = (mapAccountInMetadata: boolean, reason: string): AccountMappingInfo => ({
+  status: "unknown",
+  mapAccountInMetadata,
+  reason,
+});
+
+/** Fail closed: 'mapped' only with map_account in the metadata and a chain-state entry pointing back at the signer. Never throws. */
+async function readAccountMapping(
+  client: RpcClient,
+  facts: RuntimeFacts,
+  signerAccountId: Hex,
+  at: Hex,
+): Promise<AccountMappingInfo> {
+  try {
+    const decorated = decodeRuntime(facts).decorated() as unknown as DecoratedLoose;
+    const hasCall = Boolean(decorated.tx?.revive?.mapAccount);
+    if (!hasCall)
+      return NOT_MAPPED_UNKNOWN(
+        false,
+        "the metadata has no Revive.map_account call, so account mapping cannot be observed",
+      );
+    const query = decorated.query?.revive?.originalAccount;
+    if (!query)
+      return NOT_MAPPED_UNKNOWN(
+        true,
+        "Revive.map_account exists in the metadata but there is no OriginalAccount storage entry to confirm a mapping against",
+      );
+    const h160 = u8aToHex(keccakAsU8a(hexToU8a(signerAccountId)).slice(12));
+    const raw = await rpc<string | null>(client, "state_getStorage", [storageKey(query, h160), at]);
+    if (raw === null || raw === undefined || raw === "0x")
+      return NOT_MAPPED_UNKNOWN(
+        true,
+        "no OriginalAccount entry for the signer's derived address was found; the account is not known to be mapped",
+      );
+    const stored = u8aToHex(hexToU8a(raw).slice(0, 32));
+    return stored.toLowerCase() === signerAccountId.toLowerCase()
+      ? {
+          status: "mapped",
+          mapAccountInMetadata: true,
+          reason:
+            "OriginalAccount maps the signer's derived address back to the signer (generic pallet-revive rule; not verified against Portaldot V3)",
+        }
+      : NOT_MAPPED_UNKNOWN(
+          true,
+          "an OriginalAccount entry exists for the derived address but points at a different account",
+        );
+  } catch (e) {
+    return NOT_MAPPED_UNKNOWN(
+      false,
+      `account mapping could not be read: ${(e as Error).message.slice(0, 200)}`,
+    );
+  }
+}
+
+const SIMULATION_LIMITS =
+  "no real Portaldot V3 metadata has been observed, so nothing here is evidence that this call would succeed";
+
+/**
+ * A plan with revive.call / nfts.mint steps the compiler marked unavailable has no signable calls. Report
+ * each step with the compiler's reason code unchanged and attempt NO simulation. The node is read only for the head
+ * and nonce; if even that fails the placeholders are flagged in v3.chainReadError. Never throws.
+ */
+async function preflightUnavailable(
+  endpoint: Endpoint,
+  plan: Plan,
+  facts: RuntimeFacts,
+  opts: PreflightOptions,
+): Promise<PreflightReport> {
+  let atBlock: BlockRef = { number: 0, hash: `0x${"00".repeat(32)}` as Hex };
+  let nonce = opts.nonce ?? 0;
+  let nonceSource: PreflightReport["nonceSource"] = "caller";
+  let chainReadError: string | undefined;
+  let mapping: AccountMappingInfo | undefined;
+  const hasRevive = plan.steps.some((s) => s.kind === "revive.call");
+  try {
+    await withClient(
+      endpoint,
+      async (client) => {
+        atBlock = opts.at
+          ? {
+              hash: opts.at,
+              number: toSafeNumber(
+                (await rpc<{ number: unknown }>(client, "chain_getHeader", [opts.at])).number,
+              ),
+            }
+          : await readHead(client);
+        if (opts.nonce === undefined) {
+          nonce = toSafeNumber(
+            await rpc(client, "system_accountNextIndex", [
+              encodeAddress(plan.signer.publicKey, facts.fingerprint.ss58Prefix),
+            ]),
+          );
+          nonceSource = "node";
+        }
+        if (hasRevive)
+          mapping = await readAccountMapping(client, facts, plan.signer.publicKey, atBlock.hash);
+      },
+      opts,
+    );
+  } catch (e) {
+    chainReadError = `node not read: ${(e as Error).message.slice(0, 200)}; block and nonce are placeholders`;
+  }
+  if (hasRevive && !mapping)
+    mapping = NOT_MAPPED_UNKNOWN(false, chainReadError ?? "account mapping was not read");
+  const steps: PreflightStep[] = [];
+  const coverage: SimulationCoverage["steps"] = [];
+  const v3Steps: V3StepPreflight[] = [];
+  for (const s of plan.steps) {
+    const code = s.reasonCode ? `${s.reasonCode}: ` : "";
+    const reason = `${code}${s.reason ?? "not executable"}`;
+    steps.push({
+      actionId: s.actionId,
+      weight: UNKNOWN,
+      fee: UNKNOWN,
+      storageDeposit: UNKNOWN,
+      proofSize: UNKNOWN,
+      dryRun: "unknown",
+      note: `not simulated: the compiler marked this step unavailable (${reason})`,
+    });
+    if (isV3Step(s)) {
+      coverage.push({
+        actionId: s.actionId,
+        basis: "unobserved",
+        proves: "nothing",
+        ...(s.reasonCode ? { reasonCode: s.reasonCode } : {}),
+      });
+      v3Steps.push({
+        actionId: s.actionId,
+        kind: s.kind as V3StepPreflight["kind"],
+        compiler: s.status === "ok" && s.encodedCall ? "encoded" : "unavailable",
+        ...(s.reasonCode ? { reasonCode: s.reasonCode } : {}),
+        ...(s.reason ? { reason: s.reason } : {}),
+        simulation: {
+          attempted: false,
+          via: [],
+          note: `not attempted: the plan is not signable; ${SIMULATION_LIMITS}`,
+        },
+      });
+    } else {
+      coverage.push({
+        actionId: s.actionId,
+        basis: "fee_estimate_only",
+        proves: "nothing: no simulation was attempted for an unavailable plan",
+        ...(s.reasonCode ? { reasonCode: s.reasonCode } : {}),
+      });
+    }
+  }
+  return {
+    coverage: {
+      wholePlan: "none",
+      steps: coverage,
+      summary: `Not simulated: the plan is unavailable (${plan.modeReason}). Reason codes are the compiler's, unchanged.`,
+    },
+    result: { steps, totalFee: UNKNOWN },
+    nonce,
+    nonceSource,
+    atBlock,
+    transactions: [],
+    contractDryRuns: {},
+    v3: {
+      steps: v3Steps,
+      ...(mapping ? { accountMapping: mapping } : {}),
+      ...(chainReadError ? { chainReadError } : {}),
+    },
+  };
+}
+
 /**
  * Preflight for a compiled plan: next nonce, fee and weight from payment_queryInfo on a fake-signed
  * extrinsic per transaction, contracts_call dry runs for contracts.call steps, an asset-existence check
@@ -332,6 +563,8 @@ export async function preflight(
 ): Promise<PreflightReport> {
   if (plan.fingerprintDigest !== facts.fingerprintDigest)
     throw new SeamChainError("FACTS_MISMATCH", "plan was compiled for different runtime facts");
+  if (plan.mode === "unavailable" && plan.steps.some(isV3Step))
+    return preflightUnavailable(endpoint, plan, facts, opts);
   const txs = callsForSigning(plan);
   if (opts.signedExtrinsics && opts.signedExtrinsics.length !== txs.length) {
     throw new SeamChainError(
@@ -350,11 +583,11 @@ export async function preflight(
             ),
           }
         : await readHead(client);
-      const version = await rpc<{ specVersion: number; transactionVersion: number }>(
-        client,
-        "state_getRuntimeVersion",
-        [atBlock.hash],
-      );
+      const version = await rpc<{
+        specVersion: number;
+        transactionVersion: number;
+        apis?: [string, number][];
+      }>(client, "state_getRuntimeVersion", [atBlock.hash]);
       if (
         version.specVersion !== facts.fingerprint.specVersion ||
         version.transactionVersion !== facts.fingerprint.transactionVersion
@@ -364,6 +597,11 @@ export async function preflight(
           `node runs spec ${version.specVersion}/tx ${version.transactionVersion}, facts are for spec ${facts.fingerprint.specVersion}/tx ${facts.fingerprint.transactionVersion}; rediscover`,
         );
       }
+      const reviveApi: V3StepPreflight["reviveApi"] = Array.isArray(version.apis)
+        ? version.apis.some(([id]) => id === runtimeApiId("ReviveApi"))
+          ? "listed"
+          : "not_listed"
+        : "unknown";
       const signerSs58 = encodeAddress(plan.signer.publicKey, facts.fingerprint.ss58Prefix);
       let nonce: number;
       let nonceSource: PreflightReport["nonceSource"];
@@ -420,6 +658,7 @@ export async function preflight(
       }
 
       const contractDryRuns: Record<string, unknown> = {};
+      const v3Steps: V3StepPreflight[] = [];
       const steps: PreflightStep[] = [];
       const coverage: SimulationCoverage["steps"] = [];
       for (const [i, s] of plan.steps.entries()) {
@@ -482,8 +721,10 @@ export async function preflight(
         if (contractProof !== undefined)
           notes.push(`contract needs proof size ${contractProof} (ContractsApi_call gas_required)`);
         const batchOk = atomic && tx.dryRun?.outcome === "ok";
-        const basis: CoverageBasis =
-          batchOk || (!atomic && tx.dryRun?.outcome === "ok")
+        const v3 = isV3Step(s);
+        const basis: CoverageBasis = v3
+          ? "unobserved"
+          : batchOk || (!atomic && tx.dryRun?.outcome === "ok")
             ? "signed_dry_run"
             : s.kind === "contracts.call" && dryRun !== "unknown"
               ? "contract_dry_run"
@@ -494,6 +735,7 @@ export async function preflight(
                 ? "asset_existence_check"
                 : "fee_estimate_only";
         const proves = {
+          unobserved: "nothing",
           signed_dry_run: atomic
             ? "the whole signed batch dry-ran ok at the current block"
             : "this signed transaction dry-ran ok alone, against current state",
@@ -503,6 +745,28 @@ export async function preflight(
             "only that the asset exists; not balances, permissions or state changed by other steps",
           fee_estimate_only: "only a fee and weight estimate; the call was not executed",
         }[basis];
+        if (v3) {
+          // Never upgrade: a node 'ok' for an unobserved layout is not evidence. A failure still counts.
+          if (dryRun === "ok") dryRun = "unknown";
+          const via: string[] = [];
+          if (info) via.push("payment_queryInfo");
+          if (tx.dryRun && tx.dryRun.outcome !== "unknown") via.push("system_dryRun");
+          v3Steps.push({
+            actionId: s.actionId,
+            kind: s.kind as V3StepPreflight["kind"],
+            compiler: "encoded",
+            simulation: {
+              attempted: via.length > 0,
+              via,
+              note:
+                (via.length
+                  ? `the node answered ${via.join(" and ")}`
+                  : "the node gave no estimate or dry-run") +
+                `; ${SIMULATION_LIMITS}. ReviveApi_call is never used (layout unverified)`,
+            },
+            ...(s.kind === "revive.call" ? { reviveApi } : {}),
+          });
+        }
         coverage.push({ actionId: s.actionId, basis, proves });
         notes.push(`simulation coverage: ${basis} (${proves})`);
         steps.push({
@@ -520,11 +784,13 @@ export async function preflight(
       const totalFee: Estimate = fees.every((f) => f !== undefined)
         ? known(fees.reduce((a, f) => a + BigInt(f!), 0n))
         : UNKNOWN;
+      const hasV3 = v3Steps.length > 0;
       const wholePlan: SimulationCoverage["wholePlan"] =
-        atomic && transactions[0]?.dryRun?.outcome === "ok" ? "signed_dry_run" : "none";
+        !hasV3 && atomic && transactions[0]?.dryRun?.outcome === "ok" ? "signed_dry_run" : "none";
       const signedOk = transactions.filter((t) => t.dryRun?.outcome === "ok").length;
-      const summary =
-        wholePlan === "signed_dry_run"
+      const summary = hasV3
+        ? "The plan contains revive.call / nfts.mint steps whose layout has never been observed on a real Portaldot V3 chain. Nothing about them is proven, and the plan is not simulated as a whole."
+        : wholePlan === "signed_dry_run"
           ? "A signed dry-run of the whole atomic batch passed at the current block. State can still change before it is sent."
           : atomic
             ? "The batch was not simulated as a whole (no signed dry-run of it yet). Per-step results are estimates and checks only."
@@ -539,6 +805,23 @@ export async function preflight(
         atBlock,
         transactions,
         contractDryRuns,
+        ...(hasV3
+          ? {
+              v3: {
+                steps: v3Steps,
+                ...(plan.steps.some((x) => x.kind === "revive.call")
+                  ? {
+                      accountMapping: await readAccountMapping(
+                        client,
+                        facts,
+                        plan.signer.publicKey,
+                        atBlock.hash,
+                      ),
+                    }
+                  : {}),
+              },
+            }
+          : {}),
       };
     },
     opts,
