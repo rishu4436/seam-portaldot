@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { factsFromMetadata, readPinnedTypes, type Manifest, type RuntimeFacts } from '../src/index.js';
+import { factsFromMetadata, readPinnedTypes, type ActionKind, type AtomicRollbackProof, type Manifest, type RuntimeFacts } from '../src/index.js';
 
 const fixture = (name: string) => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
 
@@ -36,9 +36,34 @@ export function realFacts(overrides: Partial<Parameters<typeof factsFromMetadata
   });
 }
 
-/** Deep copy with a different batch_all rollback fact (behaviour is not in the fingerprint). */
+export const ALL_KINDS: ActionKind[] = ['assets.transfer', 'assets.mint', 'contracts.call'];
+
+/** A rollback proof that matches `facts` (same genesis, metadata hash, spec version) and covers `composition`. */
+export function proofFor(facts: RuntimeFacts, composition: ActionKind[] = ALL_KINDS): AtomicRollbackProof {
+  return {
+    genesisHash: facts.fingerprint.genesisHash,
+    metadataHash: facts.fingerprint.metadataHash,
+    specVersion: facts.fingerprint.specVersion,
+    txHash: `0x${'ab'.repeat(32)}`,
+    blockHash: `0x${'cd'.repeat(32)}`,
+    preState: { aliceBalance: '100' },
+    postState: { aliceBalance: '100' },
+    composition
+  };
+}
+
+/**
+ * Deep copy with a different batch_all rollback fact (behaviour is not in the fingerprint).
+ * 'verified' attaches a matching proof; use withBareVerified for the deprecated bare string.
+ */
 export function withRollback(facts: RuntimeFacts, batchAllRollback: RuntimeFacts['behaviour']['batchAllRollback']): RuntimeFacts {
+  if (batchAllRollback === 'verified') return { ...facts, behaviour: { batchAllRollback, batchAllRollbackProof: proofFor(facts) } };
   return { ...facts, behaviour: { batchAllRollback } };
+}
+
+/** The deprecated shape: the string 'verified' with no proof object. */
+export function withBareVerified(facts: RuntimeFacts): RuntimeFacts {
+  return { ...facts, behaviour: { batchAllRollback: 'verified' } };
 }
 
 export function demoManifest(): Manifest {
