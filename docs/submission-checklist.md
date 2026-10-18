@@ -15,17 +15,17 @@ Status is **done** or **pending**, based on what is in the repo at `180332a` (Oc
 - [ ] Deployed on the Portaldot testnet with real on-chain activity. Owner: Bot 4 and Rishu. Pending (needs the V3 RPC and faucet).
 
 ## Submission items
-- [ ] README. Owner: Bot 5, branch `bot5/readme-judges`. Pending (not merged). The README that exists is the earlier one.
+- [x] README. Owner: Bot 5, branch `bot5/readme-judges`. Done (merged).
 - [x] Docs: `docs/quickstart.md`, `docs/reference.md`, `docs/examples/`, `evidence/README.md`. Owner: Bots 2 and 5. Done. The demo script and testnet checklist (`docs/demo-script.md`, `docs/testnet-checklist.md`) are pending on `bot5/readme-judges`.
 - [x] Runnable code. Owner: all. Done: `npm install && npm run build && npm test` (see `docs/quickstart.md`).
 - [x] `npm run test:e2e`: starts a fresh local dev chain and runs the sequential, atomic and rollback flows. Owner: Bot 6. Done (PR #2). It is not in CI because the test chain download is about 100 MB.
-- [ ] One-command quickstart in the root README. Owner: Bot 5. Pending, with the README.
+- [x] One-command quickstart in the root README. Owner: Bot 5. Done.
 - [ ] Testnet info (V3 RPC, faucet). Owner: Rishu. Pending.
-- [ ] `scripts/testnet-run.mjs`. Owner: Bot 4, branch `bot4/testnet-ready`. Pending (the file does not exist on `main`).
+- [x] `scripts/testnet-run.mjs`. Owner: Bot 4, branch `bot4/testnet-ready`. Done (merged). Tested on the local dev node only; not yet run on Portaldot V3. Docs: `packages/chain/docs/testnet-run.md`.
 - [ ] Addresses and tx hashes file under `evidence/` (testnet). Owner: Bot 4. Pending. Today `evidence/devnode/` holds local-chain recordings only.
 - [ ] Architecture diagram (required at check-in). Owner: Bot 1. Pending.
-- [ ] Demo video of 3 minutes or less, showing the real product and how it uses Portaldot. Owner: Bot 1. Pending.
-- [ ] Pitch deck: problem, why Portaldot, proof it works. Owner: Bot 1. Pending.
+- [ ] Demo video of 3 minutes or less, showing the real product and how it uses Portaldot. Owner: Bot 1. Storyboard drafted in `docs/pitch/video-storyboard.md`; recording pending (needs the real testnet run).
+- [ ] Pitch deck: problem, why Portaldot, proof it works. Owner: Bot 1. Outline drafted in `docs/pitch/deck-outline.md`; slides pending.
 - [x] No secrets in the repo. Owner: Bot 6. Done as of `180332a`: a grep over tracked files for private-key blocks, AWS and `sk-`/`xai-` style keys, and `api_key`/`secret`/`mnemonic = "..."` assignments found nothing, and no `.env` or `.pem` files are tracked. This was a quick scan, not a full audit. Re-run it before submitting.
 - [ ] LICENSE file. Owner: Rishu. **Pending: there is no license file** and GitHub shows no license. Pick one (for example MIT or Apache-2.0), because the Ecosystem criterion is about open-source use.
 
