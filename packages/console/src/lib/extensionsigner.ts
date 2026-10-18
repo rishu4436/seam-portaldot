@@ -16,10 +16,19 @@ export interface SignRequest {
   address?: string;
   payload: unknown;
 }
+/** A host SigningRequest carries the signer inside payload.address and the extension payload in payload. */
+const asSignRequest = (request: unknown): SignRequest | undefined => {
+  const r = request as { address?: string; payload?: { address?: string } } | undefined;
+  if (!r || typeof r !== "object" || r.payload == null) return undefined;
+  return {
+    address: r.address ?? (typeof r.payload === "object" ? r.payload.address : undefined),
+    payload: r.payload,
+  };
+};
 export interface ExtensionOptions {
   extension?: string;
   appName?: string;
-  assemble?: (signature: string, payload: unknown) => string | Promise<string>;
+  assemble?: (signature: string, payload: unknown, request: unknown) => string | Promise<string>;
   getInjected?: () => InjectedWeb3 | undefined;
 }
 
@@ -38,9 +47,8 @@ export function createExtensionSigner(opts: ExtensionOptions = {}): WalletSigner
       const name = opts.extension ?? names[0];
       const ext = inj[name];
       if (!ext) return un(`Wallet extension "${name}" is not installed.`);
-      const r = request as SignRequest | undefined;
-      if (!r || typeof r !== "object" || r.payload == null)
-        return { ok: false, reason: "failed", message: "No signable payload was provided." };
+      const r = asSignRequest(request);
+      if (!r) return { ok: false, reason: "failed", message: "No signable payload was provided." };
       if (!opts.assemble)
         return un(
           "No extrinsic assembler is wired, so a wallet signature cannot be turned into submittable bytes.",
@@ -60,7 +68,7 @@ export function createExtensionSigner(opts: ExtensionOptions = {}): WalletSigner
         const sig = await enabled.signer.signPayload(r.payload);
         if (!sig || typeof sig.signature !== "string" || !/^0x[0-9a-fA-F]+$/.test(sig.signature))
           return { ok: false, reason: "failed", message: "Wallet returned no usable signature." };
-        const signedTx = await opts.assemble(sig.signature, r.payload);
+        const signedTx = await opts.assemble(sig.signature, r.payload, request);
         return { ok: true, value: { signedTx } };
       } catch (e) {
         const m = e instanceof Error ? e.message : String(e);

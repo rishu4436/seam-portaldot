@@ -31,6 +31,10 @@ export interface SubmitResult {
 export interface VerifyResult {
   provenance: Provenance;
   note?: string;
+  /** Set only when the extrinsic was actually found by re-reading the chain. */
+  state?: TxState;
+  block?: { number: number; hash: string };
+  coverage?: Coverage;
 }
 export interface BindingCheck {
   ok: boolean;
@@ -83,11 +87,14 @@ export interface LiveOutcome {
   txState: TxState;
   provenance: Provenance;
   txHash?: string;
+  block?: { number: number; hash: string };
   rpcAttempts: number;
   submitted: boolean;
 }
 
 export interface LiveDeps {
+  /** Builds the real signing request once the chain fingerprint is known (reads nonce/checkpoint over RPC). Fails closed. */
+  prepare?: (fp: LiveFingerprint) => Promise<Res<unknown>>;
   chain?: ChainClient;
   signer?: WalletSigner;
   verifyBinding?: SignedBindingVerifier;
@@ -145,6 +152,11 @@ export async function runLive(
     );
   o.fingerprint = d.value;
 
+  if (deps.prepare) {
+    const p = await deps.prepare(d.value);
+    if (!p.ok) return done(p.reason === "unavailable" ? "blocked" : "failed", p.message);
+    request = p.value;
+  }
   const pf = await chain.preflight(request);
   if (pf.ok) o.simulation = pf.value.simulation; // otherwise stays "none"
 
@@ -196,6 +208,32 @@ export async function runLive(
     return done("uncertain", "The transaction state is uncertain.");
   const v = await chain.verify(sub.value.txHash);
   o.provenance = v.ok ? v.value.provenance : "unknown";
+  if (
+    v.ok &&
+    v.value.provenance === "chain_verified" &&
+    v.value.state === "finalized" &&
+    v.value.block
+  ) {
+    // Upgrade only on evidence: the extrinsic was found in a finalized block.
+    o.txState = "finalized";
+    o.block = v.value.block;
+    o.coverage = v.value.coverage ?? "extrinsic_finalized";
+    return done(
+      "unverified",
+      `Extrinsic found in finalized block #${v.value.block.number}. Its on-chain effect (events, state) was not checked, so this is not reported as proven success.`,
+    );
+  }
+  if (v.ok && v.value.state === "included" && v.value.block) {
+    o.txState = "included";
+    o.block = v.value.block;
+    o.coverage = "call_dispatched";
+  }
+  if (!v.ok && (v.reason === "rpc_error" || v.reason === "ambiguous"))
+    return done(
+      "uncertain",
+      `Could not re-read the chain: ${v.message}. The transaction may or may not be final.`,
+      { txState: "uncertain" },
+    );
   if (sub.value.state !== "finalized")
     return done(
       "unverified",
