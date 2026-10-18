@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 // One command for the V3 testnet. It works on any node, so it is tested on the local dev node.
 //
+// NOTE: the contract deploy in the second mode is an "unchecked setup step outside the Manifest/Policy trust boundary":
+//   it is signed and dry-run through SEAM's signing path, but the compiler has no instantiate action and policy never
+//   evaluates it. Only the later sequential/rollback/atomic plan steps are policy-checked.
+//
 //   node scripts/testnet-run.mjs RPC_URL
 //       Read-only: discover, refetch the fingerprint, write a plain runtime report. Signs nothing.
 //   SEAM_SIGNER=<seed | file> node scripts/testnet-run.mjs RPC_URL --yes

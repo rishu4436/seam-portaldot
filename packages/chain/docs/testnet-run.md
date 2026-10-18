@@ -28,7 +28,7 @@ Options: `--out DIR` (default `evidence/testnet-v3`, the folder `docs/testnet-ch
    pallets (Contracts, Revive, Assets, Utility, Nfts), token, whether `Contracts.call` is the V13 (one gas number) or V14
    (Weight V2) shape, RPC methods, and Bot 2's `v3-shape-check.mjs` output under `shapeCheck`.
 2. Only with a signer **and** `--yes`: creates a free asset id and funds the signer (if needed), funds two fresh recipient
-   accounts with a little native token (non-sufficient assets need it), **deploys `seam_demo` through SEAM's signing path**,
+   accounts with a little native token (non-sufficient assets need it), **deploys `seam_demo` through SEAM's signing path (an unchecked setup step, outside the Manifest/Policy trust boundary)**,
    then runs **sequential**, **rollback** and **atomic** with the strict policy (`allowedMessages: settle`, pinned ABI hash,
    selector list, no storage-deposit cap), the per-step gate, and `storageDepositLimit: null`.
 3. Writes sanitized files: `runtime-report.json`, `testnet-summary.json`, `runs/{deploy,sequential,rollback,atomic}-*.json`.
@@ -39,6 +39,10 @@ The rollback flow includes one test-only step: the failing signed `batch_all` th
 watch the chain roll it back (costs a fee). Atomic runs only if that rollback was verified on this runtime.
 
 ## Contract deployment: through SEAM, but not a plan step
+
+> **Trust boundary:** contract deploy is an **unchecked setup step outside the Manifest/Policy trust boundary**. It is signed and
+> signed-dry-run through SEAM's signing path, but no Manifest describes it, policy never evaluates it, and it produces no
+> receipt. Treat it as authorized setup, not as part of verified execution. Only the plan steps that follow are policy-checked.
 
 `deployThroughSeam` (`packages/chain/scripts/seam-run.mjs`) uses SEAM's own signing request, the signer (or wallet),
 signature-verifying assemble, the **signed dry run (nothing is sent if it fails)**, then submit. The dev-chain
