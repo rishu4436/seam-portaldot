@@ -1,0 +1,23 @@
+name: E2E (disposable local node)
+# Not run on push/PR. Manual or weekly. Starts a throwaway local substrate-contracts-node
+# (tests/e2e/run.sh), uses only the public //Alice dev account, and always tears it down.
+# No hosted network, no secrets.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npm run test:e2e
