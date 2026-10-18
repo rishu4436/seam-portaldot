@@ -32,6 +32,15 @@ const seq = dev.sequential.run.receipt;
 const ato = dev.atomic.run.receipt;
 const rb = dev.rollback;
 
+const EXAMPLE = `{
+  "version": 1,
+  "signer": { "type": "ss58", "value": "<your address>", "ss58Prefix": 42 },
+  "actions": [
+    { "id": "pay", "kind": "assets.transfer",
+      "args": { "assetId": "1", "amount": "2500", "recipient": "<recipient>" } }
+  ]
+}`;
+
 const QUICK = [
   { c: "npm install\nnpm run build\nnpm test", n: "Needs Node 22 or later. Run from the repo root." },
   { c: "npx seam digest docs/examples/demo-manifest.json\nnpx seam compile docs/examples/demo-manifest.json\nnpx seam check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json", n: "Offline, against the bundled read-only Portaldot mainnet snapshot. The last command is expected to block: amount over limit." },
@@ -59,7 +68,7 @@ export default function Landing() {
           <a className="btn" href={CONSOLE}>Open the console</a>
           <a className="btn ghost" href={REPO}>View the repo</a>
         </div>
-        <p className="fine">Today the recorded runs are on a local test chain, not Portaldot. <a href="#proof">See exactly what is proven.</a></p>
+        <p className="fine">Today the recorded runs are on two local chains: neither is the V3 hosted testnet or mainnet, and neither proves V3 Revive. <a href="#proof">See exactly what is proven.</a></p>
       </section>
 
       <section id="pipeline">
@@ -89,7 +98,7 @@ export default function Landing() {
       <section id="proof">
         <h2>Proof from recorded runs</h2>
         <div className="warn">
-          <b>Local test chain, not Portaldot.</b> Every run below was recorded on a local <code>substrate-contracts-node</code> v0.42.0 dev chain (spec 100, metadata V14), signed with the public dev account. Nothing was submitted to Portaldot. Portaldot mainnet is only read, from a snapshot. Portaldot V3 testnet runs do not exist yet.
+          <b>Two local chains were used. Neither is the V3 hosted testnet or mainnet.</b> The runs below were recorded on a local <code>substrate-contracts-node</code> v0.42.0 dev chain (spec 100, metadata V14) with the public dev account. Separately, the organizers' own Portaldot node binary was run locally as a dev node (spec 1002); see the local node section. Nothing was submitted to Portaldot mainnet (only read, from a snapshot) or to a V3 hosted testnet, and no V3 testnet runs exist yet. A local spec-1002 success does not prove V3 Revive behaviour.
         </div>
         <div className="proofgrid">
           <article>
@@ -120,6 +129,7 @@ export default function Landing() {
         <h2>For developers</h2>
         <p className="sec">From the repo's own quickstart. The <code>seam</code> CLI and SDK ship in the same repo; see <a href={`${REPO}/blob/main/docs/quickstart.md`}>docs/quickstart.md</a> and <a href={`${REPO}/blob/main/docs/reference.md`}>docs/reference.md</a>.</p>
         <div className="quick">
+          <div><pre>{EXAMPLE}</pre><p>A minimal manifest: one action, a typed signer. Save it as <code>my-manifest.json</code>, then run <code>npx seam digest my-manifest.json</code> and <code>npx seam compile my-manifest.json</code> (same CLI as below). Full shape: <code>docs/examples/demo-manifest.json</code>.</p></div>
           {QUICK.map((q, i) => (<div key={i}><pre>{q.c}</pre><p>{q.n}</p></div>))}
         </div>
       </section>
