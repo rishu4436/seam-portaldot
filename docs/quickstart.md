@@ -103,6 +103,23 @@ console.log(run.ok ? explainReceipt(run.receipt) : run.reason);
 
 > The Portaldot V3 testnet RPC isn't public yet. Until it is, step 6 runs against a local dev node. Submitting to mainnet is refused unless you set `allowMainnet`.
 
+**Calling a contract by function name.** Instead of hand-encoded `data`, name the ink! message and give the ABI:
+
+```ts
+const seam = new Seam(chain, undefined, { abis: { demo: demoAbiJson } });      // or compile(..., { abis })
+action.contractCall('settle', { contract: CONTRACT, value: '0', gasLimit: '5000000000', proofSize: '1000000',
+  storageDepositLimit: null, message: 'settle', args: { order_id: 7, amount: '2500' }, abiRef: 'demo' });
+```
+
+From the command line: `seam compile m.json --abi demo=./demo.json`. A wrong name or argument fails with `ABI_MESSAGE_UNKNOWN` or `ABI_ARGS_INVALID`; see the reference for all ABI codes. On a chain that doesn't report its token, add `--token SYMBOL:DECIMALS` (for example `--token UNIT:12`).
+
+**Watching each step.** `onStep` also receives the submit-gate result, so a UI or recording can show what was checked:
+
+```ts
+await seam.execute({ ...prepared, policy, facts, approval: approval.approval, wallet,
+  onStep: (e) => console.log(e.actionId, e.phase, e.check?.ok) });   // check is set on sending, done and blocked
+```
+
 ## 7. Check a receipt
 
 Every run ends in a receipt that says what the chain actually shows, step by step.

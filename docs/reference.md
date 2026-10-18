@@ -15,11 +15,36 @@ Each action has an `id` (1 to 32 letters, digits, `-` or `_`, unique), a `kind`,
 |---|---|---|
 | `assets.transfer` | `assetId`, `amount`, `recipient` | `Assets.transfer_keep_alive` |
 | `assets.mint` | `assetId`, `amount`, `recipient` | `Assets.mint` |
-| `contracts.call` | `contract`, `value`, `gasLimit`, `data` (hex) | `Contracts.call` (ink!) |
+| `contracts.call` | `contract`, `value`, `gasLimit`, then either `data` (hex) or `message` + `args` + `abi`/`abiRef` (see below). Optional `proofSize`, `storageDepositLimit` | `Contracts.call` (ink!) |
 | `revive.call` | `contract`, `value`, `data`, optional `gasLimit`, `storageDepositLimit` | `Revive.call` (Solidity) |
 | `nfts.mint` | `collection`, `item`, `recipient` | `Nfts.mint` |
 
 Rules: amounts are base-unit strings, never numbers. Unknown fields and argument names are rejected. Addresses are checked against the signer's type and the chain's SS58 prefix. Call and pallet indexes always come from the live metadata and are never hard-coded.
+
+### contracts.call fields
+
+| Field | Meaning |
+|---|---|
+| `contract`, `value`, `gasLimit` | Required. `gasLimit` is `refTime` on runtimes with two-part weights. |
+| `proofSize` | Optional string. The proof-size part of the weight limit, on runtimes with two-part weights. |
+| `storageDepositLimit` | Optional string, or `null`. `null` means you chose no limit on purpose. Leave it out and the runtime default applies. A policy with `maxStorageDeposit` blocks a call that sets `null`. |
+| `data` | The encoded call as hex. Use this **or** `message`, never both. |
+| `message` | An ink! message name, such as `"transfer"`. SEAM encodes the selector and arguments for you. |
+| `args` | The message's arguments, as an object keyed by the ABI's argument names or as a list in order. Integers are strings (small ones may be numbers), accounts are SS58 or `0x` hex. Only allowed with `message`. |
+| `abi` | The contract's `metadata.json` object, inline. Give **exactly one** of `abi` or `abiRef`. |
+| `abiRef` | A name for an ABI you pass separately: `compile(manifest, facts, { abis: { erc20: abiJson } })`, `new Seam(chain, store, { abis })`, or `seam compile --abi erc20=./erc20.json`. Keeps the Manifest small. |
+| `abiHash` | Optional pin. Compiling fails if the ABI doesn't hash to this value. |
+
+The plan records `contractMessage` for these calls (`abiHash`, `abiRef`, `message`, `selector`, decoded `args`) and it is covered by the plan digest. In the SDK, `action.contractCall(id, args)` takes either form.
+
+**ABI errors.** Compiling a `message` call can fail with these codes (each names the exact field in its path):
+
+| Code | Meaning |
+|---|---|
+| `ABI_INVALID` | Neither or both of `abi`/`abiRef` were given, the `abiRef` isn't in `abis`, or the ABI isn't usable ink! metadata. |
+| `ABI_HASH_MISMATCH` | The ABI's hash differs from the pinned `abiHash`. |
+| `ABI_MESSAGE_UNKNOWN` | The ABI has no message with that name. |
+| `ABI_ARGS_INVALID` | The arguments don't fit the message: missing, extra, or a value of the wrong type or size. |
 
 **Digests** are blake2b-256 of a domain name (such as `seam/manifest/v1`), then one `0x00` byte, then canonical JSON (keys sorted, no spaces, integers only).
 
@@ -96,6 +121,10 @@ Step verification:
 
 Result: `verified` only when every step finalized and verified. `partial` when SEAM stopped early, and the first step not run says why. `not_verified` otherwise.
 
+## Progress callback: `onStep`
+
+`seam.execute({ ..., onStep })` calls `onStep(event)` as it goes. The event is `{ index, actionId, phase, detail?, check? }`. `phase` is `checking`, `sending`, `done` or `blocked`. `check` is the submit-gate result (`SubmitCheck`) for that step: `{ ok: true, ... }` on `sending` and `done`, and `{ ok: false, reasons }` on `blocked`, with the same reasons as `detail`. There is no `check` on `checking`, because the gate hasn't run yet. An atomic plan is one step with `actionId: "batch"`. Old callbacks that ignore `check` keep working.
+
 ## CLI
 
 | Command | What it does | Exit code |
@@ -110,6 +139,10 @@ Result: `verified` only when every step finalized and verified. `partial` when S
 **Which runtime.** By default the commands use the bundled Portaldot mainnet snapshot (spec 1002). To use another:
 - `--snapshot <dir or file>` uses a saved snapshot, for example the test chain's or, once it's public, the V3 testnet's. Add `--name` if the folder holds several.
 - `--endpoint <ws-url>` reads the live runtime from a node, read-only.
+
+**Token.** Some chains don't report their token in `system_properties`. Pass `--token SYMBOL:DECIMALS`, for example `--token UNIT:12`, with `--snapshot` or `--endpoint`. SEAM never guesses: if the node does report a token and it differs, the command stops. A bad format is a usage error (exit 1). In code, the same value is `declaredToken: { tokenSymbol, tokenDecimals }`.
+
+**ABIs.** `--abi NAME=<file>` (repeatable) loads an ink! `metadata.json` so Manifests with `"abiRef": "NAME"` compile.
 
 The same Manifest compiles against each runtime using that runtime's own call indexes. Anything a runtime lacks comes out as unavailable with a reason.
 
