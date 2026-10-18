@@ -177,7 +177,6 @@ export default function App() {
         {real ? (
           <div className="banner real">
             <b>Real run on a local test chain, not Portaldot.</b> Everything here was recorded from a real substrate-contracts-node v0.42.0 at <code>{tc.ENDPOINT}</code> (metadata v14, token UNIT): hashes, blocks, events, fees, dry runs and digests. The console replays that recording; it isn't connected live. Run {new Date(run!.ranAt).toLocaleString()}. Verify it in the repo: <code>evidence/README.md</code> explains the files; this run is <code>{run!.evidenceFile}</code> (others: {tc.importedFrom().files.map((f) => f.replace(/\.json$/, "")).join(", ")}).
-            {run!.shimmed && <> One step was filled by hand: SEAM's compiler can't yet encode <code>Contracts.call</code> on metadata v14, so Bot 4's run script added the storage deposit limit and Weight V2 gas and recomputed the plan digest.</>}
           </div>
         ) : (
           <div className="banner">Plans, policy checks, approvals and receipts are real output from the SEAM compiler, policy engine and SDK, run against a saved snapshot of the Portaldot node. Transaction hashes, blocks and events are simulated until the testnet is live.</div>
@@ -206,7 +205,7 @@ export default function App() {
                       <dl className="kv" style={{ marginTop: 10 }}><dt>Pallets</dt><dd>{tc.node().pallets.join(", ")}</dd><dt>Token source</dt><dd><small className="muted">{tc.node().declaredToken.source}</small></dd></dl>
                       <h4>Chain setup (real transactions)</h4>
                       <table className="tbl"><tbody>
-                        {tc.setup().steps.map((s) => (
+                        {tc.setup().steps.filter((s) => s.txHash).map((s) => (
                           <tr key={s.txHash}><td>{s.what}</td><td><small className="muted">block #{s.block.number} · tx <code title={s.txHash}>{short(s.txHash, 6)}</code></small></td><td className="r"><Pill tone={s.success ? "ok" : "bad"}>{s.success ? "finalized" : "failed"}</Pill></td></tr>
                         ))}
                       </tbody></table>
@@ -267,16 +266,16 @@ export default function App() {
                   <tr key={s.actionId}>
                     <td><b>{s.actionId}</b></td>
                     <td><code>{s.capability}</code>{s.callIndex && <small className="muted"> [{s.callIndex.join(", ")}]</small>}</td>
-                    <td><small>{s.decoded.message ? <><b>{s.decoded.message}({s.decoded.args ?? ""})</b> · selector <code>{s.decoded.selector}</code> · interface <code title={s.decoded.abiHash}>{short(s.decoded.abiHash, 6)}</code> · {Object.entries(s.decoded).filter(([k, v]) => v && !["message", "selector", "abiHash", "args", "data"].includes(k)).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</> : Object.entries(s.decoded).filter(([, v]) => v).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</small></td>
+                    <td><small>{s.decoded.message ? <><b>{s.decoded.message}({s.decoded.args ?? ""})</b> · selector <code>{s.decoded.selector}</code> · interface <code title={s.decoded.abiHash}>{short(s.decoded.abiHash, 6)}</code>{s.decoded.abiRef && <> (<code>{s.decoded.abiRef}</code>)</>} · {Object.entries(s.decoded).filter(([k, v]) => v && !["message", "selector", "abiHash", "args", "data"].includes(k)).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</> : Object.entries(s.decoded).filter(([, v]) => v).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</small></td>
                     <td><code>{short(s.encodedCall, 6)}</code></td>
-                    <td className="r">{s.shim && <><Pill tone="warn">Filled by run script</Pill> </>}{s.status === "ok" ? <Pill tone="ok">Ready</Pill> : <Pill tone="bad">Unavailable</Pill>}</td>
+                    <td className="r">{s.status === "ok" ? <Pill tone="ok">Ready</Pill> : <Pill tone="bad">Unavailable</Pill>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {plan.steps.filter((s) => s.reason).map((s) => <div key={s.actionId} className="note bad"><b>{s.actionId}:</b> {s.reason}</div>)}
             {plan.modeReason && <div className="note"><b>Why this mode:</b> {plan.modeReason}</div>}
-            {real && run?.shimmed && <div className="note"><b>Honest note:</b> on its own the compiler returned <code>{run.compiledMode}</code>: "{run.compiledModeReason}". The <code>call</code> step was filled by <code>shimContractsCall</code> in Bot 4's run script ({plan.steps.find((s) => s.shim)?.shim}). Every other step is the compiler's own output, and the plan digest was recomputed with the compiler's own function.</div>}
+            {real && tc.contractInfo() && plan.steps.some((s) => s.decoded.message) && <div className="note"><b>Contract:</b> {tc.contractInfo()!.name ?? "contract"} at <code className="wrap">{tc.contractInfo()!.address}</code>{tc.contractInfo()!.deployTx && <>, deployed in block #{tc.contractInfo()!.deployBlock} by tx <code className="wrap">{tc.contractInfo()!.deployTx}</code></>}. The call is given by message name and arguments; the compiler encoded it from the contract's interface, and the plan pins that interface by hash.</div>}
             {real && tc.outerCall() && <div className="note"><b>Sent as one transaction:</b> <code>{tc.outerCall()!.capability}</code> <code title={tc.outerCall()!.encodedCall}>{short(tc.outerCall()!.encodedCall, 10)}</code></div>}
             <div className="digests">{plan.digest !== "0x" && <Digest label="Plan digest" value={plan.digest} />}<Digest label="Manifest" value={plan.manifestDigest} /><Digest label="Fingerprint" value={plan.fingerprintDigest} /></div>
             <div className="actions">{plan.mode === "unavailable" ? <div className="note bad">SEAM won't send this plan for preflight or signing, because a step can't run on this runtime. Remove the step or connect to a runtime that has it.</div> : <button onClick={doChecks}>Run preflight and policy</button>}</div>
@@ -417,6 +416,10 @@ export default function App() {
                           <dl className="kv small"><dt>Tx</dt><dd><code className="wrap">{s.txHash}</code></dd><dt>Block</dt><dd>#{s.block?.number} <code className="wrap">{s.block?.hash}</code></dd>
                             <dt>Status</dt><dd>{tc.history(s.txHash).filter((h, k, a) => a.findIndex((x) => x.status === h.status) === k).map((h) => h.status).join(" → ")}</dd></dl>
                           <Events list={s.events} />
+                          {tc.decodedEmitted(s.actionId) && s.events.some(isEmitted) && (() => { const d = tc.decodedEmitted(s.actionId)!; return (
+                            <div className="note"><b>Decoded <code>ContractEmitted</code>: {d.event}</b> <small className="muted">(decoded with the contract's ABI, <code>{d.abi}</code>)</small>
+                              <dl className="kv small">{d.fields.map((f) => <><dt key={f.name + "k"}>{f.name}</dt><dd key={f.name + "v"}><code className="wrap">{f.value}</code> <small className="muted">{f.type}{f.indexed ? ", indexed" : ""}</small></dd></>)}</dl>
+                            </div>); })()}
                         </>
                       )}
                     </div>

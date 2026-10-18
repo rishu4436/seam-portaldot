@@ -22,6 +22,13 @@ export const unit = (base?: string): Estimate => (base != null ? { value: `${(Nu
 export const ENDPOINT: string = D.node.endpoint;
 export const node = () => D.node as { endpoint: string; binary: string; rpcSnapshotAt: string; pallets: string[]; declaredToken: { tokenSymbol: string; tokenDecimals: number; source: string } };
 export const setup = () => D.setup as { file: string; steps: { what: string; txHash: Hex; block: { number: number; hash: Hex }; success: boolean; events: string[] }[]; state: { contract: Hex; assetId: number } };
+export const contractInfo = () => {
+  const st = D.setup?.state;
+  const deploy = D.setup?.steps?.find((x: any) => x.txHash);
+  return st?.contract ? { address: st.contract as Hex, name: st.contractName as string | undefined, codeHash: st.contractCodeHash as Hex | undefined, abi: st.contractAbi as string | undefined, deployTx: (deploy?.txHash ?? st.contractInstantiatedIn?.txHash) as Hex | undefined, deployBlock: (deploy?.block?.number ?? st.contractInstantiatedIn?.block) as number | undefined } : undefined;
+};
+export interface Emitted { contract: Hex; event: string; signatureTopic: Hex; fields: { name: string; type: string; indexed: boolean; value: string }[]; abi: string }
+export function decodedEmitted(actionId: string): Emitted | undefined { return R().decodedEmitted?.[actionId]; }
 export const checks = () => D.checks as { what: string; ok: boolean; detail: string }[];
 export const importedFrom = () => D.source as { dir: string; picked: string; files: string[] };
 
@@ -62,10 +69,12 @@ export function compile(): Plan {
     manifestDigest: p.manifestDigest, fingerprintDigest: p.fingerprintDigest, signer: p.signer.value, mode: p.mode, digest: p.planDigest, modeReason: p.modeReason, explain: R().planText,
     steps: p.steps.map((s: any) => {
       const a = s.decodedArgs;
+      const cm = s.contractMessage;
+      const argText = cm ? Object.entries(cm.args).map(([k, v]) => `${k}: ${v}`).join(", ") : undefined;
       return {
         actionId: s.actionId, capability: s.capability, callIndex: [s.palletIndex, s.callIndex], encodedCall: s.encodedCall, status: s.status === "ok" ? "ok" : "unavailable",
         shim: a.shim,
-        decoded: { assetId: a.assetId, amount: a.amount, recipient: a.recipient, contract: a.contract, value: a.value, message: a.message, selector: a.selector, abiHash: a.abiHash, args: a.args != null ? (typeof a.args === "string" ? a.args : JSON.stringify(a.args)) : undefined },
+        decoded: { assetId: a.assetId, amount: a.amount, recipient: a.recipient, contract: a.contract, value: a.value, message: cm?.message ?? a.message, selector: cm?.selector ?? a.selector, abiHash: cm?.abiHash ?? a.abiHash, abiRef: cm?.abiRef, args: argText ?? (a.args != null ? (typeof a.args === "string" ? a.args : JSON.stringify(a.args)) : undefined) },
       };
     }),
   } as Plan;

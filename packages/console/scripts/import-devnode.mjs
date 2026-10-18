@@ -28,14 +28,39 @@ const pick = (prefix) => {
   return { file: last.f, run: last.d, count: all.length };
 };
 
+const checks = [];
+const check = (what, ok, detail = '') => { checks.push({ what, ok, detail }); if (!ok) console.warn('CHECK FAILED:', what, detail); };
 const factsSummary = read(join(DIR, 'devnode-facts-summary.json'));
 const snapshot = read(join(DIR, 'substrate-contracts-node-spec100-snapshot.json'));
 const seq = pick('sequential'), ato = pick('atomic'), rb = pick('rollback');
-// The first setup file holds the create/mint/deploy transactions; later ones just say "already exists".
-const setupFile = files.filter((f) => f.startsWith('setup-')).map((f) => ({ f, d: read(join(RUNS, f)) })).find((x) => x.d.steps.some((s) => s.txHash));
+// The setup file whose deploy transaction created the contract the sequential run calls (later setups just say "already deployed").
+const seqContract = seq.run.manifest.actions.find((a) => a.kind === 'contracts.call')?.args.contract;
+const setups = files.filter((f) => f.startsWith('setup-')).map((f) => ({ f, d: read(join(RUNS, f)) }));
+const setupFile = setups.find((x) => x.d.steps.some((s) => s.txHash) && x.d.state?.contract === seqContract) ?? setups.find((x) => x.d.steps.some((s) => s.txHash));
+check('setup: deploy transaction of the contract the run calls is recorded', setupFile?.d.state?.contract === seqContract, `${setupFile?.d.state?.contract} vs ${seqContract}`);
+// ContractEmitted fields, decoded with the contract's own ABI (event layout: indexed fields first, in order, as SCALE).
+const ABI_PATH = join(REPO, 'contracts/seam-demo/artifacts/metadata.json');
+function decodeEmitted(ev) {
+  const m = /^Contracts\.ContractEmitted\((0x[0-9a-f]+), (0x[0-9a-f]*)\)$/.exec(ev);
+  if (!m) return undefined;
+  let abi; try { abi = read(ABI_PATH); } catch { return undefined; }
+  const e = abi.spec.events[0];
+  const types = Object.fromEntries(abi.types.map((t) => [t.id, t.type.def]));
+  const buf = Buffer.from(m[2].slice(2), 'hex');
+  let off = 0; const fields = [];
+  for (const a of e.args) {
+    const d = types[a.type.type];
+    let v;
+    if (d?.primitive === 'u64') { v = buf.readBigUInt64LE(off).toString(); off += 8; }
+    else if (d?.primitive === 'u128') { v = (buf.readBigUInt64LE(off) + (buf.readBigUInt64LE(off + 8) << 64n)).toString(); off += 16; }
+    else if (d?.composite) { v = '0x' + buf.subarray(off, off + 32).toString('hex'); off += 32; }
+    else return undefined;
+    fields.push({ name: a.label, type: a.type.displayName.join('::'), indexed: a.indexed, value: v });
+  }
+  if (off !== buf.length) return undefined;
+  return { contract: m[1], event: e.label, signatureTopic: e.signature_topic, fields, abi: repoPath(ABI_PATH) };
+}
 
-const checks = [];
-const check = (what, ok, detail = '') => { checks.push({ what, ok, detail }); if (!ok) console.warn('CHECK FAILED:', what, detail); };
 const safe = (f, ...a) => { try { return f(...a); } catch { return undefined; } };
 
 const stripStep = (s) => ({ index: s.index, actionId: s.actionId, phase: s.phase, detail: s.detail, at: s.at, dryRun: s.dryRun?.map((d) => ({ txHash: d.txHash, outcome: d.outcome, detail: d.detail })) });
@@ -76,9 +101,11 @@ function common(id, { file, run, count }) {
 }
 function executed(id, pickInfo) {
   const run = pickInfo.run;
+  const decodedEmitted = {};
+  for (const st of run.run.receipt.steps) for (const ev of st.events ?? []) { const d = decodeEmitted(ev); if (d) decodedEmitted[st.actionId] = d; }
   const intact = safe(checkReceipt, run.run.receipt);
   check(`${id}: receipt digest intact (checkReceipt)`, intact === true || intact?.ok === true, JSON.stringify(intact));
-  return { ...common(id, pickInfo), run: { ok: run.run.ok, stoppedReason: run.run.stoppedReason, receipt: run.run.receipt }, receiptText: safe(explainReceipt, run.run.receipt), usedProofSize: usedProofOf(run.run.receipt) };
+  return { ...common(id, pickInfo), run: { ok: run.run.ok, stoppedReason: run.run.stoppedReason, receipt: run.run.receipt }, receiptText: safe(explainReceipt, run.run.receipt), usedProofSize: usedProofOf(run.run.receipt), decodedEmitted };
 }
 
 const r = rb.run;
