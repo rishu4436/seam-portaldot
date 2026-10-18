@@ -1,4 +1,6 @@
 import type { Hex, RuntimeFacts } from '@seam/compiler';
+import { hexToU8a } from '@polkadot/util';
+import { blake2AsHex } from '@polkadot/util-crypto';
 import { SeamChainError } from './errors.js';
 import { outcomeForExtrinsic, type DecodedEvent } from './events.js';
 import { rpc, toSafeNumber, withClient, type ConnectOptions, type Endpoint, type RpcClient } from './rpc.js';
@@ -59,14 +61,23 @@ export async function findExtrinsicIndex(client: RpcClient, blockHash: Hex, txHa
 }
 
 async function eventsAt(client: RpcClient, blockHash: Hex, facts: RuntimeFacts): Promise<{ eventsHex: string; number: number }> {
-  const [eventsHex, version, header] = await Promise.all([
+  const [eventsHex, version, header, metadataHex] = await Promise.all([
     rpc<string | null>(client, 'state_getStorage', [SYSTEM_EVENTS_KEY, blockHash]),
     rpc<{ specVersion: number }>(client, 'state_getRuntimeVersion', [blockHash]),
-    rpc<{ number: unknown } | null>(client, 'chain_getHeader', [blockHash])
+    rpc<{ number: unknown } | null>(client, 'chain_getHeader', [blockHash]),
+    rpc<string | null>(client, 'state_getMetadata', [blockHash])
   ]);
   if (!header) throw new SeamChainError('NODE_MISSING_VALUE', `block ${blockHash} not found`);
   if (version.specVersion !== facts.fingerprint.specVersion) {
     throw new SeamChainError('RUNTIME_CHANGED', `block ${blockHash} runs spec ${version.specVersion}, but the pinned runtime is spec ${facts.fingerprint.specVersion}; its events cannot be decoded safely`);
+  }
+  // SEAM-015: the spec version alone does not pin the event layout. The metadata at the inclusion block must hash to the pinned metadata.
+  if (typeof metadataHex !== 'string' || !/^0x[0-9a-fA-F]*$/.test(metadataHex)) {
+    throw new SeamChainError('NODE_MISSING_VALUE', `no metadata at block ${blockHash}; its events cannot be decoded safely`);
+  }
+  const blockMetadataHash = blake2AsHex(hexToU8a(metadataHex), 256).toLowerCase();
+  if (blockMetadataHash !== facts.fingerprint.metadataHash.toLowerCase()) {
+    throw new SeamChainError('RUNTIME_CHANGED', `block ${blockHash} has metadata ${blockMetadataHash}, not the pinned ${facts.fingerprint.metadataHash}; its events cannot be decoded safely`);
   }
   if (!eventsHex) throw new SeamChainError('NODE_MISSING_VALUE', `no System.Events at block ${blockHash}`);
   return { eventsHex, number: toSafeNumber(header.number) };
