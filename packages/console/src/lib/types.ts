@@ -84,6 +84,8 @@ export interface Plan {
   signer: string;
   mode: ExecutionMode;
   steps: PlanStep[];
+  /** Atomic plans: the single outer (batch_all) call the wallet signs. */
+  outerCall?: { encodedCall?: Hex };
   digest: Hex;
   modeReason?: string;
   explain?: string;
