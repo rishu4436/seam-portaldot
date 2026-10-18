@@ -304,3 +304,84 @@ export function checkSignedExtrinsic(extrinsicHex: string, request: SigningReque
   }
   return { ok: mismatches.length === 0, mismatches, signed: s };
 }
+
+/** Precise, stable reason codes of verifySignedAgainstRequest. */
+export type SignedMismatchCode =
+  | 'facts_missing' | 'not_decodable' | 'not_signed' | 'signature_invalid' | 'signer_mismatch' | 'call_mismatch'
+  | 'nonce_mismatch' | 'era_mismatch' | 'era_immortal' | 'tip_mismatch' | 'genesis_mismatch'
+  | 'spec_version_mismatch' | 'tx_version_mismatch' | 'count_mismatch';
+
+export interface SignedVerification {
+  ok: boolean;
+  /** The call bytes decoded from the signed extrinsic itself (never anything the wallet reported), or null if undecodable. */
+  signedCall: Hex | null;
+  signer: { accountId: Hex; ss58: string } | null;
+  nonce: number | null;
+  era: EraInfo | null;
+  tip: string | null;
+  /** The genesis hash the signature was checked against (the request's chain context); null if nothing was decoded. */
+  genesis: Hex | null;
+  /** Empty exactly when ok. Codes from SignedMismatchCode. */
+  reasons: string[];
+}
+
+/**
+ * SEAM-001. Decodes the ACTUAL signed extrinsic and checks it against the approved signing request. Never throws,
+ * fails closed (ok false with reasons) on anything it cannot prove:
+ * decodable and signed; signature valid over the extrinsic's own contents plus the request's chain context
+ * (genesis, spec, tx version, era block hash); signer == request signer; call bytes == approved call; nonce; era
+ * (mortal and equal to the request's checkpoint era); tip == 0; and the request's genesis/spec/tx version equal the
+ * runtime facts in ctx. A wallet-provided `signedCall` is never consulted. `ctx.facts` is required: without it
+ * nothing can be decoded and the result is `facts_missing`.
+ */
+export function verifySignedAgainstRequest(signedTx: string, request: SigningRequest, ctx?: { facts?: RuntimeFacts }): SignedVerification {
+  const empty: SignedVerification = { ok: false, signedCall: null, signer: null, nonce: null, era: null, tip: null, genesis: null, reasons: [] };
+  const facts = ctx?.facts;
+  if (!facts) return { ...empty, reasons: ['facts_missing'] };
+  let s: SignedCall;
+  try {
+    s = extractSignedCall(signedTx, facts);
+  } catch (e) {
+    const notSigned = e instanceof SeamChainError && /not signed/.test(e.message);
+    return { ...empty, reasons: [notSigned ? 'not_signed' : 'not_decodable'] };
+  }
+  const reasons = new Set<string>();
+  const p = request.payload;
+  const fp = facts.fingerprint;
+  try {
+    if (accountIdOf(p.address) !== s.signer.accountId.toLowerCase()) reasons.add('signer_mismatch');
+  } catch { reasons.add('signer_mismatch'); }
+  if (s.callHex.toLowerCase() !== request.callHex.toLowerCase()) reasons.add('call_mismatch');
+  if (s.nonce !== request.nonce) reasons.add('nonce_mismatch');
+  if (!s.era.mortal) { reasons.add('era_immortal'); reasons.add('era_mismatch'); }
+  else if (s.era.hex.toLowerCase() !== request.era.hex.toLowerCase()) reasons.add('era_mismatch');
+  if (s.tip !== '0') reasons.add('tip_mismatch');
+  // The request must itself be for this chain and runtime; the signature then proves the wallet signed for it.
+  if (p.genesisHash.toLowerCase() !== fp.genesisHash.toLowerCase()) reasons.add('genesis_mismatch');
+  if (Number(BigInt(p.specVersion)) !== fp.specVersion) reasons.add('spec_version_mismatch');
+  if (Number(BigInt(p.transactionVersion)) !== fp.transactionVersion) reasons.add('tx_version_mismatch');
+  try {
+    const { registry } = encodeRuntime(facts);
+    const actual = registry.createType('ExtrinsicPayload', {
+      method: s.callHex, era: s.era.hex, nonce: s.nonce, tip: s.tip,
+      specVersion: p.specVersion, transactionVersion: p.transactionVersion, genesisHash: p.genesisHash, blockHash: p.blockHash
+    }, { version: 4 }).toU8a({ method: true });
+    const message = actual.length > 256 ? blake2AsU8a(actual, 256) : actual;
+    if (!signatureVerify(message, hexToU8a(s.signature), s.signer.accountId).isValid) reasons.add('signature_invalid');
+  } catch { reasons.add('signature_invalid'); }
+  return {
+    ok: reasons.size === 0, signedCall: s.callHex, signer: s.signer, nonce: s.nonce, era: s.era, tip: s.tip,
+    genesis: p.genesisHash.toLowerCase() as Hex, reasons: [...reasons]
+  };
+}
+
+export interface SignedBatchVerification { ok: boolean; reasons: string[]; results: SignedVerification[] }
+
+/** Verifies a whole set: exactly one signed transaction per request, in request order (fewer, extra or reordered fail closed). */
+export function verifySignedBatch(signedTxs: string[], requests: SigningRequest[], ctx?: { facts?: RuntimeFacts }): SignedBatchVerification {
+  const reasons: string[] = [];
+  if (signedTxs.length !== requests.length) reasons.push('count_mismatch');
+  const results = requests.slice(0, Math.min(requests.length, signedTxs.length)).map((r, i) => verifySignedAgainstRequest(signedTxs[i]!, r, ctx));
+  results.forEach((r, i) => { if (!r.ok) reasons.push(...r.reasons.map((x) => `step_${i}:${x}`)); });
+  return { ok: reasons.length === 0, reasons, results };
+}

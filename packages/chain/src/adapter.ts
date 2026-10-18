@@ -7,7 +7,7 @@ import { preflight, type PreflightReport } from './preflight.js';
 import { withClient, type ConnectOptions, type Endpoint } from './rpc.js';
 import { decodeRuntime } from './runtime.js';
 import { dryRunOne, dryRunSigned, type SignedDryRunDetail } from './dryrun.js';
-import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
+import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, verifySignedAgainstRequest, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
 import { submitAndWatch, type StatusUpdate, type SubmitResult } from './submit.js';
 import type { PreflightResult, SignedDryRun, SigningEnvelope } from './types.js';
 
@@ -120,6 +120,9 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
   let lastPreflight: PreflightReport | undefined;
   let lastSubmit: SubmitResult | undefined;
   let lastDryRun: SignedDryRunDetail[] | undefined;
+  // SEAM-001: the approved signing requests of the current operation, in order. submit() only accepts the next one.
+  let approved: { requests: SigningRequest[]; next: number } | undefined;
+  const broadcast = new Set<string>();
   const needFacts = (): RuntimeFacts => {
     if (!facts) throw new SeamChainError('FACTS_MISMATCH', 'call discover() first (or pass options.facts)');
     return facts;
@@ -169,6 +172,18 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
 
     async submit(signedTx: Hex, actionId: string) {
       const f = needFacts();
+      // Bound to the approved request: decode the real signed extrinsic, never trust what the wallet reported. Fail closed, send nothing.
+      const refuse = (reasons: string[]): StepOutcome => {
+        lastSubmit = undefined;
+        return { actionId, status: 'failed', events: [], error: `not sent: the signed transaction does not match the approved request (${reasons.join(', ')})` };
+      };
+      if (!approved) return refuse(['no_approved_request']);
+      const req = approved.requests[approved.next];
+      if (!req) return refuse(['no_remaining_request']);
+      const v = verifySignedAgainstRequest(signedTx, req, { facts: f });
+      if (!v.ok) return refuse(v.reasons);
+      const hash = extractSignedCall(signedTx, f).txHash;
+      if (broadcast.has(hash)) return refuse(['replay_already_submitted']);
       if (options.dryRunBeforeSubmit !== false) {
         const d = await withClient(endpoint, (c) => dryRunOne(c, f, signedTx, 0), options);
         lastDryRun = [d];
@@ -177,6 +192,8 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
           return { actionId, status: 'failed', txHash: d.txHash, events: [], error: `not sent: the dry run right before submitting failed (${d.detail})` };
         }
       }
+      approved.next++;
+      broadcast.add(hash);
       const opts: Parameters<typeof submitAndWatch>[3] = { ...options, facts: f };
       if (options.submitTimeoutMs !== undefined) opts.timeoutMs = options.submitTimeoutMs;
       const r = await submitAndWatch(endpoint, signedTx, options.onStatus ? (u) => options.onStatus!(actionId, u) : undefined, opts);
@@ -191,7 +208,9 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
     },
 
     signingRequests(calls, envelope) {
-      return signingRequestsForCalls(calls, needFacts(), envelope);
+      const requests = signingRequestsForCalls(calls, needFacts(), envelope);
+      approved = { requests, next: 0 }; // a new operation replaces the previous one
+      return requests;
     },
 
     walletFrom(signPayload, assembleOpts = {}) {
@@ -202,7 +221,9 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
           for (const req of adapter.signingRequests(calls, envelope)) {
             const { signature } = await signPayload(req.payload);
             const signedTx = assembleSignedExtrinsic(req.payload, signature, f, assembleOpts);
-            out.push({ signedTx, signedCall: extractSignedCall(signedTx, f).callHex });
+            const v = verifySignedAgainstRequest(signedTx, req, { facts: f });
+            if (!v.ok) throw new SeamChainError('SIGNED_MISMATCH', `the wallet's signed transaction ${req.index} does not match the approved request (${v.reasons.join(', ')})`);
+            out.push({ signedTx, signedCall: v.signedCall! });
           }
           return out;
         }
