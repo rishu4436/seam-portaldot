@@ -7,6 +7,7 @@ import {
   factsFromMetadata,
   loadRuntime,
   readPinnedTypes,
+  type AtomicRollbackProof,
   type BatchAllRollback,
   type Hex,
   type RuntimeFacts,
@@ -22,6 +23,8 @@ export interface DiscoverOptions extends ConnectOptions {
   typesBundle?: string;
   /** Behaviour metadata cannot show. Default 'unknown' (see @seam/compiler). */
   batchAllRollback?: BatchAllRollback;
+  /** Evidence for batchAllRollback 'verified' (a rollback test run on this runtime). Without a matching proof the compiler will not plan atomic_verified. */
+  batchAllRollbackProof?: AtomicRollbackProof;
   /**
    * Token symbol/decimals declared by the caller for a chain whose system_properties omit them
    * (e.g. substrate-contracts-node --dev returns {}). Used only when the node reports nothing;
@@ -142,6 +145,14 @@ export function tokenInfo(
   return { tokenSymbol, tokenDecimals };
 }
 
+/** Whether each token fact came from the node ('observed') or only from the caller's declaration. */
+export function tokenProvenanceOf(properties: ChainPropertiesJson): { tokenSymbol: 'declared' | 'observed'; tokenDecimals: 'declared' | 'observed' } {
+  return {
+    tokenSymbol: first(properties.tokenSymbol) !== undefined ? 'observed' : 'declared',
+    tokenDecimals: first(properties.tokenDecimals) !== undefined ? 'observed' : 'declared'
+  };
+}
+
 /**
  * Pure: chain inputs -> the compiler's RuntimeFacts. specName/specVersion/transactionVersion/ss58Prefix
  * from the node are passed to factsFromMetadata, which throws if they disagree with the metadata itself.
@@ -157,10 +168,16 @@ export function factsFromChainInputs(inputs: ChainInputs, opts: FactsOptions = {
     specName: inputs.runtimeVersion.specName,
     specVersion: inputs.runtimeVersion.specVersion,
     transactionVersion: inputs.runtimeVersion.transactionVersion,
-    blockNumber: inputs.head.number
+    blockNumber: inputs.head.number,
+    // Recorded so the compiler's audit checks can see how each fact was learned. Substrate-style chains sign with AccountId32.
+    tokenProvenance: tokenProvenanceOf(inputs.properties),
+    signingAccountBytes: 32
   };
+  const sv = (inputs.runtimeVersion as { stateVersion?: unknown }).stateVersion;
+  if (typeof sv === 'number' && Number.isInteger(sv) && sv >= 0) input.stateVersion = sv;
   if (typeof inputs.properties.ss58Format === 'number') input.ss58Prefix = inputs.properties.ss58Format;
   if (opts.batchAllRollback) input.batchAllRollback = opts.batchAllRollback;
+  if (opts.batchAllRollbackProof) input.batchAllRollbackProof = opts.batchAllRollbackProof;
   if (inputs.endpoint) input.endpoint = inputs.endpoint;
   try {
     return quietly(() => factsFromMetadata(input));
@@ -192,6 +209,7 @@ function factsOptionsOf(opts: DiscoverOptions): FactsOptions {
   const out: FactsOptions = {};
   if (opts.typesBundle !== undefined) out.typesBundle = opts.typesBundle;
   if (opts.batchAllRollback !== undefined) out.batchAllRollback = opts.batchAllRollback;
+  if (opts.batchAllRollbackProof !== undefined) out.batchAllRollbackProof = opts.batchAllRollbackProof;
   if (opts.declaredToken !== undefined) out.declaredToken = opts.declaredToken;
   return out;
 }
