@@ -25,15 +25,15 @@ export const ABIS = { seam_demo: JSON.parse(readFileSync(fileURLToPath(new URL('
 export const SEAM_DEMO_ABI_HASH = computeAbiHash(ABIS.seam_demo);
 
 /** `demo: false` (rollback flow, no contract step) leaves out the seam_demo message and ABI rules. No maxStorageDeposit: the step sets storageDepositLimit: null. */
-export function devPolicy({ bob, charlie, contract, demo = true, overrides = {} }) {
+export function devPolicy({ bob, charlie, contract, demo = true, assetId = ASSET_ID, overrides = {} }) {
   return portaldotPolicy({
-    allowedAssets: [String(ASSET_ID)],
+    allowedAssets: [String(assetId)],
     allowedContracts: [contract],
     allowedSelectors: demo ? { [contract]: ['0x6c337222'] } : undefined,
     allowedMessages: demo ? { [contract]: ['settle'] } : undefined,
     pinnedAbiHashes: demo ? { [contract]: SEAM_DEMO_ABI_HASH } : undefined,
     allowedRecipients: [bob, charlie],
-    maxAmountPerAsset: { [String(ASSET_ID)]: '1000000000000' },
+    maxAmountPerAsset: { [String(assetId)]: '1000000000000' },
     maxNativeValue: '0',
     maxGasLimit: '50000000000',
     allowedModes: ['sequential', 'atomic_verified'],
@@ -41,16 +41,16 @@ export function devPolicy({ bob, charlie, contract, demo = true, overrides = {} 
   });
 }
 
-export function devManifest({ alice, bob, charlie, contract, genesis, atomic = false, actions }) {
+export function devManifest({ alice, bob, charlie, contract, genesis, atomic = false, actions, assetId = ASSET_ID, gas = { gasLimit: '5000000000', proofSize: GAS_PROOF_SIZE }, specVersion = 100 }) {
   const pref = atomic ? { preferredMode: 'atomic' } : {};
   return {
     version: 1,
-    chain: { genesisHash: genesis, specVersion: 100 },
+    chain: { genesisHash: genesis, specVersion },
     signer: { type: 'ss58', value: alice },
     actions: actions ?? [
-      { id: 'pay', kind: 'assets.transfer', args: { assetId: String(ASSET_ID), amount: '2500', recipient: bob }, ...pref },
-      { id: 'call', kind: 'contracts.call', args: { contract, value: '0', gasLimit: '5000000000', proofSize: GAS_PROOF_SIZE, storageDepositLimit: null, message: 'settle', args: { order_id: SETTLE.orderId, amount: SETTLE.amount }, abiRef: 'seam_demo' }, ...pref },
-      { id: 'mint', kind: 'assets.mint', args: { assetId: String(ASSET_ID), amount: '7', recipient: charlie }, ...pref }
+      { id: 'pay', kind: 'assets.transfer', args: { assetId: String(assetId), amount: '2500', recipient: bob }, ...pref },
+      { id: 'call', kind: 'contracts.call', args: { contract, value: '0', gasLimit: gas.gasLimit, ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}), storageDepositLimit: null, message: 'settle', args: { order_id: SETTLE.orderId, amount: SETTLE.amount }, abiRef: 'seam_demo' }, ...pref },
+      { id: 'mint', kind: 'assets.mint', args: { assetId: String(assetId), amount: '7', recipient: charlie }, ...pref }
     ]
   };
 }
@@ -59,20 +59,22 @@ export function devManifest({ alice, bob, charlie, contract, genesis, atomic = f
  * Full run. Returns everything needed for the evidence file. Never returns signatures, signed extrinsics or keys.
  * onSigned (optional) receives the signed extrinsics in memory only (the rollback script resends one); not recorded.
  */
-export async function runFlow({ facts, manifest, policy, alice, atomic = false, compileOptions = {}, onSigned }) {
+export async function runFlow({ facts, manifest, policy, alice, signPayload, env = {}, atomic = false, compileOptions = {}, onSigned }) {
+  // env overrides the dev-node defaults (testnet-run.mjs). signPayload(payload) -> { signature } is any external signer.
+  const endpoint = env.endpoint ?? ENDPOINT;
   const statuses = [];
-  const adapter = createPortaldotAdapter(ENDPOINT, {
-    facts, typesBundle: TYPES_BUNDLE, declaredToken: DECLARED_TOKEN, blockTimeMs: DEV_BLOCK_TIME_MS, submitTimeoutMs: 60_000,
+  const adapter = createPortaldotAdapter(endpoint, {
+    facts, typesBundle: env.typesBundle ?? TYPES_BUNDLE, declaredToken: env.declaredToken ?? DECLARED_TOKEN, blockTimeMs: env.blockTimeMs ?? DEV_BLOCK_TIME_MS, submitTimeoutMs: 60_000,
     onStatus: (id, u) => statuses.push({ actionId: id, status: u.status, txHash: u.txHash, blockHash: u.blockHash, at: new Date().toISOString() })
   });
   await adapter.discover(); // re-checks the live node against the given facts
   const seam = new Seam(adapter);
-  const compiled = compile(manifest, facts, { abis: ABIS, ...compileOptions });
+  const compiled = compile(manifest, facts, { abis: env.abis ?? ABIS, ...compileOptions });
   const plan = compiled;
   const { preflight, envelope } = await adapter.preflight(plan);
   const policyResult = evaluatePolicy({ policy, plan, facts, preflight, manifest });
   const report = {
-    endpoint: ENDPOINT, manifest, manifestDigest: computeManifestDigest(manifest), facts, fingerprint: facts.fingerprint, fingerprintDigest: facts.fingerprintDigest,
+    endpoint, manifest, manifestDigest: computeManifestDigest(manifest), facts, fingerprint: facts.fingerprint, fingerprintDigest: facts.fingerprintDigest,
     compiledMode: compiled.mode, compiledModeReason: compiled.modeReason,
     plan, preflight, preflightDetail: { nonce: adapter.lastPreflight.nonce, atBlock: adapter.lastPreflight.atBlock, transactions: adapter.lastPreflight.transactions, contractDryRuns: adapter.lastPreflight.contractDryRuns },
     envelope, policy, policyResult
@@ -87,6 +89,7 @@ export async function runFlow({ facts, manifest, policy, alice, atomic = false, 
   // The user's wallet. TEST ONLY: //Alice on the local dev chain; SEAM itself never holds keys.
   const inner = adapter.walletFrom(async (payload) => {
     signingRequests.push({ payload, signBytesHex: signBytesOf(payload, facts) });
+    if (signPayload) return signPayload(payload);
     return { signature: u8aToHex(alice.sign(hexToU8a(signBytesOf(payload, facts)), { withType: true })) };
   });
   let signedCount = 0;
