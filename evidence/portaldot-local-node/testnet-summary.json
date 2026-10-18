@@ -1,0 +1,125 @@
+{
+ "kind": "testnet-run",
+ "signedBy": "SEAM_SIGNER (local key)",
+ "startedAt": "2026-10-18T06:49:50.964Z",
+ "endpoint": "ws://127.0.0.1:9966",
+ "genesisHash": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5",
+ "specVersion": 1002,
+ "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+ "assetId": 349746,
+ "assetSetup": [
+  {
+   "what": "Assets.create(349746, signer, min_balance 1)",
+   "txHash": "0x8e21e2f2eafe4be0ad9b8c4a06cc4db7673c5b5717907ea428a027aa24e9538b",
+   "status": "finalized",
+   "success": true,
+   "events": [
+    "Balances.Reserved(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 10000000000000000)",
+    "Assets.Created(349746, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d)",
+    "Treasury.Deposit(1216234597374)",
+    "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":168277000})"
+   ]
+  },
+  {
+   "what": "Assets.mint(349746, signer, 1000000000000)",
+   "txHash": "0xf62b3d3f7c40e0bc3a9f52b4c6f7c4006f687867777aac5729385b8be6660744",
+   "status": "finalized",
+   "success": true,
+   "events": [
+    "Assets.Issued(349746, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1000000000000)",
+    "Treasury.Deposit(1200336742015)",
+    "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":295983000})"
+   ]
+  }
+ ],
+ "deploy": {
+  "ok": true,
+  "contract": "0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822",
+  "txHash": "0xa635cbebe1acfcc49a75db37ed44299b3ab5dc1bfffca1aa4d6905b1c92b1554",
+  "block": {
+   "number": 79,
+   "hash": "0x00e5d6ebae1240b2d92c2d43e0eb04d1df7cc44b6c9c55f496aa408f07a54db8"
+  },
+  "status": "finalized",
+  "dryRun": "ok",
+  "codeHash": "0xd5d63afabb5e27133f20e22e812df7e233c0c7cd75c76908343f65add6781352",
+  "constructor": "0x"
+ },
+ "contract": "0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822",
+ "recipients": [
+  "5Gb2vWZ7MZdwiS4Ut8tL3t4edo3hP4XUmjvqeLayiTzUWWPg",
+  "5Gb9MXfB9pAQDgRS8Eq32fY7siFZkpuLf86tTsMR6Eq2ydw3"
+ ],
+ "recipientFunding": [
+  {
+   "what": "Balances.transfer_keep_alive(5Gb2vWZ7MZdwiS4Ut8tL3t4edo3hP4XUmjvqeLayiTzUWWPg, 200000000000000)",
+   "txHash": "0xa3338ef2cf9294417bca7b6b5d44e61f48280859612dec1bf3cc8970041adb28",
+   "status": "finalized",
+   "success": true
+  },
+  {
+   "what": "Balances.transfer_keep_alive(5Gb9MXfB9pAQDgRS8Eq32fY7siFZkpuLf86tTsMR6Eq2ydw3, 200000000000000)",
+   "txHash": "0xc2d8ed86720b70a7e269eb51f124472732004778f70979d6dcd57778c859ca24",
+   "status": "finalized",
+   "success": true
+  }
+ ],
+ "flows": {
+  "sequential": {
+   "file": "evidence/portaldot-local-node/runs/sequential-1792306333993.json",
+   "result": "verified",
+   "steps": [
+    {
+     "id": "pay",
+     "status": "finalized",
+     "tx": "0x82c91cdd372a218fad14a5b60ece0bc038b5c8de7e2a8b2f4423bbcb4ef41966",
+     "block": 88
+    },
+    {
+     "id": "call",
+     "status": "finalized",
+     "tx": "0xa732384a54946cda2a2652cbcfb5c40ace510575a6363533ee98e0d5be72578d",
+     "block": 91
+    },
+    {
+     "id": "mint",
+     "status": "finalized",
+     "tx": "0x8d1494c2d8114c0e12a5fd74d486444ae930d01dbb4a623eba24279321db5aaa",
+     "block": 94
+    }
+   ]
+  },
+  "rollback": {
+   "file": "evidence/portaldot-local-node/runs/rollback-1792306351342.json",
+   "result": "verified",
+   "directTx": "0x96e4dee879da27b20ebe9493152a9b28d1fd46672c05d81b4110838fcdac4eaf",
+   "dispatchError": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount."
+  },
+  "atomic": {
+   "file": "evidence/portaldot-local-node/runs/atomic-1792306368675.json",
+   "mode": "atomic_verified",
+   "result": "verified",
+   "steps": [
+    {
+     "id": "pay",
+     "status": "finalized",
+     "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
+     "block": 100
+    },
+    {
+     "id": "call",
+     "status": "finalized",
+     "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
+     "block": 100
+    },
+    {
+     "id": "mint",
+     "status": "finalized",
+     "tx": "0xb3ded1ac192b2012c2c106b5a0eb1cc231ef9e8791a967513672ca604ad45ec8",
+     "block": 100
+    }
+   ]
+  }
+ },
+ "finishedAt": "2026-10-18T06:52:48.678Z"
+}

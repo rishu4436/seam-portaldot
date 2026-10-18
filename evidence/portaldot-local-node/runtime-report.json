@@ -1,0 +1,186 @@
+{
+ "kind": "runtime-report",
+ "generatedAt": "2026-10-18T06:49:50.094Z",
+ "endpoint": "ws://127.0.0.1:9966",
+ "chain": {
+  "genesisHash": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5",
+  "specName": "portaldot",
+  "specVersion": 1002,
+  "transactionVersion": 2,
+  "ss58Prefix": 42
+ },
+ "metadataVersion": 13,
+ "fingerprintDigest": "0xfbc5239f39694b547ff94be59bfd6ae75fe139b5f8dabf57aecd58750e929310",
+ "fingerprintStableOnRefetch": true,
+ "token": {
+  "symbol": "POT",
+  "decimals": 14,
+  "source": "node, or declared on the command line if the node reports none"
+ },
+ "pallets": [
+  "System",
+  "Utility",
+  "Babe",
+  "Timestamp",
+  "Authorship",
+  "Indices",
+  "Balances",
+  "TransactionPayment",
+  "ElectionProviderMultiPhase",
+  "Staking",
+  "Session",
+  "Grandpa",
+  "Treasury",
+  "Contracts",
+  "Sudo",
+  "ImOnline",
+  "AuthorityDiscovery",
+  "Offences",
+  "Historical",
+  "RandomnessCollectiveFlip",
+  "Identity",
+  "Vesting",
+  "Scheduler",
+  "Proxy",
+  "Multisig",
+  "Bounties",
+  "Assets",
+  "Mmr",
+  "Lottery",
+  "Gilt",
+  "TransactionStorage"
+ ],
+ "has": {
+  "Contracts": true,
+  "Revive": false,
+  "Assets": true,
+  "Utility": true,
+  "Nfts": false,
+  "Balances": true
+ },
+ "contractsCall": {
+  "shape": "V13 (single Weight gas limit, no storage_deposit_limit)",
+  "gasLimitType": "Compact<Weight>",
+  "argTypes": [
+   {
+    "name": "dest",
+    "type": "LookupSource"
+   },
+   {
+    "name": "value",
+    "type": "Compact<BalanceOf>"
+   },
+   {
+    "name": "gas_limit",
+    "type": "Compact<Weight>"
+   },
+   {
+    "name": "data",
+    "type": "Bytes"
+   }
+  ]
+ },
+ "reviveCall": null,
+ "capabilities": {
+  "Assets.transfer_keep_alive": "observed",
+  "Assets.mint": "observed",
+  "Assets.create": "observed",
+  "Contracts.call": "observed",
+  "Contracts.instantiate_with_code": "observed",
+  "Revive.call": "not_observed",
+  "Utility.batch_all": "observed"
+ },
+ "behaviour": {
+  "batchAllRollback": "unknown"
+ },
+ "rpc": {
+  "methods": 93,
+  "contractsCall": true,
+  "reviveCall": false
+ },
+ "summary": "portaldot spec 1002, metadata V13, 31 pallets; Contracts yes, Revive no; contract call shape: V13 (single Weight gas limit, no storage_deposit_limit); token POT/14.",
+ "shapeCheck": {
+  "source": "http://127.0.0.1:9967",
+  "metadataVersion": 13,
+  "runtime": "portaldot spec 1002 (tx 2, ss58 42)",
+  "genesisIsPlaceholder": false,
+  "capabilities": {
+   "Assets.mint": {
+    "pallet": 26,
+    "call": 3,
+    "args": [
+     "id: Compact<AssetId>",
+     "beneficiary: LookupSource",
+     "amount: Compact<TAssetBalance>"
+    ]
+   },
+   "Assets.transfer_keep_alive": {
+    "pallet": 26,
+    "call": 6,
+    "args": [
+     "id: Compact<AssetId>",
+     "target: LookupSource",
+     "amount: Compact<TAssetBalance>"
+    ]
+   },
+   "Contracts.call": {
+    "pallet": 13,
+    "call": 0,
+    "args": [
+     "dest: LookupSource",
+     "value: Compact<BalanceOf>",
+     "gas_limit: Compact<Weight>",
+     "data: Bytes"
+    ]
+   },
+   "Nfts.mint": "not_observed",
+   "Revive.call": "not_observed",
+   "Utility.batch_all": {
+    "pallet": 1,
+    "call": 2,
+    "args": [
+     "calls: Vec<Call>"
+    ]
+   }
+  },
+  "contractsCallShape": {
+   "args": [
+    "dest",
+    "value",
+    "gas_limit",
+    "data"
+   ],
+   "shape": "V13: single gas_limit (no storage_deposit_limit)",
+   "gasLimitType": "Compact<Weight>"
+  },
+  "steps": [
+   {
+    "id": "pay",
+    "capability": "Assets.transfer_keep_alive",
+    "pallet": 26,
+    "call": 6,
+    "status": "ok",
+    "encodedCall": "0x1a0604008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48a10f"
+   },
+   {
+    "id": "mint",
+    "capability": "Assets.mint",
+    "pallet": 26,
+    "call": 3,
+    "status": "ok",
+    "encodedCall": "0x1a0308008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4804"
+   },
+   {
+    "id": "call",
+    "capability": "Contracts.call",
+    "pallet": 13,
+    "call": 0,
+    "status": "ok",
+    "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551"
+   }
+  ],
+  "mode": "sequential: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+  "note": "sample retried without proofSize/storageDepositLimit (runtime has the single gas_limit shape)",
+  "unavailable": []
+ }
+}

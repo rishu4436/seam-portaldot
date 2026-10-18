@@ -1,0 +1,24 @@
+{
+ "kind": "deploy",
+ "ranAt": "2026-10-18T06:50:43.286Z",
+ "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+ "ok": true,
+ "contract": "0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822",
+ "txHash": "0xa635cbebe1acfcc49a75db37ed44299b3ab5dc1bfffca1aa4d6905b1c92b1554",
+ "block": {
+  "number": 79,
+  "hash": "0x00e5d6ebae1240b2d92c2d43e0eb04d1df7cc44b6c9c55f496aa408f07a54db8"
+ },
+ "status": "finalized",
+ "dryRun": "ok",
+ "codeHash": "0xd5d63afabb5e27133f20e22e812df7e233c0c7cd75c76908343f65add6781352",
+ "constructor": "0x",
+ "events": [
+  "System.NewAccount(0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822)",
+  "Balances.Endowed(0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822, 2000000000000000)",
+  "Balances.Transfer(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822, 2000000000000000)",
+  "Contracts.Instantiated(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x92b212c616d2a0e9cf03e8ce5323d4d88358372b27e1fb52d5759e9e14bb5822)",
+  "Treasury.Deposit(2528667180611)",
+  "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":709114000})"
+ ]
+}
