@@ -27,6 +27,8 @@ export interface FakeNodeOptions {
   pending?: string[];
   /** Finalized head = best head minus this many blocks. */
   finalizedLag?: number;
+  /** state_getMetadata at any block other than the snapshot head returns this (same spec version, different metadata). */
+  metadataAtBlocks?: Hex;
   /** These RPC methods throw (simulates an unreachable / broken node). */
   failRpc?: string[];
   /** Chain advances by this many empty blocks via advance(). */
@@ -104,6 +106,7 @@ export class FakeNode implements RpcClient {
         return r(b ? { block: { header: this.header(b.hash), extrinsics: b.extrinsics } } : null);
       }
       case 'state_getMetadata':
+        if (this.o.metadataAtBlocks && params[0] && String(params[0]).toLowerCase() !== this.o.inputs.head.hash) return r(this.o.metadataAtBlocks);
         return r(this.o.inputs.metadataHex);
       case 'state_getRuntimeVersion':
         return r(this.o.inputs.runtimeVersion);
