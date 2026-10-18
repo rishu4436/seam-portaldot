@@ -1,4 +1,4 @@
-/** Copied from Bot 2's compiler (/workspace/seam-compiler/src/types.ts @ 58934d2). Replace with an import once the monorepo exists. */
+/** Types copied from the compiler's src/types.ts (keep in sync; the class SeamCompileError is left out so this file has no runtime code). */
 
 export type Hex = `0x${string}`;
 
@@ -12,7 +12,10 @@ export interface RuntimeFingerprint {
   ss58Prefix: number;
   tokenSymbol: string;
   tokenDecimals: number;
-  /** blake2b-256 of the raw bytes of the pinned type-definitions file. */
+  /**
+   * blake2b-256 of the raw bytes of the pinned type-definitions file (metadata V13 runtimes such as Portaldot
+   * spec 1002). null for metadata V14+ runtimes, which are self-describing and use no pinned types.
+   */
   typesBundleHash: Hex | null;
 }
 
@@ -53,7 +56,7 @@ export interface RuntimeFacts {
    */
   source: {
     metadataHex: Hex;
-    /** Exact text of the pinned type-definitions file. */
+    /** Exact text of the pinned type-definitions file (V13), or NO_PINNED_TYPES for V14+ runtimes. */
     typesBundle: string;
   };
 }
@@ -97,10 +100,37 @@ export interface PlanStep {
   capability: string;
   palletIndex: number | null;
   callIndex: number | null;
+  /**
+   * Normalised arguments as base-unit / SS58 / hex strings. contracts.call on Weight-v2 runtimes also has
+   * proofSize (string) and storageDepositLimit (string, or **null** = the manifest explicitly chose no limit).
+   * NOTE: typed Record<string, string> so existing consumers keep compiling; storageDepositLimit is the one
+   * key that can be null at runtime (policy reads it that way).
+   */
   decodedArgs: Record<string, string>;
   encodedCall: Hex | null;
   status: 'ok' | 'unavailable';
   reason?: string;
+  /**
+   * Present only for a contracts.call written with `message` (ink! ABI form). Covered by planDigest.
+   * The raw-`data` form never has it, so its plans and digests are unchanged.
+   */
+  contractMessage?: ContractMessage;
+}
+
+/** JSON value of an ink! message argument after normalisation (integers as strings, accounts as SS58, bytes as hex). */
+export type InkArgValue = string | boolean | null | InkArgValue[] | { [k: string]: InkArgValue };
+
+export interface ContractMessage {
+  /** blake2b-256("seam/abi/v1" || 0x00 || canonicalJSON(abi)). */
+  abiHash: Hex;
+  /** The manifest's abiRef, when the ABI came from options.abis rather than inline. */
+  abiRef?: string;
+  /** ink! message label, e.g. "settle". */
+  message: string;
+  /** 4-byte selector; always equal to the first 4 bytes of decodedArgs.data. */
+  selector: Hex;
+  /** Arguments keyed by ABI label, decoded back from the encoded bytes. */
+  args: Record<string, InkArgValue>;
 }
 
 export interface Plan {
@@ -117,3 +147,34 @@ export interface Plan {
   planDigest: Hex;
 }
 
+export interface CompileOptions {
+  /** Allow Utility.batch_all even when its rollback behaviour is not verified. Default false. */
+  allowAtomicUnverified?: boolean;
+  /**
+   * ink! ABIs (metadata.json objects) that contracts.call actions can name with `abiRef` instead of
+   * inlining `abi`. Only the referenced ABI's hash goes into the plan.
+   */
+  abis?: Record<string, unknown>;
+}
+
+export interface CompileIssue {
+  code: CompileErrorCode;
+  message: string;
+  /** Where the problem is, e.g. 'actions[1].args.amount'. */
+  path?: string;
+}
+
+export type CompileErrorCode =
+  | 'MANIFEST_INVALID'
+  | 'NOT_CANONICAL'
+  | 'AMOUNT_INVALID'
+  | 'ADDRESS_INVALID'
+  | 'ADDRESS_TYPE'
+  | 'SS58_PREFIX'
+  | 'CHAIN_MISMATCH'
+  | 'FACTS_INVALID'
+  | 'ENCODE_FAILED'
+  | 'ABI_INVALID'
+  | 'ABI_HASH_MISMATCH'
+  | 'ABI_MESSAGE_UNKNOWN'
+  | 'ABI_ARGS_INVALID';

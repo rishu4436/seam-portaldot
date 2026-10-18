@@ -137,7 +137,13 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
   store: ApprovalStore;
 }
 
-export interface SubmitCheck { ok: boolean; reasons: { code: string; message: string }[] }
+export interface SubmitCheck {
+  ok: boolean;
+  /** Why it was blocked. Empty when ok. */
+  reasons: { code: string; message: string }[];
+  /** Checks that passed, in the order they ran, so recordings can show what was verified. Stable codes. */
+  passed: { code: string; detail: string }[];
+}
 
 /**
  * The last gate before broadcasting. Recomputes the binding from what is about to be sent and blocks on any
@@ -146,6 +152,8 @@ export interface SubmitCheck { ok: boolean; reasons: { code: string; message: st
  */
 export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
   const reasons: SubmitCheck["reasons"] = [];
+  const passed: SubmitCheck["passed"] = [];
+  const ok = (code: string, detail: string) => passed.push({ code, detail });
   const { approval, now, store, plan } = input;
 
   const i = input.sendIndex;
@@ -161,11 +169,13 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
           break;
         }
       }
+      if (!reasons.some((x) => x.code === "out_of_order")) ok("step_order", `step ${i + 1} is next in order`);
       const prev = input.previousSteps ?? [];
       if (prev.length !== i) reasons.push({ code: "previous_steps_missing", message: `Blocked: results for the ${i} earlier step(s) are needed before step ${i + 1}.` });
       else {
         const gate = canRunNextStep(prev);
         if (!gate.ok) reasons.push({ code: "previous_step_failed", message: `Blocked: ${gate.reason}` });
+        else if (i > 0) ok("previous_steps_ok", `the ${i} earlier step(s) completed and verified`);
       }
     }
   } else if (sequential && callsToSign(plan).length > 1 && input.previousSteps?.length) {
@@ -175,31 +185,32 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
     reasons.push({ code: "approval_reused", message: i === undefined
       ? "Blocked: this approval was already used. Each approval allows exactly one submission."
       : `Blocked: step ${i + 1} of this approval was already sent. Each step can be sent once.` });
-  }
+  } else ok("approval_unused", i === undefined ? "this approval hasn't been used" : `step ${i + 1} of this approval hasn't been sent`);
   if (Date.parse(approval.expiresAt) <= now.getTime()) {
     reasons.push({ code: "approval_expired", message: `Blocked: this approval expired at ${approval.expiresAt}. Approve again.` });
-  }
+  } else ok("approval_valid_time", `the approval is valid until ${approval.expiresAt}`);
 
   const recomputed = buildBinding({ ...input, fingerprint: input.preparedFingerprint }, approval.binding.expiresAt);
   if (digest("seam/approval/v1", approval.binding) !== approval.hash) {
     reasons.push({ code: "approval_tampered", message: "Blocked: the approval's contents don't match its hash." });
-  }
+  } else ok("approval_intact", "the approval's contents match its hash");
   const changed = (Object.keys(recomputed) as (keyof ApprovalBinding)[]).filter((k) => recomputed[k] !== approval.binding[k]);
   if (changed.length) {
     reasons.push({
       code: "approval_mismatch",
       message: `Blocked: what's about to be sent differs from what was approved (${changed.join(", ")}). Review and approve again.`,
     });
-  }
+  } else ok("approval_matches", "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)");
 
   const lock = checkRuntimeLock(input.preparedFingerprint, input.currentFingerprint);
   if (!lock.ok) reasons.push({ code: "runtime_changed", message: lock.reason });
+  else ok("runtime_unchanged", "the runtime is the one the plan was prepared for");
 
   const expected = callsToSign(plan).map((c) => (c ?? "").toLowerCase());
   const signed = input.signedCalls.map((c) => c.toLowerCase());
   if (expected.length !== signed.length || expected.some((c, i) => c !== signed[i])) {
     reasons.push({ code: "signed_bytes_mismatch", message: "Blocked: the wallet signed different call data from the approved plan." });
-  }
+  } else ok("signed_bytes_match", `the ${signed.length} signed call(s) are byte-for-byte the approved calls`);
 
   const dry = input.signedDryRun ?? [];
   const relevant = i === undefined ? dry : [dry[i]];
@@ -210,9 +221,11 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
     reasons.push({ code: "signed_dry_run_missing", message: i === undefined
       ? "Blocked: the policy needs a successful dry run of each signed transaction before sending, and one is missing or unknown. For sequential plans, check each step just before sending it (sendIndex)."
       : `Blocked: the policy needs a successful dry run of step ${i + 1} just before sending it, and it's missing or unknown.` });
+  } else if (relevant.length > 0 && relevant.filter((d) => d !== undefined).length === needed && relevant.every((d) => d === "ok")) {
+    ok("signed_dry_run_ok", i === undefined ? "the dry run of the signed transaction(s) succeeded" : `the dry run of signed step ${i + 1} succeeded`);
   }
 
-  return { ok: reasons.length === 0, reasons };
+  return { ok: reasons.length === 0, reasons, passed };
 }
 
 /**
