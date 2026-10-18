@@ -117,3 +117,15 @@ export function classifyError(e: unknown): SeamCode {
   if (/^missing |^usage:|needs --|needs the @seam\/chain/i.test(m)) return SeamCode.UsageError;
   return SeamCode.InternalError;
 }
+
+/**
+ * Fixed plain-English wording for step reason codes. Keyed by plain string on purpose: new codes can be added upstream
+ * (policy/compiler) without this package failing to build, and an unknown code simply has no wording here.
+ */
+export const REASON_CODE_WORDING: Record<string, string> = {
+  NO_OBSERVED_V3_METADATA: 'SEAM has no observed Portaldot V3 metadata for this call, so it does not guess the call layout and did not build it.',
+  V3_ARG_SHAPE_MISMATCH: "the target chain's call has different arguments than SEAM expected, so SEAM refused to build it rather than guess.",
+  ATOMIC_REQUIRED_UNAVAILABLE: 'The manifest requires all-or-nothing execution, which is not available on this runtime, so SEAM built no calls.',
+};
+
+export const explainReasonCode = (code: string): string | undefined => REASON_CODE_WORDING[code];

@@ -1,5 +1,6 @@
 import { digestJson } from '@seam/compiler';
 import type { Hex, Plan, PlanStep } from '@seam/compiler';
+import type { OutcomeVerdict } from './outcomes.js';
 import { overallResult, type ReceiptStep, type StepStatus } from '@seam/policy';
 
 /**
@@ -19,7 +20,7 @@ export type VerifierCoverage = 'none' | 'call_dispatched' | 'extrinsic_finalized
 
 /** Why a step is unknown / not verified, in a form code can switch on. */
 export type StepCode =
-  | 'unsupported_runtime' | 'effect_unproven' | 'effect_mismatch' | 'not_finalized' | 'tx_failed' | 'no_trace' | 'uncertain' | 'not_run';
+  | 'unsupported_runtime' | 'v3_shape_unobserved' | 'effect_unproven' | 'effect_mismatch' | 'not_finalized' | 'tx_failed' | 'no_trace' | 'uncertain' | 'not_run';
 
 /** A receipt step: the policy package's ReceiptStep plus how much the chain showed and why it is unknown or not verified. */
 export type SdkReceiptStep = ReceiptStep & { coverage: VerifierCoverage; code?: StepCode };
@@ -85,7 +86,7 @@ export function expectedEvent(step: PlanStep, signerAccountId: Hex): ChainEvent 
 }
 
 /** Checks one step's outcome against the plan. Missing evidence is never reported as success. */
-export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOutcome | undefined, effect?: ContractEffect): SdkReceiptStep {
+export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOutcome | undefined, effect?: ContractEffect, verdict?: OutcomeVerdict): SdkReceiptStep {
   const base = { actionId: step.actionId };
   if (!outcome || outcome.status === 'not_run') {
     return { ...base, status: 'not_run', events: [], verification: 'unknown', coverage: 'none', code: 'not_run', reason: 'Not run, because an earlier step did not complete.' };
@@ -110,6 +111,7 @@ export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOu
   const base1: VerifierCoverage = final ? 'extrinsic_finalized' : 'call_dispatched';
   const want = expectedEvent(step, signerAccountId);
   if (!want) {
+    if (verdict && (step.kind === 'revive.call' || step.kind === 'nfts.mint')) return applyVerdict(r, outcome, verdict, final, base1);
     return r('unknown', base1, `SEAM has no check for ${step.kind} on this runtime (unsupported_runtime). The extrinsic succeeded, but its effect was not checked.`, 'unsupported_runtime');
   }
   if (step.kind === 'contracts.call') return verifyContractCall(r, outcome, want, final, base1, effect);
@@ -121,6 +123,24 @@ export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOu
       : r('unknown', base1, `${what} found in a block that isn't finalized yet.`, 'not_finalized');
   }
   return r('not_verified', base1, `Expected ${fmt(want)} but the chain did not show it. The transaction succeeded, but not as planned.`, 'effect_mismatch');
+}
+
+/**
+ * Takes a verifier's verdict for revive.call / nfts.mint, but never trusts it past what the receipt itself shows:
+ * `verified` needs a finalized step whose own events contain the verdict's matchedEvent; otherwise it is downgraded.
+ */
+function applyVerdict(
+  r: (v: ReceiptStep['verification'], c: VerifierCoverage, reason: string, code?: StepCode) => SdkReceiptStep,
+  outcome: StepOutcome, v: OutcomeVerdict, final: boolean, base1: VerifierCoverage,
+): SdkReceiptStep {
+  if (v.verification === 'verified') {
+    const matched = !!v.matchedEvent && outcome.events.some((e) => fmt(e) === v.matchedEvent);
+    if (!final || !matched || v.coverage !== 'effect_proven') {
+      return r('unknown', base1, 'A verdict claimed this effect was proven, but the receipt\'s own events do not back it, so it is not verified.', 'effect_unproven');
+    }
+    return r('verified', 'effect_proven', v.reason);
+  }
+  return r(v.verification, v.coverage === 'effect_proven' ? base1 : v.coverage, v.reason, v.code);
 }
 
 function verifyContractCall(
@@ -162,12 +182,14 @@ export interface ReceiptInput {
   stoppedReason?: string;
   /** Per actionId: what a contracts.call must have done. Without it a contract call can reach `contract_emitted` at most, never verified. */
   effects?: Record<string, ContractEffect>;
+  /** Per actionId: a verdict from verifyReviveCallOutcome / verifyNftsMintOutcome. Without one, revive.call and nfts.mint stay `unsupported_runtime`. */
+  verdicts?: Record<string, OutcomeVerdict>;
 }
 
-export function buildReceipt({ plan, outcomes, policyDigest, approvalHash, stoppedReason, effects }: ReceiptInput): Receipt {
+export function buildReceipt({ plan, outcomes, policyDigest, approvalHash, stoppedReason, effects, verdicts }: ReceiptInput): Receipt {
   const byId = new Map(outcomes.map((o) => [o.actionId, o]));
   const atomic = plan.mode === 'atomic_verified' || plan.mode === 'atomic_unverified';
-  const steps = plan.steps.map((s) => verifyStep(s, plan.signer.publicKey, atomic ? (byId.get(s.actionId) ?? byId.get('batch')) : byId.get(s.actionId), effects?.[s.actionId]));
+  const steps = plan.steps.map((s) => verifyStep(s, plan.signer.publicKey, atomic ? (byId.get(s.actionId) ?? byId.get('batch')) : byId.get(s.actionId), effects?.[s.actionId], verdicts?.[s.actionId]));
   const firstNotRun = steps.find((s) => s.status === 'not_run');
   if (stoppedReason && firstNotRun) firstNotRun.reason = `Not run. ${stoppedReason}`;
   const body = {
