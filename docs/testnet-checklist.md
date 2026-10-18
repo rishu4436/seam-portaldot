@@ -35,8 +35,15 @@ npx seam compile docs/examples/demo-manifest.json --endpoint <WS_RPC_URL> --toke
 ## 4. Fund and set up
 - [ ] Fund the signer from the faucet.
 - [ ] Create/mint the demo asset(s) and deploy the demo contract (`contracts/seam-demo`), recording the deploy tx.
-- Setup on the dev chain was done by `packages/chain/scripts/devnode/setup.mjs` (refuses non-localhost endpoints). Those scripts are localhost-only by design, so a testnet script is a separate piece of work.
-- **Pending, not merged:** Bot 4 is preparing `scripts/testnet-run.mjs RPC_URL` on branch `bot4/testnet-ready`. Until it is merged and reviewed, do not rely on it; check its README and safety guards first.
+- Setup on the dev chain was done by `packages/chain/scripts/devnode/setup.mjs` (refuses non-localhost endpoints).
+- **Merged:** `scripts/testnet-run.mjs` is on main. Run it from the repo root after `npm run build`. Full docs: `packages/chain/docs/testnet-run.md`.
+  - Read-only runtime report, signs nothing: `node scripts/testnet-run.mjs wss://<V3_RPC>`
+  - Signer run with a local testnet key (never printed or saved): `SEAM_SIGNER=<seed|file|json> node scripts/testnet-run.mjs wss://<V3_RPC> --yes`
+  - Run signed in the polkadot.js extension: `node scripts/testnet-run.mjs wss://<V3_RPC> --yes --external <SS58_ADDRESS>`
+  - Output goes to `evidence/testnet-v3/`. It refuses mainnet by URL and genesis hash, and a signer without `--yes` sends nothing.
+  - It does **not** run `seam snapshot` or `seam verify`, so steps 1 and 5 (snapshot, verify) stay manual.
+  - The contract deploy is an **unchecked setup step**: it is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action.
+- **PENDING:** the script has only been tested on the local dev node. Nothing has run on Portaldot V3. The real polkadot.js extension has not been exercised, only a stand-in wallet.
 
 ## 5. Run the flows
 - [ ] Sequential: transfer, contract call, mint, one transaction per step, each gated.
