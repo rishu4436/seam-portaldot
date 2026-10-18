@@ -69,7 +69,7 @@ export interface PlanStep {
   capability: string;
   callIndex?: [number, number];
   encodedCall?: Hex;
-  decoded: { assetId?: string; amount?: string; recipient?: string; contract?: string; value?: string };
+  decoded: { assetId?: string; amount?: string; recipient?: string; contract?: string; value?: string; message?: string; selector?: string; abiHash?: string; args?: string };
   status: "ok" | "unavailable";
   reason?: string;
   /** Set when a run script filled this step by hand because the compiler can't encode it on this runtime yet. */
