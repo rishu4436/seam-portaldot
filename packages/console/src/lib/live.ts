@@ -2,7 +2,7 @@
 // wallet directly. Real implementations (SDK + chain package, injected-extension
 // signer) plug in through ChainClient / WalletSigner. Until one is provided every
 // call answers "unavailable" and the outcome is blocked/unknown, never success.
-import type { Coverage, Provenance, SigningStatus, TxState } from "./modes";
+import type { Coverage, Provenance, SigningStatus, SimulationBasis, TxState } from "./modes";
 
 export type Res<T> = { ok: true; value: T } | { ok: false; reason: "unavailable" | "rpc_error" | "rejected" | "ambiguous" | "failed"; message: string };
 
@@ -14,13 +14,17 @@ export interface BindingCheck { ok: boolean; reasons: string[] }
 
 export interface ChainClient {
   discover(): Promise<Res<LiveFingerprint>>;
-  preflight(request: unknown): Promise<Res<{ coverage: Coverage }>>;
+  preflight(request: unknown): Promise<Res<{ simulation: SimulationBasis }>>;
   submit(signed: SignedPayload): Promise<Res<SubmitResult>>;
   verify(txHash: string): Promise<Res<VerifyResult>>;
 }
 export interface WalletSigner { sign(request: unknown): Promise<Res<SignedPayload>> }
-/** Adapter over the chain package's signed-bytes check. Injected; the console invents no signature. */
-export type SignedBindingVerifier = (signed: SignedPayload, request: unknown) => BindingCheck | Promise<BindingCheck>;
+/**
+ * Adapter over @seam/chain verifySignedAgainstRequest(signedTx, request, ctx?). Not imported here: @seam/chain pulls
+ * node-only/polkadot deps into the browser bundle, so the host injects it. Result fields match chain's SignedVerification
+ * (ok, reasons[] of SignedMismatchCode). Only signedTx (the real signed bytes) is passed: a wallet-reported signedCall is never used.
+ */
+export type SignedBindingVerifier = (signedTx: string, request: unknown) => BindingCheck | Promise<BindingCheck>;
 
 const NO = (what: string): Res<never> => ({ ok: false, reason: "unavailable", message: `${what} is not wired in this build.` });
 export const unavailableChain: ChainClient = {
@@ -34,7 +38,10 @@ export interface LiveOutcome {
   status: LiveStatus;
   message: string;
   fingerprint?: LiveFingerprint;
+  /** Receipt coverage: what the chain showed. Stays "none" until a verifier reports more. */
   coverage: Coverage;
+  /** Preflight simulation basis. */
+  simulation: SimulationBasis;
   signing: SigningStatus;
   txState: TxState;
   provenance: Provenance;
@@ -51,7 +58,7 @@ export function v3RpcUrl(raw?: string): string | undefined {
 }
 
 export async function runLive(rpcUrl: string | undefined, request: unknown, deps: LiveDeps = {}): Promise<LiveOutcome> {
-  const o: LiveOutcome = { status: "blocked", message: "", coverage: "unknown", signing: "not_started", txState: "not_run", provenance: "unknown", rpcAttempts: 0, submitted: false };
+  const o: LiveOutcome = { status: "blocked", message: "", coverage: "none", simulation: "none", signing: "not_started", txState: "not_run", provenance: "unknown", rpcAttempts: 0, submitted: false };
   const done = (status: LiveStatus, message: string, patch: Partial<LiveOutcome> = {}): LiveOutcome => Object.assign(o, { status, message }, patch);
   const url = v3RpcUrl(rpcUrl);
   if (!url) return done("blocked", "No V3 RPC URL is configured. LIVE V3 is blocked; nothing was contacted.");
@@ -69,7 +76,7 @@ export async function runLive(rpcUrl: string | undefined, request: unknown, deps
   o.fingerprint = d.value;
 
   const pf = await chain.preflight(request);
-  if (pf.ok) o.coverage = pf.value.coverage; // otherwise stays "unknown"
+  if (pf.ok) o.simulation = pf.value.simulation; // otherwise stays "none"
 
   if (!deps.verifyBinding) return done("blocked", "Signed-bytes check is not wired, so nothing will be signed or sent.", { signing: "binding_unchecked" });
 
@@ -80,7 +87,7 @@ export async function runLive(rpcUrl: string | undefined, request: unknown, deps
     return done(s.reason === "unavailable" ? "blocked" : "failed", s.message, { signing: s.reason === "unavailable" ? "unavailable" : "not_started" });
   }
   o.signing = "signed";
-  const b = await deps.verifyBinding(s.value, request);
+  const b = await deps.verifyBinding(s.value.signedTx, request);
   if (!b.ok) return done("blocked", `Signed bytes differ from the approved request (${b.reasons.join(", ") || "no reason given"}). Nothing was sent.`, { signing: "binding_mismatch" });
   o.signing = "binding_ok";
 
