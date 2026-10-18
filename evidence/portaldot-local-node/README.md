@@ -29,3 +29,11 @@ Command:
 ## Files
 - `runtime-report.json`: read-only report. `testnet-summary.json`: addresses, deploy tx, per-flow results.
 - `runs/deploy-*.json`, `runs/sequential-*.json`, `runs/rollback-*.json`, `runs/atomic-*.json` (the file names have timestamps).
+
+## mainnet-plan-blocked.json (read-only gate demonstration)
+Label: local Portaldot dev node, spec 1002, not V3 testnet, not mainnet. A plan (the demo Manifest) is prepared against the
+committed **mainnet** snapshot/lock, then `checkBeforeSubmit` is run against this local node. The gate blocks it with
+`runtime_changed`: the mainnet-locked fingerprint digest is `0xfa84b636…a896`, the local node's is `0xfbc5239f…9310`
+(the genesis hash and the metadata hash differ; both runtimes say spec 1002). Nothing is signed or sent, mainnet is not contacted, and
+no keys or signatures appear. The preflight and signing envelope are offline placeholders and the policy has the signed dry
+run turned off, so that the runtime lock is the only thing shown. Regenerate: `node scripts/gate-mainnet-plan.mjs`.
