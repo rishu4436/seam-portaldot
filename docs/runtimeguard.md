@@ -12,8 +12,13 @@ RuntimeGuard is a **narrow MVP built from existing SEAM pieces**. It is not a ho
    Recorded example: `node scripts/gate-mainnet-plan.mjs` and `evidence/portaldot-local-node/mainnet-plan-blocked.json`
    (differing fields: `genesisHash`, `metadataHash`).
 
-There is no dedicated drift-report command yet; the pieces above are what exists. A runtime A/B diff against fixture metadata
-(SEAM-021 acceptance) has not been delivered.
+`seam drift <snapA> <snapB> [--plan plan.json]` compares two **saved** runtimes (snapshots) offline: every changed fingerprint
+field (genesis, spec name and version, metadata hash, ...), and every call that was added, removed, or changed status, call
+index or argument shape. With `--plan` it also says whether that plan was prepared for a different runtime than B (stale,
+and it would be blocked at the send gate). Exit code 0 means no drift; drift exits 10 (`runtime_drift` in `--json`).
+Recorded A/B example: the bundled Portaldot mainnet snapshot (spec 1002) against the test chain snapshot in
+`packages/sdk/tests/fixtures/devnode` (spec 100) shows the changed fields and, for instance, `Revive.call` observed only on the test chain.
+This is a comparison of recordings, not a live check and not monitoring.
 
 ## What it is not (roadmap, not delivered)
 

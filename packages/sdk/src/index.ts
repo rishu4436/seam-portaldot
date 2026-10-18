@@ -2,6 +2,7 @@ export * from './manifest.js';
 export * from './receipt.js';
 export * from './verify-live.js';
 export * from './codes.js';
+export * from './drift.js';
 export * from './explain.js';
 export * from './flow.js';
 export * from './offline.js';
