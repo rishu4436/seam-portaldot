@@ -24,6 +24,9 @@ const limits = {
 const strict = portaldotPolicy(limits);
 const policy = strict;
 
+/** The fake node emits ContractEmitted with data 0x01; the caller commits to that effect before the run. */
+const effects = { call: { emittedData: '0x01' } };
+
 describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (fake node)', () => {
   const setup = async (o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {}, batchAllRollback?: 'verified') => {
     const sdk = await import(SDK);
@@ -50,7 +53,7 @@ describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (f
     expect(approval.ok).toBe(true);
     const dryRuns: string[] = [];
     const run = await seam.execute({
-      ...prepared, policy: strict, facts, approval: approval.approval, wallet, now: () => now,
+      ...prepared, policy: strict, facts, approval: approval.approval, wallet, effects, now: () => now,
       onStep: (e: any) => { if (e.phase === 'sending') dryRuns.push(adapter.lastDryRun!.map((d) => d.outcome).join()); }
     });
     expect(run.ok).toBe(true);
@@ -69,7 +72,7 @@ describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (f
     const now = new Date('2026-10-11T12:00:00Z');
     const approval = seam.approve({ ...prepared, policy, facts, now });
     expect(approval.ok).toBe(true);
-    const run = await seam.execute({ ...prepared, policy, facts, approval: approval.approval, wallet, now: () => now });
+    const run = await seam.execute({ ...prepared, policy, facts, approval: approval.approval, wallet, effects, now: () => now });
     expect(run.ok).toBe(true);
     expect(node.submitted).toHaveLength(3);
     expect(run.receipt.result).toBe('verified');
@@ -102,7 +105,7 @@ describe.skipIf(!existsSync(SDK))('Bot 5 SDK flow with createPortaldotAdapter (f
     expect(prepared.plan.mode).toBe('atomic_verified');
     const now = new Date('2026-10-11T12:00:00Z');
     const approval = seam.approve({ ...prepared, policy: strict, facts, now });
-    const run = await seam.execute({ ...prepared, policy: strict, facts, approval: approval.approval, wallet, now: () => now });
+    const run = await seam.execute({ ...prepared, policy: strict, facts, approval: approval.approval, wallet, effects, now: () => now });
     expect(run.ok).toBe(true);
     expect(adapter.lastDryRun!.map((d) => d.outcome)).toEqual(['ok']);
     expect(node.submitted).toHaveLength(1);
