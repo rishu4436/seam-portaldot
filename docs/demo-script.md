@@ -21,7 +21,7 @@ Setup (section 0) happens before the demo and is not counted. The earlier versio
 
 **Local Portaldot dev node (spec 1002), optional evidence, not part of the 180 s table.** Recorded runs from a local Portaldot dev node (not the hosted testnet) are in [`evidence/portaldot-local-node`](../evidence/portaldot-local-node/README.md): sequential pay block 88, call block 91, mint block 94; atomic block 100 (tx `0xb3ded1ac...`); rollback gated with `signed_dry_run_failed`, bypass failed with `assets.BalanceLow`. Also a recorded run, runtime lock only: [`mainnet-plan-blocked.json`](../evidence/portaldot-local-node/mainnet-plan-blocked.json) shows the gate blocking the mainnet-snapshot plan with exactly one reason code, `runtime_changed` (planned digest `0xfa84b636…a896` vs local `0xfbc5239f…9310`; `genesisHash` and `metadataHash` differ). Say plainly that this demonstrates only the runtime lock: preflight and signing envelope are offline placeholders, `requireSignedDryRun` is false, `signed_bytes_match` is fed the plan's own bytes and shows nothing real, and the signed-bytes and signed-dry-run checks need a real signed run. Nothing signed, mainnet never contacted. If shown, say "local Portaldot dev node, spec 1002", and that the contract step is a raw-data call to a small hand-written Wasm emitter, **not** contract-by-message, because the ink! 5 demo contract cannot run on this old pallet. The contract deploy is an unchecked setup step. Wallet signing and the hosted V3 testnet stay PENDING. Full hashes: README section "Local Portaldot dev node (spec 1002), not the hosted testnet".
 
-**Say this first (10 s):** "Everything you will see ran on a local substrate-contracts-node dev chain, not Portaldot V3 testnet. The testnet RPC and faucet are pending. The mainnet snapshot is read-only."
+**Say this first (10 s):** "Everything you will see ran on local chains (a substrate-contracts-node dev chain; a local Portaldot dev node, spec 1002, is shown separately), not Portaldot V3 testnet. V3 and Revive are not verified. The testnet RPC and faucet are pending. The mainnet snapshot is read-only."
 
 All outputs below were produced by running the command on the repo at the time of writing. Tx hashes and block numbers exist only on that local chain and change on every fresh run. Evidence files are in [`evidence/devnode/runs`](../evidence/README.md).
 
@@ -38,7 +38,7 @@ node -e 'const fs=require("fs");const d="evidence/devnode/runs/";for(const [n,f]
 npx seam compile docs/examples/missing-pallet-manifest.json
 ```
 Say: "SEAM reads what the runtime really offers. A missing pallet is a plain answer, not a failed transaction."
-Proves: last lines include `- nft: can't run, because Nfts.mint is not on this runtime (spec 1002).` (against the bundled Portaldot mainnet snapshot).
+Proves: last lines include `- nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec 1002).` (against the bundled Portaldot mainnet snapshot).
 
 ## 2. Live proof in one command (20 s, shown sped-up or as a result)
 

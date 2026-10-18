@@ -7,6 +7,7 @@ import { evaluatePolicy, parsePolicy } from '@seam/policy';
 import { parseManifest } from './manifest.js';
 import { receiptIntegrity, type Receipt } from './receipt.js';
 import { classifyError, classifyReceipt, EXIT, SeamCode } from './codes.js';
+import { diffRuntimes, explainDrift } from './drift.js';
 import { createChainReader, verifyReceiptLive } from './verify-live.js';
 import { explainManifestIssues, explainPlan, explainPolicy, explainReceipt } from './explain.js';
 import { factsFromSnapshot } from './offline.js';
@@ -21,6 +22,7 @@ const HELP = `seam <command> [file] [options]
   seam verify  --endpoint <ws> [--plan <plan.json>] <receipt.json>
                                                   Live: re-read the chain (canonical + finalized block, tx, signer, call, events)
   seam explain <plan|policy-result|receipt.json>  Explain any SEAM result in plain English
+  seam drift   <snapA> <snapB> [--plan <plan.json>]  Compare two saved runtimes: changed fingerprint fields and calls (offline; exit 10 on drift)
   seam snapshot <ws-endpoint> <out-dir> [--name n]  Save a node's runtime (read-only) for offline use
 
 Which runtime to compile against (pick one; default is the bundled Portaldot mainnet snapshot, spec 1002):
@@ -156,6 +158,16 @@ async function main() {
       else if (d.planVersion) console.log(explainPlan(d));
       else if (Array.isArray(d.rules)) console.log(explainPolicy(d));
       else throw new Error('not a plan, policy result or receipt');
+      break;
+    }
+    case 'drift': {
+      const [, pa, pb] = positional(['--plan', '--name']);
+      if (!pa || !pb) throw new Error('usage: seam drift <snapshotA> <snapshotB> [--plan <plan.json>]');
+      const planFile = flag('--plan');
+      const report = diffRuntimes(factsFromSnapshot(pa, { name: flag('--name') }), factsFromSnapshot(pb, { name: flag('--name') }), { plan: planFile ? read(planFile) : undefined });
+      const code = report.drifted ? SeamCode.RuntimeDrift : SeamCode.Ok;
+      out(explainDrift(report), report, code);
+      if (report.drifted) bail(code);
       break;
     }
     case 'snapshot': {

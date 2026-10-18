@@ -1,7 +1,7 @@
 # SEAM pitch deck outline (12 slides)
 
 Status: DRAFT by Bot 1. Sources: README, `docs/demo-script.md`, `docs/reference.md`, evidence runs in `evidence/devnode/runs`. Event: DoraHacks Portaldot Hacker House 2026, Modular Cloud & Middleware track. Deadline Nov 6, 9:30 AM IST.
-Honesty rule: all live proof is a local dev chain (spec 100). No Portaldot V3 testnet run yet. Put a small footer "Evidence: local test chain, not Portaldot" on slides 7-9.
+Honesty rule: all proof is from two local chains: a `substrate-contracts-node` dev chain (spec 100) and a local Portaldot dev node (spec 1002). Neither is the Portaldot V3 hosted testnet or mainnet; V3 and Revive are not verified. Put a small footer "Evidence: local chains (spec 100 and spec 1002), not Portaldot V3 testnet or mainnet" on slides 7-9.
 
 1. **Title: SEAM**
    - The developer execution layer for Portaldot: one Manifest, one verified Receipt.
@@ -25,7 +25,7 @@ Honesty rule: all live proof is a local dev chain (spec 100). No Portaldot V3 te
 
 5. **Built from the chain's own metadata**
    - Pallet and call indexes come from live metadata, never hard-coded; ink! calls by message name + pinned ABI.
-   - A missing pallet is a plain answer: `Nfts.mint is not on this runtime (spec 1002)`.
+   - An action SEAM cannot honestly compile is a plain answer, not a guess: `Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists` (spec 1002).
    - Visual: terminal screenshot of `seam compile` on the missing-pallet Manifest (last line highlighted).
 
 6. **What it blocks (real codes)**
@@ -44,8 +44,8 @@ Honesty rule: all live proof is a local dev chain (spec 100). No Portaldot V3 te
    - Visual: `tc-rollback-checks-v4.png` (red block panel + rollback proof). Run: `rollback-1792301012980`.
 
 9. **Reproduce it in one command**
-   - `npm run test:e2e` starts a fresh local chain and runs all flows: 3 of 3 pass in about 15 s. Unit tests: compiler 105, policy 46, SDK 61, chain 54 (6 skipped).
-   - Anyone can `seam verify` a receipt offline; digests match on any machine.
+   - `npm run test:e2e` starts a fresh local chain and runs all flows: 3 of 3 pass in about 15 s. Unit tests run with `npm test` (show the live count from the run, do not hard-code one).
+   - Offline `seam verify` checks receipt integrity only, not on-chain proof; `seam verify --endpoint` re-reads the chain. One integration without boilerplate: `examples/consumer`, a separate app that imports only the public SDK packages (`npm run smoke:pack`).
    - Visual: terminal with `Tests  3 passed (3)` and a `seam verify` output.
 
 10. **Honest status and limits**
@@ -55,12 +55,13 @@ Honesty rule: all live proof is a local dev chain (spec 100). No Portaldot V3 te
 
 11. **Roadmap**
     - Next (blocked only on RPC + faucet): V3 discovery, re-lock the fingerprint, re-check the compiler, run the demo flow, record contract address and tx hashes (`docs/testnet-checklist.md`).
+    - Business model (a hypothesis, not a result): SEAM stays open source; one idea to test is a hosted service for teams building on Portaldot (runtime-change monitoring and independent receipt verification). No users, customers, volume or pricing exist or have been validated. Say so on the slide.
     - Then: real browser-wallet signing, more actions (more pallets, XCM/CrossVM surfaces), agent-friendly SDK, policy presets.
     - Visual: timeline with a "PENDING testnet" milestone clearly marked; no dates beyond the Nov 6 deadline unless the team confirms them.
 
 12. **Team and ask**
     - Team: names/roles TO FILL (Rishu plus the bot roles: UI, compiler/policy, chain, SDK/docs, QA, as the team wants to present).
-    - Ask: Portaldot V3 testnet RPC URL + faucet access; feedback on runtime upgrade/metadata policy; a LICENSE decision is open internally (do not put on slide).
+    - Ask: Portaldot V3 testnet RPC URL + faucet access; feedback on runtime upgrade/metadata policy; the repo is Apache-2.0 licensed.
     - Visual: repo QR code, demo video link, contact. No fabricated links; fill after submission.
 
 Notes
