@@ -90,6 +90,7 @@ Execution is either **sequential** (each step is gated just before it is sent; t
 
 ## Docs and evidence
 
+- [docs/architecture.md](docs/architecture.md): architecture diagram (pipeline and per-step gate).
 - [docs/quickstart.md](docs/quickstart.md): clone to a compiled, policy-checked plan, offline.
 - [docs/reference.md](docs/reference.md): every Manifest field, plan mode, policy rule, block reason and receipt status.
 - [docs/demo-script.md](docs/demo-script.md): the ~3 minute judge walkthrough.

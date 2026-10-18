@@ -1,0 +1,33 @@
+flowchart TB
+  M["Manifest<br/>(JSON, deterministic digest)<br/><i>sdk: parseManifest</i>"]
+  D["Runtime discovery<br/>(live node or snapshot)<br/><i>chain: discover</i>"]
+  F["Fingerprint + lock<br/>(runtime must not change)<br/><i>chain / policy: checkRuntimeLock</i>"]
+  C{"Compiler<br/><i>compiler: compile</i>"}
+  A1["atomic_verified<br/>batch_all, rollback proven"]
+  A2["atomic_unverified<br/>opt-in only, default policy refuses"]
+  A3["sequential<br/>one tx per step (default)"]
+  A4["unavailable<br/>nothing can run"]
+  P["Preflight<br/>fees, weight, dry run<br/><i>chain: preflight</i>"]
+  PO["Policy + approval<br/>allowed messages, pinned ABI hashes,<br/>approval hash<br/><i>policy: evaluatePolicy, createApproval</i>"]
+  W["Wallet signing<br/>external signer / extension<br/>SEAM never holds keys<br/><i>chain: buildSigningRequests</i>"]
+  G["Per-step gate<br/>checkBeforeSubmit<br/><i>policy</i>"]
+  S["Submit + finalization<br/><i>chain: submitAndWatch</i>"]
+  V["Verification<br/>events must match the plan<br/><i>sdk: buildReceipt</i>"]
+  R["Execution Receipt<br/>verified / partial / not_verified<br/><i>sdk: seam verify</i>"]
+  CON["Console (React + Vite)<br/>replays recorded runs, no live node"]
+  EV[("evidence/devnode<br/>local test chain recordings")]
+  SETUP["Contract deploy<br/>UNCHECKED SETUP STEP<br/>outside the plan, not policy-evaluated"]
+
+  M --> D --> F --> C
+  C --> A1 & A2 & A3 & A4
+  A1 & A2 & A3 --> P --> PO --> W --> G --> S --> V --> R
+  A4 -. "stop, reason shown" .-> R
+  G -. "blocked: no send" .-> R
+  SETUP -.-> S
+  EV --> CON
+  R -. "recorded into" .-> EV
+
+  classDef warn fill:#fff3cd,stroke:#b58900,color:#000;
+  classDef store fill:#e8eefc,stroke:#4a6fa5,color:#000;
+  class SETUP warn;
+  class EV,CON store;
