@@ -9,3 +9,10 @@
 .ln td,.ln th{text-align:left;padding:4px 8px;border-bottom:1px solid rgba(148,163,184,.2);vertical-align:top}
 .ln .ok{color:#4ade80}.ln .bad{color:#fb7185}.ln .pending{color:#fbbf24;font-weight:600}
 .ln .muted{opacity:.7;font-size:12px}
+.ln-banner small{display:inline}
+.ln-banner{overflow-wrap:anywhere}
+@media(max-width:760px){
+  .ln-banner small{display:block;margin:2px 0 0}
+  .ln table{display:block;overflow-x:auto}
+  .ln td,.ln th{padding:4px 6px}
+}

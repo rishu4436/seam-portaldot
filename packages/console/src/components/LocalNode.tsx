@@ -34,11 +34,11 @@ const Steps = ({ steps }: { steps: typeof D.sequential.steps }) => (
   </tbody></table>
 );
 
-export function LocalNodeEvidence() {
+export function LocalNodeEvidence({ banner = true }: { banner?: boolean } = {}) {
   const n = D.node, rb = D.rollback;
   return (
     <div className="ln" id="local-node-evidence">
-      <LocalNodeBanner />
+      {banner && <LocalNodeBanner />}
       <div className="ln-card">
         <h3>Node and runtime</h3>
         <p className="muted">Recorded {new Date(D.startedAt).toUTCString()} from the organizers' node binary on this machine (<code>--dev --tmp</code>, localhost only). The console replays the recording and is not connected live.</p>
