@@ -1,0 +1,11 @@
+flowchart LR
+  IN["Signed step<br/>from wallet"] --> K1["Order + earlier steps ok<br/>step_order, previous_steps_ok"]
+  K1 --> K2["Approval valid<br/>unused, in time, intact, matches"]
+  K2 --> K3["Runtime unchanged<br/>fresh fingerprint"]
+  K3 --> K4["Signed bytes ==<br/>approved calls"]
+  K4 --> K5["Signed dry run ok"]
+  K5 --> OK["Send"]
+  K1 & K2 & K3 & K4 & K5 -. "any fails" .-> NO["Blocked, plain reason<br/>(sequential: run stops, receipt partial)"]
+  classDef ok fill:#e3f6e8,stroke:#2e7d32,color:#000;
+  classDef no fill:#fde8e8,stroke:#c62828,color:#000;
+  class OK ok; class NO no;
