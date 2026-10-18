@@ -48,3 +48,15 @@ describe('explainSubmitCheck gate codes', () => {
     expect(t.split('Checks that passed:')[1]).not.toContain('approval_intact');
   });
 });
+
+describe('explainSubmitCheck approval expiry wording', () => {
+  const msg = (code: string, message: string): SubmitCheck => ({ ok: false, reasons: [{ code, message }] }) as SubmitCheck;
+  it('shows the tampered-expiry sentence as the gate wrote it', () => {
+    expect(explainSubmitCheck(msg('approval_tampered', "Blocked: the approval's expiry was changed after it was approved.")))
+      .toBe("Not submitted:\n- Blocked: the approval's expiry was changed after it was approved.");
+  });
+  it('shows the no-valid-expiry sentence as the gate wrote it', () => {
+    expect(explainSubmitCheck(msg('approval_expired', 'Blocked: this approval has no valid expiry time. Approve again.')))
+      .toBe('Not submitted:\n- Blocked: this approval has no valid expiry time. Approve again.');
+  });
+});
