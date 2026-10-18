@@ -32,3 +32,4 @@ Initial monorepo: compiler, policy, SDK/CLI, chain adapter and recorded demo con
 ### Interface/version notes
 - Receipt version stays `1`; new step fields (`coverage`, `code`) are additive. Receipts written before them still pass integrity checks.
 - Fingerprint digest schema is unchanged (V1).
+- `Seam.execute({ verdicts })`: optional `Record<actionId, OutcomeVerdict>` passed to every receipt the run builds (final receipt and the per-step receipts that gate the next step), like `effects`. Without it nothing changes; `execute` never computes a verdict. Not verified on V3.

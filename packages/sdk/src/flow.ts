@@ -29,6 +29,7 @@ import {
 } from "@seam/policy";
 import { FileApprovalStore } from "./fileStore.js";
 import { buildReceipt, type ContractEffect, type Receipt, type StepOutcome } from "./receipt.js";
+import type { OutcomeVerdict } from "./outcomes.js";
 
 /** What SEAM needs from the chain layer (Bot 4's @seam/chain implements this). */
 export interface ChainAdapter {
@@ -204,6 +205,12 @@ export class Seam {
     now?: () => Date;
     /** What each contracts.call must have done (by actionId), committed before the run. Without one a contract step stays unproven. */
     effects?: Record<string, ContractEffect>;
+    /**
+     * Per actionId: a verdict from verifyReviveCallOutcome / verifyNftsMintOutcome, computed by the caller from the
+     * events it observed. Passed to every receipt this run builds, like `effects`. Without one, revive.call and
+     * nfts.mint steps stay `unsupported_runtime`. execute never computes a verdict itself.
+     */
+    verdicts?: Record<string, OutcomeVerdict>;
     onStep?: (e: StepEvent) => void;
   }): Promise<RunResult> {
     const now = p.now ?? (() => new Date());
@@ -285,6 +292,7 @@ export class Seam {
         approvalHash: p.approval.hash,
         stoppedReason,
         ...(p.effects ? { effects: p.effects } : {}),
+        ...(p.verdicts ? { verdicts: p.verdicts } : {}),
       }),
     });
 
@@ -404,6 +412,7 @@ export class Seam {
         plan: p.plan,
         outcomes,
         ...(p.effects ? { effects: p.effects } : {}),
+        ...(p.verdicts ? { verdicts: p.verdicts } : {}),
       }).steps.slice(0, i);
       const check = await gate(i, dry, previousSteps);
       if (!check.ok) {
@@ -447,6 +456,7 @@ export class Seam {
         plan: p.plan,
         outcomes,
         ...(p.effects ? { effects: p.effects } : {}),
+        ...(p.verdicts ? { verdicts: p.verdicts } : {}),
       }).steps.slice(0, i + 1);
       const next = canRunNextStep(steps);
       if (!next.ok) {
