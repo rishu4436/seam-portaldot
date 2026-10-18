@@ -11,7 +11,7 @@ const LISTS = ["allowedCapabilities", "allowedAssets", "allowedContracts", "allo
 const UINTS = ["maxNativeValue", "maxGasLimit", "maxWeight", "maxProofSize", "maxFee", "maxStorageDeposit"] as const;
 const UNKNOWN_KEYS = ["fee", "weight", "storageDeposit", "dryRun", "proofSize"];
 const KNOWN = new Set<string>([
-  "version", "base", ...LISTS, ...UINTS, "allowedSelectors", "maxAmountPerAsset", "maxSteps", "allowedModes",
+  "version", "base", ...LISTS, ...UINTS, "allowedSelectors", "allowedMessages", "pinnedAbiHashes", "maxAmountPerAsset", "maxSteps", "allowedModes",
   "requireHumanApproval", "maxApprovalSeconds", "requireSignedDryRun", "allowUnknown",
 ]);
 
@@ -57,6 +57,20 @@ export function parsePolicy(input: unknown): ParsedPolicy {
       if (!Array.isArray(v) || v.some((x) => typeof x !== "string" || !/^0x[0-9a-fA-F]{8}$/.test(x))) {
         issues.push({ path: `allowedSelectors.${c}`, message: "selectors must be 4-byte hex values like 0x633aa551" });
       }
+    }
+  }
+  if (raw.allowedMessages !== undefined) {
+    if (!isObj(raw.allowedMessages)) issues.push({ path: "allowedMessages", message: "allowedMessages must map contract addresses to lists of message names" });
+    else for (const [c, v] of Object.entries(raw.allowedMessages)) {
+      if (!Array.isArray(v) || v.some((x) => typeof x !== "string" || x === "")) issues.push({ path: `allowedMessages.${c}`, message: "message names must be a list of non-empty strings like [\"settle\"]" });
+      else if (v.length === 0) warnings.push({ path: `allowedMessages.${c}`, message: `allowedMessages for ${c} is empty, so every call to it will be blocked` });
+    }
+    if (isObj(raw.allowedMessages) && !isObj(raw.pinnedAbiHashes)) warnings.push({ path: "allowedMessages", message: "allowedMessages is set without pinnedAbiHashes, so a caller could supply a different ABI that reuses an allowed name; pin each contract's abiHash" });
+  }
+  if (raw.pinnedAbiHashes !== undefined) {
+    if (!isObj(raw.pinnedAbiHashes)) issues.push({ path: "pinnedAbiHashes", message: "pinnedAbiHashes must map contract addresses to ABI hashes" });
+    else for (const [c, v] of Object.entries(raw.pinnedAbiHashes)) {
+      if (typeof v !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(v)) issues.push({ path: `pinnedAbiHashes.${c}`, message: "an ABI hash must be 32 bytes of hex (0x followed by 64 hex characters)" });
     }
   }
   if (raw.maxSteps !== undefined && !(Number.isSafeInteger(raw.maxSteps) && (raw.maxSteps as number) > 0)) issues.push({ path: "maxSteps", message: "maxSteps must be a whole number above 0" });
