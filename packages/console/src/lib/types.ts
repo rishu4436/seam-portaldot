@@ -17,6 +17,8 @@ export interface Fingerprint {
   tokenSymbol: string;
   tokenDecimals: number;
   digest: Hex;
+  /** Present when the compiler versions its fingerprint schema. */
+  fingerprintSchemaVersion?: number;
 }
 
 export interface Capability {
@@ -85,6 +87,8 @@ export interface Plan {
   digest: Hex;
   modeReason?: string;
   explain?: string;
+  /** Set when the compiler downgraded atomic to sequential; needs explicit approval. */
+  modeDowngrade?: import("./modes").ModeDowngrade;
 }
 
 export interface Estimate { value?: string; unknown?: boolean }

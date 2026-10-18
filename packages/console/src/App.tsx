@@ -3,15 +3,13 @@ import * as api from "./lib/mock";
 import * as tc from "./lib/testchain";
 import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
 import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
+import { LivePanel, ModeBadge, ModeSwitch, CoverageBadge, ProvenanceBadge, DowngradeWarning, JsonActions } from "./components/Modes";
+import type { Mode, Coverage, Provenance } from "./lib/modes";
 import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
 
 type Source = "mainnet" | "testchain";
 type MainScenario = "happy" | "nft" | "upgrade" | "fail" | "midrun";
 type Scenario = MainScenario | tc.TcScn;
-const SOURCES: { id: Source; label: string; hint: string }[] = [
-  { id: "mainnet", label: "Portaldot mainnet snapshot", hint: "Simulated chain replies" },
-  { id: "testchain", label: "Test chain, real run", hint: `substrate-contracts-node, ${tc.ENDPOINT}` },
-];
 // Test-chain mode only lists runs that have real evidence.
 const TC_SCENARIOS: { id: tc.TcScn; label: string; hint: string }[] = [
   { id: "sequential", label: "Sequential, verified", hint: "Transfer, contract call, mint in 3 blocks" },
@@ -96,6 +94,7 @@ function StateTable({ st, cols }: { st: tc.Rollback["state"]; cols: ("before" | 
 }
 
 export default function App() {
+  const [mode, setModeState] = useState<Mode>("offline");
   const [source, setSource] = useState<Source>("mainnet");
   const [scenario, setScenario] = useState<Scenario>("happy");
   const [gate, setGate] = useState<tc.Rollback>();
@@ -122,6 +121,7 @@ export default function App() {
   };
   const switchSource = (src: Source) => { if (src === source) return; setEndpoint(src === "testchain" ? tc.ENDPOINT : "wss://mainnet.portaldot.io"); reset(src === "testchain" ? "sequential" : "happy", src); };
 
+  const setMode = (m: Mode) => { setModeState(m); if (m === "recorded") switchSource("testchain"); else if (m === "offline") switchSource("mainnet"); };
   const doDiscover = () => { setFacts(real ? tc.discover(endpoint) : api.discover(endpoint)); };
   const doCompile = () => { if (facts) { setPlan(real ? tc.compile() : api.compile(manifest, facts)); setStep(2); } };
   const doChecks = () => { if (plan) { setPre(real ? tc.preflight() : api.preflight(plan)); setPolicy(real ? tc.checkPolicy() : api.checkPolicy(plan)); setStep(3); } };
@@ -132,7 +132,7 @@ export default function App() {
   };
   const doApprove = () => { if (plan && policy) { const e = real ? tc.envelope() : api.envelope(); setEnv(e); setApproval(real ? tc.approve() : api.approve(plan, policy, e!)); } };
   const doSubmit = () => {
-    if (!plan || !policy || !approval || !facts) return;
+    if (mode === "live" || !plan || !policy || !approval || !facts) return; // animated replay is never used for LIVE V3
     if (!real && api.submitBlock()) { setLockBlock(api.discover(endpoint, true)); setStep(5); return; }
     setStep(5);
     const n = plan.steps.length;
@@ -151,6 +151,9 @@ export default function App() {
 
   const canGo = [true, !!facts, !!plan, !!policy, !!approval, !!receipt || !!lockBlock || !!gate];
   const run = real ? tc.info() : undefined;
+  // Replays never re-read a chain: recorded = integrity only, offline = unknown.
+  const provenance: Provenance = real ? "integrity_checked" : "unknown";
+  const coverage: Coverage = real ? (tc.dryRunFor(0) ? "signed_tx" : "unknown") : "estimated_only";
 
   return (
     <div className="shell">
@@ -167,14 +170,10 @@ export default function App() {
           <b>Local Portaldot node, real run</b><span>Spec 1002 evidence view</span>
         </button>
         <div className="scen">
-          <small>Data source</small>
-          {SOURCES.map((s) => (
-            <button key={s.id} className={`scenbtn src ${source === s.id ? "on" : ""}`} onClick={() => switchSource(s.id)}>
-              <b>{s.label}</b><span>{s.hint}</span>
-            </button>
-          ))}
-          <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>
-          {real ? TC_SCENARIOS.map((s) => (
+          <small>Mode</small>
+          <ModeSwitch mode={mode} onChange={setMode} />
+          {mode !== "live" && <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>}
+          {mode === "live" ? null : real ? TC_SCENARIOS.map((s) => (
             <button key={s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
               <b>{s.label}</b><span>{s.hint}</span>
             </button>
@@ -187,6 +186,8 @@ export default function App() {
       </aside>
 
       <main>
+        <ModeBadge mode={mode} />
+        {mode === "live" ? <LivePanel /> : <>
         <LocalNodeBanner />
         {evidence ? <LocalNodeEvidence banner={false} /> : <>
         <header className="top">
@@ -196,16 +197,16 @@ export default function App() {
           </div>
           {facts && (
             <div className="fpchip" title={facts.fingerprint.digest}>
-              <span className="dot" /> {facts.fingerprint.specName} spec {facts.fingerprint.specVersion} · tx v{facts.fingerprint.transactionVersion} · <code>{short(facts.fingerprint.digest, 6)}</code>
+              <span className="dot" /> {facts.fingerprint.specName} spec {facts.fingerprint.specVersion} · tx v{facts.fingerprint.transactionVersion} · <code>{short(facts.fingerprint.digest, 6)}</code>{facts.fingerprint.fingerprintSchemaVersion != null && <small className="muted"> schema v{facts.fingerprint.fingerprintSchemaVersion}</small>}
             </div>
           )}
         </header>
         {real ? (
           <div className="banner real">
-            <b>Real run on a local test chain, not Portaldot.</b> Everything here was recorded from a real substrate-contracts-node v0.42.0 at <code>{tc.ENDPOINT}</code> (metadata v14, token UNIT): hashes, blocks, events, fees, dry runs and digests. The console replays that recording; it isn't connected live. Run {new Date(run!.ranAt).toLocaleString()}. Verify it in the repo: <code>evidence/README.md</code> explains the files; this run is <code>{run!.evidenceFile}</code> (others: {tc.importedFrom().files.map((f) => f.replace(/\.json$/, "")).join(", ")}).
+            <b>Real run on a local test chain, not Portaldot.</b> Everything here was recorded from a real substrate-contracts-node v0.42.0 at <code>{tc.ENDPOINT}</code> (metadata v14, token UNIT): hashes, blocks, events, fees, dry runs and digests. The console replays that recording; it isn't connected live. This is a local dev chain, not the V3 hosted testnet or mainnet, and local spec-1002 success does not prove V3 Revive behaviour. Run {new Date(run!.ranAt).toLocaleString()}. Verify it in the repo: <code>evidence/README.md</code> explains the files; this run is <code>{run!.evidenceFile}</code> (others: {tc.importedFrom().files.map((f) => f.replace(/\.json$/, "")).join(", ")}).
           </div>
         ) : (
-          <div className="banner">Plans, policy checks, approvals and receipts are real output from the SEAM compiler, policy engine and SDK, run against a saved snapshot of the Portaldot node. Transaction hashes, blocks and events are simulated until the testnet is live.</div>
+          <div className="banner"><b>OFFLINE DEMO.</b> Plans, policy checks, approvals and receipts are real output from the SEAM compiler, policy engine and SDK, run against a saved snapshot of the Portaldot node. Transaction hashes, blocks and events are simulated until the testnet is live.</div>
         )}
 
         {step === 0 && (
@@ -284,6 +285,7 @@ export default function App() {
 
         {step === 2 && plan && (
           <section className="card">
+            <DowngradeWarning d={plan.modeDowngrade} />
             <div className="row between"><h3>Compiled plan</h3><Pill tone={plan.mode === "unavailable" ? "bad" : "info"}>{human[plan.mode]}</Pill></div>
             <table className="tbl big">
               <thead><tr><th>Step</th><th>Call</th><th>Key arguments</th><th>Encoded</th><th className="r">Status</th></tr></thead>
@@ -304,6 +306,7 @@ export default function App() {
             {real && tc.contractInfo() && plan.steps.some((s) => s.decoded.message) && <div className="note"><b>Contract:</b> {tc.contractInfo()!.name ?? "contract"} at <code className="wrap">{tc.contractInfo()!.address}</code>{tc.contractInfo()!.deployTx && <>, deployed in block #{tc.contractInfo()!.deployBlock} by tx <code className="wrap">{tc.contractInfo()!.deployTx}</code></>}. The call is given by message name and arguments; the compiler encoded it from the contract's interface, and the plan pins that interface by hash.</div>}
             {real && tc.outerCall() && <div className="note"><b>Sent as one transaction:</b> <code>{tc.outerCall()!.capability}</code> <code title={tc.outerCall()!.encodedCall}>{short(tc.outerCall()!.encodedCall, 10)}</code></div>}
             <div className="digests">{plan.digest !== "0x" && <Digest label="Plan digest" value={plan.digest} />}<Digest label="Manifest" value={plan.manifestDigest} /><Digest label="Fingerprint" value={plan.fingerprintDigest} /></div>
+            <div className="jsonbar"><JsonActions label="plan" value={plan} file="seam-plan.json" /></div>
             <div className="actions">{plan.mode === "unavailable" ? <div className="note bad">SEAM won't send this plan for preflight or signing, because a step can't run on this runtime. Remove the step or connect to a runtime that has it.</div> : <button onClick={doChecks}>Run preflight and policy</button>}</div>
           </section>
         )}
@@ -311,7 +314,7 @@ export default function App() {
         {step === 3 && policy && (
           <section className="grid2">
             {!pre ? null : <div className="card">
-              <h3>Preflight</h3>{real && tc.preflightAt() && <p className="muted small">Read from the node at block #{tc.preflightAt()!.number} <code>{short(tc.preflightAt()!.hash, 6)}</code>. Weight is ref_time.</p>}
+              <h3>Preflight</h3><p className="small">Coverage: <CoverageBadge c={coverage} /></p>{real && tc.preflightAt() && <p className="muted small">Read from the node at block #{tc.preflightAt()!.number} <code>{short(tc.preflightAt()!.hash, 6)}</code>. Weight is ref_time.</p>}
               <table className="tbl"><thead><tr><th>Step</th><th>Weight</th><th>Proof size</th><th>Fee</th><th>Storage</th><th className="r">Dry run</th></tr></thead><tbody>
                 {pre.steps.map((s) => (
                   <tr key={s.actionId}><td><b>{s.actionId}</b></td><td>{s.weight.value ?? "unknown"}</td><td>{s.proofSize?.value ? <>{s.proofSize.value}{real && tc.usedProofSize(s.actionId) && <small className="muted"><br />used {tc.usedProofSize(s.actionId)!.value}{tc.usedProofSize(s.actionId)!.shared ? " (whole batch)" : ""}</small>}</> : <Pill tone="warn">Unknown</Pill>}</td><td>{s.fee.value ?? "unknown"}</td><td>{s.storageDeposit.unknown ? <Pill tone="warn">Unknown</Pill> : s.storageDeposit.value}</td><td className="r"><Pill tone={triTone(s.dryRun)}>{s.dryRun}</Pill></td></tr>
@@ -357,7 +360,8 @@ export default function App() {
               <h3>Sign with your wallet</h3>
               <p className="muted">SEAM never holds your keys. Your wallet signs the exact bytes from the approved plan, and SEAM checks the runtime again right before it submits.</p>
               {real && <p className="muted small">On this test chain the "wallet" was the public dev account //Alice. Replaying shows what happened next; nothing is sent from the console.</p>}
-              <button disabled={!approval} onClick={doSubmit}>Sign and submit</button>
+              <p className="small">Signing status: <b>{approval ? (approval.used ? "Already used" : "Ready for wallet") : "Not approved yet"}</b> · {real ? "Replay of a recorded run" : "Animated OFFLINE DEMO, no wallet involved"}.</p>
+              <button disabled={!approval} onClick={doSubmit}>{real ? "Replay recorded run" : "Run offline demo"}</button>
             </div>
           </section>
         )}
@@ -429,7 +433,7 @@ export default function App() {
               </ol>
             </div>
             <div className="card">
-              <div className="row between"><h3>Execution receipt</h3>{receipt && <Pill tone={receipt.overall === "verified" ? "ok" : receipt.overall === "partial" ? "warn" : "bad"}>{receipt.overall.replace("_", " ")}</Pill>}</div>
+              <div className="row between"><h3>Execution receipt</h3>{receipt && <ProvenanceBadge p={provenance} />}{receipt && <Pill tone={receipt.overall === "verified" ? "ok" : receipt.overall === "partial" ? "warn" : "bad"}>{receipt.overall.replace("_", " ")}</Pill>}</div>
               {!receipt ? <p className="muted">Waiting for finalization…</p> : (
                 <>
                   <p className="big">{receipt.checks.confirmed} of {receipt.checks.expected} steps verified</p>
@@ -453,12 +457,13 @@ export default function App() {
                   ))}
                   {real && <GateChecks list={tc.gateChecks()} />}
                   <div className="digests"><Digest label="Receipt" value={receipt.digest} /><Digest label="Approval" value={receipt.approvalHash} /><Digest label="Plan" value={receipt.planDigest} /><Digest label="Policy" value={receipt.policyDigest} /></div>
-                  <button className="ghost" onClick={() => { const b = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "seam-receipt.json"; a.click(); }}>Download receipt JSON</button>
+                  <div className="jsonbar"><JsonActions label="receipt" value={receipt} file="seam-receipt.json" /></div>
                 </>
               )}
             </div>
           </section>
         )}
+        </>}
         </>}
       </main>
     </div>
