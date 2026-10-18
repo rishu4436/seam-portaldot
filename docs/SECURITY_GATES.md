@@ -41,6 +41,17 @@ send gate (per step) → submit → receipt. Each stage can refuse; none can be 
 - **Account domains.** The H160-only signer path and native AccountId32 signing are not reconciled for V3 (SEAM-009).
 - **No V3 or mainnet evidence.** All recorded runs are from local nodes. Nothing here claims hosted V3 or mainnet behaviour.
 
+## Dependency audit (2026-10-18)
+
+- `npm audit --omit=dev`: **0 vulnerabilities** (no high or critical in production dependencies).
+- Full `npm audit` (includes dev tooling): 6 findings, all dev-only: `vitest` (critical, <=4.1.10), `tinypool` (critical,
+  <=2.1.1), `vite` (high, <=6.4.2, dev-server issues), plus moderate `esbuild`, `vite-node`, `@vitest/mocker`.
+  They affect the test runner and dev server only, not shipped code. The fix is `vitest@4.1.12`, a semver-major bump,
+  so it is **not applied** here to keep the suites green. Follow-up: upgrade vitest/vite in a dedicated PR; until then
+  do not expose the Vite dev server to untrusted networks or sites and do not run tests on untrusted inputs.
+- Review note: esbuild's postinstall script is not covered by `allowScripts` (npm warning); review before enabling.
+- Vite config in `packages/console` is now ESM-safe (`fileURLToPath(import.meta.url)` instead of `__dirname`).
+
 ## Reporting a problem
 
 No formal disclosure process exists yet. Until one is added, open a GitHub issue without exploit details and contact the
