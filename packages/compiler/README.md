@@ -252,6 +252,19 @@ metadata blake2b `0x8b91f644…5150`), plus one real signed extrinsic used as ty
 `state_getMetadata`, `state_getRuntimeVersion`, `chain_getBlockHash(0)`, `system_properties`). The node reports no token
 properties; tests declare `UNIT` / 12 decimals.
 
+## Runtime shape check (`scripts/v3-shape-check.mjs`)
+
+Read-only report of what a runtime's metadata gives SEAM. Run `npm run build` first.
+
+```bash
+node scripts/v3-shape-check.mjs fixtures/devnode-metadata.hex        # file: hex, or JSON with metadataHex/metadata/result
+node scripts/v3-shape-check.mjs wss://<rpc-endpoint> [--json]        # RPC: state_getMetadata, chain_getBlockHash(0), system_properties only
+```
+
+It runs `factsFromMetadata`, compiles a built-in sample (assets transfer + mint + a raw-`data` `contracts.call`) and prints the
+pallet/call indices found, the `Contracts.call` shape (V13 single `gas_limit` vs V14 `Weight` + `storage_deposit_limit`), and every
+step that is unavailable with its reason. It never signs or submits. (Submitting is `scripts/testnet-run.mjs`, a separate tool.)
+
 ## Known limits
 
 - The ink! ABI form supports the argument types listed above; `Result`, maps and sets as message *arguments* are refused
