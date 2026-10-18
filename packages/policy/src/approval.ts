@@ -186,9 +186,15 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
       ? "Blocked: this approval was already used. Each approval allows exactly one submission."
       : `Blocked: step ${i + 1} of this approval was already sent. Each step can be sent once.` });
   } else ok("approval_unused", i === undefined ? "this approval hasn't been used" : `step ${i + 1} of this approval hasn't been sent`);
-  if (Date.parse(approval.expiresAt) <= now.getTime()) {
-    reasons.push({ code: "approval_expired", message: `Blocked: this approval expired at ${approval.expiresAt}. Approve again.` });
-  } else ok("approval_valid_time", `the approval is valid until ${approval.expiresAt}`);
+  // The hash covers binding.expiresAt, not the top-level copy, so the bound value is the one that counts.
+  const boundExpiry = Date.parse(approval.binding.expiresAt);
+  if (approval.expiresAt !== approval.binding.expiresAt) {
+    reasons.push({ code: "approval_tampered", message: "Blocked: the approval's expiry was changed after it was approved." });
+  } else if (Number.isNaN(boundExpiry)) {
+    reasons.push({ code: "approval_expired", message: "Blocked: this approval has no valid expiry time. Approve again." });
+  } else if (boundExpiry <= now.getTime()) {
+    reasons.push({ code: "approval_expired", message: `Blocked: this approval expired at ${approval.binding.expiresAt}. Approve again.` });
+  } else ok("approval_valid_time", `the approval is valid until ${approval.binding.expiresAt}`);
 
   const recomputed = buildBinding({ ...input, fingerprint: input.preparedFingerprint }, approval.binding.expiresAt);
   if (digest("seam/approval/v1", approval.binding) !== approval.hash) {
