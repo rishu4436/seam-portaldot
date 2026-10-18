@@ -385,3 +385,48 @@ export function verifySignedBatch(signedTxs: string[], requests: SigningRequest[
   results.forEach((r, i) => { if (!r.ok) reasons.push(...r.reasons.map((x) => `step_${i}:${x}`)); });
   return { ok: reasons.length === 0, reasons, results };
 }
+
+/** What @seam/policy's checkBeforeSubmit({ decodeSignedExtrinsic }) expects from a trusted decoder (SEAM-001, Bot 3). */
+export interface DecodedSignedExtrinsic {
+  /** The call bytes inside the extrinsic, decoded from the extrinsic itself. */
+  call: Hex;
+  signer: string;
+  nonce?: number;
+  tip?: string;
+  /** The genesis hash the signature verifies against; only set when it does. */
+  genesisHash?: Hex;
+  /** True only if the signature verifies for the signer over the extrinsic's contents and a known request's chain context. */
+  signatureValid: boolean;
+  /** Extra reporting for evidence: the era as signed. */
+  era?: EraInfo;
+}
+
+/**
+ * Builds the trusted decoder for checkBeforeSubmit. Pass the approved signing requests: they supply the chain
+ * context a signature commits to (genesis, spec, tx version, era block hash), which the extrinsic itself does not
+ * carry. The returned function never trusts wallet-provided values: it decodes the extrinsic, and signatureValid is
+ * true only if the signature verifies under the context of an approved request with the same signer and nonce.
+ * Returns null when the bytes are not a decodable signed extrinsic (the gate then fails closed). Never throws.
+ */
+export function signedExtrinsicDecoder(facts: RuntimeFacts, requests: SigningRequest[] = []): (extrinsic: Hex) => DecodedSignedExtrinsic | null {
+  return (extrinsic: Hex) => {
+    let s: SignedCall;
+    try { s = extractSignedCall(extrinsic, facts); } catch { return null; }
+    const { registry } = encodeRuntime(facts);
+    let signatureValid = false;
+    let genesisHash: Hex | undefined;
+    for (const r of requests) {
+      const p = r.payload;
+      try {
+        if (accountIdOf(p.address) !== s.signer.accountId.toLowerCase() || r.nonce !== s.nonce) continue;
+        const bytes = registry.createType('ExtrinsicPayload', {
+          method: s.callHex, era: s.era.hex, nonce: s.nonce, tip: s.tip,
+          specVersion: p.specVersion, transactionVersion: p.transactionVersion, genesisHash: p.genesisHash, blockHash: p.blockHash
+        }, { version: 4 }).toU8a({ method: true });
+        const message = bytes.length > 256 ? blake2AsU8a(bytes, 256) : bytes;
+        if (signatureVerify(message, hexToU8a(s.signature), s.signer.accountId).isValid) { signatureValid = true; genesisHash = p.genesisHash.toLowerCase() as Hex; break; }
+      } catch { /* try the next request */ }
+    }
+    return { call: s.callHex, signer: s.signer.ss58, nonce: s.nonce, tip: s.tip, era: s.era, signatureValid, ...(genesisHash ? { genesisHash } : {}) };
+  };
+}
