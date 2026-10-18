@@ -2,8 +2,9 @@
 // upload + instantiate the seam_emitter contract. Idempotent: skips what already exists.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { u8aToHex } from '@polkadot/util';
-import { withClient, decodeRuntime, storageKey } from '../../dist/index.js';
+import { u8aToHex, hexToU8a } from '@polkadot/util';
+import { withClient, decodeRuntime, storageKey, signBytesOf } from '../../dist/index.js';
+import { deployThroughSeam } from '../seam-run.mjs';
 import { ENDPOINT, ASSET_ID, devFacts, devKeys, encodeCall, sendSigned, saveEvidence, loadState, brief } from './lib.mjs';
 
 const facts = await devFacts();
@@ -36,13 +37,13 @@ const stillThere = state.contract && state.contractCodeHash === codeHash && stat
   && (await storage(storageKey(dec.decorated().query.contracts.contractInfoOf, state.contract)));
 if (!stillThere) {
   if (state.contract && state.contractCodeHash !== codeHash) state.previousContract = { address: state.contract, note: 'seam_emitter.wat test contract, replaced by seam_demo' };
-  const inst = encodeCall(facts, 'Contracts', 'instantiate_with_code', [
-    0, { refTime: 5_000_000_000n, proofSize: 1_000_000n }, null, wasmHex, ctor.selector, u8aToHex(new TextEncoder().encode(`seam-demo-${Date.now()}`))
-  ]);
-  const r = await sendSigned(facts, alice, inst);
-  log.steps.push({ what: `Contracts.instantiate_with_code(seam_demo.contract, constructor new ${ctor.selector}, storage_deposit_limit null)`, codeHash, ...brief(r) });
-  const ev = r.inclusion?.events.find((e) => e.pallet === 'Contracts' && e.name === 'Instantiated');
-  if (!ev) throw new Error('instantiate failed: ' + JSON.stringify(brief(r)));
+  // Same deployment helper testnet-run.mjs uses: signing request -> signer -> verified assemble -> signed dry run -> submit.
+  const signPayload = async (payload) => ({ signature: u8aToHex(alice.sign(hexToU8a(signBytesOf(payload, facts)), { withType: true })) });
+  const d = await deployThroughSeam({ endpoint: ENDPOINT, facts, signPayload, address: alice.address, bundlePath: CONTRACT_FILE });
+  log.steps.push({ what: `Contracts.instantiate_with_code(seam_demo.contract, constructor new ${ctor.selector}, storage_deposit_limit null), via deployThroughSeam`, codeHash, txHash: d.txHash, status: d.status, success: d.success, dryRun: d.dryRun, events: d.events });
+  if (!d.ok) throw new Error('instantiate failed: ' + JSON.stringify({ refused: d.refused, error: d.error, dispatchError: d.dispatchError }));
+  const r = { txHash: d.txHash, inclusion: { number: d.block?.number, hash: d.block?.hash } };
+  const ev = { args: [null, d.contract] };
   state.contract = ev.args[1];
   state.contractName = 'seam_demo';
   state.contractCodeHash = codeHash;
