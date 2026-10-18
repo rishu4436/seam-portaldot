@@ -32,7 +32,7 @@ describe('compiling one Manifest against different real runtimes', () => {
   it('marks Revive observed on the test chain and not observed on Portaldot mainnet', () => {
     expect(mainnet.capabilities['Revive.call']!.status).toBe('not_observed');
     expect(devnode.capabilities['Revive.call']!.status).toBe('observed');
-    expect(explainPlan(compile(demo(), devnode))).toContain("nft: can't run, because Nfts.mint is not on this runtime");
+    expect(explainPlan(compile(demo(), devnode))).toContain("nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists");
   });
 
   it('finds the snapshot from a folder, a file, or a folder plus a name, and refuses to guess', () => {
