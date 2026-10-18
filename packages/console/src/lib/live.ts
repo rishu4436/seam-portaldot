@@ -9,7 +9,11 @@ export type Res<T> = { ok: true; value: T } | { ok: false; reason: "unavailable"
 export interface LiveFingerprint { genesisHash?: string; specName?: string; specVersion?: number; transactionVersion?: number; metadataHash?: string; digest?: string; fingerprintSchemaVersion?: number }
 export interface SignedPayload { signedTx: string }
 export interface SubmitResult { txHash: string; state: TxState }
-export interface VerifyResult { provenance: Provenance; note?: string }
+export interface VerifyResult {
+  provenance: Provenance; note?: string;
+  /** Set only when the extrinsic was actually found by re-reading the chain. */
+  state?: TxState; block?: { number: number; hash: string }; coverage?: Coverage;
+}
 export interface BindingCheck { ok: boolean; reasons: string[] }
 
 export interface ChainClient {
@@ -46,11 +50,15 @@ export interface LiveOutcome {
   txState: TxState;
   provenance: Provenance;
   txHash?: string;
+  block?: { number: number; hash: string };
   rpcAttempts: number;
   submitted: boolean;
 }
 
-export interface LiveDeps { chain?: ChainClient; signer?: WalletSigner; verifyBinding?: SignedBindingVerifier; maxRpcAttempts?: number }
+export interface LiveDeps {
+  /** Builds the real signing request once the chain fingerprint is known (reads nonce/checkpoint over RPC). Fails closed. */
+  prepare?: (fp: LiveFingerprint) => Promise<Res<unknown>>;
+  chain?: ChainClient; signer?: WalletSigner; verifyBinding?: SignedBindingVerifier; maxRpcAttempts?: number }
 
 export function v3RpcUrl(raw?: string): string | undefined {
   const s = (raw ?? "").trim();
@@ -75,6 +83,11 @@ export async function runLive(rpcUrl: string | undefined, request: unknown, deps
   if (!d.ok) return done(d.reason === "unavailable" ? "blocked" : "unknown", d.reason === "unavailable" ? d.message : `V3 RPC unreachable after ${o.rpcAttempts} attempt(s): ${d.message}`);
   o.fingerprint = d.value;
 
+  if (deps.prepare) {
+    const p = await deps.prepare(d.value);
+    if (!p.ok) return done(p.reason === "unavailable" ? "blocked" : "failed", p.message);
+    request = p.value;
+  }
   const pf = await chain.preflight(request);
   if (pf.ok) o.simulation = pf.value.simulation; // otherwise stays "none"
 
@@ -103,6 +116,13 @@ export async function runLive(rpcUrl: string | undefined, request: unknown, deps
   if (sub.value.state === "uncertain" || sub.value.state === "unknown") return done("uncertain", "The transaction state is uncertain.");
   const v = await chain.verify(sub.value.txHash);
   o.provenance = v.ok ? v.value.provenance : "unknown";
+  if (v.ok && v.value.provenance === "chain_verified" && v.value.state === "finalized" && v.value.block) {
+    // Upgrade only on evidence: the extrinsic was found in a finalized block.
+    o.txState = "finalized"; o.block = v.value.block; o.coverage = v.value.coverage ?? "extrinsic_finalized";
+    return done("unverified", `Extrinsic found in finalized block #${v.value.block.number}. Its on-chain effect (events, state) was not checked, so this is not reported as proven success.`);
+  }
+  if (v.ok && v.value.state === "included" && v.value.block) { o.txState = "included"; o.block = v.value.block; o.coverage = "call_dispatched"; }
+  if (!v.ok && (v.reason === "rpc_error" || v.reason === "ambiguous")) return done("uncertain", `Could not re-read the chain: ${v.message}. The transaction may or may not be final.`, { txState: "uncertain" });
   if (sub.value.state !== "finalized") return done("unverified", `Transaction is ${sub.value.state}, not finalized. Not reported as success.`);
   if (o.provenance !== "chain_verified") return done("unverified", "Finalized, but the result was not verified against the chain. Not reported as success.");
   return done("verified", "Finalized and verified against the chain.");
