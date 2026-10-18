@@ -5,9 +5,7 @@
 Built for Portaldot Hacker House 2026 (Modular Cloud & Middleware track).
 
 > ## Honesty first
-> **Two kinds of local evidence exist:** (1) a `substrate-contracts-node` dev chain and (2) a **local Portaldot dev node (spec 1002)**, see [the section below](#local-portaldot-dev-node-spec-1002-not-the-hosted-testnet). Neither is the hosted V3 testnet.
->
-> **All on-chain evidence so far comes from a local `substrate-contracts-node` v0.42.0 dev chain (`--dev`, spec 100, metadata V14). It is NOT Portaldot V3 testnet and NOT Portaldot mainnet.** Nothing was ever submitted to Portaldot. Portaldot mainnet is only read (a read-only snapshot, spec 1002, metadata V13, block 2,721,455). The V3 testnet RPC and faucet are still pending, so no testnet addresses or transaction hashes exist yet. See [Next step: Portaldot V3 testnet](#next-step-portaldot-v3-testnet) and [docs/testnet-checklist.md](docs/testnet-checklist.md).
+> **Two local chains were used, and neither is the hosted Portaldot V3 testnet or mainnet.** (1) A `substrate-contracts-node` v0.42.0 dev chain (`--dev`, spec 100, metadata V14) and (2) a **local Portaldot dev node (spec 1002, metadata V13)**, see [the section below](#local-portaldot-dev-node-spec-1002-not-the-hosted-testnet). Local success proves the chain engine on those runtimes only. It does **not** show that anything works on the Portaldot V3 runtime, including Revive, and no `atomic_verified` result exists for V3. Portaldot mainnet is only read (a read-only snapshot, spec 1002, metadata V13, block 2,721,455); nothing was ever submitted to it. The V3 testnet RPC and faucet are still pending, so no testnet addresses or transaction hashes exist yet. See [Next step: Portaldot V3 testnet](#next-step-portaldot-v3-testnet) and [docs/testnet-checklist.md](docs/testnet-checklist.md).
 
 ## What is built
 
@@ -28,7 +26,7 @@ Needs Node 22 or later (the commands below were run with `npm`, from the repo ro
 ```bash
 npm install
 npm run build
-npm test            # compiler 111, policy 66, sdk 61, chain 55 (+11 skipped)
+npm test            # every workspace suite; the run prints its own counts (CI shows the current ones)
 ```
 
 Try the CLI offline, against the bundled Portaldot mainnet snapshot (read-only, no node or wallet needed):

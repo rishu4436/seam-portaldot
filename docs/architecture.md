@@ -1,6 +1,6 @@
 # SEAM architecture
 
-> **Evidence scope:** all on-chain evidence so far comes from a local `substrate-contracts-node` dev chain, not Portaldot. Portaldot mainnet is only read (snapshot). Nothing has been submitted to Portaldot V3 testnet or mainnet.
+> **Evidence scope:** two local chains were used: a `substrate-contracts-node` dev chain and a local Portaldot dev node (spec 1002). Neither is the hosted Portaldot V3 testnet or mainnet, and local success does not show V3 or Revive support. Portaldot mainnet is only read (snapshot). Nothing has been submitted to the V3 testnet or mainnet.
 
 ## Pipeline
 
