@@ -1,7 +1,7 @@
 import { compile, type CompileOptions, type Hex, type Manifest, type Plan, type RuntimeFacts, type RuntimeFingerprint } from '@seam/compiler';
 import {
   callsToSign, checkBeforeSubmit, createApproval, evaluatePolicy, InMemoryApprovalStore,
-  usageKey, type ApprovalStore, type BoundApproval, type ReceiptStep, type Policy, type PolicyResult, type PreflightResult, type SignedDryRun, type SigningEnvelope, type SubmitCheck,
+  usageKey, type ApprovalStore, type BoundApproval, type ReceiptStep, type Policy, type PolicyResult, type PreflightResult, type DecodedSignedExtrinsic, type SignedDryRun, type SigningEnvelope, type SubmitCheck,
 } from '@seam/policy';
 import { buildReceipt, type ContractEffect, type Receipt, type StepOutcome } from './receipt.js';
 
@@ -15,6 +15,13 @@ export interface ChainAdapter {
   dryRunSigned(signedTxs: Hex[]): Promise<SignedDryRun[]>;
   /** Broadcast one signed transaction and track it to finality, returning its events. */
   submit(signedTx: Hex, actionId: string): Promise<StepOutcome>;
+  /**
+   * SEAM-001: decode every signed transaction and check it against the signing requests for `calls` (same envelope).
+   * `signedCalls` must come from the transactions' own bytes. Fewer, extra, reordered or altered transactions: ok false.
+   */
+  verifySigned(signedTxs: Hex[], calls: Hex[], envelope: SigningEnvelope): { ok: boolean; signedCalls: Hex[]; reasons: string[] } | Promise<{ ok: boolean; signedCalls: Hex[]; reasons: string[] }>;
+  /** The trusted decoder handed to checkBeforeSubmit, bound to the approved requests for `calls`. Returns null for anything it cannot fully decode. */
+  signedDecoder(calls: Hex[], envelope: SigningEnvelope): (extrinsic: Hex) => DecodedSignedExtrinsic | null;
 }
 
 /** The user's wallet. SEAM never holds keys: it hands over exact call bytes and gets signed transactions back. */
@@ -78,13 +85,28 @@ export class Seam {
     const now = p.now ?? (() => new Date());
     const calls = callsToSign(p.plan).filter((c): c is Hex => !!c);
     const signed = await p.wallet.sign(calls, p.envelope);
-    const signedCalls = signed.map((s) => s.signedCall);
+    // SEAM-001: the wallet's own `signedCall` is never used. Decode what was actually signed and bind it to the approved
+    // calls before anything else (no dry run, no gate, no submit) happens.
+    const blockedSigned = (reason: string): RunResult => {
+      const check: SubmitCheck = { ok: false, reasons: [{ code: 'signed_binding_failed', message: reason }], passed: [] };
+      p.onStep?.({ index: 0, actionId: 'sign', phase: 'blocked', detail: reason, check });
+      return { ok: false, stage: 'submit_gate', reason, check };
+    };
+    if (typeof this.chain.verifySigned !== 'function' || typeof this.chain.signedDecoder !== 'function') {
+      return blockedSigned('Blocked: the chain adapter cannot verify or decode signed transactions, so SEAM will not send what the wallet signed.');
+    }
+    const signedExtrinsics = signed.map((s) => s.signedTx);
+    let verified;
+    try { verified = await this.chain.verifySigned(signedExtrinsics, calls, p.envelope); } catch (e) { return blockedSigned(`Blocked: the signed transactions could not be verified (${(e as Error).message}).`); }
+    if (!verified.ok) return blockedSigned(`Blocked: the signed transactions are not exactly what was approved (${verified.reasons.join(', ')}).`);
+    const signedCalls = verified.signedCalls; // decoded from the transactions' bytes
+    const decodeSignedExtrinsic = this.chain.signedDecoder(calls, p.envelope);
     const atomic = p.plan.mode === 'atomic_verified' || p.plan.mode === 'atomic_unverified';
     const ids = atomic ? ['batch'] : p.plan.steps.map((s) => s.actionId);
     const gate = async (sendIndex: number | undefined, signedDryRun: SignedDryRun[], previousSteps?: ReceiptStep[]) => checkBeforeSubmit({
       manifestDigest: p.plan.manifestDigest, plan: p.plan, envelope: p.envelope, preflight: p.preflight, policy: p.policy,
       policyResult: p.policyResult, approval: p.approval, preparedFingerprint: p.facts.fingerprint,
-      currentFingerprint: await this.chain.readFingerprint(), signedCalls, signedDryRun, sendIndex, previousSteps, now: now(), store: this.store,
+      currentFingerprint: await this.chain.readFingerprint(), signedCalls, signedExtrinsics, decodeSignedExtrinsic, requireTrustedDecoder: true, signedDryRun, sendIndex, previousSteps, now: now(), store: this.store,
     });
     const finish = (outcomes: StepOutcome[], stoppedReason?: string): RunResult => ({
       ok: true, stoppedReason,
