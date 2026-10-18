@@ -1,9 +1,11 @@
 // The real SEAM path on the local dev node (LOCAL DEV CHAIN ONLY; //Alice is a public dev seed):
-// compile -> [V14 Contracts.call shim] -> preflight -> policy -> approve -> sign (signing requests, //Alice) ->
+// compile (contract step by message name + ABI) -> preflight -> policy -> approve -> sign (signing requests, //Alice) ->
 // assemble -> Seam.execute (per-step: fresh fingerprint + dryRunSigned + checkBeforeSubmit, submitAndWatch,
 // events) -> buildReceipt.
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
-import { compile, computePlanDigest, computeManifestDigest, computeFingerprintDigest } from '@seam/compiler';
+import { compile, computeManifestDigest, computeFingerprintDigest } from '@seam/compiler';
 import { InMemoryApprovalStore, checkBeforeSubmit, evaluatePolicy, portaldotPolicy, usageKey } from '@seam/policy';
 import { Seam, buildReceipt, checkReceipt } from '@seam/sdk';
 import { createPortaldotAdapter, signBytesOf } from '../../dist/index.js';
@@ -14,52 +16,16 @@ export const DEV_BLOCK_TIME_MS = 6000;
 /** proof_size half of the Weight V2 gas limit; the manifest's gasLimit is the ref_time half. */
 export const GAS_PROOF_SIZE = '1000000';
 
-/**
- * WORKAROUND (compiler ARG_BINDINGS as of main 241ac8c): on metadata V14 Contracts.call is
- * call(dest, value, gas_limit: Weight{ref_time, proof_size}, storage_deposit_limit: Option<Compact<u128>>, data)
- * and the compiler marks the step unavailable ("SEAM cannot fill: storageDepositLimit"). This fills the step the
- * way the compiler would need to (gas_limit = {refTime: gasLimit, proofSize: GAS_PROOF_SIZE},
- * storage_deposit_limit = None), re-selects the mode, rebuilds the batch_all, and recomputes the plan digest with
- * the compiler's own computePlanDigest. Every patched step carries decodedArgs.shim so it is visible in receipts' plans.
- * decodedArgs.proofSize uses @seam/policy's name (bot3/policy-file: capped by maxProofSize); storage_deposit_limit
- * None means "no limit", so decodedArgs.storageDepositLimit is left out (the policy only accepts whole numbers there).
- */
-export function shimContractsCall(plan, facts, { atomic = false } = {}) {
-  const steps = plan.steps.map((s) => {
-    if (s.kind !== 'contracts.call' || s.status !== 'unavailable' || !/storageDepositLimit/.test(s.reason ?? '')) return s;
-    const cap = facts.capabilities['Contracts.call'];
-    const a = s.decodedArgs;
-    const encodedCall = encodeCall(facts, 'Contracts', 'call', [
-      { Id: a.contractAccountId }, a.value, { refTime: a.gasLimit, proofSize: GAS_PROOF_SIZE }, null, a.data
-    ]);
-    const { reason: _r, ...rest } = s;
-    return {
-      ...rest, palletIndex: cap.palletIndex, callIndex: cap.callIndex, encodedCall, status: 'ok',
-      decodedArgs: { ...a, proofSize: GAS_PROOF_SIZE, shim: 'devnode V14 Contracts.call shim (compiler cannot fill storage_deposit_limit / Weight V2)' }
-    };
-  });
-  if (steps.some((s) => s.status !== 'ok')) return plan;
-  if (steps === plan.steps || steps.every((s, i) => s === plan.steps[i])) return plan;
-  const out = { ...plan, steps };
-  delete out.outerCall;
-  if (atomic) {
-    const verified = facts.behaviour.batchAllRollback === 'verified';
-    out.mode = verified ? 'atomic_verified' : 'atomic_unverified';
-    out.modeReason = `[devnode shim] All steps go in one Utility.batch_all; rollback on failure ${verified ? 'has been verified' : 'has NOT been verified'} on this runtime.`;
-    const b = facts.capabilities['Utility.batch_all'];
-    out.outerCall = { capability: 'Utility.batch_all', palletIndex: b.palletIndex, callIndex: b.callIndex, encodedCall: encodeCall(facts, 'Utility', 'batch_all', [steps.map((s) => s.encodedCall)]) };
-  } else {
-    out.mode = 'sequential';
-    out.modeReason = '[devnode shim] Steps run one after another; a failure stops later steps.';
-  }
-  delete out.planDigest;
-  return { ...out, planDigest: computePlanDigest(out) };
-}
+/** Weight V2 contract-call limits used by the demo flows (manifest values; the compiler binds them on V14). */
+export const SETTLE = { orderId: 7, amount: '2500' };
+/** Bot 2's ink! ABI (metadata.json) by reference, so the manifest stays small and the plan pins it by hash. */
+export const ABIS = { seam_demo: JSON.parse(readFileSync(fileURLToPath(new URL('../../../../contracts/seam-demo/artifacts/metadata.json', import.meta.url)), 'utf8')) };
 
 export function devPolicy({ bob, charlie, contract, overrides = {} }) {
   return portaldotPolicy({
     allowedAssets: [String(ASSET_ID)],
     allowedContracts: [contract],
+    allowedSelectors: contract ? { [contract]: ['0x6c337222'] } : undefined,
     allowedRecipients: [bob, charlie],
     maxAmountPerAsset: { [String(ASSET_ID)]: '1000000000000' },
     maxNativeValue: '0',
@@ -77,7 +43,7 @@ export function devManifest({ alice, bob, charlie, contract, genesis, atomic = f
     signer: { type: 'ss58', value: alice },
     actions: actions ?? [
       { id: 'pay', kind: 'assets.transfer', args: { assetId: String(ASSET_ID), amount: '2500', recipient: bob }, ...pref },
-      { id: 'call', kind: 'contracts.call', args: { contract, value: '0', gasLimit: '5000000000', data: '0x5345414d' }, ...pref },
+      { id: 'call', kind: 'contracts.call', args: { contract, value: '0', gasLimit: '5000000000', proofSize: GAS_PROOF_SIZE, storageDepositLimit: null, message: 'settle', args: { order_id: SETTLE.orderId, amount: SETTLE.amount }, abiRef: 'seam_demo' }, ...pref },
       { id: 'mint', kind: 'assets.mint', args: { assetId: String(ASSET_ID), amount: '7', recipient: charlie }, ...pref }
     ]
   };
@@ -155,14 +121,14 @@ export async function runFlow({ facts, manifest, policy, alice, atomic = false, 
   await adapter.discover(); // re-checks the live node against the given facts
   const { rec, chain, now } = gateRecorder(adapter);
   const seam = new Seam(chain);
-  const compiled = compile(manifest, facts, compileOptions);
-  const plan = shimContractsCall(compiled, facts, { atomic });
+  const compiled = compile(manifest, facts, { abis: ABIS, ...compileOptions });
+  const plan = compiled;
   const { preflight, envelope } = await adapter.preflight(plan);
   const policyResult = evaluatePolicy({ policy, plan, facts, preflight, manifest });
   const report = {
     endpoint: ENDPOINT, manifest, manifestDigest: computeManifestDigest(manifest), facts, fingerprint: facts.fingerprint, fingerprintDigest: facts.fingerprintDigest,
     compiledMode: compiled.mode, compiledModeReason: compiled.modeReason,
-    shimmed: compiled !== plan, plan, preflight, preflightDetail: { nonce: adapter.lastPreflight.nonce, atBlock: adapter.lastPreflight.atBlock, transactions: adapter.lastPreflight.transactions, contractDryRuns: adapter.lastPreflight.contractDryRuns },
+    plan, preflight, preflightDetail: { nonce: adapter.lastPreflight.nonce, atBlock: adapter.lastPreflight.atBlock, transactions: adapter.lastPreflight.transactions, contractDryRuns: adapter.lastPreflight.contractDryRuns },
     envelope, policy, policyResult
   };
   if (!policyResult.allowed) return { ...report, stage: 'policy', ok: false };

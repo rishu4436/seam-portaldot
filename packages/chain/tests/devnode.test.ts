@@ -17,9 +17,10 @@ const evidenceOf = (stdout: string) => {
 };
 
 describe.skipIf(!LIVE)('local dev node (SEAM_DEVNODE=1)', () => {
-  it('setup: asset 1 and the seam_emitter contract exist', () => {
+  it('setup: asset 1 and the seam_demo ink! contract exist', () => {
     const out = JSON.parse(run('setup.mjs'));
     expect(out.state.assetId).toBe(1);
+    expect(out.state.contractName).toBe('seam_demo');
     expect(out.state.contract).toMatch(/^0x[0-9a-f]{64}$/);
   }, 240_000);
 
@@ -42,6 +43,20 @@ describe.skipIf(!LIVE)('local dev node (SEAM_DEVNODE=1)', () => {
     expect(steps.map((s: any) => s.status)).toEqual(['finalized', 'finalized', 'finalized']);
     expect(new Set(steps.map((s: any) => s.txHash)).size).toBe(3);
     expect(steps[1].events.some((e: string) => e.startsWith('Contracts.ContractEmitted('))).toBe(true);
+    // the contract step is written by message name + ABI; the compiler binds the V14 shape, no run-script patching
+    const callAction = json.manifest.actions[1].args;
+    expect(callAction).toMatchObject({ message: 'settle', args: { order_id: 7, amount: '2500' }, abiRef: 'seam_demo', storageDepositLimit: null });
+    expect(callAction.data).toBeUndefined();
+    const callStep = json.plan.steps[1];
+    expect(callStep.status).toBe('ok');
+    expect(callStep.shim).toBeUndefined();
+    expect(callStep.decodedArgs.shim).toBeUndefined();
+    expect(callStep.decodedArgs.storageDepositLimit).toBeNull();
+    expect(callStep.contractMessage).toMatchObject({ message: 'settle', selector: '0x6c337222', args: { order_id: '7', amount: '2500' } });
+    // ContractEmitted comes from the demo contract and carries Settled { caller, order_id 7, amount 2500 }
+    const emitted = steps[1].events.find((e: string) => e.startsWith('Contracts.ContractEmitted('))!;
+    expect(emitted).toContain(json.manifest.actions[1].args.contract);
+    expect(emitted).toMatch(/0700000000000000c4090000000000000000000000000000\)$/);
     // Weight V2 runtime: every preflight step has a real proof size from payment_queryInfo
     for (const p of json.preflight.steps) expect(p.proofSize.value).toMatch(/^[1-9][0-9]*$/);
     expect(json.preflightDetail.transactions.every((t: any) => t.queryInfo.weightVersion === 2)).toBe(true);

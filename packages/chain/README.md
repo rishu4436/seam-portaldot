@@ -205,7 +205,7 @@ atomic plans and a failing step.
 ```sh
 npm run devnode -- start          # prebuilt substrate-contracts-node v0.42.0 (sha256-checked), ws://127.0.0.1:9944
 node scripts/devnode/snapshot.mjs # read-only snapshot
-node scripts/devnode/setup.mjs    # //Alice: create + mint asset 1, deploy fixtures/devnode/seam_emitter.wasm
+node scripts/devnode/setup.mjs    # //Alice: create + mint asset 1, deploy contracts/seam-demo (Bot 2's ink! contract)
 node scripts/devnode/run-sequential.mjs
 node scripts/devnode/run-rollback.mjs
 node scripts/devnode/run-atomic.mjs <rollback-*.json>
@@ -232,6 +232,7 @@ derivation paths. The signed extrinsic the rollback resends exists in memory onl
 Metadata V14, spec `substrate-contracts-node` 100, instant seal (a block per transaction, finalized after 1 s),
 system_properties empty (UNIT/12 is declared via `declaredToken`), no Babe (pass `blockTimeMs`).
 Dev keys are public: these scripts refuse any endpoint other than localhost and the Portaldot mainnet genesis.
-`seam_emitter` is a 158-byte hand-written Wasm contract (fixtures/devnode/seam_emitter.wat) that emits one
-event; replace it with Bot 2's ink! demo contract when that lands. Contracts.call needs a shim on V14 until the
-compiler binds `storage_deposit_limit` and Weight V2: see docs/devnode-assumptions.md.
+The contract step is written by message name and arguments (`settle`, `abiRef: seam_demo`, `proofSize`,
+`storageDepositLimit: null`); @seam/compiler binds the V14 `Contracts.call` shape, so the run scripts no longer patch it.
+The step is verified by `Contracts.ContractEmitted` from the contract. `seam_emitter` (fixtures/devnode, 158-byte
+hand-written Wasm) is only the earlier stand-in.

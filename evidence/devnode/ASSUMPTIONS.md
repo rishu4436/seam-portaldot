@@ -3,6 +3,7 @@
 Teammates' packages were NOT edited (main 241ac8c). Workarounds live in packages/chain (bot4/devnode).
 
 ## @seam/compiler (Bot 2)
+UPDATE (bot4/ink-contract): item 1 is resolved. The compiler now binds Weight V2 `proofSize` and `storageDepositLimit` (null = none) and encodes ink! messages from an ABI; the run scripts no longer patch Contracts.call.
 1. `compile.ts` ARG_BINDINGS / ARG_SCHEMA `contracts.call` = {dest, value, gasLimit, data}. On V14,
    Contracts.call is `call(dest, value, gas_limit: Weight{ref_time, proof_size}, storage_deposit_limit: Option<Compact<u128>>, data)`.
    Result: step `unavailable` ("takes argument(s) SEAM cannot fill: storageDepositLimit"), so the whole plan is unavailable.
