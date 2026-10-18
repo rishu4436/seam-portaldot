@@ -1,6 +1,11 @@
-import { expandMetadata } from '@polkadot/types';
-import { DOMAIN, digestJson } from './canonical.js';
-import { NO_PINNED_TYPES, loadRuntime, withoutLookupWarning, type LoadedRuntime } from './runtime.js';
+import { expandMetadata } from "@polkadot/types";
+import { DOMAIN, digestJson } from "./canonical.js";
+import {
+  NO_PINNED_TYPES,
+  loadRuntime,
+  withoutLookupWarning,
+  type LoadedRuntime,
+} from "./runtime.js";
 import type {
   AtomicRollbackProof,
   BatchAllRollback,
@@ -8,24 +13,40 @@ import type {
   CapabilityArg,
   Hex,
   RuntimeFacts,
-  RuntimeFingerprint
-} from './types.js';
+  RuntimeFingerprint,
+} from "./types.js";
 
 /** Capabilities SEAM can compile to, plus the batching call. Always present in facts. */
 export const SEAM_CAPABILITIES = [
-  'Assets.transfer_keep_alive',
-  'Assets.mint',
-  'Contracts.call',
-  'Revive.call',
-  'Nfts.mint',
-  'Utility.batch_all'
+  "Assets.transfer_keep_alive",
+  "Assets.mint",
+  "Contracts.call",
+  "Revive.call",
+  "Nfts.mint",
+  "Utility.batch_all",
 ] as const;
 
 const PRIMITIVES = new Set([
-  'u8', 'u16', 'u32', 'u64', 'u128', 'u256', 'i8', 'i16', 'i32', 'i64', 'i128', 'i256',
-  'bool', 'Bytes', 'Text', 'H160', 'H256', 'Call'
+  "u8",
+  "u16",
+  "u32",
+  "u64",
+  "u128",
+  "u256",
+  "i8",
+  "i16",
+  "i32",
+  "i64",
+  "i128",
+  "i256",
+  "bool",
+  "Bytes",
+  "Text",
+  "H160",
+  "H256",
+  "Call",
 ]);
-const WRAPPERS = new Set(['Compact', 'Vec', 'Box', 'Option']);
+const WRAPPERS = new Set(["Compact", "Vec", "Box", "Option"]);
 
 export interface FactsFromMetadataInput {
   /** 0x-prefixed raw metadata bytes, exactly as returned by state_getMetadata. */
@@ -52,7 +73,10 @@ export interface FactsFromMetadataInput {
   /** Optional; must equal the metadata version read from the bytes. */
   metadataVersion?: number;
   /** Whether tokenSymbol/tokenDecimals were 'declared' by the caller (default) or 'observed' on chain. */
-  tokenProvenance?: { tokenSymbol: 'declared' | 'observed'; tokenDecimals: 'declared' | 'observed' };
+  tokenProvenance?: {
+    tokenSymbol: "declared" | "observed";
+    tokenDecimals: "declared" | "observed";
+  };
   /** 32 (AccountId32, default) or 20 (H160) signing account size on this runtime. */
   signingAccountBytes?: 20 | 32;
   endpoint?: string;
@@ -70,20 +94,20 @@ export function computeFingerprintDigest(fp: RuntimeFingerprint): Hex {
     ss58Prefix: fp.ss58Prefix,
     tokenSymbol: fp.tokenSymbol,
     tokenDecimals: fp.tokenDecimals,
-    typesBundleHash: fp.typesBundleHash
+    typesBundleHash: fp.typesBundleHash,
   };
   return digestJson(DOMAIN.fingerprint, canonical);
 }
 
-function argConfidence(types: string[], trusted: Set<string>): 'full' | 'partial' {
+function argConfidence(types: string[], trusted: Set<string>): "full" | "partial" {
   for (const t of types) {
     const names = t.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? [];
     for (const n of names) {
       if (WRAPPERS.has(n) || PRIMITIVES.has(n) || trusted.has(n)) continue;
-      return 'partial';
+      return "partial";
     }
   }
-  return 'full';
+  return "full";
 }
 
 /** Lists every call in the metadata as an observed capability. */
@@ -102,24 +126,34 @@ export function readCapabilities(rt: LoadedRuntime): Record<string, Capability> 
       // Names as written in the runtime (snake_case); types as sanitised by polkadot.js.
       const args: CapabilityArg[] = meta.args.map((a, i) => {
         const field = v.fields[i];
-        const name = field && field.name.isSome ? field.name.unwrap().toString() : a.name.toString();
+        const name =
+          field && field.name.isSome ? field.name.unwrap().toString() : a.name.toString();
         return { name, type: a.type.toString() };
       });
       caps[`${pallet.name.toString()}.${meta.name.toString()}`] = {
-        status: 'observed',
+        status: "observed",
         palletIndex,
         callIndex,
         args,
         // V14+: every type comes from the metadata's own lookup, so nothing is assumed.
-        argTypesConfidence: selfDescribing ? 'full' : argConfidence(args.map((a) => a.type), trusted)
+        argTypesConfidence: selfDescribing
+          ? "full"
+          : argConfidence(
+              args.map((a) => a.type),
+              trusted,
+            ),
       };
     }
   }
   for (const name of SEAM_CAPABILITIES) {
-    if (!caps[name]) caps[name] = { status: 'not_observed' };
+    if (!caps[name]) caps[name] = { status: "not_observed" };
   }
   // Stable key order so the facts object serialises identically every time.
-  return Object.fromEntries(Object.keys(caps).sort().map((k) => [k, caps[k]!]));
+  return Object.fromEntries(
+    Object.keys(caps)
+      .sort()
+      .map((k) => [k, caps[k]!]),
+  );
 }
 
 /**
@@ -131,31 +165,46 @@ export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
   const rt = loadRuntime(input.metadataHex, input.typesBundle);
   const consts = withoutLookupWarning(() => expandMetadata(rt.registry, rt.metadata)).consts as any;
   const version = consts.system?.version;
-  if (!version) throw new Error('metadata has no System.Version constant');
+  if (!version) throw new Error("metadata has no System.Version constant");
   const specName = version.specName.toString() as string;
   const specVersion = version.specVersion.toNumber() as number;
   const transactionVersion = version.transactionVersion.toNumber() as number;
-  const ss58Prefix = consts.system?.ss58Prefix ? (consts.system.ss58Prefix.toNumber() as number) : input.ss58Prefix;
-  if (ss58Prefix === undefined) throw new Error('ss58Prefix not in metadata; pass it explicitly');
+  const ss58Prefix = consts.system?.ss58Prefix
+    ? (consts.system.ss58Prefix.toNumber() as number)
+    : input.ss58Prefix;
+  if (ss58Prefix === undefined) throw new Error("ss58Prefix not in metadata; pass it explicitly");
 
   const check = (field: string, given: unknown, actual: unknown) => {
     if (given !== undefined && given !== actual) {
-      throw new Error(`${field} mismatch: input says ${String(given)}, metadata says ${String(actual)}`);
+      throw new Error(
+        `${field} mismatch: input says ${String(given)}, metadata says ${String(actual)}`,
+      );
     }
   };
-  check('specName', input.specName, specName);
-  check('specVersion', input.specVersion, specVersion);
-  check('transactionVersion', input.transactionVersion, transactionVersion);
-  check('ss58Prefix', input.ss58Prefix, ss58Prefix);
-  check('metadataVersion', input.metadataVersion, rt.metadataVersion);
-  if (input.stateVersion !== undefined && !(Number.isInteger(input.stateVersion) && input.stateVersion >= 0)) {
-    throw new Error('stateVersion must be a non-negative integer');
+  check("specName", input.specName, specName);
+  check("specVersion", input.specVersion, specVersion);
+  check("transactionVersion", input.transactionVersion, transactionVersion);
+  check("ss58Prefix", input.ss58Prefix, ss58Prefix);
+  check("metadataVersion", input.metadataVersion, rt.metadataVersion);
+  if (
+    input.stateVersion !== undefined &&
+    !(Number.isInteger(input.stateVersion) && input.stateVersion >= 0)
+  ) {
+    throw new Error("stateVersion must be a non-negative integer");
   }
-  if (rt.typesBundleHash !== null && rt.pinned.specVersion !== undefined && rt.pinned.specVersion !== specVersion) {
-    throw new Error(`the pinned types file is for spec ${rt.pinned.specVersion}${rt.pinned.chain ? ` (${rt.pinned.chain})` : ''}, this runtime is ${specName} spec ${specVersion}`);
+  if (
+    rt.typesBundleHash !== null &&
+    rt.pinned.specVersion !== undefined &&
+    rt.pinned.specVersion !== specVersion
+  ) {
+    throw new Error(
+      `the pinned types file is for spec ${rt.pinned.specVersion}${rt.pinned.chain ? ` (${rt.pinned.chain})` : ""}, this runtime is ${specName} spec ${specVersion}`,
+    );
   }
-  if (!/^0x[0-9a-f]{64}$/.test(input.genesisHash)) throw new Error('genesisHash must be 0x + 64 lowercase hex chars');
-  if (!Number.isSafeInteger(input.tokenDecimals) || input.tokenDecimals < 0) throw new Error('tokenDecimals must be a non-negative integer');
+  if (!/^0x[0-9a-f]{64}$/.test(input.genesisHash))
+    throw new Error("genesisHash must be 0x + 64 lowercase hex chars");
+  if (!Number.isSafeInteger(input.tokenDecimals) || input.tokenDecimals < 0)
+    throw new Error("tokenDecimals must be a non-negative integer");
 
   const fingerprint: RuntimeFingerprint = {
     genesisHash: input.genesisHash as Hex,
@@ -166,24 +215,35 @@ export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
     ss58Prefix,
     tokenSymbol: input.tokenSymbol,
     tokenDecimals: input.tokenDecimals,
-    typesBundleHash: rt.typesBundleHash
+    typesBundleHash: rt.typesBundleHash,
   };
   const capabilities = readCapabilities(rt);
-  const batchAllObserved = capabilities['Utility.batch_all']?.status === 'observed';
-  const batchAllRollback: BatchAllRollback = batchAllObserved ? input.batchAllRollback ?? 'unknown' : 'not_supported';
+  const batchAllObserved = capabilities["Utility.batch_all"]?.status === "observed";
+  const batchAllRollback: BatchAllRollback = batchAllObserved
+    ? (input.batchAllRollback ?? "unknown")
+    : "not_supported";
 
   const facts: RuntimeFacts = {
     fingerprint,
     fingerprintDigest: computeFingerprintDigest(fingerprint),
     capabilities,
-    behaviour: input.batchAllRollbackProof ? { batchAllRollback, batchAllRollbackProof: input.batchAllRollbackProof } : { batchAllRollback },
+    behaviour: input.batchAllRollbackProof
+      ? { batchAllRollback, batchAllRollbackProof: input.batchAllRollbackProof }
+      : { batchAllRollback },
     // Not part of the fingerprint (fingerprint schema stays V1); see types.ts.
     metadataVersion: rt.metadataVersion,
-    tokenProvenance: input.tokenProvenance ?? { tokenSymbol: 'declared', tokenDecimals: 'declared' },
-    source: { metadataHex: input.metadataHex.trim() as Hex, typesBundle: rt.typesBundleHash === null ? NO_PINNED_TYPES : input.typesBundle! }
+    tokenProvenance: input.tokenProvenance ?? {
+      tokenSymbol: "declared",
+      tokenDecimals: "declared",
+    },
+    source: {
+      metadataHex: input.metadataHex.trim() as Hex,
+      typesBundle: rt.typesBundleHash === null ? NO_PINNED_TYPES : input.typesBundle!,
+    },
   };
   if (input.stateVersion !== undefined) facts.stateVersion = input.stateVersion;
-  if (input.signingAccountBytes !== undefined) facts.signingAccountBytes = input.signingAccountBytes;
+  if (input.signingAccountBytes !== undefined)
+    facts.signingAccountBytes = input.signingAccountBytes;
   if (input.endpoint !== undefined) facts.endpoint = input.endpoint;
   if (input.blockNumber !== undefined) facts.blockNumber = input.blockNumber;
   return facts;

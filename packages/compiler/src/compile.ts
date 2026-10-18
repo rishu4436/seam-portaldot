@@ -1,9 +1,9 @@
-import { stringCamelCase } from '@polkadot/util';
-import { DOMAIN, NotCanonicalError, digestJson } from './canonical.js';
-import { parseH160, parseNativeAddress } from './address.js';
-import { computeFingerprintDigest } from './facts.js';
-import { loadRuntime, type LoadedRuntime } from './runtime.js';
-import { encodeInkMessage } from './ink.js';
+import { stringCamelCase } from "@polkadot/util";
+import { DOMAIN, NotCanonicalError, digestJson } from "./canonical.js";
+import { parseH160, parseNativeAddress } from "./address.js";
+import { computeFingerprintDigest } from "./facts.js";
+import { loadRuntime, type LoadedRuntime } from "./runtime.js";
+import { encodeInkMessage } from "./ink.js";
 import {
   SeamCompileError,
   type ActionKind,
@@ -20,29 +20,44 @@ import {
   type PlanMode,
   type PlanSigner,
   type PlanStep,
-  type RuntimeFacts
-} from './types.js';
+  type RuntimeFacts,
+} from "./types.js";
 
 /** SEAM action kind -> runtime capability. Indexes are never hard-coded; they come from metadata. */
 export const KIND_TO_CAPABILITY: Record<ActionKind, string> = {
-  'assets.transfer': 'Assets.transfer_keep_alive',
-  'assets.mint': 'Assets.mint',
-  'contracts.call': 'Contracts.call',
-  'revive.call': 'Revive.call',
-  'nfts.mint': 'Nfts.mint'
+  "assets.transfer": "Assets.transfer_keep_alive",
+  "assets.mint": "Assets.mint",
+  "contracts.call": "Contracts.call",
+  "revive.call": "Revive.call",
+  "nfts.mint": "Nfts.mint",
 };
 
-export const BATCH_CAPABILITY = 'Utility.batch_all';
+export const BATCH_CAPABILITY = "Utility.batch_all";
 
 /** Manifest arg names accepted per kind (anything else is rejected to catch typos). */
 const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }> = {
-  'assets.transfer': { required: ['assetId', 'amount', 'recipient'], optional: [] },
-  'assets.mint': { required: ['assetId', 'amount', 'recipient'], optional: [] },
+  "assets.transfer": { required: ["assetId", "amount", "recipient"], optional: [] },
+  "assets.mint": { required: ["assetId", "amount", "recipient"], optional: [] },
   // contracts.call: exactly one of `data` (raw hex) or `message` (+ `abi` or `abiRef`, optional `args`, `abiHash`).
   // proofSize / storageDepositLimit are only for runtimes whose Contracts.call takes them (Weight v2, metadata V14+).
-  'contracts.call': { required: ['contract', 'value', 'gasLimit'], optional: ['data', 'message', 'args', 'abi', 'abiRef', 'abiHash', 'proofSize', 'storageDepositLimit'] },
-  'revive.call': { required: ['contract', 'value', 'data'], optional: ['gasLimit', 'storageDepositLimit'] },
-  'nfts.mint': { required: ['collection', 'item', 'recipient'], optional: [] }
+  "contracts.call": {
+    required: ["contract", "value", "gasLimit"],
+    optional: [
+      "data",
+      "message",
+      "args",
+      "abi",
+      "abiRef",
+      "abiHash",
+      "proofSize",
+      "storageDepositLimit",
+    ],
+  },
+  "revive.call": {
+    required: ["contract", "value", "data"],
+    optional: ["gasLimit", "storageDepositLimit"],
+  },
+  "nfts.mint": { required: ["collection", "item", "recipient"], optional: [] },
 };
 
 /**
@@ -51,10 +66,16 @@ const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }>
  * (SEAM never guesses a value for an argument it does not understand).
  */
 const ARG_BINDINGS: Partial<Record<ActionKind, Record<string, string>>> = {
-  'assets.transfer': { id: 'assetId', target: 'recipient', amount: 'amount' },
-  'assets.mint': { id: 'assetId', beneficiary: 'recipient', amount: 'amount' },
+  "assets.transfer": { id: "assetId", target: "recipient", amount: "amount" },
+  "assets.mint": { id: "assetId", beneficiary: "recipient", amount: "amount" },
   // gasLimit binds Weight v1 (u64) directly, or Weight v2 { ref_time: gasLimit, proof_size: proofSize }.
-  'contracts.call': { dest: 'contract', value: 'value', gasLimit: 'gasLimit', storageDepositLimit: 'storageDepositLimit', data: 'data' }
+  "contracts.call": {
+    dest: "contract",
+    value: "value",
+    gasLimit: "gasLimit",
+    storageDepositLimit: "storageDepositLimit",
+    data: "data",
+  },
 };
 // Binding keys are camelCase; metadata names (snake_case) are camelCased before lookup.
 
@@ -63,25 +84,30 @@ const HEX_BYTES_RE = /^0x([0-9a-fA-F]{2})*$/;
 const MAX_U128 = (1n << 128n) - 1n;
 
 function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
+  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 /** Base-unit amount: a decimal string of digits. Numbers (incl. floats) are rejected. */
 function parseAmount(v: unknown, path: string, issues: CompileIssue[]): string | undefined {
-  if (typeof v === 'number') {
+  if (typeof v === "number") {
     issues.push({
-      code: 'AMOUNT_INVALID',
+      code: "AMOUNT_INVALID",
       path,
-      message: `amounts must be base-unit strings like "1000000", got the number ${v}${Number.isInteger(v) ? '' : ' (floats are never allowed)'}`
+      message: `amounts must be base-unit strings like "1000000", got the number ${v}${Number.isInteger(v) ? "" : " (floats are never allowed)"}`,
     });
     return undefined;
   }
-  if (typeof v !== 'string' || !UINT_RE.test(v)) {
-    issues.push({ code: 'AMOUNT_INVALID', path, message: 'amount must be a string of digits in base units, with no sign, decimal point or leading zeros' });
+  if (typeof v !== "string" || !UINT_RE.test(v)) {
+    issues.push({
+      code: "AMOUNT_INVALID",
+      path,
+      message:
+        "amount must be a string of digits in base units, with no sign, decimal point or leading zeros",
+    });
     return undefined;
   }
   if (BigInt(v) > MAX_U128) {
-    issues.push({ code: 'AMOUNT_INVALID', path, message: 'amount exceeds u128' });
+    issues.push({ code: "AMOUNT_INVALID", path, message: "amount exceeds u128" });
     return undefined;
   }
   return v;
@@ -89,15 +115,23 @@ function parseAmount(v: unknown, path: string, issues: CompileIssue[]): string |
 
 /** Integer identifiers (assetId, collection, item): digit string or non-negative safe integer. Normalised to a string. */
 function parseId(v: unknown, path: string, issues: CompileIssue[]): string | undefined {
-  if (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0) return String(v);
-  if (typeof v === 'string' && UINT_RE.test(v)) return v;
-  issues.push({ code: 'MANIFEST_INVALID', path, message: 'must be a non-negative integer or a string of digits' });
+  if (typeof v === "number" && Number.isSafeInteger(v) && v >= 0) return String(v);
+  if (typeof v === "string" && UINT_RE.test(v)) return v;
+  issues.push({
+    code: "MANIFEST_INVALID",
+    path,
+    message: "must be a non-negative integer or a string of digits",
+  });
   return undefined;
 }
 
 function parseHexBytes(v: unknown, path: string, issues: CompileIssue[]): Hex | undefined {
-  if (typeof v === 'string' && HEX_BYTES_RE.test(v)) return v.toLowerCase() as Hex;
-  issues.push({ code: 'MANIFEST_INVALID', path, message: 'must be 0x-prefixed hex bytes (e.g. ink! selector + SCALE-encoded args)' });
+  if (typeof v === "string" && HEX_BYTES_RE.test(v)) return v.toLowerCase() as Hex;
+  issues.push({
+    code: "MANIFEST_INVALID",
+    path,
+    message: "must be 0x-prefixed hex bytes (e.g. ink! selector + SCALE-encoded args)",
+  });
   return undefined;
 }
 
@@ -118,60 +152,102 @@ function contractData(
   ss58Prefix: number,
   options: CompileOptions,
   issues: CompileIssue[],
-  set: (k: string, v: string | undefined) => void
+  set: (k: string, v: string | undefined) => void,
 ): ContractMessage | undefined {
   const p = (k: string) => `${base}.args.${k}`;
   const hasData = a.data !== undefined;
   const hasMsg = a.message !== undefined;
   if (hasData === hasMsg) {
     issues.push({
-      code: 'MANIFEST_INVALID',
-      path: p(hasData ? 'message' : 'data'),
+      code: "MANIFEST_INVALID",
+      path: p(hasData ? "message" : "data"),
       message: hasData
         ? 'give either "data" (raw hex) or "message" (ink! ABI form), not both'
-        : 'contracts.call needs either "data" (0x hex: ink! selector + SCALE args) or "message" with "abi"/"abiRef"'
+        : 'contracts.call needs either "data" (0x hex: ink! selector + SCALE args) or "message" with "abi"/"abiRef"',
     });
     return undefined;
   }
   if (hasData) {
-    for (const k of ['args', 'abi', 'abiRef', 'abiHash']) {
-      if (a[k] !== undefined) issues.push({ code: 'MANIFEST_INVALID', path: p(k), message: `"${k}" is only used with "message"; remove it or drop "data"` });
+    for (const k of ["args", "abi", "abiRef", "abiHash"]) {
+      if (a[k] !== undefined)
+        issues.push({
+          code: "MANIFEST_INVALID",
+          path: p(k),
+          message: `"${k}" is only used with "message"; remove it or drop "data"`,
+        });
     }
-    set('data', parseHexBytes(a.data, p('data'), issues));
+    set("data", parseHexBytes(a.data, p("data"), issues));
     return undefined;
   }
   if ((a.abi === undefined) === (a.abiRef === undefined)) {
-    issues.push({ code: 'ABI_INVALID', path: p(a.abi === undefined ? 'abi' : 'abiRef'), message: 'the ink! form needs exactly one of "abi" (the metadata.json object) or "abiRef" (a key of options.abis)' });
+    issues.push({
+      code: "ABI_INVALID",
+      path: p(a.abi === undefined ? "abi" : "abiRef"),
+      message:
+        'the ink! form needs exactly one of "abi" (the metadata.json object) or "abiRef" (a key of options.abis)',
+    });
     return undefined;
   }
   let abiJson: unknown = a.abi;
-  let abiPath = p('abi');
+  let abiPath = p("abi");
   let abiRef: string | undefined;
   if (a.abiRef !== undefined) {
-    abiPath = p('abiRef');
-    if (typeof a.abiRef !== 'string' || a.abiRef.length === 0) {
-      issues.push({ code: 'ABI_INVALID', path: abiPath, message: 'abiRef must be a non-empty string naming an ABI passed in options.abis' });
+    abiPath = p("abiRef");
+    if (typeof a.abiRef !== "string" || a.abiRef.length === 0) {
+      issues.push({
+        code: "ABI_INVALID",
+        path: abiPath,
+        message: "abiRef must be a non-empty string naming an ABI passed in options.abis",
+      });
       return undefined;
     }
     abiRef = a.abiRef;
-    abiJson = options.abis && Object.prototype.hasOwnProperty.call(options.abis, abiRef) ? options.abis[abiRef] : undefined;
+    abiJson =
+      options.abis && Object.prototype.hasOwnProperty.call(options.abis, abiRef)
+        ? options.abis[abiRef]
+        : undefined;
     if (abiJson === undefined) {
-      issues.push({ code: 'ABI_INVALID', path: abiPath, message: `no ABI named "${abiRef}" was passed in options.abis` });
+      issues.push({
+        code: "ABI_INVALID",
+        path: abiPath,
+        message: `no ABI named "${abiRef}" was passed in options.abis`,
+      });
       return undefined;
     }
   }
-  const value = typeof a.value === 'string' ? a.value : undefined;
-  const r = encodeInkMessage(abiJson, a.message, a.args, value, ss58Prefix, base + '.args', issues, abiPath);
+  const value = typeof a.value === "string" ? a.value : undefined;
+  const r = encodeInkMessage(
+    abiJson,
+    a.message,
+    a.args,
+    value,
+    ss58Prefix,
+    base + ".args",
+    issues,
+    abiPath,
+  );
   if (!r) return undefined;
-  if (a.abiHash !== undefined && (typeof a.abiHash !== 'string' || a.abiHash.toLowerCase() !== r.abiHash)) {
-    issues.push({ code: 'ABI_HASH_MISMATCH', path: p('abiHash'), message: `the ABI hashes to ${r.abiHash}, but the manifest pins ${String(a.abiHash)}` });
+  if (
+    a.abiHash !== undefined &&
+    (typeof a.abiHash !== "string" || a.abiHash.toLowerCase() !== r.abiHash)
+  ) {
+    issues.push({
+      code: "ABI_HASH_MISMATCH",
+      path: p("abiHash"),
+      message: `the ABI hashes to ${r.abiHash}, but the manifest pins ${String(a.abiHash)}`,
+    });
     return undefined;
   }
-  set('data', r.data);
-  set('message', r.message);
-  set('selector', r.selector);
-  set('abiHash', r.abiHash);
-  const cm: ContractMessage = { abiHash: r.abiHash, message: r.message, selector: r.selector, args: r.args };
+  set("data", r.data);
+  set("message", r.message);
+  set("selector", r.selector);
+  set("abiHash", r.abiHash);
+  const cm: ContractMessage = {
+    abiHash: r.abiHash,
+    message: r.message,
+    selector: r.selector,
+    args: r.args,
+  };
   if (abiRef !== undefined) cm.abiRef = abiRef;
   return cm;
 }
@@ -181,23 +257,35 @@ function validateAction(
   index: number,
   ss58Prefix: number,
   issues: CompileIssue[],
-  options: CompileOptions = {}
+  options: CompileOptions = {},
 ): ValidatedAction | undefined {
   const base = `actions[${index}]`;
   const schema = ARG_SCHEMA[action.kind];
   if (!isObject(action.args)) {
-    issues.push({ code: 'MANIFEST_INVALID', path: `${base}.args`, message: 'args must be an object' });
+    issues.push({
+      code: "MANIFEST_INVALID",
+      path: `${base}.args`,
+      message: "args must be an object",
+    });
     return undefined;
   }
   const before = issues.length;
   for (const k of Object.keys(action.args)) {
     if (!schema.required.includes(k) && !schema.optional.includes(k)) {
-      issues.push({ code: 'MANIFEST_INVALID', path: `${base}.args.${k}`, message: `unknown argument "${k}" for ${action.kind}` });
+      issues.push({
+        code: "MANIFEST_INVALID",
+        path: `${base}.args.${k}`,
+        message: `unknown argument "${k}" for ${action.kind}`,
+      });
     }
   }
   for (const k of schema.required) {
     if (action.args[k] === undefined) {
-      issues.push({ code: 'MANIFEST_INVALID', path: `${base}.args.${k}`, message: `missing required argument "${k}" for ${action.kind}` });
+      issues.push({
+        code: "MANIFEST_INVALID",
+        path: `${base}.args.${k}`,
+        message: `missing required argument "${k}" for ${action.kind}`,
+      });
     }
   }
   if (issues.length > before) return undefined;
@@ -214,94 +302,158 @@ function validateAction(
 
   let contractMessage: ContractMessage | undefined;
   switch (action.kind) {
-    case 'assets.transfer':
-    case 'assets.mint': {
-      set('assetId', parseId(a.assetId, p('assetId'), issues));
-      set('amount', parseAmount(a.amount, p('amount'), issues));
-      const r = parseNativeAddress(a.recipient, ss58Prefix, p('recipient'), issues);
+    case "assets.transfer":
+    case "assets.mint": {
+      set("assetId", parseId(a.assetId, p("assetId"), issues));
+      set("amount", parseAmount(a.amount, p("amount"), issues));
+      const r = parseNativeAddress(a.recipient, ss58Prefix, p("recipient"), issues);
       if (r) {
-        set('recipient', r.ss58, r.accountId);
+        set("recipient", r.ss58, r.accountId);
         values.recipientAccountId = r.accountId;
       }
       break;
     }
-    case 'contracts.call': {
-      const c = parseNativeAddress(a.contract, ss58Prefix, p('contract'), issues);
+    case "contracts.call": {
+      const c = parseNativeAddress(a.contract, ss58Prefix, p("contract"), issues);
       if (c) {
-        set('contract', c.ss58, c.accountId);
+        set("contract", c.ss58, c.accountId);
         values.contractAccountId = c.accountId;
       }
-      set('value', parseAmount(a.value, p('value'), issues));
-      set('gasLimit', parseAmount(a.gasLimit, p('gasLimit'), issues));
+      set("value", parseAmount(a.value, p("value"), issues));
+      set("gasLimit", parseAmount(a.gasLimit, p("gasLimit"), issues));
       contractMessage = contractData(a, base, ss58Prefix, options, issues, (k, v) => set(k, v));
-      if (a.proofSize !== undefined) set('proofSize', parseAmount(a.proofSize, p('proofSize'), issues));
+      if (a.proofSize !== undefined)
+        set("proofSize", parseAmount(a.proofSize, p("proofSize"), issues));
       if (a.storageDepositLimit === null) {
         // Explicit "no limit": encoded as None where the runtime's argument is an Option.
         values.storageDepositLimit = null;
         encodeValues.storageDepositLimit = null;
       } else if (a.storageDepositLimit !== undefined) {
-        set('storageDepositLimit', parseAmount(a.storageDepositLimit, p('storageDepositLimit'), issues));
+        set(
+          "storageDepositLimit",
+          parseAmount(a.storageDepositLimit, p("storageDepositLimit"), issues),
+        );
       }
       break;
     }
-    case 'revive.call': {
-      set('contract', parseH160(a.contract, p('contract'), issues));
-      set('value', parseAmount(a.value, p('value'), issues));
-      set('data', parseHexBytes(a.data, p('data'), issues));
-      if (a.gasLimit !== undefined) set('gasLimit', parseAmount(a.gasLimit, p('gasLimit'), issues));
-      if (a.storageDepositLimit !== undefined) set('storageDepositLimit', parseAmount(a.storageDepositLimit, p('storageDepositLimit'), issues));
+    case "revive.call": {
+      set("contract", parseH160(a.contract, p("contract"), issues));
+      set("value", parseAmount(a.value, p("value"), issues));
+      set("data", parseHexBytes(a.data, p("data"), issues));
+      if (a.gasLimit !== undefined) set("gasLimit", parseAmount(a.gasLimit, p("gasLimit"), issues));
+      if (a.storageDepositLimit !== undefined)
+        set(
+          "storageDepositLimit",
+          parseAmount(a.storageDepositLimit, p("storageDepositLimit"), issues),
+        );
       break;
     }
-    case 'nfts.mint': {
-      set('collection', parseId(a.collection, p('collection'), issues));
-      set('item', parseId(a.item, p('item'), issues));
-      const r = parseNativeAddress(a.recipient, ss58Prefix, p('recipient'), issues);
+    case "nfts.mint": {
+      set("collection", parseId(a.collection, p("collection"), issues));
+      set("item", parseId(a.item, p("item"), issues));
+      const r = parseNativeAddress(a.recipient, ss58Prefix, p("recipient"), issues);
       if (r) {
-        set('recipient', r.ss58, r.accountId);
+        set("recipient", r.ss58, r.accountId);
         values.recipientAccountId = r.accountId;
       }
       break;
     }
   }
   if (issues.length > before) return undefined;
-  return contractMessage ? { action, values, encodeValues, contractMessage } : { action, values, encodeValues };
+  return contractMessage
+    ? { action, values, encodeValues, contractMessage }
+    : { action, values, encodeValues };
 }
 
 function validateManifestShape(m: unknown, issues: CompileIssue[]): m is Manifest {
   if (!isObject(m)) {
-    issues.push({ code: 'MANIFEST_INVALID', message: 'manifest must be an object' });
+    issues.push({ code: "MANIFEST_INVALID", message: "manifest must be an object" });
     return false;
   }
-  if (m.version !== 1) issues.push({ code: 'MANIFEST_INVALID', path: 'version', message: 'only manifest version 1 is supported' });
-  if (!isObject(m.signer) || typeof m.signer.value !== 'string' || !['ss58', 'accountId32', 'h160'].includes(m.signer.type as string)) {
-    issues.push({ code: 'MANIFEST_INVALID', path: 'signer', message: "signer must be {type: 'ss58'|'accountId32'|'h160', value}" });
+  if (m.version !== 1)
+    issues.push({
+      code: "MANIFEST_INVALID",
+      path: "version",
+      message: "only manifest version 1 is supported",
+    });
+  if (
+    !isObject(m.signer) ||
+    typeof m.signer.value !== "string" ||
+    !["ss58", "accountId32", "h160"].includes(m.signer.type as string)
+  ) {
+    issues.push({
+      code: "MANIFEST_INVALID",
+      path: "signer",
+      message: "signer must be {type: 'ss58'|'accountId32'|'h160', value}",
+    });
   }
-  if (m.atomicRequired !== undefined && typeof m.atomicRequired !== 'boolean') {
-    issues.push({ code: 'MANIFEST_INVALID', path: 'atomicRequired', message: 'atomicRequired must be true or false' });
+  if (m.atomicRequired !== undefined && typeof m.atomicRequired !== "boolean") {
+    issues.push({
+      code: "MANIFEST_INVALID",
+      path: "atomicRequired",
+      message: "atomicRequired must be true or false",
+    });
   }
-  if (m.chain !== undefined && (!isObject(m.chain) || typeof m.chain.genesisHash !== 'string' || typeof m.chain.specVersion !== 'number')) {
-    issues.push({ code: 'MANIFEST_INVALID', path: 'chain', message: 'chain must be {genesisHash, specVersion}' });
+  if (
+    m.chain !== undefined &&
+    (!isObject(m.chain) ||
+      typeof m.chain.genesisHash !== "string" ||
+      typeof m.chain.specVersion !== "number")
+  ) {
+    issues.push({
+      code: "MANIFEST_INVALID",
+      path: "chain",
+      message: "chain must be {genesisHash, specVersion}",
+    });
   }
   if (!Array.isArray(m.actions) || m.actions.length === 0) {
-    issues.push({ code: 'MANIFEST_INVALID', path: 'actions', message: 'actions must be a non-empty array' });
+    issues.push({
+      code: "MANIFEST_INVALID",
+      path: "actions",
+      message: "actions must be a non-empty array",
+    });
     return false;
   }
   const ids = new Set<string>();
   m.actions.forEach((a, i) => {
     if (!isObject(a)) {
-      issues.push({ code: 'MANIFEST_INVALID', path: `actions[${i}]`, message: 'action must be an object' });
+      issues.push({
+        code: "MANIFEST_INVALID",
+        path: `actions[${i}]`,
+        message: "action must be an object",
+      });
       return;
     }
-    if (typeof a.id !== 'string' || a.id.length === 0) {
-      issues.push({ code: 'MANIFEST_INVALID', path: `actions[${i}].id`, message: 'action id must be a non-empty string' });
+    if (typeof a.id !== "string" || a.id.length === 0) {
+      issues.push({
+        code: "MANIFEST_INVALID",
+        path: `actions[${i}].id`,
+        message: "action id must be a non-empty string",
+      });
     } else if (ids.has(a.id)) {
-      issues.push({ code: 'MANIFEST_INVALID', path: `actions[${i}].id`, message: `duplicate action id "${a.id}"` });
+      issues.push({
+        code: "MANIFEST_INVALID",
+        path: `actions[${i}].id`,
+        message: `duplicate action id "${a.id}"`,
+      });
     } else ids.add(a.id);
-    if (!(typeof a.kind === 'string' && a.kind in KIND_TO_CAPABILITY)) {
-      issues.push({ code: 'MANIFEST_INVALID', path: `actions[${i}].kind`, message: `unknown kind "${String(a.kind)}"; expected one of ${Object.keys(KIND_TO_CAPABILITY).join(', ')}` });
+    if (!(typeof a.kind === "string" && a.kind in KIND_TO_CAPABILITY)) {
+      issues.push({
+        code: "MANIFEST_INVALID",
+        path: `actions[${i}].kind`,
+        message: `unknown kind "${String(a.kind)}"; expected one of ${Object.keys(KIND_TO_CAPABILITY).join(", ")}`,
+      });
     }
-    if (a.preferredMode !== undefined && a.preferredMode !== 'atomic' && a.preferredMode !== 'sequential') {
-      issues.push({ code: 'MANIFEST_INVALID', path: `actions[${i}].preferredMode`, message: "preferredMode must be 'atomic' or 'sequential'" });
+    if (
+      a.preferredMode !== undefined &&
+      a.preferredMode !== "atomic" &&
+      a.preferredMode !== "sequential"
+    ) {
+      issues.push({
+        code: "MANIFEST_INVALID",
+        path: `actions[${i}].preferredMode`,
+        message: "preferredMode must be 'atomic' or 'sequential'",
+      });
     }
   });
   return true;
@@ -309,19 +461,28 @@ function validateManifestShape(m: unknown, issues: CompileIssue[]): m is Manifes
 
 /** Checks the facts are internally consistent and loads the runtime they describe. */
 function validateFacts(facts: RuntimeFacts, issues: CompileIssue[]): LoadedRuntime | undefined {
-  const bad = (message: string) => issues.push({ code: 'FACTS_INVALID', message });
-  if (!isObject(facts) || !isObject(facts.fingerprint) || !isObject(facts.capabilities) || !isObject(facts.source)) {
-    bad('facts must include fingerprint, capabilities and source');
+  const bad = (message: string) => issues.push({ code: "FACTS_INVALID", message });
+  if (
+    !isObject(facts) ||
+    !isObject(facts.fingerprint) ||
+    !isObject(facts.capabilities) ||
+    !isObject(facts.source)
+  ) {
+    bad("facts must include fingerprint, capabilities and source");
     return undefined;
   }
   if (computeFingerprintDigest(facts.fingerprint) !== facts.fingerprintDigest) {
-    bad('fingerprintDigest does not match the fingerprint fields');
+    bad("fingerprintDigest does not match the fingerprint fields");
   }
-  if (!['verified', 'unknown', 'not_supported'].includes(facts.behaviour?.batchAllRollback)) {
+  if (!["verified", "unknown", "not_supported"].includes(facts.behaviour?.batchAllRollback)) {
     bad("behaviour.batchAllRollback must be 'verified', 'unknown' or 'not_supported'");
   }
-  if (facts.signingAccountBytes !== undefined && facts.signingAccountBytes !== 20 && facts.signingAccountBytes !== 32) {
-    bad('signingAccountBytes must be 20 or 32');
+  if (
+    facts.signingAccountBytes !== undefined &&
+    facts.signingAccountBytes !== 20 &&
+    facts.signingAccountBytes !== 32
+  ) {
+    bad("signingAccountBytes must be 20 or 32");
   }
   let rt: LoadedRuntime;
   try {
@@ -330,17 +491,23 @@ function validateFacts(facts: RuntimeFacts, issues: CompileIssue[]): LoadedRunti
     bad(`metadata or pinned types could not be loaded: ${(e as Error).message}`);
     return undefined;
   }
-  if (rt.metadataHash !== facts.fingerprint.metadataHash) bad('source.metadataHex does not hash to fingerprint.metadataHash');
-  if (rt.typesBundleHash !== facts.fingerprint.typesBundleHash) bad('source.typesBundle does not hash to fingerprint.typesBundleHash');
+  if (rt.metadataHash !== facts.fingerprint.metadataHash)
+    bad("source.metadataHex does not hash to fingerprint.metadataHash");
+  if (rt.typesBundleHash !== facts.fingerprint.typesBundleHash)
+    bad("source.typesBundle does not hash to fingerprint.typesBundleHash");
   return rt;
 }
 
-function capabilityOrigin(rt: LoadedRuntime, capability: string, cap: Capability): string | undefined {
+function capabilityOrigin(
+  rt: LoadedRuntime,
+  capability: string,
+  cap: Capability,
+): string | undefined {
   // Cross-check: the indexes in facts must point at this exact pallet/call in the metadata.
-  const [palletName, callName] = capability.split('.');
+  const [palletName, callName] = capability.split(".");
   const pallet = rt.metadata.asLatest.pallets.find((p) => p.index.toNumber() === cap.palletIndex);
   if (!pallet || pallet.name.toString() !== palletName) {
-    return `facts say ${capability} is at pallet index ${cap.palletIndex}, but the metadata has ${pallet ? pallet.name.toString() : 'no pallet'} there`;
+    return `facts say ${capability} is at pallet index ${cap.palletIndex}, but the metadata has ${pallet ? pallet.name.toString() : "no pallet"} there`;
   }
   try {
     const fn = rt.registry.findMetaCall(new Uint8Array([cap.palletIndex!, cap.callIndex!]));
@@ -354,10 +521,10 @@ function capabilityOrigin(rt: LoadedRuntime, capability: string, cap: Capability
 }
 
 function bitLengthOf(rt: LoadedRuntime, type: string): number | undefined {
-  const inner = type.replace(/^Compact<(.+)>$/, '$1');
+  const inner = type.replace(/^Compact<(.+)>$/, "$1");
   try {
     const t = rt.registry.createType(inner as any) as any;
-    return typeof t.bitLength === 'function' ? t.bitLength() : undefined;
+    return typeof t.bitLength === "function" ? t.bitLength() : undefined;
   } catch {
     return undefined;
   }
@@ -372,45 +539,70 @@ interface EncodeResult {
 
 /** Manifest args that only some runtimes' calls take. */
 const OPTIONAL_RUNTIME_ARGS: Partial<Record<ActionKind, string[]>> = {
-  'contracts.call': ['proofSize', 'storageDepositLimit']
+  "contracts.call": ["proofSize", "storageDepositLimit"],
 };
 
 function isWeightV2(rawType: string): boolean {
   try {
     const t = JSON.parse(rawType);
-    return t && typeof t === 'object' && Object.keys(t).sort().join(',') === 'proofSize,refTime';
+    return t && typeof t === "object" && Object.keys(t).sort().join(",") === "proofSize,refTime";
   } catch {
     return false;
   }
 }
 
 function weightV2(rt: LoadedRuntime, metaArgs: { name: string; type: string }[]): boolean {
-  const g = metaArgs.find((a) => a.name === 'gasLimit');
+  const g = metaArgs.find((a) => a.name === "gasLimit");
   return !!g && isWeightV2(rt.registry.createType(g.type as any).toRawType());
 }
 
-function encodeStep(rt: LoadedRuntime, kind: ActionKind, cap: Capability, v: ValidatedAction, index: number): EncodeResult {
+function encodeStep(
+  rt: LoadedRuntime,
+  kind: ActionKind,
+  cap: Capability,
+  v: ValidatedAction,
+  index: number,
+): EncodeResult {
   const bindings = ARG_BINDINGS[kind];
   const capability = KIND_TO_CAPABILITY[kind];
   if (!bindings) return { ok: false, reason: `SEAM has no encoder for ${capability} yet` };
   const fn = rt.registry.findMetaCall(new Uint8Array([cap.palletIndex!, cap.callIndex!]));
-  const metaArgs = fn.meta.args.map((a) => ({ name: stringCamelCase(a.name.toString()), type: a.type.toString() }));
+  const metaArgs = fn.meta.args.map((a) => ({
+    name: stringCamelCase(a.name.toString()),
+    type: a.type.toString(),
+  }));
   const unknownArgs = metaArgs.filter((a) => !(a.name in bindings)).map((a) => a.name);
   if (unknownArgs.length) {
-    return { ok: false, reason: `${capability} on this runtime takes argument(s) SEAM cannot fill: ${unknownArgs.join(', ')}` };
+    return {
+      ok: false,
+      reason: `${capability} on this runtime takes argument(s) SEAM cannot fill: ${unknownArgs.join(", ")}`,
+    };
   }
   // Arguments the runtime takes but the manifest did not give: unavailable, never guessed.
-  const missing = metaArgs.filter((a) => !(bindings[a.name]! in v.encodeValues)).map((a) => bindings[a.name]!);
+  const missing = metaArgs
+    .filter((a) => !(bindings[a.name]! in v.encodeValues))
+    .map((a) => bindings[a.name]!);
   if (missing.length) {
-    return { ok: false, reason: `${capability} on this runtime takes argument(s) SEAM cannot fill: ${missing.join(', ')}` };
+    return {
+      ok: false,
+      reason: `${capability} on this runtime takes argument(s) SEAM cannot fill: ${missing.join(", ")}`,
+    };
   }
   // Manifest args the runtime does not take: an error rather than silently dropping them.
   const used = new Set(metaArgs.map((a) => bindings[a.name]!));
   for (const extra of OPTIONAL_RUNTIME_ARGS[kind] ?? []) {
-    if (extra in v.encodeValues && !used.has(extra) && !(extra === 'proofSize' && weightV2(rt, metaArgs))) {
+    if (
+      extra in v.encodeValues &&
+      !used.has(extra) &&
+      !(extra === "proofSize" && weightV2(rt, metaArgs))
+    ) {
       return {
         ok: false,
-        rangeIssue: { code: 'MANIFEST_INVALID', path: `actions[${index}].args.${extra}`, message: `${capability} on this runtime (${metaArgs.map((a) => `${a.name}: ${a.type}`).join(', ')}) has no ${extra}; remove it` }
+        rangeIssue: {
+          code: "MANIFEST_INVALID",
+          path: `actions[${index}].args.${extra}`,
+          message: `${capability} on this runtime (${metaArgs.map((a) => `${a.name}: ${a.type}`).join(", ")}) has no ${extra}; remove it`,
+        },
       };
     }
   }
@@ -419,15 +611,28 @@ function encodeStep(rt: LoadedRuntime, kind: ActionKind, cap: Capability, v: Val
     const seamKey = bindings[a.name]!;
     const raw = v.encodeValues[seamKey]!;
     const rawType = rt.registry.createType(a.type as any).toRawType();
-    if (seamKey === 'gasLimit' && isWeightV2(rawType)) {
+    if (seamKey === "gasLimit" && isWeightV2(rawType)) {
       // Weight v2: { ref_time: gasLimit, proof_size: proofSize }, both Compact<u64>.
       const proof = v.encodeValues.proofSize;
       if (proof === undefined || proof === null) {
-        return { ok: false, reason: `${capability} on this runtime takes gas_limit as Weight { ref_time, proof_size }; the manifest must give proofSize` };
+        return {
+          ok: false,
+          reason: `${capability} on this runtime takes gas_limit as Weight { ref_time, proof_size }; the manifest must give proofSize`,
+        };
       }
-      for (const [k, val] of [['gasLimit', raw], ['proofSize', proof]] as const) {
+      for (const [k, val] of [
+        ["gasLimit", raw],
+        ["proofSize", proof],
+      ] as const) {
         if (BigInt(val!) >= 1n << 64n) {
-          return { ok: false, rangeIssue: { code: 'AMOUNT_INVALID', path: `actions[${index}].args.${k}`, message: `${val} does not fit u64 (Weight ${k === 'gasLimit' ? 'ref_time' : 'proof_size'})` } };
+          return {
+            ok: false,
+            rangeIssue: {
+              code: "AMOUNT_INVALID",
+              path: `actions[${index}].args.${k}`,
+              message: `${val} does not fit u64 (Weight ${k === "gasLimit" ? "ref_time" : "proof_size"})`,
+            },
+          };
         }
       }
       ordered.push({ refTime: raw, proofSize: proof });
@@ -435,17 +640,30 @@ function encodeStep(rt: LoadedRuntime, kind: ActionKind, cap: Capability, v: Val
     }
     if (raw === null) {
       if (!/^Option</.test(rawType)) {
-        return { ok: false, rangeIssue: { code: 'MANIFEST_INVALID', path: `actions[${index}].args.${seamKey}`, message: `${seamKey} is ${a.type} on this runtime, not optional; null is not allowed` } };
+        return {
+          ok: false,
+          rangeIssue: {
+            code: "MANIFEST_INVALID",
+            path: `actions[${index}].args.${seamKey}`,
+            message: `${seamKey} is ${a.type} on this runtime, not optional; null is not allowed`,
+          },
+        };
       }
       ordered.push(null);
       continue;
     }
-    const inner = a.type.replace(/^Option<(.+)>$/, '$1');
-    const bits = /^(Compact<)?(u\d+|[A-Za-z]*(Balance|Weight|AssetId)[A-Za-z]*)>?$/.test(inner) ? bitLengthOf(rt, inner) : undefined;
+    const inner = a.type.replace(/^Option<(.+)>$/, "$1");
+    const bits = /^(Compact<)?(u\d+|[A-Za-z]*(Balance|Weight|AssetId)[A-Za-z]*)>?$/.test(inner)
+      ? bitLengthOf(rt, inner)
+      : undefined;
     if (bits !== undefined && BigInt(raw) >= 1n << BigInt(bits)) {
       return {
         ok: false,
-        rangeIssue: { code: 'AMOUNT_INVALID', path: `actions[${index}].args.${seamKey}`, message: `${raw} does not fit ${a.type} (${bits} bits) on this runtime` }
+        rangeIssue: {
+          code: "AMOUNT_INVALID",
+          path: `actions[${index}].args.${seamKey}`,
+          message: `${raw} does not fit ${a.type} (${bits} bits) on this runtime`,
+        },
       };
     }
     ordered.push(rawType.includes('"Id":"AccountId"') ? { Id: raw } : raw);
@@ -455,87 +673,145 @@ function encodeStep(rt: LoadedRuntime, kind: ActionKind, cap: Capability, v: Val
   } catch (e) {
     return {
       ok: false,
-      rangeIssue: { code: 'ENCODE_FAILED', path: `actions[${index}]`, message: `could not encode ${capability}: ${(e as Error).message}` }
+      rangeIssue: {
+        code: "ENCODE_FAILED",
+        path: `actions[${index}]`,
+        message: `could not encode ${capability}: ${(e as Error).message}`,
+      },
     };
   }
 }
 
 function domainMismatch(signerBytes: 20 | 32, requiredBytes: 20 | 32): CompileIssue {
-  const name = (n: number) => (n === 20 ? 'H160' : 'AccountId32');
+  const name = (n: number) => (n === 20 ? "H160" : "AccountId32");
   return {
-    code: 'SIGNER_DOMAIN_MISMATCH',
-    path: 'signer',
+    code: "SIGNER_DOMAIN_MISMATCH",
+    path: "signer",
     message:
       `the manifest signer is a ${signerBytes}-byte ${name(signerBytes)} account, but this runtime's facts require a ${requiredBytes}-byte ${name(requiredBytes)} signing account. ` +
-      'SEAM does not convert between the 20-byte and 32-byte domains (no implicit conversion, padding or hashing); supply a signer in the required domain.'
+      "SEAM does not convert between the 20-byte and 32-byte domains (no implicit conversion, padding or hashing); supply a signer in the required domain.",
   };
 }
 
-function signerFor(m: Manifest, ss58Prefix: number, issues: CompileIssue[], requiredBytes: 20 | 32): PlanSigner | undefined {
+function signerFor(
+  m: Manifest,
+  ss58Prefix: number,
+  issues: CompileIssue[],
+  requiredBytes: 20 | 32,
+): PlanSigner | undefined {
   const s = m.signer;
-  if (s.type === 'h160') {
+  if (s.type === "h160") {
     if (requiredBytes !== 20) {
       issues.push(domainMismatch(20, requiredBytes));
       return undefined;
     }
-    if (!m.actions.every((a) => a.kind === 'revive.call')) {
-      issues.push({ code: 'ADDRESS_TYPE', path: 'signer', message: 'an h160 signer can only be used for revive.call; native calls need an AccountId32 signer' });
+    if (!m.actions.every((a) => a.kind === "revive.call")) {
+      issues.push({
+        code: "ADDRESS_TYPE",
+        path: "signer",
+        message:
+          "an h160 signer can only be used for revive.call; native calls need an AccountId32 signer",
+      });
       return undefined;
     }
-    const h = parseH160(s.value, 'signer.value', issues);
-    return h ? { type: 'h160', value: h, publicKey: h } : undefined;
+    const h = parseH160(s.value, "signer.value", issues);
+    return h ? { type: "h160", value: h, publicKey: h } : undefined;
   }
   if (requiredBytes !== 32) {
     issues.push(domainMismatch(32, requiredBytes));
     return undefined;
   }
   if (s.ss58Prefix !== undefined && s.ss58Prefix !== ss58Prefix) {
-    issues.push({ code: 'SS58_PREFIX', path: 'signer.ss58Prefix', message: `signer declares SS58 prefix ${s.ss58Prefix}, this chain uses ${ss58Prefix}` });
+    issues.push({
+      code: "SS58_PREFIX",
+      path: "signer.ss58Prefix",
+      message: `signer declares SS58 prefix ${s.ss58Prefix}, this chain uses ${ss58Prefix}`,
+    });
     return undefined;
   }
-  if (s.type === 'ss58' && s.value.startsWith('0x')) {
-    issues.push({ code: 'ADDRESS_TYPE', path: 'signer.value', message: "signer type is 'ss58' but the value is hex" });
+  if (s.type === "ss58" && s.value.startsWith("0x")) {
+    issues.push({
+      code: "ADDRESS_TYPE",
+      path: "signer.value",
+      message: "signer type is 'ss58' but the value is hex",
+    });
     return undefined;
   }
-  if (s.type === 'accountId32' && !/^0x[0-9a-fA-F]{64}$/.test(s.value)) {
-    issues.push({ code: 'ADDRESS_TYPE', path: 'signer.value', message: "signer type is 'accountId32' but the value is not 0x + 64 hex chars" });
+  if (s.type === "accountId32" && !/^0x[0-9a-fA-F]{64}$/.test(s.value)) {
+    issues.push({
+      code: "ADDRESS_TYPE",
+      path: "signer.value",
+      message: "signer type is 'accountId32' but the value is not 0x + 64 hex chars",
+    });
     return undefined;
   }
-  const a = parseNativeAddress(s.value, ss58Prefix, 'signer.value', issues);
+  const a = parseNativeAddress(s.value, ss58Prefix, "signer.value", issues);
   if (!a) return undefined;
-  return { type: s.type, value: s.type === 'ss58' ? a.ss58 : a.accountId, publicKey: a.accountId };
+  return { type: s.type, value: s.type === "ss58" ? a.ss58 : a.accountId, publicKey: a.accountId };
 }
 
-const NO_V3_METADATA_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>(['revive.call', 'nfts.mint']);
+const NO_V3_METADATA_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>([
+  "revive.call",
+  "nfts.mint",
+]);
 
 const PARTIAL_EXECUTION_RISK =
-  'Steps would run one after another instead of in one all-or-nothing batch. If a later step fails, earlier steps stay on chain and are not rolled back, so the result can be partly executed.';
+  "Steps would run one after another instead of in one all-or-nothing batch. If a later step fails, earlier steps stay on chain and are not rolled back, so the result can be partly executed.";
 
 /**
  * Checks an atomic rollback proof against the facts and the kinds in the plan. Only a proof that matches
  * this chain (genesis), this runtime (metadata hash, spec version) and covers every kind in the plan counts.
  */
-export function evaluateRollbackProof(facts: RuntimeFacts, kinds: readonly ActionKind[]): { ok: true } | { ok: false; reason: string } {
+export function evaluateRollbackProof(
+  facts: RuntimeFacts,
+  kinds: readonly ActionKind[],
+): { ok: true } | { ok: false; reason: string } {
   const proof = facts.behaviour.batchAllRollbackProof as AtomicRollbackProof | undefined;
   if (proof === undefined) {
-    return { ok: false, reason: "the facts say 'verified' with no proof object (deprecated bare string; it proves nothing about this chain)" };
+    return {
+      ok: false,
+      reason:
+        "the facts say 'verified' with no proof object (deprecated bare string; it proves nothing about this chain)",
+    };
   }
-  const no = (reason: string) => ({ ok: false as const, reason: `the rollback proof is rejected: ${reason}` });
-  if (!isObject(proof)) return no('proof is not an object');
+  const no = (reason: string) => ({
+    ok: false as const,
+    reason: `the rollback proof is rejected: ${reason}`,
+  });
+  if (!isObject(proof)) return no("proof is not an object");
   const fp = facts.fingerprint;
-  const hex32 = (v: unknown) => typeof v === 'string' && /^0x[0-9a-fA-F]{64}$/.test(v);
-  const eq = (a: unknown, b: string) => typeof a === 'string' && a.toLowerCase() === b.toLowerCase();
-  if (!hex32(proof.genesisHash) || !eq(proof.genesisHash, fp.genesisHash)) return no(`genesisHash ${String(proof.genesisHash)} is not this chain (${fp.genesisHash})`);
-  if (!hex32(proof.metadataHash) || !eq(proof.metadataHash, fp.metadataHash)) return no(`metadataHash ${String(proof.metadataHash)} is not this runtime's (${fp.metadataHash})`);
-  if (proof.specVersion !== fp.specVersion) return no(`specVersion ${String(proof.specVersion)} is not this runtime's (${fp.specVersion})`);
-  if (proof.fingerprintDigest !== undefined && !eq(proof.fingerprintDigest, facts.fingerprintDigest)) return no('fingerprintDigest does not match the facts');
-  if (!hex32(proof.txHash) && !hex32(proof.blockHash)) return no('txHash or blockHash (0x + 64 hex) is required');
-  const present = (v: unknown) => v !== undefined && v !== null && !(typeof v === 'string' && v === '') && !(isObject(v) && Object.keys(v).length === 0);
-  if (!present(proof.preState)) return no('preState evidence is missing');
-  if (!present(proof.postState)) return no('postState evidence is missing');
-  if (!Array.isArray(proof.composition) || proof.composition.length === 0) return no('composition (the call kinds that were tested) is missing');
+  const hex32 = (v: unknown) => typeof v === "string" && /^0x[0-9a-fA-F]{64}$/.test(v);
+  const eq = (a: unknown, b: string) =>
+    typeof a === "string" && a.toLowerCase() === b.toLowerCase();
+  if (!hex32(proof.genesisHash) || !eq(proof.genesisHash, fp.genesisHash))
+    return no(`genesisHash ${String(proof.genesisHash)} is not this chain (${fp.genesisHash})`);
+  if (!hex32(proof.metadataHash) || !eq(proof.metadataHash, fp.metadataHash))
+    return no(
+      `metadataHash ${String(proof.metadataHash)} is not this runtime's (${fp.metadataHash})`,
+    );
+  if (proof.specVersion !== fp.specVersion)
+    return no(`specVersion ${String(proof.specVersion)} is not this runtime's (${fp.specVersion})`);
+  if (
+    proof.fingerprintDigest !== undefined &&
+    !eq(proof.fingerprintDigest, facts.fingerprintDigest)
+  )
+    return no("fingerprintDigest does not match the facts");
+  if (!hex32(proof.txHash) && !hex32(proof.blockHash))
+    return no("txHash or blockHash (0x + 64 hex) is required");
+  const present = (v: unknown) =>
+    v !== undefined &&
+    v !== null &&
+    !(typeof v === "string" && v === "") &&
+    !(isObject(v) && Object.keys(v).length === 0);
+  if (!present(proof.preState)) return no("preState evidence is missing");
+  if (!present(proof.postState)) return no("postState evidence is missing");
+  if (!Array.isArray(proof.composition) || proof.composition.length === 0)
+    return no("composition (the call kinds that were tested) is missing");
   const missing = [...new Set(kinds)].filter((k) => !proof.composition.includes(k));
-  if (missing.length) return no(`composition covers ${proof.composition.join(', ')} but this plan also uses ${missing.join(', ')}`);
+  if (missing.length)
+    return no(
+      `composition covers ${proof.composition.join(", ")} but this plan also uses ${missing.join(", ")}`,
+    );
   return { ok: true };
 }
 
@@ -551,37 +827,58 @@ function selectMode(
   actions: ManifestAction[],
   facts: RuntimeFacts,
   options: CompileOptions,
-  atomicRequired: boolean
+  atomicRequired: boolean,
 ): ModeChoice {
-  const unavailable = steps.filter((s) => s.status === 'unavailable');
+  const unavailable = steps.filter((s) => s.status === "unavailable");
   if (unavailable.length) {
-    return { mode: 'unavailable', modeReason: `Cannot run: ${unavailable.map((s) => `step "${s.actionId}": ${s.reason}`).join('; ')}` };
+    return {
+      mode: "unavailable",
+      modeReason: `Cannot run: ${unavailable.map((s) => `step "${s.actionId}": ${s.reason}`).join("; ")}`,
+    };
   }
-  if (actions.some((a) => a.preferredMode === 'sequential')) {
-    return { mode: 'sequential', modeReason: 'The manifest asks for sequential execution.', atomicBlock: atomicRequired ? 'the manifest also asks for sequential execution (preferredMode "sequential" conflicts with atomicRequired)' : undefined };
+  if (actions.some((a) => a.preferredMode === "sequential")) {
+    return {
+      mode: "sequential",
+      modeReason: "The manifest asks for sequential execution.",
+      atomicBlock: atomicRequired
+        ? 'the manifest also asks for sequential execution (preferredMode "sequential" conflicts with atomicRequired)'
+        : undefined,
+    };
   }
-  const wantsAtomic = actions.some((a) => a.preferredMode === 'atomic');
+  const wantsAtomic = actions.some((a) => a.preferredMode === "atomic");
   const fallback = (why: string): ModeChoice => ({
-    mode: 'sequential',
-    modeReason: wantsAtomic ? `Atomic execution was requested but is not available: ${why}. Steps run one after another; a failure stops later steps.` : `${why}. Steps run one after another; a failure stops later steps.`,
-    atomicBlock: why
+    mode: "sequential",
+    modeReason: wantsAtomic
+      ? `Atomic execution was requested but is not available: ${why}. Steps run one after another; a failure stops later steps.`
+      : `${why}. Steps run one after another; a failure stops later steps.`,
+    atomicBlock: why,
   });
   const batch = facts.capabilities[BATCH_CAPABILITY];
-  if (!batch || batch.status !== 'observed') return fallback(`${BATCH_CAPABILITY} is not on this runtime`);
+  if (!batch || batch.status !== "observed")
+    return fallback(`${BATCH_CAPABILITY} is not on this runtime`);
   const rollback = facts.behaviour.batchAllRollback;
   let unverifiedWhy = `${BATCH_CAPABILITY} exists but its rollback on failure is not verified`;
-  let unverifiedNote = 'rollback on failure has NOT been verified on this runtime';
-  if (rollback === 'verified') {
-    const proof = evaluateRollbackProof(facts, actions.map((a) => a.kind));
+  let unverifiedNote = "rollback on failure has NOT been verified on this runtime";
+  if (rollback === "verified") {
+    const proof = evaluateRollbackProof(
+      facts,
+      actions.map((a) => a.kind),
+    );
     if (proof.ok) {
-      return { mode: 'atomic_verified', modeReason: `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has been verified on this runtime.` };
+      return {
+        mode: "atomic_verified",
+        modeReason: `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has been verified on this runtime.`,
+      };
     }
     unverifiedWhy = `${BATCH_CAPABILITY} rollback is claimed verified but ${proof.reason}`;
     unverifiedNote = `rollback on failure is NOT proven for this runtime (${proof.reason})`;
   }
-  if (rollback === 'unknown' || rollback === 'verified') {
+  if (rollback === "unknown" || rollback === "verified") {
     if (options.allowAtomicUnverified) {
-      return { mode: 'atomic_unverified', modeReason: `All steps go in one ${BATCH_CAPABILITY}; ${unverifiedNote} (allowed by allowAtomicUnverified).` };
+      return {
+        mode: "atomic_unverified",
+        modeReason: `All steps go in one ${BATCH_CAPABILITY}; ${unverifiedNote} (allowed by allowAtomicUnverified).`,
+      };
     }
     return fallback(`${unverifiedWhy} (set allowAtomicUnverified to batch anyway)`);
   }
@@ -594,7 +891,11 @@ function selectMode(
  * Returns a plan with mode 'unavailable' when the runtime cannot do what is asked.
  * Pure and offline: no network, no clock, no randomness.
  */
-export function compile(manifest: Manifest, facts: RuntimeFacts, options: CompileOptions = {}): Plan {
+export function compile(
+  manifest: Manifest,
+  facts: RuntimeFacts,
+  options: CompileOptions = {},
+): Plan {
   const issues: CompileIssue[] = [];
   if (!validateManifestShape(manifest, issues) || issues.length) throw new SeamCompileError(issues);
 
@@ -604,22 +905,33 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
 
   if (manifest.chain) {
     if (manifest.chain.genesisHash.toLowerCase() !== fp.genesisHash.toLowerCase()) {
-      issues.push({ code: 'CHAIN_MISMATCH', path: 'chain.genesisHash', message: `manifest targets genesis ${manifest.chain.genesisHash}, connected chain is ${fp.genesisHash}` });
+      issues.push({
+        code: "CHAIN_MISMATCH",
+        path: "chain.genesisHash",
+        message: `manifest targets genesis ${manifest.chain.genesisHash}, connected chain is ${fp.genesisHash}`,
+      });
     }
     if (manifest.chain.specVersion !== fp.specVersion) {
-      issues.push({ code: 'CHAIN_MISMATCH', path: 'chain.specVersion', message: `manifest targets spec ${manifest.chain.specVersion}, runtime is spec ${fp.specVersion}` });
+      issues.push({
+        code: "CHAIN_MISMATCH",
+        path: "chain.specVersion",
+        message: `manifest targets spec ${manifest.chain.specVersion}, runtime is spec ${fp.specVersion}`,
+      });
     }
   }
 
   const signer = signerFor(manifest, fp.ss58Prefix, issues, facts.signingAccountBytes ?? 32);
-  const validated = manifest.actions.map((a, i) => validateAction(a, i, fp.ss58Prefix, issues, options));
+  const validated = manifest.actions.map((a, i) =>
+    validateAction(a, i, fp.ss58Prefix, issues, options),
+  );
   if (issues.length) throw new SeamCompileError(issues);
 
   let manifestDigest: Hex;
   try {
     manifestDigest = digestJson(DOMAIN.manifest, manifest);
   } catch (e) {
-    if (e instanceof NotCanonicalError) throw new SeamCompileError([{ code: 'NOT_CANONICAL', path: e.path, message: e.message }]);
+    if (e instanceof NotCanonicalError)
+      throw new SeamCompileError([{ code: "NOT_CANONICAL", path: e.path, message: e.message }]);
     throw e;
   }
 
@@ -636,24 +948,27 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
       callIndex: null,
       decodedArgs: v!.values as Record<string, string>, // storageDepositLimit may be null, see PlanStep
       encodedCall: null,
-      status: 'unavailable'
+      status: "unavailable",
     };
     if (NO_V3_METADATA_KINDS.has(action.kind)) {
       // TODO(SEAM-006/007): needs REAL observed Portaldot V3 metadata for Revive (call: dest/value/weight/storage deposit/data)
       // and Nfts (mint: collection/item/mint_to/witness). Until a V3 runtime's metadata is captured and pinned as a fixture,
       // encoding either kind would be guessing the layout. Remove this branch only together with fixture-backed encoders + tests.
       step.reason = `${capability} cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec ${fp.specVersion})`;
-      step.reasonCode = 'NO_OBSERVED_V3_METADATA';
-    } else if (!cap || cap.status === 'not_observed') {
+      step.reasonCode = "NO_OBSERVED_V3_METADATA";
+    } else if (!cap || cap.status === "not_observed") {
       step.reason = `${capability} is not on this runtime (spec ${fp.specVersion})`;
-    } else if (cap.status === 'unknown') {
+    } else if (cap.status === "unknown") {
       step.reason = `${capability} could not be confirmed on this runtime (spec ${fp.specVersion}); discovery did not finish reading it`;
     } else if (!Number.isInteger(cap.palletIndex) || !Number.isInteger(cap.callIndex)) {
-      issues.push({ code: 'FACTS_INVALID', message: `${capability} is observed but has no pallet/call index` });
+      issues.push({
+        code: "FACTS_INVALID",
+        message: `${capability} is observed but has no pallet/call index`,
+      });
     } else {
       const mismatch = capabilityOrigin(rt, capability, cap);
       if (mismatch) {
-        issues.push({ code: 'FACTS_INVALID', message: mismatch });
+        issues.push({ code: "FACTS_INVALID", message: mismatch });
       } else {
         const r = encodeStep(rt, action.kind, cap, v!, i);
         step.palletIndex = cap.palletIndex!;
@@ -661,7 +976,7 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
         if (r.rangeIssue) issues.push(r.rangeIssue);
         else if (r.ok) {
           step.encodedCall = r.encodedCall!;
-          step.status = 'ok';
+          step.status = "ok";
         } else step.reason = r.reason;
       }
     }
@@ -672,26 +987,45 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
   if (issues.length) throw new SeamCompileError(issues);
 
   const effectiveActions = manifest.actions;
-  const choice = selectMode(steps, effectiveActions, facts, options, manifest.atomicRequired === true);
+  const choice = selectMode(
+    steps,
+    effectiveActions,
+    facts,
+    options,
+    manifest.atomicRequired === true,
+  );
   let { mode, modeReason } = choice;
   let modeDowngrade: ModeDowngrade | undefined;
-  if (steps.length === 1 && (mode === 'atomic_verified' || mode === 'atomic_unverified')) {
-    mode = 'sequential';
-    modeReason = 'Single step: it is atomic on its own, so no batch is needed.';
-  } else if (steps.length > 1 && choice.atomicBlock !== undefined && manifest.atomicRequired === true) {
-    mode = 'unavailable';
+  if (steps.length === 1 && (mode === "atomic_verified" || mode === "atomic_unverified")) {
+    mode = "sequential";
+    modeReason = "Single step: it is atomic on its own, so no batch is needed.";
+  } else if (
+    steps.length > 1 &&
+    choice.atomicBlock !== undefined &&
+    manifest.atomicRequired === true
+  ) {
+    mode = "unavailable";
     modeReason = `Atomic execution is required (atomicRequired) but is not available: ${choice.atomicBlock}. No calls are produced.`;
     for (const st of steps) {
       st.encodedCall = null;
-      st.status = 'unavailable';
-      st.reason = 'not executable: atomic execution is required but not available';
-      st.reasonCode = 'ATOMIC_REQUIRED_UNAVAILABLE';
+      st.status = "unavailable";
+      st.reason = "not executable: atomic execution is required but not available";
+      st.reasonCode = "ATOMIC_REQUIRED_UNAVAILABLE";
     }
-  } else if (steps.length > 1 && choice.atomicBlock !== undefined && effectiveActions.some((a) => a.preferredMode === 'atomic')) {
-    modeDowngrade = { from: 'atomic', to: 'sequential', requiresApproval: true, partialExecutionRisk: PARTIAL_EXECUTION_RISK };
+  } else if (
+    steps.length > 1 &&
+    choice.atomicBlock !== undefined &&
+    effectiveActions.some((a) => a.preferredMode === "atomic")
+  ) {
+    modeDowngrade = {
+      from: "atomic",
+      to: "sequential",
+      requiresApproval: true,
+      partialExecutionRisk: PARTIAL_EXECUTION_RISK,
+    };
   }
 
-  const plan: Omit<Plan, 'planDigest'> & { planDigest?: Hex } = {
+  const plan: Omit<Plan, "planDigest"> & { planDigest?: Hex } = {
     planVersion: 1,
     manifestDigest,
     fingerprintDigest: facts.fingerprintDigest,
@@ -699,20 +1033,20 @@ export function compile(manifest: Manifest, facts: RuntimeFacts, options: Compil
     mode,
     modeReason,
     ...(modeDowngrade ? { modeDowngrade } : {}),
-    steps
+    steps,
   };
 
-  if (mode === 'atomic_verified' || mode === 'atomic_unverified') {
+  if (mode === "atomic_verified" || mode === "atomic_unverified") {
     const batch = facts.capabilities[BATCH_CAPABILITY]!;
     const mismatch = capabilityOrigin(rt, BATCH_CAPABILITY, batch);
-    if (mismatch) throw new SeamCompileError([{ code: 'FACTS_INVALID', message: mismatch }]);
+    if (mismatch) throw new SeamCompileError([{ code: "FACTS_INVALID", message: mismatch }]);
     const fn = rt.registry.findMetaCall(new Uint8Array([batch.palletIndex!, batch.callIndex!]));
-    const inner = steps.map((s) => rt.registry.createType('Call', s.encodedCall!));
+    const inner = steps.map((s) => rt.registry.createType("Call", s.encodedCall!));
     plan.outerCall = {
       capability: BATCH_CAPABILITY,
       palletIndex: batch.palletIndex!,
       callIndex: batch.callIndex!,
-      encodedCall: fn(inner).toHex() as Hex
+      encodedCall: fn(inner).toHex() as Hex,
     };
   }
 
