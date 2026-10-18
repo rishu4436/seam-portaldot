@@ -36,4 +36,4 @@ export function passedItems(g?: GateResult): { code: string; text: string; detai
   }
   return out;
 }
-export function blockText(r: { code: string; message?: string }): string { return BLOCK_WORDING[r.code] ?? r.message ?? r.code; }
+export function blockText(r: { code: string; message?: string }): string { return BLOCK_WORDING[r.code] ?? (r.message ?? r.code).replace(/^Blocked:\s*/, ""); }
