@@ -1,3 +1,4 @@
+import type { GateResult } from "./gate";
 // Console data adapter. Every plan, policy result, approval and receipt here was
 // produced by the REAL @seam/compiler, @seam/policy and @seam/sdk, run offline
 // against Bot 4's saved Portaldot node snapshot (see scripts/gen-demo.mjs).
@@ -72,7 +73,7 @@ export function approve(_plan: Plan, _policy: PolicyResult, _env: SigningEnvelop
 }
 
 export function submitBlock(): string | undefined { const r = S().run; return r && !r.ok ? r.reason : undefined; }
-export type StepEvent = { index: number; actionId: string; phase: "checking" | "sending" | "done" | "blocked"; detail?: string };
+export type StepEvent = { index: number; actionId: string; phase: "checking" | "sending" | "done" | "blocked"; detail?: string; check?: GateResult };
 export function timeline(): StepEvent[] { return S().timeline ?? []; }
 
 export function receipt(_plan: Plan, _policy: PolicyResult, _approval: Approval, _failAt?: string): Receipt {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import * as api from "./lib/mock";
 import * as tc from "./lib/testchain";
+import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
 import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
 
 type Source = "mainnet" | "testchain";
@@ -53,16 +54,29 @@ function Events({ list }: { list: string[] }) {
   return <ul className="evlist">{list.map((e, i) => <li key={i} className={evTone(e)}><code>{e}</code>{isEmitted(e) && <Pill tone="ok">contract event</Pill>}</li>)}</ul>;
 }
 
+function GateList({ g }: { g?: GateResult }) {
+  const passed = passedItems(g);
+  if (!g || (!passed.length && !g.reasons.length)) return null;
+  return (
+    <ul className="gatelist">
+      {g.reasons.map((r) => <li key={"b" + r.code} className="bad"><b>Blocked:</b> {blockText(r)} <code>{r.code}</code></li>)}
+      {passed.map((p) => <li key={"p" + p.code} className="pass"><span>✓</span> {p.text} <code title={p.detail}>{p.code}</code></li>)}
+    </ul>
+  );
+}
+
 function GateChecks({ list }: { list: tc.GateCheck[] }) {
   if (!list.length) return null;
   return (
     <>
       <h4>Submit gate, per step</h4>
-      {list.map((g) => (
-        <details key={g.index} className="small" open={!g.result.ok}>
-          <summary><b>{g.actionId}</b> {g.sendIndex != null && <span className="muted">(send #{g.sendIndex + 1}) </span>}<Pill tone={g.result.ok ? "ok" : "bad"}>{g.result.ok ? "all checks passed" : g.result.reasons.map((r) => r.code).join(", ")}</Pill> <span className="muted">SDK {g.sdkOutcome}{g.agreesWithSdk ? ", recomputed gate agrees" : ", GATE DISAGREES"}</span></summary>
-          <p className="muted small">{g.checksPerformed.length} checks: {g.checksPerformed.join(", ")}. {g.note}</p>
-          <dl className="kv small"><dt>Runtime</dt><dd>{g.inputs.runtimeUnchanged ? "unchanged since approval" : "changed"}</dd>{g.inputs.dryRunDetails?.map((d, i) => <><dt key={"k" + i}>Dry run</dt><dd key={"v" + i}>{d.outcome}: {d.detail}</dd></>)}{g.inputs.previousSteps?.length ? <><dt>Earlier steps</dt><dd>{g.inputs.previousSteps.map((p) => `${p.actionId} ${p.status}${p.block ? ` #${p.block}` : ""}`).join(", ")}</dd></> : null}</dl>
+      {list.map((g, n) => (
+        <details key={n} className="small" open={!g.result.ok}>
+          <summary><b>{g.actionId}</b> {g.sendIndex != null && <span className="muted">(send #{g.sendIndex + 1}) </span>}{g.phase && <span className="muted">{g.phase} </span>}<Pill tone={g.result.ok ? "ok" : "bad"}>{g.result.ok ? "all checks passed" : g.result.reasons.map((r) => r.code).join(", ")}</Pill> {g.sdkOutcome && <span className="muted">SDK {g.sdkOutcome}{g.agreesWithSdk ? ", recomputed gate agrees" : ", GATE DISAGREES"}</span>}{g.source && <span className="muted"> from the SDK's own {g.source === "run.check" ? "refusal result" : "onStep check"}</span>}</summary>
+          <GateList g={g.result} />
+          {g.checksPerformed && <p className="muted small">{g.checksPerformed.length} checks: {g.checksPerformed.join(", ")}. {g.note}</p>}
+          {g.dryRun?.map((d, i) => <dl key={i} className="kv small"><dt>Dry run</dt><dd>{d.outcome}: {d.detail}</dd></dl>)}
+          {g.inputs && <dl className="kv small"><dt>Runtime</dt><dd>{g.inputs.runtimeUnchanged ? "unchanged since approval" : "changed"}</dd>{g.inputs.dryRunDetails?.map((d, i) => <><dt key={"k" + i}>Dry run</dt><dd key={"v" + i}>{d.outcome}: {d.detail}</dd></>)}{g.inputs.previousSteps?.length ? <><dt>Earlier steps</dt><dd>{g.inputs.previousSteps.map((p) => `${p.actionId} ${p.status}${p.block ? ` #${p.block}` : ""}`).join(", ")}</dd></> : null}</dl>}
         </details>
       ))}
     </>
@@ -109,6 +123,11 @@ export default function App() {
   const doDiscover = () => { setFacts(real ? tc.discover(endpoint) : api.discover(endpoint)); };
   const doCompile = () => { if (facts) { setPlan(real ? tc.compile() : api.compile(manifest, facts)); setStep(2); } };
   const doChecks = () => { if (plan) { setPre(real ? tc.preflight() : api.preflight(plan)); setPolicy(real ? tc.checkPolicy() : api.checkPolicy(plan)); setStep(3); } };
+  const stepGate = (i: number): GateResult | undefined => {
+    if (real) return tc.gateFor(i);
+    const evs = api.timeline().filter((e) => e.index === i && e.check);
+    return evs[evs.length - 1]?.check;
+  };
   const doApprove = () => { if (plan && policy) { const e = real ? tc.envelope() : api.envelope(); setEnv(e); setApproval(real ? tc.approve() : api.approve(plan, policy, e!)); } };
   const doSubmit = () => {
     if (!plan || !policy || !approval || !facts) return;
@@ -299,7 +318,7 @@ export default function App() {
               {real && policy.explain && <p className="muted">{policy.explain}</p>}
               <ul className="rules">
                 {policy.rules.map((r, i) => (
-                  <li key={i} className={r.outcome}><Pill tone={triTone(r.outcome)}>{r.outcome}</Pill><div><code>{r.rule}</code>{r.actionId && <small className="muted"> · {r.actionId}</small>}<p>{r.reason}</p></div></li>
+                  <li key={i} className={r.outcome}><Pill tone={triTone(r.outcome)}>{r.outcome}</Pill><div>{r.outcome === "pass" && PASS_WORDING[r.rule] && <b className="rulewords">{PASS_WORDING[r.rule]}</b>}<code>{r.rule}</code>{r.actionId && <small className="muted"> · {r.actionId}</small>}<p>{r.reason}</p></div></li>
                 ))}
               </ul>
               {policy.policyDigest !== "0x" && <Digest label="Policy digest" value={policy.policyDigest} />}
@@ -395,6 +414,7 @@ export default function App() {
                         const label = bad ? (st === "blocked" ? "blocked" : "failed") : x === "checking" ? (k <= order[st] ? "checked" : "check") : x === "submitted" ? "sent" : "finalized";
                         return <span key={x} className={k <= order[st] ? (bad ? "bad" : "on") : ""}>{st === "checking" && k === 0 ? `checking step ${i + 1}…` : label}</span>;
                       })}</div>
+                      {st !== "not_run" && st !== "checking" && <GateList g={stepGate(i)} />}
                       {real && st !== "not_run" && st !== "checking" && tc.dryRunFor(i) && <small className="muted">signed dry run: {tc.dryRunFor(i)!.outcome} ({tc.dryRunFor(i)!.detail})</small>}
                     </li>
                   );

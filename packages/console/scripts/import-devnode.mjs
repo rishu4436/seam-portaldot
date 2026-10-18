@@ -63,8 +63,13 @@ function decodeEmitted(ev) {
 
 const safe = (f, ...a) => { try { return f(...a); } catch { return undefined; } };
 
-const stripStep = (s) => ({ index: s.index, actionId: s.actionId, phase: s.phase, detail: s.detail, at: s.at, dryRun: s.dryRun?.map((d) => ({ txHash: d.txHash, outcome: d.outcome, detail: d.detail })) });
-const stripGate = (g) => ({
+const stripStep = (s) => ({ index: s.index, actionId: s.actionId, phase: s.phase, detail: s.detail, at: s.at, ...(s.check ? { check: { ok: s.check.ok, reasons: s.check.reasons, passed: s.check.passed } } : {}), dryRun: s.dryRun?.map((d) => ({ txHash: d.txHash, outcome: d.outcome, detail: d.detail })) });
+// Two recorded shapes: older runs have a recomputed gate result per step; recordingVersion with onStep checks has { phase, check, source }.
+const stripGate = (g) => g.check ? ({
+  index: g.index, actionId: g.actionId, phase: g.phase, checkedAt: g.at, source: g.source ?? 'onStep',
+  result: { ok: g.check.ok, reasons: g.check.reasons, passed: g.check.passed },
+  dryRun: g.dryRun?.map((d) => ({ txHash: d.txHash, outcome: d.outcome, detail: d.detail })),
+}) : ({
   index: g.index, actionId: g.actionId, sendIndex: g.sendIndex, checkedAt: g.checkedAt, sdkOutcome: g.sdkOutcome, result: g.result, agreesWithSdk: g.agreesWithSdk,
   checksPerformed: g.checksPerformed, note: g.note,
   inputs: { preparedFingerprintDigest: g.inputs?.preparedFingerprintDigest, currentFingerprintDigest: g.inputs?.currentFingerprintDigest, runtimeUnchanged: g.inputs?.runtimeUnchanged, signedDryRun: g.inputs?.signedDryRun, dryRunDetails: g.inputs?.dryRunDetails?.map((d) => ({ txHash: d.txHash, outcome: d.outcome, detail: d.detail })), previousSteps: g.inputs?.previousSteps?.map((p) => ({ actionId: p.actionId, status: p.status, block: p.block?.number })) },

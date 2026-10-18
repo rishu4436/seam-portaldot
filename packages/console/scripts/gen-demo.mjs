@@ -2,7 +2,7 @@
 // Portaldot node snapshot, and writes every result the console shows to
 // src/demo/scenarios.json. Only the chain's replies (fees, tx hashes, events)
 // are simulated, because nothing is broadcast yet; the console labels them.
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { compile } from '@seam/compiler';
 import { portaldotPolicy } from '@seam/policy';
@@ -15,16 +15,20 @@ const ALICE_HEX = '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56
 const BOB = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
 const BOB_HEX = '0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48';
 
+// The real seam_demo ink! ABI: settle is called by name, so the policy can allow-list the message and pin the interface hash.
+const ABI = JSON.parse(readFileSync(fileURLToPath(new URL('../../../contracts/seam-demo/artifacts/metadata.json', import.meta.url)), 'utf8'));
+const abis = { seam_demo: ABI };
 const manifest = (nft) => defineManifest({
   signer: { type: 'ss58', value: ALICE, ss58Prefix: 42 },
   actions: [
     action.transfer('pay', { assetId: '1', amount: '2500', recipient: BOB }),
-    action.contractCall('settle', { contract: BOB, value: '0', gasLimit: '5000000000', data: '0x633aa551' }),
+    action.contractCall('settle', { contract: BOB, value: '0', gasLimit: '5000000000', message: 'settle', args: { order_id: '7', amount: '2500' }, abiRef: 'seam_demo' }),
     ...(nft ? [{ id: 'receipt', kind: 'nfts.mint', args: { collection: '0', item: '1', recipient: BOB } }]
             : [action.mint('receipt', { assetId: '2', amount: '1', recipient: BOB })]),
   ],
 });
-const policy = portaldotPolicy({ allowedAssets: ['1', '2'], allowedContracts: [BOB], allowedRecipients: [BOB] });
+const abiHash = compile(manifest(false), facts, { abis }).steps.find((x) => x.actionId === 'settle').contractMessage.abiHash;
+const policy = portaldotPolicy({ allowedAssets: ['1', '2'], allowedContracts: [BOB], allowedRecipients: [BOB], allowedMessages: { [BOB]: ['settle'] }, pinnedAbiHashes: { [BOB]: abiHash } });
 
 const blk = (n) => ({ number: 2721460 + n, hash: `0x${(0xb10c00 + n).toString(16).padStart(64, '0')}` });
 const tx = (s) => `0x${Buffer.from(s).toString('hex').padEnd(64, '0').slice(0, 64)}`;
@@ -56,8 +60,8 @@ const wallet = { sign: async (calls) => calls.map((c) => ({ signedTx: c, signedC
 async function run(id, { nft = false, outcomes = good(), fingerprintAfter, changeAfterStep } = {}) {
   const m = manifest(nft);
   const parsed = parseManifest(m);
-  const plan = compile(m, facts);
-  const seam = new Seam(chain(outcomes, fingerprintAfter, changeAfterStep));
+  const plan = compile(m, facts, { abis });
+  const seam = new Seam(chain(outcomes, fingerprintAfter, changeAfterStep), undefined, { abis });
   const out = { id, manifest: m, manifestDigest: parsed.ok ? parsed.digest : null, plan, planText: explainPlan(plan) };
   if (plan.mode === 'unavailable') return out;
   const p = await seam.prepare(m, facts, policy);
