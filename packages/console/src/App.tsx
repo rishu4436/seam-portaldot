@@ -3,7 +3,8 @@ import * as api from "./lib/mock";
 import * as tc from "./lib/testchain";
 import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
 import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
-import { LivePanel, ModeBadge, ModeSwitch, SimulationBadge, WeakProofBadge, SeamCodeBadge, ProvenanceBadge, DowngradeWarning, JsonActions } from "./components/Modes";
+import { RiskLimits, LivePanel, ModeBadge, ModeSwitch, SimulationBadge, WeakProofBadge, SeamCodeBadge, ProvenanceBadge, DowngradeWarning, JsonActions } from "./components/Modes";
+import type { PolicyLike } from "./lib/limits";
 import { classifyReceipt, isWeakProof, type Mode, type Provenance, type SimulationBasis } from "./lib/modes";
 import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
 
@@ -32,7 +33,7 @@ const human: Record<string, string> = {
 };
 
 function Pill({ tone, children }: { tone: "ok" | "bad" | "warn" | "muted" | "info"; children: React.ReactNode }) {
-  return <span className={`pill ${tone}`}>{children}</span>;
+  return <span className={`pill ${tone}`}><span className="sr">{({ ok: "good", bad: "problem", warn: "caution", info: "info", muted: "neutral" } as Record<string, string>)[tone]}: </span>{children}</span>;
 }
 const triTone = (s: string) => (s === "observed" || s === "confirmed" || s === "ok" || s === "pass" ? "ok" : s === "unknown" ? "warn" : "bad");
 
@@ -158,16 +159,17 @@ export default function App() {
 
   return (
     <div className="shell">
+      <a className="skip" href="#main">Skip to main content</a>
       <aside className="side">
         <div className="brand"><div className="logo">S</div><div><b>SEAM</b><small>Execution console</small></div></div>
-        <nav>
+        <nav aria-label="Steps">
           {STEPS.map((s, i) => (
-            <button key={s} className={`navstep ${i === step ? "on" : ""} ${canGo[i] ? "" : "locked"}`} disabled={!canGo[i]} onClick={() => setStep(i)}>
+            <button key={s} aria-current={i === step ? "step" : undefined} className={`navstep ${i === step ? "on" : ""} ${canGo[i] ? "" : "locked"}`} disabled={!canGo[i]} onClick={() => setStep(i)}>
               <span className="num">{i + 1}</span>{s}
             </button>
           ))}
         </nav>
-        <button className={`scenbtn src ${evidence ? "on" : ""}`} style={{ marginTop: 12 }} onClick={() => setEvidence(!evidence)}>
+        <button aria-pressed={evidence} className={`scenbtn src ${evidence ? "on" : ""}`} style={{ marginTop: 12 }} onClick={() => setEvidence(!evidence)}>
           <b>Local Portaldot node, real run</b><span>Spec 1002 evidence view</span>
         </button>
         <div className="scen">
@@ -175,18 +177,19 @@ export default function App() {
           <ModeSwitch mode={mode} onChange={setMode} />
           {mode !== "live" && <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>}
           {mode === "live" ? null : real ? TC_SCENARIOS.map((s) => (
-            <button key={s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
+            <button key={s.id} aria-pressed={scenario === s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
               <b>{s.label}</b><span>{s.hint}</span>
             </button>
           )) : SCENARIOS.map((s) => (
-            <button key={s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
+            <button key={s.id} aria-pressed={scenario === s.id} className={`scenbtn ${scenario === s.id ? "on" : ""}`} onClick={() => reset(s.id)}>
               <b>{s.label}</b><span>{s.hint}</span>
             </button>
           ))}
         </div>
       </aside>
 
-      <main>
+      <main id="main" tabIndex={-1}>
+        <div className="sr" role="status" aria-live="polite">{mode === "live" ? "LIVE V3 mode" : `Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}</div>
         <ModeBadge mode={mode} />
         {mode === "live" ? <LivePanel /> : <>
         <LocalNodeBanner />
@@ -312,6 +315,7 @@ export default function App() {
           </section>
         )}
 
+        {step === 3 && policy && <RiskLimits policy={real ? (tc.policyFile() as PolicyLike | undefined) : undefined} behaviour={{ batchAllRollback: facts?.behaviour.find((b) => b.id === "batch_all_rollback")?.status === "confirmed" ? "verified" : "unknown" }} />}
         {step === 3 && policy && (
           <section className="grid2">
             {!pre ? null : <div className="card">
