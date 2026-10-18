@@ -4,7 +4,7 @@ import type { ActionKind, Hex, Manifest, ManifestAction, ManifestSigner } from '
 export const ACTION_KINDS: readonly ActionKind[] = ['assets.transfer', 'assets.mint', 'contracts.call', 'revive.call', 'nfts.mint'];
 const SIGNER_TYPES = ['ss58', 'accountId32', 'h160'] as const;
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/;
-const AMOUNT_KEYS = ['amount', 'value', 'gasLimit', 'storageDepositLimit'];
+const AMOUNT_KEYS = ['amount', 'value', 'gasLimit', 'proofSize', 'storageDepositLimit'];
 
 export interface ManifestIssue { path: string; message: string }
 export type ParseResult = { ok: true; manifest: Manifest; digest: Hex } | { ok: false; issues: ManifestIssue[] };
@@ -54,6 +54,7 @@ export function parseManifest(input: string | unknown): ParseResult {
       if (!isObj(a.args)) issues.push({ path: `${p}.args`, message: 'args must be an object' });
       else for (const k of AMOUNT_KEYS) {
         const v = a.args[k];
+        if (v === null && k === 'storageDepositLimit') continue; // null = explicitly no limit
         if (v !== undefined && (typeof v !== 'string' || !/^(0|[1-9][0-9]*)$/.test(v))) {
           issues.push({ path: `${p}.args.${k}`, message: `${k} must be a whole number in base units written as a string, like "1000000"` });
         }
@@ -78,11 +79,35 @@ export function toBaseUnits(amount: string, decimals: number): string {
   return (BigInt(m[1]!) * 10n ** BigInt(decimals) + BigInt((frac + '0'.repeat(decimals)).slice(0, decimals) || '0')).toString();
 }
 
+/** Fields every contracts.call has. `proofSize` is for runtimes with two-part weights; `storageDepositLimit: null` means "no limit" on purpose. */
+export interface ContractCallBase {
+  contract: string;
+  value: string;
+  gasLimit: string;
+  proofSize?: string;
+  storageDepositLimit?: string | null;
+}
+/** Raw form: you supply the encoded call bytes. */
+export interface ContractCallRaw extends ContractCallBase { data: Hex }
+/** ABI form: name an ink! message and its arguments; the compiler encodes them. Give exactly one of `abi` or `abiRef`. */
+export interface ContractCallAbi extends ContractCallBase {
+  message: string;
+  /** Keyed by the ABI's argument labels, or positional. */
+  args?: Record<string, unknown> | unknown[];
+  /** The ink! metadata.json object, inline. */
+  abi?: unknown;
+  /** A key of the `abis` you pass to the compiler (or to `new Seam(chain, store, { abis })`). */
+  abiRef?: string;
+  /** Optional pin: compiling fails with ABI_HASH_MISMATCH if the ABI hashes to something else. */
+  abiHash?: Hex;
+}
+export type ContractCallArgs = ContractCallRaw | ContractCallAbi;
+
 /** Small builders so app code reads like the intent. */
 export const action = {
   transfer: (id: string, args: { assetId: string; amount: string; recipient: string }): ManifestAction => ({ id, kind: 'assets.transfer', args }),
   mint: (id: string, args: { assetId: string; amount: string; recipient: string }): ManifestAction => ({ id, kind: 'assets.mint', args }),
-  contractCall: (id: string, args: { contract: string; value: string; gasLimit: string; data: Hex }): ManifestAction => ({ id, kind: 'contracts.call', args }),
+  contractCall: (id: string, args: ContractCallArgs): ManifestAction => ({ id, kind: 'contracts.call', args: args as unknown as ManifestAction['args'] }),
 };
 
 export function defineManifest(m: { signer: ManifestSigner; actions: ManifestAction[]; chain?: Manifest['chain'] }): Manifest {

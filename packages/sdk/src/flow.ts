@@ -27,15 +27,32 @@ export type RunResult =
   | { ok: true; receipt: Receipt; /** Set when a sequential run stopped early; the receipt is then partial. */ stoppedReason?: string }
   | { ok: false; stage: 'policy' | 'approval' | 'submit_gate'; reason: string; policyResult?: PolicyResult; check?: SubmitCheck };
 
+/** Progress event from `execute`. `check` is the submit-gate result for this step (present on sending, done and blocked). */
+export interface StepEvent {
+  index: number;
+  actionId: string;
+  phase: 'checking' | 'sending' | 'done' | 'blocked';
+  detail?: string;
+  check?: SubmitCheck;
+}
+
 export class Seam {
-  constructor(private chain: ChainAdapter, private store: ApprovalStore = new InMemoryApprovalStore()) {}
+  /**
+   * `defaults` are compile options used by `compile` and `prepare` unless the call passes its own. Put `abis` here
+   * once so every Manifest that names an ABI with `abiRef` compiles.
+   */
+  constructor(private chain: ChainAdapter, private store: ApprovalStore = new InMemoryApprovalStore(), private defaults: CompileOptions = {}) {}
+
+  private opts(options?: CompileOptions): CompileOptions {
+    return { ...this.defaults, ...options, ...(this.defaults.abis || options?.abis ? { abis: { ...this.defaults.abis, ...options?.abis } } : {}) };
+  }
 
   discover() { return this.chain.discover(); }
 
-  compile(manifest: Manifest, facts: RuntimeFacts, options?: CompileOptions) { return compile(manifest, facts, options); }
+  compile(manifest: Manifest, facts: RuntimeFacts, options?: CompileOptions) { return compile(manifest, facts, this.opts(options)); }
 
   async prepare(manifest: Manifest, facts: RuntimeFacts, policy: Policy, options?: CompileOptions) {
-    const plan = compile(manifest, facts, options);
+    const plan = compile(manifest, facts, this.opts(options));
     const { preflight, envelope } = await this.chain.preflight(plan);
     const policyResult = evaluatePolicy({ policy, plan, facts, preflight, manifest });
     return { plan, preflight, envelope, policyResult };
@@ -55,7 +72,7 @@ export class Seam {
    */
   async execute(p: { plan: Plan; preflight: PreflightResult; envelope: SigningEnvelope; policy: Policy; policyResult: PolicyResult;
     facts: RuntimeFacts; approval: BoundApproval; wallet: WalletSigner; now?: () => Date;
-    onStep?: (e: { index: number; actionId: string; phase: 'checking' | 'sending' | 'done' | 'blocked'; detail?: string }) => void }): Promise<RunResult> {
+    onStep?: (e: StepEvent) => void }): Promise<RunResult> {
     const now = p.now ?? (() => new Date());
     const calls = callsToSign(p.plan).filter((c): c is Hex => !!c);
     const signed = await p.wallet.sign(calls, p.envelope);
@@ -78,9 +95,9 @@ export class Seam {
       const check = await gate(sendIndex, await this.chain.dryRunSigned(signed.map((s) => s.signedTx)), atomic ? undefined : []);
       if (!check.ok) return { ok: false, stage: 'submit_gate', reason: check.reasons.map((r) => r.message).join(' '), check };
       this.store.markUsed(usageKey(p.approval.hash, sendIndex));
-      p.onStep?.({ index: 0, actionId: ids[0]!, phase: 'sending' });
+      p.onStep?.({ index: 0, actionId: ids[0]!, phase: 'sending', check });
       const o = await this.chain.submit(signed[0]!.signedTx, ids[0]!);
-      p.onStep?.({ index: 0, actionId: ids[0]!, phase: 'done', detail: o.status });
+      p.onStep?.({ index: 0, actionId: ids[0]!, phase: 'done', detail: o.status, check });
       return finish([o]);
     }
 
@@ -95,15 +112,15 @@ export class Seam {
       const check = await gate(i, dry, previousSteps);
       if (!check.ok) {
         const reason = check.reasons.map((r) => r.message).join(' ');
-        p.onStep?.({ index: i, actionId: id, phase: 'blocked', detail: reason });
+        p.onStep?.({ index: i, actionId: id, phase: 'blocked', detail: reason, check });
         if (i === 0) return { ok: false, stage: 'submit_gate', reason, check };
         return finish(outcomes, `SEAM stopped before sending it: ${reason}`);
       }
       this.store.markUsed(usageKey(p.approval.hash, i));
-      p.onStep?.({ index: i, actionId: id, phase: 'sending' });
+      p.onStep?.({ index: i, actionId: id, phase: 'sending', check });
       const o = await this.chain.submit(signed[i]!.signedTx, id);
       outcomes.push(o);
-      p.onStep?.({ index: i, actionId: id, phase: 'done', detail: o.status });
+      p.onStep?.({ index: i, actionId: id, phase: 'done', detail: o.status, check });
       const step = buildReceipt({ plan: p.plan, outcomes }).steps[i]!;
       if (o.status !== 'finalized' || step.verification === 'not_verified') {
         return i + 1 < signed.length ? finish(outcomes, `SEAM stopped because step ${i + 1} (${id}) did not complete and verify: ${step.reason}`) : finish(outcomes);

@@ -8,6 +8,7 @@ import { parseManifest } from './manifest.js';
 import { checkReceipt, type Receipt } from './receipt.js';
 import { explainManifestIssues, explainPlan, explainPolicy, explainReceipt } from './explain.js';
 import { factsFromSnapshot } from './offline.js';
+import { parseAbiFlags, parseTokenFlag } from './cliargs.js';
 
 const HELP = `seam <command> [file] [options]
 
@@ -22,6 +23,12 @@ Which runtime to compile against (pick one; default is the bundled Portaldot mai
   --snapshot <dir|file>  A saved snapshot: a folder with one <name>-snapshot.json and <name>-metadata.hex, or the snapshot file
   --name <name>          Which snapshot, when the folder holds several
   --endpoint <ws-url>    Read the live runtime from a node instead (read-only)
+
+  --token SYM:DEC        Token symbol and decimals, for a chain whose system_properties doesn't report them (e.g. --token UNIT:12).
+                         The node's own value wins; if it differs, SEAM stops instead of guessing.
+
+ink! contract calls written with "abiRef":
+  --abi NAME=<file>      Load an ink! metadata.json under NAME (repeatable). A contracts.call with "abiRef": "NAME" uses it.
 
   --json            Print raw JSON instead of the explanation`;
 
@@ -42,21 +49,25 @@ function loadManifest() {
 
 async function compileOrExit(m: ReturnType<typeof loadManifest> & { ok: true }) {
   const facts = await loadFacts();
-  try { return { facts, plan: compile(m.manifest, facts) }; }
+  try { return { facts, plan: compile(m.manifest, facts, { abis: loadAbis() }) }; }
   catch (e) {
     if (e instanceof SeamCompileError) { out(['The Manifest could not be compiled:', ...e.issues.map((i) => `- ${i.path ?? '$'}: ${i.message}`)].join('\n'), e.issues); process.exit(2); }
     throw e;
   }
 }
+const flagValues = (n: string) => argv.flatMap((a, i) => (a === n ? [argv[i + 1]] : []));
+const tokenFlag = () => parseTokenFlag(argv.includes('--token') ? argv[argv.indexOf('--token') + 1] ?? '' : undefined);
+const loadAbis = () => parseAbiFlags(flagValues('--abi').map((v) => v ?? ''), (f) => JSON.parse(readFileSync(f, 'utf8')));
 let cached: RuntimeFacts | undefined;
 async function loadFacts(): Promise<RuntimeFacts> {
   if (cached) return cached;
   const endpoint = flag('--endpoint');
   if (endpoint) {
     const chain: any = await import('@seam/chain').catch(() => { throw new Error('--endpoint needs the @seam/chain package installed'); });
-    cached = await chain.discover(endpoint);
+    const declaredToken = tokenFlag();
+    cached = await chain.discover(endpoint, declaredToken ? { declaredToken } : {});
   } else {
-    cached = factsFromSnapshot(snapshotDir(), { name: flag('--name') });
+    cached = factsFromSnapshot(snapshotDir(), { name: flag('--name'), declaredToken: tokenFlag() });
   }
   return cached!;
 }

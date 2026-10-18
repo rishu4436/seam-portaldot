@@ -7,6 +7,11 @@ export interface SnapshotOptions {
   name?: string;
   /** Pinned type definitions. Default: the compiler's default. */
   typesBundle?: string;
+  /**
+   * Token symbol and decimals to use when the snapshot neither reports nor declares them (the CLI's --token).
+   * A value the snapshot does report wins; if it differs from this one, loading fails rather than guessing.
+   */
+  declaredToken?: { tokenSymbol: string; tokenDecimals: number };
 }
 
 /** Finds `<name>-snapshot.json` and `<name>-metadata.hex`, given a folder, a snapshot file, or a folder plus a name. */
@@ -38,10 +43,15 @@ export function factsFromSnapshot(path: string, opts: SnapshotOptions = {}): Run
   const metadataHex = readFileSync(metadataFile, 'utf8').trim();
   const props = snap.properties ?? {};
   const pick = (v: unknown) => (Array.isArray(v) ? v[0] : v);
-  const tokenSymbol = pick(props.tokenSymbol) ?? snap.declaredToken?.tokenSymbol;
-  const tokenDecimals = pick(props.tokenDecimals) ?? snap.declaredToken?.tokenDecimals;
+  const reportedSymbol = pick(props.tokenSymbol), reportedDecimals = pick(props.tokenDecimals);
+  const given = opts.declaredToken;
+  if (given && ((reportedSymbol !== undefined && reportedSymbol !== given.tokenSymbol) || (reportedDecimals !== undefined && Number(reportedDecimals) !== given.tokenDecimals))) {
+    throw new Error(`the snapshot reports token ${reportedSymbol ?? '?'} with ${reportedDecimals ?? '?'} decimals, which differs from the declared ${given.tokenSymbol}:${given.tokenDecimals}`);
+  }
+  const tokenSymbol = reportedSymbol ?? snap.declaredToken?.tokenSymbol ?? given?.tokenSymbol;
+  const tokenDecimals = reportedDecimals ?? snap.declaredToken?.tokenDecimals ?? given?.tokenDecimals;
   if (tokenSymbol === undefined || tokenDecimals === undefined) {
-    throw new Error(`${snapshotFile} has no token symbol or decimals, and none were declared`);
+    throw new Error(`${snapshotFile} has no token symbol or decimals, and none were declared (pass --token SYMBOL:DECIMALS)`);
   }
   return factsFromMetadata({
     metadataHex, typesBundle: opts.typesBundle ?? readPinnedTypes(), genesisHash: snap.genesis,
