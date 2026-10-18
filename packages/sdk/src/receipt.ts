@@ -102,7 +102,10 @@ export function verifyStep(step: PlanStep, signerAccountId: Hex, outcome: StepOu
   }
   if (outcome.status === 'uncertain') return r('unknown', 'none', 'SEAM could not tell whether this transaction was broadcast. It was not retried; check the chain for the transaction before doing anything else.', 'uncertain');
   if (outcome.status === 'submitted') return r('unknown', 'none', 'Submitted but not yet in a block, so nothing can be checked yet.', 'not_finalized');
-  if (!outcome.txHash || !outcome.block) return r('unknown', 'none', 'No transaction hash or block was reported, so the result cannot be traced.', 'no_trace');
+  if (!outcome.txHash || !outcome.block) {
+    // A finalized step must carry its tx hash and block; one that doesn't is malformed evidence, not merely unknown.
+    return r(outcome.status === 'finalized' ? 'not_verified' : 'unknown', 'none', 'No transaction hash or block was reported, so the result cannot be traced.', 'no_trace');
+  }
   if (!outcome.events.some((e) => e.pallet === 'System' && e.name === 'ExtrinsicSuccess')) {
     return r('not_verified', 'none', 'The block has no success event for this transaction.', 'tx_failed');
   }
@@ -205,6 +208,8 @@ export const INTEGRITY_ONLY_NOTE =
  * It can never return `chain_verified`.
  */
 export function receiptIntegrity(r: Receipt): { status: 'integrity_checked' | 'failed'; note: string } {
+  const bad = r.steps.find((x) => x.status === 'finalized' && (!x.txHash || !x.block));
+  if (bad) return { status: 'failed', note: `Step ${bad.actionId} is marked finalized but has no transaction hash or block: the receipt is malformed.` };
   return checkReceipt(r)
     ? { status: 'integrity_checked', note: INTEGRITY_ONLY_NOTE }
     : { status: 'failed', note: 'The receipt does not match its own digest: it was edited after SEAM produced it.' };
