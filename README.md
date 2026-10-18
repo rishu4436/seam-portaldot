@@ -30,4 +30,4 @@ npm run dev -w @seam/console
 
 - [Quickstart](docs/quickstart.md): from clone to a compiled, policy-checked plan in five minutes, offline.
 - [Reference](docs/reference.md): every Manifest field, plan mode, policy rule, block reason and receipt status.
-- [Hackathon checklist](docs/hackathon-checklist.md): dates, rules and submission items.
+- [Submission checklist](docs/submission-checklist.md): dates, rules and submission items.
