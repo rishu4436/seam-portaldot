@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T12:16:53.102Z",
+  "generatedAt": "2026-10-18T05:26:17.422Z",
   "facts": {
     "fingerprint": {
       "genesisHash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
@@ -2503,7 +2503,12 @@
             "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "message": "settle",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
           }
         },
         {
@@ -2517,10 +2522,10 @@
         }
       ]
     },
-    "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+    "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
     "plan": {
       "planVersion": 1,
-      "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+      "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
       "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
       "signer": {
         "type": "ss58",
@@ -2556,10 +2561,23 @@
             "contractAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "data": "0x6c3372220700000000000000c4090000000000000000000000000000",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807"
           },
-          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551",
-          "status": "ok"
+          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a01706c3372220700000000000000c4090000000000000000000000000000",
+          "status": "ok",
+          "contractMessage": {
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
+          }
         },
         {
           "actionId": "receipt",
@@ -2577,7 +2595,7 @@
           "status": "ok"
         }
       ],
-      "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45"
+      "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e"
     },
     "planText": "Plan for 3 steps: steps run one at a time, and SEAM stops at the first one that fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- settle: contracts.call is ready (Contracts.call).\n- receipt: assets.mint is ready (Assets.mint).\nWhy this mode: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
     "preflight": {
@@ -2634,7 +2652,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-11T12:26:53.128Z"
+      "expiresAt": "2026-10-18T05:36:17.452Z"
     },
     "policyResult": {
       "allowed": true,
@@ -2682,6 +2700,18 @@
           "rule": "contract_allowed",
           "outcome": "pass",
           "reason": "contract is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "message_allowed",
+          "outcome": "pass",
+          "reason": "contract message \"settle\" is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "abi_pinned",
+          "outcome": "pass",
+          "reason": "contract interface (ABI) matches the pinned hash",
           "actionId": "settle"
         },
         {
@@ -2762,11 +2792,11 @@
           "reason": "total fee 4430125636184 is within limits"
         }
       ],
-      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
+      "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d"
     },
-    "policyText": "Allowed: all 21 policy checks passed.",
+    "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0xdb09d88c4a1aeeb7e48a03feac57fb1ee3495ec6d497708ec8d79faaa33bd09b",
+      "hash": "0x48e35271a3c05d181c563e1e590ac307030680b6e9e210a95e9737ce0e5ade16",
       "covers": [
         "manifest",
         "plan",
@@ -2777,22 +2807,22 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:26:53.128Z",
+      "expiresAt": "2026-10-18T05:36:17.452Z",
       "used": false,
       "binding": {
-        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
-        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
-        "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
-        "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
+        "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
+        "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
+        "planContentDigest": "0x21d0a345448a8244dedd1c70e41acccf01e3cdf1934839d522f9b0ee2e1cb0af",
+        "callsDigest": "0x6170d8cea004b9c8dda769717660a2dec5b4a20fe6579683a4f07b4e1248210c",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
-        "envelopeDigest": "0x9675718eb52f413939622760ab57101861155a2928cedae1677094c775c61f17",
+        "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
+        "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
+        "envelopeDigest": "0x1907a33ea5ec61d9bbec1dc2fa92acec346f2cd5fc7aa82ce8ae1f5ac09fd05a",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:26:53.128Z"
+        "expiresAt": "2026-10-18T05:36:17.452Z"
       }
     },
     "timeline": [
@@ -2804,13 +2834,89 @@
       {
         "index": 0,
         "actionId": "pay",
-        "phase": "sending"
+        "phase": "sending",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 1 is next in order"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 1 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 1 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 0,
         "actionId": "pay",
         "phase": "done",
-        "detail": "finalized"
+        "detail": "finalized",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 1 is next in order"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 1 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 1 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 1,
@@ -2820,13 +2926,97 @@
       {
         "index": 1,
         "actionId": "settle",
-        "phase": "sending"
+        "phase": "sending",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 2 is next in order"
+            },
+            {
+              "code": "previous_steps_ok",
+              "detail": "the 1 earlier step(s) completed and verified"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 2 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 2 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 1,
         "actionId": "settle",
         "phase": "done",
-        "detail": "finalized"
+        "detail": "finalized",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 2 is next in order"
+            },
+            {
+              "code": "previous_steps_ok",
+              "detail": "the 1 earlier step(s) completed and verified"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 2 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 2 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 2,
@@ -2836,24 +3026,108 @@
       {
         "index": 2,
         "actionId": "receipt",
-        "phase": "sending"
+        "phase": "sending",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 3 is next in order"
+            },
+            {
+              "code": "previous_steps_ok",
+              "detail": "the 2 earlier step(s) completed and verified"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 3 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 3 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 2,
         "actionId": "receipt",
         "phase": "done",
-        "detail": "finalized"
+        "detail": "finalized",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 3 is next in order"
+            },
+            {
+              "code": "previous_steps_ok",
+              "detail": "the 2 earlier step(s) completed and verified"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 3 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 3 succeeded"
+            }
+          ]
+        }
       }
     ],
     "run": {
       "ok": true,
       "receipt": {
         "receiptVersion": 1,
-        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
-        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
+        "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
+        "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "approvalHash": "0xdb09d88c4a1aeeb7e48a03feac57fb1ee3495ec6d497708ec8d79faaa33bd09b",
+        "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
+        "approvalHash": "0x48e35271a3c05d181c563e1e590ac307030680b6e9e210a95e9737ce0e5ade16",
         "mode": "sequential",
         "steps": [
           {
@@ -2907,7 +3181,7 @@
           "verified": 3,
           "expected": 3
         },
-        "receiptDigest": "0x0ba29317e15757dba699748a2ef6b727bd645d97660a64e7c8880dbb95552a00"
+        "receiptDigest": "0xfbb07c15dda528268b24ff2209dbde5ece5889ab4d01f76f97e2c9a91c8da298"
       }
     },
     "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: finalized. The call succeeded and the contract emitted an event. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x7265636569707400000000000000000000000000000000000000000000000000"
@@ -2938,7 +3212,12 @@
             "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "message": "settle",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
           }
         },
         {
@@ -2952,10 +3231,10 @@
         }
       ]
     },
-    "manifestDigest": "0x9f2d2c7bd5906ac4c34540060d0d7a1089788fb90b04997248f7bc2fbab8add5",
+    "manifestDigest": "0x2dd3923543c2c1ea81ac4e7b2626ee714dd6763cd6757b2b6b672fc508d2c412",
     "plan": {
       "planVersion": 1,
-      "manifestDigest": "0x9f2d2c7bd5906ac4c34540060d0d7a1089788fb90b04997248f7bc2fbab8add5",
+      "manifestDigest": "0x2dd3923543c2c1ea81ac4e7b2626ee714dd6763cd6757b2b6b672fc508d2c412",
       "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
       "signer": {
         "type": "ss58",
@@ -2991,10 +3270,23 @@
             "contractAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "data": "0x6c3372220700000000000000c4090000000000000000000000000000",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807"
           },
-          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551",
-          "status": "ok"
+          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a01706c3372220700000000000000c4090000000000000000000000000000",
+          "status": "ok",
+          "contractMessage": {
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
+          }
         },
         {
           "actionId": "receipt",
@@ -3013,7 +3305,7 @@
           "reason": "Nfts.mint is not on this runtime (spec 1002)"
         }
       ],
-      "planDigest": "0xa08dc232f4c23291ee260f8711391e04dbefc46b7e53baa24a294903755ac4c9"
+      "planDigest": "0x85077a9cc381a1c664e5bdb5d534164259bda3023dd69e970f521411cc89aebc"
     },
     "planText": "Plan for 3 steps: this plan cannot run on this chain.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- settle: contracts.call is ready (Contracts.call).\n- receipt: can't run, because Nfts.mint is not on this runtime (spec 1002)."
   },
@@ -3043,7 +3335,12 @@
             "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "message": "settle",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
           }
         },
         {
@@ -3057,10 +3354,10 @@
         }
       ]
     },
-    "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+    "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
     "plan": {
       "planVersion": 1,
-      "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+      "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
       "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
       "signer": {
         "type": "ss58",
@@ -3096,10 +3393,23 @@
             "contractAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "data": "0x6c3372220700000000000000c4090000000000000000000000000000",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807"
           },
-          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551",
-          "status": "ok"
+          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a01706c3372220700000000000000c4090000000000000000000000000000",
+          "status": "ok",
+          "contractMessage": {
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
+          }
         },
         {
           "actionId": "receipt",
@@ -3117,7 +3427,7 @@
           "status": "ok"
         }
       ],
-      "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45"
+      "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e"
     },
     "planText": "Plan for 3 steps: steps run one at a time, and SEAM stops at the first one that fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- settle: contracts.call is ready (Contracts.call).\n- receipt: assets.mint is ready (Assets.mint).\nWhy this mode: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
     "preflight": {
@@ -3174,7 +3484,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-11T12:26:53.150Z"
+      "expiresAt": "2026-10-18T05:36:17.497Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3222,6 +3532,18 @@
           "rule": "contract_allowed",
           "outcome": "pass",
           "reason": "contract is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "message_allowed",
+          "outcome": "pass",
+          "reason": "contract message \"settle\" is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "abi_pinned",
+          "outcome": "pass",
+          "reason": "contract interface (ABI) matches the pinned hash",
           "actionId": "settle"
         },
         {
@@ -3302,11 +3624,11 @@
           "reason": "total fee 4430125636184 is within limits"
         }
       ],
-      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
+      "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d"
     },
-    "policyText": "Allowed: all 21 policy checks passed.",
+    "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0x13c49846de8063bb63aa9e2300eaf8a2c391ef9410c7e3d50c113b8188edd1bc",
+      "hash": "0x5c969494e8aa16a2ff07d3d55d2fd18640853a18255f65da72c1b4cd024349d0",
       "covers": [
         "manifest",
         "plan",
@@ -3317,22 +3639,22 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:26:53.150Z",
+      "expiresAt": "2026-10-18T05:36:17.497Z",
       "used": false,
       "binding": {
-        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
-        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
-        "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
-        "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
+        "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
+        "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
+        "planContentDigest": "0x21d0a345448a8244dedd1c70e41acccf01e3cdf1934839d522f9b0ee2e1cb0af",
+        "callsDigest": "0x6170d8cea004b9c8dda769717660a2dec5b4a20fe6579683a4f07b4e1248210c",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
-        "envelopeDigest": "0xadd31cd0a7af40a25b042bdfb80af40f67def876b0c758e1b4c34af871a57f23",
+        "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
+        "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
+        "envelopeDigest": "0x66c9de0173d882d68baf73f7465892dcec40c9cb12bf9ed65b153ce70d783ba7",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:26:53.150Z"
+        "expiresAt": "2026-10-18T05:36:17.497Z"
       }
     },
     "timeline": [
@@ -3345,7 +3667,46 @@
         "index": 0,
         "actionId": "pay",
         "phase": "blocked",
-        "detail": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+        "detail": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval.",
+        "check": {
+          "ok": false,
+          "reasons": [
+            {
+              "code": "runtime_changed",
+              "message": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+            }
+          ],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 1 is next in order"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 1 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.497Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 1 succeeded"
+            }
+          ]
+        }
       }
     ],
     "run": {
@@ -3358,6 +3719,36 @@
           {
             "code": "runtime_changed",
             "message": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+          }
+        ],
+        "passed": [
+          {
+            "code": "step_order",
+            "detail": "step 1 is next in order"
+          },
+          {
+            "code": "approval_unused",
+            "detail": "step 1 of this approval hasn't been sent"
+          },
+          {
+            "code": "approval_valid_time",
+            "detail": "the approval is valid until 2026-10-18T05:36:17.497Z"
+          },
+          {
+            "code": "approval_intact",
+            "detail": "the approval's contents match its hash"
+          },
+          {
+            "code": "approval_matches",
+            "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+          },
+          {
+            "code": "signed_bytes_match",
+            "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+          },
+          {
+            "code": "signed_dry_run_ok",
+            "detail": "the dry run of signed step 1 succeeded"
           }
         ]
       }
@@ -3400,7 +3791,12 @@
             "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "message": "settle",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
           }
         },
         {
@@ -3414,10 +3810,10 @@
         }
       ]
     },
-    "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+    "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
     "plan": {
       "planVersion": 1,
-      "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+      "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
       "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
       "signer": {
         "type": "ss58",
@@ -3453,10 +3849,23 @@
             "contractAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "data": "0x6c3372220700000000000000c4090000000000000000000000000000",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807"
           },
-          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551",
-          "status": "ok"
+          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a01706c3372220700000000000000c4090000000000000000000000000000",
+          "status": "ok",
+          "contractMessage": {
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
+          }
         },
         {
           "actionId": "receipt",
@@ -3474,7 +3883,7 @@
           "status": "ok"
         }
       ],
-      "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45"
+      "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e"
     },
     "planText": "Plan for 3 steps: steps run one at a time, and SEAM stops at the first one that fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- settle: contracts.call is ready (Contracts.call).\n- receipt: assets.mint is ready (Assets.mint).\nWhy this mode: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
     "preflight": {
@@ -3531,7 +3940,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-11T12:26:53.163Z"
+      "expiresAt": "2026-10-18T05:36:17.526Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3579,6 +3988,18 @@
           "rule": "contract_allowed",
           "outcome": "pass",
           "reason": "contract is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "message_allowed",
+          "outcome": "pass",
+          "reason": "contract message \"settle\" is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "abi_pinned",
+          "outcome": "pass",
+          "reason": "contract interface (ABI) matches the pinned hash",
           "actionId": "settle"
         },
         {
@@ -3659,11 +4080,11 @@
           "reason": "total fee 4430125636184 is within limits"
         }
       ],
-      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
+      "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d"
     },
-    "policyText": "Allowed: all 21 policy checks passed.",
+    "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0xf6a19478a850f84c38876b7d4b36b1be2b3b4874064689d31674d463b8e66263",
+      "hash": "0x70bb3974dd0c2c1dac82be35c72e12e9c98b243b584e83e870279dbf18d45ac6",
       "covers": [
         "manifest",
         "plan",
@@ -3674,22 +4095,22 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:26:53.163Z",
+      "expiresAt": "2026-10-18T05:36:17.526Z",
       "used": false,
       "binding": {
-        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
-        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
-        "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
-        "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
+        "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
+        "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
+        "planContentDigest": "0x21d0a345448a8244dedd1c70e41acccf01e3cdf1934839d522f9b0ee2e1cb0af",
+        "callsDigest": "0x6170d8cea004b9c8dda769717660a2dec5b4a20fe6579683a4f07b4e1248210c",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
-        "envelopeDigest": "0x0974ebff47e5ef9fd511e75d5e48df7391e85ab5156bc3837488e56eaea1c9b1",
+        "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
+        "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
+        "envelopeDigest": "0x6aa46c492a67d19c2d3cdfa23a2f8c477deac2493a80b1cd64271a825964e55c",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:26:53.163Z"
+        "expiresAt": "2026-10-18T05:36:17.526Z"
       }
     },
     "timeline": [
@@ -3701,13 +4122,89 @@
       {
         "index": 0,
         "actionId": "pay",
-        "phase": "sending"
+        "phase": "sending",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 1 is next in order"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 1 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 1 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 0,
         "actionId": "pay",
         "phase": "done",
-        "detail": "finalized"
+        "detail": "finalized",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 1 is next in order"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 1 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 1 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 1,
@@ -3717,13 +4214,97 @@
       {
         "index": 1,
         "actionId": "settle",
-        "phase": "sending"
+        "phase": "sending",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 2 is next in order"
+            },
+            {
+              "code": "previous_steps_ok",
+              "detail": "the 1 earlier step(s) completed and verified"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 2 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 2 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 1,
         "actionId": "settle",
         "phase": "done",
-        "detail": "failed"
+        "detail": "failed",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 2 is next in order"
+            },
+            {
+              "code": "previous_steps_ok",
+              "detail": "the 1 earlier step(s) completed and verified"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 2 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 2 succeeded"
+            }
+          ]
+        }
       }
     ],
     "run": {
@@ -3731,11 +4312,11 @@
       "stoppedReason": "SEAM stopped because step 2 (settle) did not complete and verify: The transaction failed on chain: Contracts.ContractTrapped.",
       "receipt": {
         "receiptVersion": 1,
-        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
-        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
+        "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
+        "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "approvalHash": "0xf6a19478a850f84c38876b7d4b36b1be2b3b4874064689d31674d463b8e66263",
+        "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
+        "approvalHash": "0x70bb3974dd0c2c1dac82be35c72e12e9c98b243b584e83e870279dbf18d45ac6",
         "mode": "sequential",
         "steps": [
           {
@@ -3780,7 +4361,7 @@
           "verified": 1,
           "expected": 3
         },
-        "receiptDigest": "0x1f60433e5b19cda7351c1ac246e18ebb5ae79436c8566dc3cbcb077bce396235"
+        "receiptDigest": "0xf23e38ead4983e3daded0eff0a50491e09851594706af9026c8ec19da03c3f96"
       }
     },
     "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: failed. The transaction failed on chain: Contracts.ContractTrapped. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: not run. Not run. SEAM stopped because step 2 (settle) did not complete and verify: The transaction failed on chain: Contracts.ContractTrapped."
@@ -3811,7 +4392,12 @@
             "contract": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "message": "settle",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
           }
         },
         {
@@ -3825,10 +4411,10 @@
         }
       ]
     },
-    "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+    "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
     "plan": {
       "planVersion": 1,
-      "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
+      "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
       "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
       "signer": {
         "type": "ss58",
@@ -3864,10 +4450,23 @@
             "contractAccountId": "0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
             "value": "0",
             "gasLimit": "5000000000",
-            "data": "0x633aa551"
+            "data": "0x6c3372220700000000000000c4090000000000000000000000000000",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807"
           },
-          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551",
-          "status": "ok"
+          "encodedCall": "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a01706c3372220700000000000000c4090000000000000000000000000000",
+          "status": "ok",
+          "contractMessage": {
+            "abiHash": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807",
+            "message": "settle",
+            "selector": "0x6c337222",
+            "args": {
+              "order_id": "7",
+              "amount": "2500"
+            },
+            "abiRef": "seam_demo"
+          }
         },
         {
           "actionId": "receipt",
@@ -3885,7 +4484,7 @@
           "status": "ok"
         }
       ],
-      "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45"
+      "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e"
     },
     "planText": "Plan for 3 steps: steps run one at a time, and SEAM stops at the first one that fails.\n- pay: assets.transfer is ready (Assets.transfer_keep_alive).\n- settle: contracts.call is ready (Contracts.call).\n- receipt: assets.mint is ready (Assets.mint).\nWhy this mode: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
     "preflight": {
@@ -3942,7 +4541,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-11T12:26:53.176Z"
+      "expiresAt": "2026-10-18T05:36:17.552Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3990,6 +4589,18 @@
           "rule": "contract_allowed",
           "outcome": "pass",
           "reason": "contract is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "message_allowed",
+          "outcome": "pass",
+          "reason": "contract message \"settle\" is allowed",
+          "actionId": "settle"
+        },
+        {
+          "rule": "abi_pinned",
+          "outcome": "pass",
+          "reason": "contract interface (ABI) matches the pinned hash",
           "actionId": "settle"
         },
         {
@@ -4070,11 +4681,11 @@
           "reason": "total fee 4430125636184 is within limits"
         }
       ],
-      "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d"
+      "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d"
     },
-    "policyText": "Allowed: all 21 policy checks passed.",
+    "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0x2f83292ea1638ff2e9a6cb8cbdbae4d6bc817b40194207123aeb63341e5bfbf9",
+      "hash": "0xf21b7ec02cca28fa543ac91a0e4aca0d8281756f695354e1819da5aff3538da9",
       "covers": [
         "manifest",
         "plan",
@@ -4085,22 +4696,22 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-11T12:26:53.176Z",
+      "expiresAt": "2026-10-18T05:36:17.552Z",
       "used": false,
       "binding": {
-        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
-        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
-        "planContentDigest": "0x1608b0788a9d8b75cb8eb4275361606ce97cb28905b65c00b2718738de190329",
-        "callsDigest": "0x68eb2f7a17c2f51dcba0107e415ff8bcf5295ae7ad8e6e019361dfca89104fe7",
+        "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
+        "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
+        "planContentDigest": "0x21d0a345448a8244dedd1c70e41acccf01e3cdf1934839d522f9b0ee2e1cb0af",
+        "callsDigest": "0x6170d8cea004b9c8dda769717660a2dec5b4a20fe6579683a4f07b4e1248210c",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "policyResultDigest": "0x05dbc12f8cde1a97de5a4437549f5100d230fcea8717ca6208136fe0076e5a9b",
-        "envelopeDigest": "0x8f44a44c5606d86e3a48c20f0240346ce052b6eca4f246fd72e91005e495e4e8",
+        "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
+        "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
+        "envelopeDigest": "0x107672694b1bafdbc6f06431a4a8d79e79783892771a19273f09c44a6040c024",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-11T12:26:53.176Z"
+        "expiresAt": "2026-10-18T05:36:17.552Z"
       }
     },
     "timeline": [
@@ -4112,13 +4723,89 @@
       {
         "index": 0,
         "actionId": "pay",
-        "phase": "sending"
+        "phase": "sending",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 1 is next in order"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 1 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.552Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 1 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 0,
         "actionId": "pay",
         "phase": "done",
-        "detail": "finalized"
+        "detail": "finalized",
+        "check": {
+          "ok": true,
+          "reasons": [],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 1 is next in order"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 1 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.552Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "runtime_unchanged",
+              "detail": "the runtime is the one the plan was prepared for"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 1 succeeded"
+            }
+          ]
+        }
       },
       {
         "index": 1,
@@ -4129,7 +4816,50 @@
         "index": 1,
         "actionId": "settle",
         "phase": "blocked",
-        "detail": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+        "detail": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval.",
+        "check": {
+          "ok": false,
+          "reasons": [
+            {
+              "code": "runtime_changed",
+              "message": "Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+            }
+          ],
+          "passed": [
+            {
+              "code": "step_order",
+              "detail": "step 2 is next in order"
+            },
+            {
+              "code": "previous_steps_ok",
+              "detail": "the 1 earlier step(s) completed and verified"
+            },
+            {
+              "code": "approval_unused",
+              "detail": "step 2 of this approval hasn't been sent"
+            },
+            {
+              "code": "approval_valid_time",
+              "detail": "the approval is valid until 2026-10-18T05:36:17.552Z"
+            },
+            {
+              "code": "approval_intact",
+              "detail": "the approval's contents match its hash"
+            },
+            {
+              "code": "approval_matches",
+              "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+            },
+            {
+              "code": "signed_bytes_match",
+              "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+            },
+            {
+              "code": "signed_dry_run_ok",
+              "detail": "the dry run of signed step 2 succeeded"
+            }
+          ]
+        }
       }
     ],
     "run": {
@@ -4137,11 +4867,11 @@
       "stoppedReason": "SEAM stopped before sending it: Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval.",
       "receipt": {
         "receiptVersion": 1,
-        "manifestDigest": "0x55d24a0b58ec6648869febe0888760a1f236e2134a8aa5933262b3808f30135b",
-        "planDigest": "0xc40b41b54351ab74e8d4b023fdb36e7394dd3b8d833ee70787468786c1482e45",
+        "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
+        "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
-        "policyDigest": "0xa47d43933aa47da0888641a857668a508ee35012bbc99d8adc884b131b33f39d",
-        "approvalHash": "0x2f83292ea1638ff2e9a6cb8cbdbae4d6bc817b40194207123aeb63341e5bfbf9",
+        "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
+        "approvalHash": "0xf21b7ec02cca28fa543ac91a0e4aca0d8281756f695354e1819da5aff3538da9",
         "mode": "sequential",
         "steps": [
           {
@@ -4179,7 +4909,7 @@
           "verified": 1,
           "expected": 3
         },
-        "receiptDigest": "0xc1a8870122193e0a6de13410002023afe9bb016cf4a7173f01ace2654105bcdb"
+        "receiptDigest": "0x42c1446739dce183bc0054cf6e219b9f9d26c46df106bbf80074d12b65b29aa1"
       }
     },
     "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: not run. Not run. SEAM stopped before sending it: Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval.\n- receipt: not run. Not run, because an earlier step did not complete."

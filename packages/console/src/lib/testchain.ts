@@ -7,6 +7,7 @@
 import data from "../demo/devnode.json";
 import type { Approval, Capability, Estimate, Hex, Manifest, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope } from "./types";
 import type { StepEvent } from "./mock";
+import type { GateResult } from "./gate";
 
 export type TcScn = "sequential" | "atomic" | "rollback";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,7 +53,7 @@ export function discover(_endpoint?: string): RuntimeFacts {
     fingerprint: { ...f.fingerprint, metadataVersion: f.metadataVersion, typesFileHash: f.fingerprint.typesBundleHash, digest: f.fingerprintDigest },
     capabilities: caps,
     behaviour: [
-      { id: "batch_all_rollback", status: rb.batchAllRollback === "verified" ? "confirmed" : "unknown", note: `Discovery alone said "${f.behaviour.batchAllRollback}". Proven by the rollback run in block #${rb.directSubmit.block.number}: the failed batch_all left no transfer or mint.` },
+      { id: "batch_all_rollback", status: rb.batchAllRollback === "verified" ? "confirmed" : "unknown", note: `Discovery alone said "${f.behaviour.batchAllRollback}". Proven by the rollback run in block #${rb.directSubmit.block.number}: the failed batch_all left no transfer or mint. The proof is the separate recording ${String(rb.evidenceFile).split("/").pop()?.replace(/\.json$/, "")} (balances unchanged except the fee).` },
       { id: "fee_estimate", status: "confirmed", note: "payment_queryInfo answered on this node (Weight V2)." },
       { id: "contract_dry_run", status: "confirmed", note: "ContractsApi_call via state_call (the contracts_call RPC is gone on this node)." },
       { id: "storage_deposit", status: "unknown", note: "This runtime doesn't report storage deposits for these calls." },
@@ -109,7 +110,12 @@ export function approve(): Approval {
 
 export function submitBlock(): string | undefined { return current === "rollback" ? D.rollback.seamGate.reasons.map((r: any) => r.message).join(" ") : undefined; }
 
-export interface GateCheck { index: number; actionId: string; sendIndex: number | null; sdkOutcome: string; result: { ok: boolean; reasons: { code: string; message: string }[] }; agreesWithSdk: boolean; checksPerformed: string[]; note: string; inputs: { runtimeUnchanged?: boolean; signedDryRun?: string[]; dryRunDetails?: { outcome: string; detail: string }[]; previousSteps?: { actionId: string; status: string; block?: number }[] } }
+export interface GateCheck { index: number; actionId: string; phase?: string; source?: string; dryRun?: { outcome: string; detail: string }[]; sendIndex?: number | null; sdkOutcome?: string; result: GateResult; agreesWithSdk?: boolean; checksPerformed?: string[]; note?: string; inputs?: { runtimeUnchanged?: boolean; signedDryRun?: string[]; dryRunDetails?: { outcome: string; detail: string }[]; previousSteps?: { actionId: string; status: string; block?: number }[] } }
+/** The gate result the SDK gave for step i (atomic and rollback send one batch, so its check covers every step). */
+export function gateFor(i: number): GateResult | undefined {
+  const l = gateChecks().filter((g) => (current === "sequential" ? g.index === i : g.index === 0));
+  return l[l.length - 1]?.result;
+}
 export function gateChecks(): GateCheck[] { return (R().gateChecks ?? []) as GateCheck[]; }
 
 /** The SDK's real onStep log. Atomic runs send one batch, so its events apply to every step. Rollback: derived from the gate result. */

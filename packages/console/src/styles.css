@@ -46,3 +46,6 @@ td.bad{color:#fb7185}
 .evlist{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:3px}.evlist li{display:flex;gap:8px;align-items:center;padding:3px 8px;border-radius:6px;background:var(--bg);word-break:break-all}.evlist li code{font-size:11px;color:var(--muted)}
 .evlist li.key code{color:var(--text)}.evlist li.emit{background:rgba(34,197,94,.1);box-shadow:inset 2px 0 0 var(--ok)}.evlist li.emit code{color:#86efac}.evlist li.fail{background:rgba(244,63,94,.1)}.evlist li.fail code{color:#fda4af}
 details summary{cursor:pointer;margin-top:10px}
+.gatelist{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:3px;font-size:12px}.gatelist li{display:flex;gap:6px;align-items:baseline;padding:3px 8px;border-radius:6px}.gatelist li code{font-size:11px;color:var(--muted);margin-left:auto}
+.gatelist li.pass{background:rgba(34,197,94,.1);box-shadow:inset 2px 0 0 var(--ok);color:#86efac}.gatelist li.pass span{color:#4ade80}.gatelist li.bad{background:rgba(244,63,94,.1);box-shadow:inset 2px 0 0 var(--bad);color:#fda4af}
+.rulewords{display:block;color:#86efac;font-size:12px;margin-bottom:2px}
