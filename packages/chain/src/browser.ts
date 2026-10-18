@@ -7,6 +7,8 @@ import "./quiet.js"; // must stay first, like index.ts
  */
 export { SeamChainError, type SeamChainErrorCode } from "./errors.js";
 export {
+  buildSigningRequest,
+  buildSigningRequests,
   verifySignedAgainstRequest,
   verifySignedBatch,
   assembleSignedExtrinsic,
@@ -16,6 +18,8 @@ export {
   checkSignedExtrinsic,
   signedExtrinsicDecoder,
   type SigningRequest,
+  type SigningCheckpoint,
+  type SingleSigningInput,
   type SignerPayloadJSON,
   type SignedVerification,
   type SignedBatchVerification,
