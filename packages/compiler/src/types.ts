@@ -36,8 +36,32 @@ export interface Capability {
 
 export type BatchAllRollback = 'verified' | 'unknown' | 'not_supported';
 
+/**
+ * Evidence that Utility.batch_all rolled back on a specific runtime (SEAM-012). A bare 'verified' string is
+ * NOT enough to reach atomic_verified; the proof must match the facts' genesis + metadata hash + spec version and
+ * cover every call kind in the plan.
+ */
+export interface AtomicRollbackProof {
+  genesisHash: Hex;
+  /** Must equal facts.fingerprint.metadataHash (the runtime fingerprint the test ran against). */
+  metadataHash: Hex;
+  specVersion: number;
+  /** Optional extra binding: must equal facts.fingerprintDigest when present. */
+  fingerprintDigest?: Hex;
+  /** Hash of the extrinsic/block where the failing batch was observed. At least one is required. */
+  txHash?: Hex;
+  blockHash?: Hex;
+  /** Evidence of state before and after the failing batch (non-empty; e.g. balances/asset supply readings). */
+  preState: unknown;
+  postState: unknown;
+  /** Action kinds that were part of the tested batch, e.g. ['assets.transfer','contracts.call']. */
+  composition: ActionKind[];
+}
+
 export interface RuntimeBehaviour {
   batchAllRollback: BatchAllRollback;
+  /** Required (and checked) for 'verified' to promote a plan to atomic_verified. */
+  batchAllRollbackProof?: AtomicRollbackProof;
 }
 
 export interface RuntimeFacts {
@@ -46,8 +70,16 @@ export interface RuntimeFacts {
   /** 'Pallet.call_name' -> capability. */
   capabilities: Record<string, Capability>;
   behaviour: RuntimeBehaviour;
-  /** Informational only, not part of the fingerprint. */
+  /** Informational only, not part of the fingerprint (nor of fingerprintDigest, which stays schema V1). */
   endpoint?: string;
+  /** state_version from RuntimeVersion, when the caller supplied it. Not in the fingerprint. */
+  stateVersion?: number;
+  /** Metadata version (13, 14, ...) read from the metadata bytes. Not in the fingerprint. */
+  metadataVersion?: number;
+  /** Where tokenSymbol/tokenDecimals came from: 'declared' by the caller or 'observed' from the chain (system_properties). */
+  tokenProvenance?: { tokenSymbol: 'declared' | 'observed'; tokenDecimals: 'declared' | 'observed' };
+  /** Byte length of the account that signs extrinsics on this runtime: 32 (AccountId32, default) or 20 (H160). */
+  signingAccountBytes?: 20 | 32;
   blockNumber?: number;
   /**
    * Raw material the compiler needs to encode calls. Not part of the fingerprint,
@@ -80,6 +112,12 @@ export interface ManifestAction {
 
 export interface Manifest {
   version: 1;
+  /**
+   * When true the plan must run atomically (atomic_verified, or atomic_unverified only if allowAtomicUnverified);
+   * otherwise mode is 'unavailable' and no step carries an executable call. Distinct from preferredMode, which
+   * only prefers atomic and may fall back to sequential (flagged by Plan.modeDowngrade). Absent = old behaviour.
+   */
+  atomicRequired?: boolean;
   chain?: { genesisHash: string; specVersion: number };
   signer: ManifestSigner;
   actions: ManifestAction[];
@@ -110,6 +148,8 @@ export interface PlanStep {
   encodedCall: Hex | null;
   status: 'ok' | 'unavailable';
   reason?: string;
+  /** Stable machine-readable code for why the step is unavailable (only set for capability blockers SEAM can name). */
+  reasonCode?: StepReasonCode;
   /**
    * Present only for a contracts.call written with `message` (ink! ABI form). Covered by planDigest.
    * The raw-`data` form never has it, so its plans and digests are unchanged.
@@ -133,6 +173,16 @@ export interface ContractMessage {
   args: Record<string, InkArgValue>;
 }
 
+/** Stable strings; never rename. */
+export type StepReasonCode = 'NO_OBSERVED_V3_METADATA' | 'ATOMIC_REQUIRED_UNAVAILABLE';
+
+export interface ModeDowngrade {
+  from: 'atomic';
+  to: 'sequential';
+  requiresApproval: true;
+  partialExecutionRisk: string;
+}
+
 export interface Plan {
   planVersion: 1;
   manifestDigest: Hex;
@@ -141,6 +191,8 @@ export interface Plan {
   mode: PlanMode;
   /** Plain-language reason for the chosen mode. */
   modeReason: string;
+  /** Present only when an atomic preference fell back to sequential. A person must approve it. */
+  modeDowngrade?: ModeDowngrade;
   steps: PlanStep[];
   /** Utility.batch_all wrapping every step, present only when mode is atomic_*. */
   outerCall?: { capability: string; palletIndex: number; callIndex: number; encodedCall: Hex };
@@ -177,7 +229,8 @@ export type CompileErrorCode =
   | 'ABI_INVALID'
   | 'ABI_HASH_MISMATCH'
   | 'ABI_MESSAGE_UNKNOWN'
-  | 'ABI_ARGS_INVALID';
+  | 'ABI_ARGS_INVALID'
+  | 'SIGNER_DOMAIN_MISMATCH';
 
 export class SeamCompileError extends Error {
   readonly issues: CompileIssue[];
