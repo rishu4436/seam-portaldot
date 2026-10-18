@@ -67,6 +67,16 @@ the compiler's `computeFingerprintDigest`, so it matches Bot 2 and Bot 3 byte fo
 - `storageDeposit` is always `{ unknown: true }`: spec 1002 doesn't report it.
 - Refuses (`RUNTIME_CHANGED`) if the node's spec or transaction version differs from the facts.
 
+#### Preflight for `revive.call` and `nfts.mint` (not V3-verified)
+
+No real Portaldot V3 metadata has ever been observed, so these two kinds are handled conservatively:
+
+- `coverage.steps[i]` is always `{ basis: "unobserved", proves: "nothing" }`, whatever the node answers, and `coverage.wholePlan` is `"none"` for any plan containing one. A node `dryRun: 'ok'` for such a step is reported as `'unknown'`; a failure stays `'failed'`.
+- A step the compiler marked unavailable (`NO_OBSERVED_V3_METADATA`, `V3_ARG_SHAPE_MISMATCH`, `ATOMIC_REQUIRED_UNAVAILABLE`) keeps its code in `coverage.steps[i].reasonCode` and `v3.steps[i]`. For an unavailable plan containing such a step nothing is simulated (only head and nonce are read; if that fails, `v3.chainReadError` is set and block/nonce are placeholders). Previously this threw `PLAN_NOT_SIGNABLE`; other unavailable plans still throw.
+- For an encoded call, only the node's generic `payment_queryInfo` (and `system_dryRun` when signed extrinsics are given) are used. `ReviveApi_call` is never called (its layout is unverified); `v3.steps[i].reviveApi` only says whether the runtime version lists `ReviveApi`.
+- `v3.accountMapping` (revive.call only) is `unknown` unless the metadata has `Revive.map_account` AND a `Revive.OriginalAccount` storage entry maps keccak256(signer)[12..] back to the signer. That derivation is the generic pallet-revive rule, not verified for Portaldot V3.
+- Positive tests use SYNTHETIC metadata (`tests/syntheticV3.ts`); the negative case uses the real dev-node (spec 100) older Revive layout. Errors from the node become reasons; `FACTS_MISMATCH` / `RUNTIME_CHANGED` still throw.
+
 ### 4. Signing handoff
 
 | function                                                                              | what                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
