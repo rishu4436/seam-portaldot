@@ -107,3 +107,7 @@ Neither chain is the hosted Portaldot V3 testnet, and neither is mainnet. Succes
 
 - Console LiveHost install merged (PR #8): fail-closed; `loadLiveHost` needs real RuntimeFacts; `buildRequest` awaits chain export `buildSigningRequest` from `@seam/chain/browser`. Not V3-verified.
 - `seam verify` docs and CLI help updated (bot5/verify-docs) to match receipt verification behaviour.
+- `buildSigningRequest`/`buildSigningRequests` now exported from `@seam/chain/browser` (bot4/browser-signing-request), so the Console `buildRequest` is available. Browser bundle still has no node builtins.
+- `Seam.execute({ verdicts })` plumbing done: optional per-action verdicts passed to every `buildReceipt` (bot4/verdicts-plumbing). No verdicts means no change.
+- Chain preflight for `revive.call` / `nfts.mint` done (bot4/v3-preflight): coverage stays `basis: "unobserved"`, `proves: "nothing"`; dry-run ok reports `unknown`; compiler reason codes pass through; account mapping fails closed.
+- All of the above is synthetic-fixture tested only and **NOT V3-verified**.
