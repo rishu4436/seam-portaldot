@@ -172,3 +172,30 @@ describe('SEAM-001 chain: adapter.verifySigned (what the SDK calls before the ga
     expect(s.submits()).toBe(0);
   });
 });
+
+describe('SEAM-001 chain: signedExtrinsicDecoder (the trusted decoder for checkBeforeSubmit)', () => {
+  it('decodes the real call, signer, nonce, tip, genesis; signatureValid only under an approved request context', async () => {
+    const s = await setup();
+    const dec = chain.signedExtrinsicDecoder(s.facts, s.requests);
+    const d = dec(s.honest[1]!)!;
+    expect(d).toMatchObject({ call: s.requests[1]!.callHex, signer: s.keys.alice.address, nonce: s.requests[1]!.nonce, tip: '0', signatureValid: true, genesisHash: s.facts.fingerprint.genesisHash });
+    // no requests (no known chain context): the signature cannot be proven
+    expect(chain.signedExtrinsicDecoder(s.facts)(s.honest[1]!)!.signatureValid).toBe(false);
+    // swapped call under a valid signature: reports the REAL call
+    const swapped = s.forge(s.keys.alice, { ...s.requests[0]!.payload, method: s.requests[1]!.callHex });
+    expect(dec(swapped)!.call).toBe(s.requests[1]!.callHex);
+    // another signer and a corrupted signature are not valid; garbage gives null
+    expect(dec(s.forge(s.keys.bob, { ...s.requests[0]!.payload, address: s.keys.bob.address }))!.signatureValid).toBe(false);
+    expect(dec(corruptSignature(s))!.signatureValid).toBe(false);
+    expect(dec('0x1234')).toBeNull();
+  });
+});
+
+describe('SEAM-001 chain: adapter.signedDecoder', () => {
+  it('is bound to the approved requests for the calls', async () => {
+    const s = await setup();
+    const { envelope } = await s.adapter.preflight(demoPlan(s.facts));
+    const dec = s.adapter.signedDecoder(s.requests.map((r) => r.callHex), envelope);
+    expect(dec(s.honest[0]!)).toMatchObject({ signatureValid: true, call: s.requests[0]!.callHex });
+  });
+});

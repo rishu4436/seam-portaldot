@@ -7,7 +7,7 @@ import { preflight, type PreflightReport } from './preflight.js';
 import { withClient, type ConnectOptions, type Endpoint } from './rpc.js';
 import { decodeRuntime } from './runtime.js';
 import { dryRunOne, dryRunSigned, type SignedDryRunDetail } from './dryrun.js';
-import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, verifySignedAgainstRequest, verifySignedBatch, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
+import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, verifySignedAgainstRequest, verifySignedBatch, signedExtrinsicDecoder, type DecodedSignedExtrinsic, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
 import { submitAndWatch, type StatusUpdate, type SubmitResult } from './submit.js';
 import type { PreflightResult, SignedDryRun, SigningEnvelope } from './types.js';
 
@@ -39,6 +39,8 @@ export interface ChainAdapter {
    * Fewer, extra, reordered or altered transactions give ok false. Read-only; sends nothing.
    */
   verifySigned(signedTxs: Hex[], calls: Hex[], envelope: SigningEnvelope): { ok: boolean; signedCalls: Hex[]; reasons: string[] };
+  /** The trusted decoder for checkBeforeSubmit({ signedExtrinsics, decodeSignedExtrinsic }), bound to the approved requests for `calls`. */
+  signedDecoder(calls: Hex[], envelope: SigningEnvelope): (extrinsic: Hex) => DecodedSignedExtrinsic | null;
 }
 
 /** Mirrors @seam/sdk WalletSigner. */
@@ -218,6 +220,11 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
       const requests = signingRequestsForCalls(calls, f, envelope);
       const v = verifySignedBatch(signedTxs, requests, { facts: f });
       return { ok: v.ok, signedCalls: v.results.map((r) => r.signedCall as Hex), reasons: v.reasons };
+    },
+
+    signedDecoder(calls, envelope) {
+      const f = needFacts();
+      return signedExtrinsicDecoder(f, signingRequestsForCalls(calls, f, envelope));
     },
 
     signingRequests(calls, envelope) {

@@ -44,7 +44,7 @@ export {
   type SignatureScheme,
   type SignerPayloadJSON,
   type SignerPayloadRaw,
-  verifySignedAgainstRequest, verifySignedBatch, type SignedVerification, type SignedBatchVerification, type SignedMismatchCode
+  verifySignedAgainstRequest, verifySignedBatch, signedExtrinsicDecoder, type DecodedSignedExtrinsic, type SignedVerification, type SignedBatchVerification, type SignedMismatchCode
 } from './signing.js';
 export { preflight, fakeSignedExtrinsic, type PreflightOptions, type PreflightReport, type PreflightTxDetail } from './preflight.js';
 export { decodeBlockEvents, outcomeForExtrinsic, argToString, toChainEvent, type ChainEvent, type DecodedEvent, type ExtrinsicOutcome } from './events.js';
