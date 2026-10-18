@@ -255,3 +255,16 @@ hand-written Wasm) is only the earlier stand-in.
 ## Testnet run
 
 `scripts/testnet-run.mjs RPC_URL` (read-only report; `--yes` plus `SEAM_SIGNER` or `--external ADDRESS` to deploy and run the flows) is described in [docs/testnet-run.md](docs/testnet-run.md), including the browser-wallet steps. Tested on the local dev node only.
+
+## Hosted V3 read-only discovery (`scripts/v3-discover.mjs`)
+
+**V3 is NOT VERIFIED.** No hosted Portaldot V3 RPC URL has been run through this yet. The only metadata in the repo is the mainnet spec 1002 snapshot (no Revive, no Nfts), and the tests use that plus an in-process fake node. Once a V3 RPC URL exists:
+
+```bash
+npm run build
+node scripts/v3-discover.mjs wss://<v3-rpc-host> --out evidence/v3-discovery
+```
+
+It sends only reads (`state_getMetadata`, `state_getRuntimeVersion`, `system_chain`, genesis/head, `system_properties`, `rpc_methods`, `Metadata_metadata_versions` via `state_call`), never a transaction, and needs no key. Any other method is refused by a wrapper before it reaches the node. The Portaldot mainnet host is refused by URL, and a node with the mainnet genesis hash is refused before anything is written; there is no override flag.
+
+It writes `<name>-snapshot.json` and `<name>-metadata.hex` (same format as the mainnet evidence), `v3-capabilities.json` and `v3-capabilities.md`. Each item (pallets Revive/Contracts/Nfts/Assets/Utility, their calls such as `Revive.call`, `Revive.instantiate_with_code`, `Nfts.mint`, `Utility.batch_all`, runtime APIs `ReviveApi`/`ContractsApi`, signed extensions, and a few RPC methods) is `observed`, `absent` (the list that would contain it was read and it is not there) or `NOT VERIFIED` (the list could not be read). Review the files by hand before calling anything V3-compatible; a report from one node is not a compatibility proof, and funded writes still need a separate run.
