@@ -1,4 +1,4 @@
-import type { Hex } from '@seam/compiler';
+import type { Hex } from "@seam/compiler";
 
 export type { Hex };
 
@@ -10,7 +10,10 @@ export type { Hex };
 // ---------------------------------------------------------------------------------------------------------
 
 /** A value the node reported (`value`, base units as a decimal string) or `unknown: true`. Never both. */
-export interface Estimate { value?: string; unknown?: boolean }
+export interface Estimate {
+  value?: string;
+  unknown?: boolean;
+}
 export interface PreflightStep {
   actionId: string;
   weight: Estimate;
@@ -22,10 +25,13 @@ export interface PreflightStep {
    * type (bot3/policy-file 71daa3b); @seam/chain always sets it.
    */
   proofSize?: Estimate;
-  dryRun: 'ok' | 'failed' | 'unknown';
+  dryRun: "ok" | "failed" | "unknown";
   note?: string;
 }
-export interface PreflightResult { steps: PreflightStep[]; totalFee: Estimate }
+export interface PreflightResult {
+  steps: PreflightStep[];
+  totalFee: Estimate;
+}
 
 export interface SigningEnvelope {
   signer: string;
@@ -37,7 +43,7 @@ export interface SigningEnvelope {
 }
 
 /** Result of system_dryRun on the actually signed transaction(s), one per signed call. */
-export type SignedDryRun = 'ok' | 'failed' | 'unknown';
+export type SignedDryRun = "ok" | "failed" | "unknown";
 
 // ---------------------------------------------------------------------------------------------------------
 // @seam/chain shapes.
@@ -63,7 +69,10 @@ export interface ChainPropertiesJson {
   [extra: string]: unknown;
 }
 
-export interface BlockRef { number: number; hash: Hex }
+export interface BlockRef {
+  number: number;
+  hash: Hex;
+}
 
 /** Everything discovery reads from a node, all pinned to one block. Pure data, so it can be saved and replayed. */
 export interface ChainInputs {
@@ -100,7 +109,7 @@ export interface SnapshotJson {
 }
 
 export interface FreshFingerprint {
-  fingerprint: import('@seam/compiler').RuntimeFingerprint;
+  fingerprint: import("@seam/compiler").RuntimeFingerprint;
   fingerprintDigest: Hex;
   /** Block the fingerprint was read at. */
   atBlock: BlockRef;

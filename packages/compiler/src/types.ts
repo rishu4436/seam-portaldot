@@ -19,7 +19,7 @@ export interface RuntimeFingerprint {
   typesBundleHash: Hex | null;
 }
 
-export type CapabilityStatus = 'observed' | 'not_observed' | 'unknown';
+export type CapabilityStatus = "observed" | "not_observed" | "unknown";
 
 export interface CapabilityArg {
   name: string;
@@ -31,10 +31,10 @@ export interface Capability {
   palletIndex?: number;
   callIndex?: number;
   args?: CapabilityArg[];
-  argTypesConfidence?: 'full' | 'partial';
+  argTypesConfidence?: "full" | "partial";
 }
 
-export type BatchAllRollback = 'verified' | 'unknown' | 'not_supported';
+export type BatchAllRollback = "verified" | "unknown" | "not_supported";
 
 /**
  * Evidence that Utility.batch_all rolled back on a specific runtime (SEAM-012). A bare 'verified' string is
@@ -77,7 +77,10 @@ export interface RuntimeFacts {
   /** Metadata version (13, 14, ...) read from the metadata bytes. Not in the fingerprint. */
   metadataVersion?: number;
   /** Where tokenSymbol/tokenDecimals came from: 'declared' by the caller or 'observed' from the chain (system_properties). */
-  tokenProvenance?: { tokenSymbol: 'declared' | 'observed'; tokenDecimals: 'declared' | 'observed' };
+  tokenProvenance?: {
+    tokenSymbol: "declared" | "observed";
+    tokenDecimals: "declared" | "observed";
+  };
   /** Byte length of the account that signs extrinsics on this runtime: 32 (AccountId32, default) or 20 (H160). */
   signingAccountBytes?: 20 | 32;
   blockNumber?: number;
@@ -93,9 +96,10 @@ export interface RuntimeFacts {
   };
 }
 
-export type ActionKind = 'assets.transfer' | 'assets.mint' | 'contracts.call' | 'revive.call' | 'nfts.mint';
+export type ActionKind =
+  "assets.transfer" | "assets.mint" | "contracts.call" | "revive.call" | "nfts.mint";
 
-export type SignerType = 'ss58' | 'accountId32' | 'h160';
+export type SignerType = "ss58" | "accountId32" | "h160";
 
 export interface ManifestSigner {
   type: SignerType;
@@ -107,7 +111,7 @@ export interface ManifestAction {
   id: string;
   kind: ActionKind;
   args: Record<string, unknown>;
-  preferredMode?: 'atomic' | 'sequential';
+  preferredMode?: "atomic" | "sequential";
 }
 
 export interface Manifest {
@@ -123,7 +127,7 @@ export interface Manifest {
   actions: ManifestAction[];
 }
 
-export type PlanMode = 'atomic_verified' | 'atomic_unverified' | 'sequential' | 'unavailable';
+export type PlanMode = "atomic_verified" | "atomic_unverified" | "sequential" | "unavailable";
 
 export interface PlanSigner {
   type: SignerType;
@@ -146,7 +150,7 @@ export interface PlanStep {
    */
   decodedArgs: Record<string, string>;
   encodedCall: Hex | null;
-  status: 'ok' | 'unavailable';
+  status: "ok" | "unavailable";
   reason?: string;
   /** Stable machine-readable code for why the step is unavailable (only set for capability blockers SEAM can name). */
   reasonCode?: StepReasonCode;
@@ -174,11 +178,11 @@ export interface ContractMessage {
 }
 
 /** Stable strings; never rename. */
-export type StepReasonCode = 'NO_OBSERVED_V3_METADATA' | 'ATOMIC_REQUIRED_UNAVAILABLE';
+export type StepReasonCode = "NO_OBSERVED_V3_METADATA" | "ATOMIC_REQUIRED_UNAVAILABLE";
 
 export interface ModeDowngrade {
-  from: 'atomic';
-  to: 'sequential';
+  from: "atomic";
+  to: "sequential";
   requiresApproval: true;
   partialExecutionRisk: string;
 }
@@ -217,26 +221,26 @@ export interface CompileIssue {
 }
 
 export type CompileErrorCode =
-  | 'MANIFEST_INVALID'
-  | 'NOT_CANONICAL'
-  | 'AMOUNT_INVALID'
-  | 'ADDRESS_INVALID'
-  | 'ADDRESS_TYPE'
-  | 'SS58_PREFIX'
-  | 'CHAIN_MISMATCH'
-  | 'FACTS_INVALID'
-  | 'ENCODE_FAILED'
-  | 'ABI_INVALID'
-  | 'ABI_HASH_MISMATCH'
-  | 'ABI_MESSAGE_UNKNOWN'
-  | 'ABI_ARGS_INVALID'
-  | 'SIGNER_DOMAIN_MISMATCH';
+  | "MANIFEST_INVALID"
+  | "NOT_CANONICAL"
+  | "AMOUNT_INVALID"
+  | "ADDRESS_INVALID"
+  | "ADDRESS_TYPE"
+  | "SS58_PREFIX"
+  | "CHAIN_MISMATCH"
+  | "FACTS_INVALID"
+  | "ENCODE_FAILED"
+  | "ABI_INVALID"
+  | "ABI_HASH_MISMATCH"
+  | "ABI_MESSAGE_UNKNOWN"
+  | "ABI_ARGS_INVALID"
+  | "SIGNER_DOMAIN_MISMATCH";
 
 export class SeamCompileError extends Error {
   readonly issues: CompileIssue[];
   constructor(issues: CompileIssue[]) {
-    super(issues.map((i) => `${i.code}${i.path ? ` at ${i.path}` : ''}: ${i.message}`).join('; '));
-    this.name = 'SeamCompileError';
+    super(issues.map((i) => `${i.code}${i.path ? ` at ${i.path}` : ""}: ${i.message}`).join("; "));
+    this.name = "SeamCompileError";
     this.issues = issues;
   }
   get codes(): CompileErrorCode[] {
