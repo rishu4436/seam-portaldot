@@ -27,16 +27,29 @@ describe.skipIf(!LIVE)('local dev node (SEAM_DEVNODE=1)', () => {
   it('sequential transfer -> contract call -> mint, strict policy, per-step gate: receipt verified', () => {
     const { json } = evidenceOf(run('run-sequential.mjs'));
     expect(json.policy.requireSignedDryRun).toBe(true);
-    // complete recording: Manifest, facts, policy, rule-by-rule result, one recomputed gate check per step
+    // complete recording: Manifest, facts, policy, rule-by-rule result, the SDK's own gate result (onStep check) per step
     expect(json.recordingVersion).toBe(2);
     expect(json.manifest.actions).toHaveLength(3);
     expect(json.facts.fingerprintDigest).toBe(json.fingerprintDigest);
     expect(json.policyResult.rules.length).toBeGreaterThan(0);
-    expect(json.gateChecks.map((g: any) => [g.sendIndex, g.sdkOutcome, g.result.ok, g.agreesWithSdk])).toEqual([[0, 'sent', true, true], [1, 'sent', true, true], [2, 'sent', true, true]]);
+    // gate results are read from the SDK's onStep events, not recomputed
+    expect(json.gateChecks.filter((g: any) => g.phase === 'sending').map((g: any) => [g.index, g.check.ok])).toEqual([[0, true], [1, true], [2, true]]);
+    for (const g of json.gateChecks.filter((x: any) => x.phase === 'sending')) {
+      const codes = g.check.passed.map((p: any) => p.code);
+      expect(codes).toEqual(expect.arrayContaining(['step_order', 'approval_unused', 'approval_intact', 'approval_matches', 'runtime_unchanged', 'signed_bytes_match', 'signed_dry_run_ok']));
+      expect(g.check.reasons).toEqual([]);
+    }
+    expect(json.gateChecks.filter((g: any) => g.phase === 'done')).toHaveLength(3);
+    // tightened policy: message name, pinned interface hash, selector; no storage-deposit cap
+    expect(json.policy.allowedMessages[json.manifest.actions[1].args.contract]).toEqual(['settle']);
+    expect(json.policy.pinnedAbiHashes[json.manifest.actions[1].args.contract]).toBe(json.plan.steps[1].contractMessage.abiHash);
+    expect(json.policy.maxStorageDeposit).toBeUndefined();
+    const rules = json.policyResult.rules.filter((r: any) => r.outcome === 'pass').map((r: any) => r.rule);
+    expect(rules).toEqual(expect.arrayContaining(['message_allowed', 'abi_pinned', 'selector_allowed']));
     expect(JSON.stringify(json)).not.toMatch(/"signature"|\/\/Alice/);
     expect(json.policyResult.allowed).toBe(true);
-    const sent = json.stepLog.filter((s: any) => s.phase === 'sending');
-    expect(sent.map((s: any) => s.dryRun.map((d: any) => d.outcome))).toEqual([['ok'], ['ok'], ['ok']]);
+    const sent = json.gateChecks.filter((g: any) => g.phase === 'sending');
+    expect(sent.map((g: any) => g.dryRun.map((d: any) => d.outcome))).toEqual([['ok'], ['ok'], ['ok']]);
     expect(json.run.receipt.result).toBe('verified');
     expect(json.receiptIntact).toBe(true);
     const steps = json.run.receipt.steps;
@@ -73,7 +86,8 @@ describe.skipIf(!LIVE)('local dev node (SEAM_DEVNODE=1)', () => {
     expect(json.preflight.steps).toHaveLength(3);
     expect(json.envelope.checkpoint.hash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(json.gateChecks).toHaveLength(1);
-    expect(json.gateChecks[0]).toMatchObject({ sdkOutcome: 'blocked', agreesWithSdk: true, result: { ok: false } });
+    expect(json.gateChecks[0]).toMatchObject({ phase: 'blocked', check: { ok: false } });
+    expect(json.seamGate.passed.map((p: any) => p.code)).not.toContain('signed_dry_run_ok');
     expect(json.directSubmit.statuses.map((s: any) => s.status)).toEqual(['submitted', 'in_block', 'finalized']);
     expect(JSON.stringify(json)).not.toMatch(/"signature"|\/\/Alice/);
     expect(json.seamGate.reasons.map((r: any) => r.code)).toEqual(['signed_dry_run_failed']);
