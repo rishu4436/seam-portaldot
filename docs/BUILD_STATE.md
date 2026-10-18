@@ -15,18 +15,18 @@ Update this file in the same commit that changes a status.
 
 **DEVELOPMENT CODE COMPLETE — V3 LIVE CAPABILITY PENDING** for everything that does not need a hosted Portaldot V3 runtime, with the open items listed below still to land.
 
-Not `READY FOR FUNDED V3 TESTING`: no V3 runtime metadata has been read, no funded V3 write may happen, and the items under "New open items" (Revive/Nfts bindings, LIVE Console binding, verify-live hardening) must be closed first.
+Not `READY FOR FUNDED V3 TESTING`: no V3 runtime metadata has been read, no funded V3 write may happen, and the items under "New open items" are done only against synthetic or mock data (not V3-verified), and the chain preflight (`bot4/v3-preflight`) is pending.
 SEAM-006..011 and 023 stay Blocked on a V3 RPC URL and a funded test account.
 
-## Test counts on `main` (`62d9688`)
+## Test counts on `main` (after the merges below; was `62d9688`)
 
 | Package  | Passing | Skipped |
 | -------- | ------- | ------- |
-| compiler | 150     | 0       |
+| compiler | 168     | 0       |
 | policy   | 187     | 0       |
-| sdk      | 141     | 0       |
-| chain    | 118     | 12      |
-| console  | 49      | 0       |
+| sdk      | 171     | 0       |
+| chain    | 140     | 12      |
+| console  | 62      | 0       |
 
 At the audit baseline (`a3bc52b`, CI run 39106951312): compiler 111, policy 68, SDK 63, chain 59, 12 skipped. Console tests were not in the baseline count.
 The local-node E2E (`npm run test:e2e`) is not part of routine CI (manual/weekly `e2e.yml`).
@@ -72,10 +72,14 @@ The local-node E2E (`npm run test:e2e`) is not part of routine CI (manual/weekly
 ## New open items (from the latest audit)
 
 1. **Revive.call and Nfts.mint executable support (P0).** No complete executable argument bindings in the compiler, nor runtime-specific simulations, account mapping and outcome verifiers (`compiler/src/compile.ts`, `chain/src/preflight.ts`, `sdk/src/receipt.ts`). Needs V3 metadata (SEAM-006..010).
+   **Update:** compiler bindings for `revive.call` / `nfts.mint` merged (`bot2/v3-bindings` 3466c23), plus SDK outcome verifiers (`bot5/receipt-verifiers` 23257d2). Done: synthetic or mock only, not V3-verified. Chain preflight (Bot 4 `bot4/v3-preflight`) is still pending; the bindings compile only against metadata whose argument shape matches, and no V3 metadata has been observed.
 2. **LIVE Console not genuinely executable (P0).** `LivePanel` passes an empty request without a signature verifier or extrinsic assembler; the browser chain client returns preflight unavailable and verification unknown (`Modes.tsx`, `chainclient.ts`, `extensionsigner.ts`). Fail-closed, partial.
+   **Update:** `bot1/live-console-binding` (6a73b2c) merged: LIVE binding through an injected `LiveHost`. Done: synthetic or mock only, not V3-verified. `@seam/chain/browser` (e30d0fe) is merged, but the console still returns no host, so LIVE blocks before signing.
 3. **verify-live hardening (P1).** Full planned-call comparison is optional when no Plan is given, and the atomic path does not compare the outer batch call bytes (`sdk/src/verify-live.ts`). Require plan, call and state assertions before a receipt is described as proving intended effects.
+   **Update:** `bot3/verify-live-hardening` (82f18d9) merged: `chain_verified` needs a plan, matching call bytes, every step finalized and effect-proven. Done: mock readers only, not V3-verified.
 4. **Hosted V3 compatibility unverified (P0).** No V3 metadata snapshot or live evidence. Read-only V3 discovery is a development task once an RPC URL exists; funded writes belong to the testing phase.
-   Pending with Bot 5: once Bot 3's `bot3/verify-live-hardening` (82f18d9) merges, `seam verify --endpoint` without `--plan` returns `unknown`; the `seam verify` docs (`docs/reference.md`, `docs/quickstart.md`, CLI help) must be updated by Bot 5.
+   `bot4/v3-discovery` (be7a2ba) merged: read-only discovery script, tested offline only; no hosted V3 RPC has been run through it.
+   `seam verify --endpoint` without `--plan` now returns `unknown` (82f18d9); `docs/reference.md` was updated with 23257d2, while `docs/quickstart.md` and the CLI help text are still to be checked.
 5. **Release hygiene (P2).** Addressed in this change: this file refreshed, lint capped, format check covers all packages, consumer smoke in CI.
 
 ## Remaining external needs
