@@ -75,6 +75,7 @@ The local-node E2E (`npm run test:e2e`) is not part of routine CI (manual/weekly
 2. **LIVE Console not genuinely executable (P0).** `LivePanel` passes an empty request without a signature verifier or extrinsic assembler; the browser chain client returns preflight unavailable and verification unknown (`Modes.tsx`, `chainclient.ts`, `extensionsigner.ts`). Fail-closed, partial.
 3. **verify-live hardening (P1).** Full planned-call comparison is optional when no Plan is given, and the atomic path does not compare the outer batch call bytes (`sdk/src/verify-live.ts`). Require plan, call and state assertions before a receipt is described as proving intended effects.
 4. **Hosted V3 compatibility unverified (P0).** No V3 metadata snapshot or live evidence. Read-only V3 discovery is a development task once an RPC URL exists; funded writes belong to the testing phase.
+   Pending with Bot 5: once Bot 3's `bot3/verify-live-hardening` (82f18d9) merges, `seam verify --endpoint` without `--plan` returns `unknown`; the `seam verify` docs (`docs/reference.md`, `docs/quickstart.md`, CLI help) must be updated by Bot 5.
 5. **Release hygiene (P2).** Addressed in this change: this file refreshed, lint capped, format check covers all packages, consumer smoke in CI.
 
 ## Remaining external needs
