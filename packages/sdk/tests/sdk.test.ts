@@ -232,7 +232,7 @@ describe('Seam flow', () => {
     const log: string[] = [];
     const run = await seam.execute({ ...p, policy: { ...policy, requireSignedDryRun: true }, facts, wallet: honestWallet, onStep: (e) => log.push(`${e.actionId}:${e.phase}`) });
     expect(run.ok && run.receipt.result).toBe('partial'); // contract step unproven (SEAM-004), so step 3 is not sent
-    expect(log).toEqual(['pay:checking', 'pay:sending', 'pay:done', 'call:checking', 'call:sending', 'call:done', 'receipt:checking', 'receipt:blocked']);
+    expect(log).toEqual(['pay:checking', 'pay:sending', 'pay:done', 'call:checking', 'call:sending', 'call:done']); // SEAM-002: flow stops itself after the unproven step (canRunNextStep), step 3 never reaches the gate
   });
   it('a runtime upgrade between steps stops the run with a partial receipt', async () => {
     const { chain, submitted } = fakeChain(facts, { fingerprintAfter: { ...facts.fingerprint, specVersion: 1003 }, changeAfterSubmits: 1 });
