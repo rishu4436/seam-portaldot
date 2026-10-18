@@ -1,0 +1,106 @@
+{
+ "kind": "gate-blocks-mainnet-plan-on-local-node",
+ "label": "local Portaldot dev node, spec 1002, not V3 testnet, not mainnet",
+ "recordedAt": "2026-10-18T07:08:12.383Z",
+ "readOnly": {
+  "signed": false,
+  "sent": false,
+  "mainnetContacted": false,
+  "note": "plan from committed files; only read-only RPC to the local node; the gate was fed the plan's own call bytes, nothing was signed"
+ },
+ "localNode": "ws://127.0.0.1:9966",
+ "plan": {
+  "source": "docs/examples/demo-manifest.json compiled against packages/chain/fixtures/portaldot-mainnet-snapshot.json",
+  "mode": "sequential",
+  "steps": [
+   "pay",
+   "call",
+   "receipt"
+  ],
+  "planDigest": "0x287a8f7f215d7c7e4188f9982092b1e6dd69dbb56bbe42729b20b9a5ac2156ac",
+  "manifestDigest": "0x4152a1947537a14faae337c502d109220e669bf23f2e9c61de8143a59e7c5d05",
+  "calls": [
+   "0x1a0604008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a481127",
+   "0x0d00008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48000700f2052a0110633aa551",
+   "0x1a0308008eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4804"
+  ]
+ },
+ "policy": "docs/examples/demo-policy.json with requireSignedDryRun false (so the signed dry run is not what is being shown)",
+ "policyAllowed": true,
+ "placeholders": "preflight and signing envelope are offline placeholders (the plan's runtime is not reachable); approval is a real createApproval over them",
+ "plannedFingerprint": {
+  "genesisHash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+  "specName": "portaldot",
+  "specVersion": 1002,
+  "transactionVersion": 2,
+  "metadataHash": "0x8b91f644a913a1008086c2e0732a8a2184c1da79909e9384d432c3c5ffac5150",
+  "ss58Prefix": 42,
+  "tokenSymbol": "POT",
+  "tokenDecimals": 14,
+  "typesBundleHash": "0x547a58f52bd69e51dcb313a840893f6cb0348f000a94f2bd818aeb7aebccff46"
+ },
+ "plannedFingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
+ "localFingerprint": {
+  "genesisHash": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5",
+  "specName": "portaldot",
+  "specVersion": 1002,
+  "transactionVersion": 2,
+  "metadataHash": "0xc52f4da1d07f910d5bbfff1b5399bf8562e9a24c956c8703fef32b0cfb0e9106",
+  "ss58Prefix": 42,
+  "tokenSymbol": "POT",
+  "tokenDecimals": 14,
+  "typesBundleHash": "0x547a58f52bd69e51dcb313a840893f6cb0348f000a94f2bd818aeb7aebccff46"
+ },
+ "localFingerprintDigest": "0xfbc5239f39694b547ff94be59bfd6ae75fe139b5f8dabf57aecd58750e929310",
+ "fingerprintFieldsThatDiffer": [
+  "genesisHash",
+  "metadataHash"
+ ],
+ "differences": [
+  {
+   "field": "genesisHash",
+   "planned": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+   "local": "0xa07fa01c4ab1987110674eee824b17f6699ee1d576b8c948006ef04672b398a5"
+  },
+  {
+   "field": "metadataHash",
+   "planned": "0x8b91f644a913a1008086c2e0732a8a2184c1da79909e9384d432c3c5ffac5150",
+   "local": "0xc52f4da1d07f910d5bbfff1b5399bf8562e9a24c956c8703fef32b0cfb0e9106"
+  }
+ ],
+ "gate": {
+  "ok": false,
+  "reasonCodes": [
+   "runtime_changed"
+  ],
+  "reasons": [
+   {
+    "code": "runtime_changed",
+    "message": "Blocked: the chain itself (genesis hash), the runtime metadata changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval."
+   }
+  ],
+  "passed": [
+   {
+    "code": "approval_unused",
+    "detail": "this approval hasn't been used"
+   },
+   {
+    "code": "approval_valid_time",
+    "detail": "the approval is valid until 2026-10-18T07:18:12.383Z"
+   },
+   {
+    "code": "approval_intact",
+    "detail": "the approval's contents match its hash"
+   },
+   {
+    "code": "approval_matches",
+    "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+   },
+   {
+    "code": "signed_bytes_match",
+    "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+   }
+  ]
+ },
+ "conclusion": "BLOCKED by the submit gate: runtime_changed"
+}
