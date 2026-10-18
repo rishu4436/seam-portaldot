@@ -137,7 +137,13 @@ npx seam verify --endpoint ws://127.0.0.1:9944 --plan plan.json receipt.json
 # Receipt status: chain_verified (live, read from ws://...)   or   failed / unknown
 ```
 
-Live verification checks that each block is on the canonical chain at or below the finalized head, that it holds the transaction, that the signer and call are the planned ones (needs `--plan`), and that the receipt's events are the events on chain. An unreadable chain gives `unknown`, never verified.
+Live verification re-reads the chain. For every step it checks that the block is on the canonical chain at or below the finalized head, that the block holds the transaction, that the signer is the plan's signer, that the on-chain call bytes equal the planned call, and that the receipt's events are the events on chain. `chain_verified` needs **all** of the following:
+
+- a plan (`--plan`) whose digest and mode match the receipt. **Without `--plan` the result is `unknown`, never `chain_verified`.**
+- every planned step present in the receipt, finalized, and not `not_run`;
+- each step re-derived from the chain's own events as `verified` with coverage `effect_proven`.
+
+For an atomic plan only the outer batch call bytes are compared; the inner calls are not decoded. Anything that cannot be read or compared gives `unknown`; any mismatch gives `failed`. From the CLI, steps that need an extra assertion (a `contracts.call`, which needs the SDK's `effects`) stay `unknown`, and `revive.call` and `nfts.mint` steps stay `unknown` until their outcome verifier returns `effect_proven` for a runtime event shape that was actually observed (none has been: see [the reference](reference.md#outcome-verifiers-for-revivecall-and-nftsmint)). Nothing is verified on Portaldot V3.
 
 Next, see the [reference](reference.md) for every field, status and block reason.
 
