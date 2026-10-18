@@ -1,8 +1,8 @@
 # Portaldot Hacker House 2026: submission checklist
 
-Status is **done** or **pending**, based on what is in the repo at `180332a` (Oct 18, 2026). All times IST. Source for the rules: the DoraHacks page, read Oct 11, 2026. Re-check it before each deadline.
+Status is **done** or **pending**, based on what is in the repo at the commit you are reading (check `git log`; no commit is pinned here). All times IST. Source for the rules: the DoraHacks page, read Oct 11, 2026. Re-check it before each deadline.
 
-**There are no testnet results yet.** Every on-chain run in `evidence/` is from a local substrate-contracts-node dev chain, not the Portaldot V3 testnet.
+**There are no testnet results yet.** Every on-chain run in `evidence/` is from one of two local chains (a `substrate-contracts-node` dev chain and a local Portaldot dev node, spec 1002). Neither is the Portaldot V3 hosted testnet or mainnet, and neither shows V3 or Revive support.
 
 ## Rules and key dates
 - Track: Modular Cloud & Middleware. Judging: feasibility 30, innovation 30, ecosystem 20, business 20.
@@ -26,7 +26,7 @@ Status is **done** or **pending**, based on what is in the repo at `180332a` (Oc
 - [x] Architecture diagram (required at check-in). Owner: Bot 1. Done (`docs/architecture.md`).
 - [ ] Demo video of 3 minutes or less, showing the real product and how it uses Portaldot. Owner: Bot 1. Storyboard drafted in `docs/pitch/video-storyboard.md`; recording pending (needs the real testnet run).
 - [ ] Pitch deck: problem, why Portaldot, proof it works. Owner: Bot 1. Outline drafted in `docs/pitch/deck-outline.md`; slides pending.
-- [x] No secrets in the repo. Owner: Bot 6. Done as of `180332a`: a grep over tracked files for private-key blocks, AWS and `sk-`/`xai-` style keys, and `api_key`/`secret`/`mnemonic = "..."` assignments found nothing, and no `.env` or `.pem` files are tracked. This was a quick scan, not a full audit. Re-run it before submitting.
+- [x] No secrets in the repo. Owner: Bot 6. Done at the time of that grep (re-run it before freeze; no commit pinned here): a grep over tracked files for private-key blocks, AWS and `sk-`/`xai-` style keys, and `api_key`/`secret`/`mnemonic = "..."` assignments found nothing, and no `.env` or `.pem` files are tracked. This was a quick scan, not a full audit. Re-run it before submitting.
 - [ ] LICENSE file. Owner: Rishu. **Pending: there is no license file** and GitHub shows no license. Pick one (for example MIT or Apache-2.0), because the Ecosystem criterion is about open-source use.
 
 ## Date targets (ours)
