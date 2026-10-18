@@ -1,0 +1,17 @@
+{
+ "kind": "v3-properties",
+ "readOnly": true,
+ "endpoint": "wss://test-node-v3.portaldot.dev",
+ "readAt": "2026-10-18T13:18:55.325Z",
+ "systemChain": "PortaldotV3 Test",
+ "system_properties": {
+  "ss58Format": 42,
+  "tokenDecimals": 14,
+  "tokenSymbol": "tPOT"
+ },
+ "specName": "portaldot-v3",
+ "specVersion": 3002,
+ "atBlock": 89087,
+ "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+ "note": "Values are exactly what system_chain / system_properties returned. Rishu's stated config says token tPOTv3; the node reports tokenSymbol tPOT. Decimals 14 and ss58 42 match."
+}

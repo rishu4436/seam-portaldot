@@ -13,7 +13,7 @@ import {
   snapshotFromNode,
 } from "./discover.js";
 import { withClient, type ConnectOptions, type Endpoint, type RpcClient } from "./rpc.js";
-import type { ChainInputs, SnapshotJson } from "./types.js";
+import type { ChainInputs, ChainPropertiesJson, SnapshotJson } from "./types.js";
 
 /**
  * Read-only V3 capability discovery. Everything here reads; nothing signs or submits.
@@ -232,6 +232,8 @@ export interface V3Capabilities {
     metadataVersion: number;
     atBlock: number;
     atBlockHash: string;
+    /** system_properties exactly as the node returned them (ss58Format, tokenSymbol, tokenDecimals). Never filled in by SEAM. */
+    properties?: ChainPropertiesJson;
   };
   metadataVersions?: string;
   rpcMethodsRead: boolean;
@@ -259,6 +261,14 @@ export function capabilitiesMarkdown(c: V3Capabilities): string {
     "**This file only describes what that one node reported. V3 is NOT VERIFIED until this has been run against a real hosted V3 RPC and the output reviewed.**",
     "",
   );
+  const props = c.chain?.properties;
+  if (props) {
+    const show = (v: unknown) => (v === undefined ? "not reported" : JSON.stringify(v));
+    lines.push(
+      `Chain properties (system_properties): ss58Format ${show(props.ss58Format)}, tokenSymbol ${show(props.tokenSymbol)}, tokenDecimals ${show(props.tokenDecimals)}.`,
+      "",
+    );
+  }
   if (c.decodeError) lines.push(`Metadata could not be decoded: ${c.decodeError}`, "");
   if (!observedAny) lines.push("Nothing was observed.", "");
   lines.push("| item | kind | status | detail |", "|---|---|---|---|");
@@ -321,6 +331,7 @@ export async function discoverV3(
           metadataVersion: metadataVersionOf(inputs.metadataHex),
           atBlock: inputs.head.number,
           atBlockHash: inputs.head.hash,
+          properties: inputs.properties,
         };
         snapshotFiles = await snapshotFromNode(client, outDir, {
           ...(opts.typesBundle ? { typesBundle: opts.typesBundle } : {}),
