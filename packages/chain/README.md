@@ -219,9 +219,7 @@ Every script writes to `/workspace/seam-evidence/devnode/` and to the repo's `ev
 
 - **Inputs:** the full Manifest, runtime facts and fingerprint, policy JSON and rule-by-rule policy result.
 - **Before signing:** preflight (with `proofSize`), signing envelope, approval, and the signing requests (payload and sign bytes).
-- **Gate checks:** one `gateChecks[]` entry per gate check. The SDK's `execute()` doesn't return passing gate results, so
-  each check is recomputed with `checkBeforeSubmit` from the exact inputs the SDK used (captured by wrapping the adapter)
-  and compared with what the SDK did (`agreesWithSdk`).
+- **Gate checks:** one `gateChecks[]` entry per SDK `onStep` event with a `check` (sending, done, blocked), holding the gate's `ok`, `reasons` and `passed` list as the SDK reported them. Atomic and first-step refusals come from `run.check`. Nothing is recomputed.
 - **After submitting:** the SDK step log, node status history, events and receipt.
 - **Rollback only:** SEAM's blocking gate result with its reasons, then the test-only direct submission (status history,
   decoded events) and the balances before, after the gate, and after.

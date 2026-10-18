@@ -1,0 +1,29 @@
+{
+ "setupAt": "2026-10-18T05:23:26.674Z",
+ "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+ "steps": [
+  {
+   "what": "asset 1 already exists, skipped create/mint"
+  },
+  {
+   "what": "contract 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a (seam_demo) already deployed, skipped"
+  }
+ ],
+ "state": {
+  "contract": "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a",
+  "contractInstantiatedIn": {
+   "txHash": "0x68e123ee63a62afc829aa2d5ed3307306b131a70915a815780b80ed3d503a74f",
+   "block": 32,
+   "blockHash": "0x052d2825e0aa56aa9afeb0acd1e5ecff03990974094d8a65d35a98a4044bbb96"
+  },
+  "genesis": "0xe8cf5d7d636a08721efaa17acc52ed3d895fe2468dccb2520cc8e249ddb6b208",
+  "assetId": 1,
+  "previousContract": {
+   "address": "0x88e3bef177f82c09a6a4107cd97d4491d79912496d444e866ca40ca89ce74f98",
+   "note": "seam_emitter.wat test contract, replaced by seam_demo"
+  },
+  "contractName": "seam_demo",
+  "contractCodeHash": "0x1fa93c546eaf0e392aca9ffcb6e5acadf674f5e39d70b058fd7228a98f606128",
+  "contractAbi": "contracts/seam-demo/artifacts/metadata.json"
+ }
+}

@@ -20,12 +20,13 @@ the scripts refuse to write them, and the older runs had their signing-request s
 | `runs/failed-attempts/` | Two early runs that exposed bugs (storage key, signing checkpoint), kept for the record. |
 | `ASSUMPTIONS.md` | Spec-1002 / metadata-V13 assumptions this chain exposed. |
 
+Recordings since the gate-passed change use the tightened policy: `allowedSelectors`, `allowedMessages` (`settle`) and `pinnedAbiHashes` for the seam_demo contract, and no `maxStorageDeposit` (the step sets `storageDepositLimit: null`). The `message_allowed`, `abi_pinned` and `selector_allowed` results are policy rules, so they are in `policyResult.rules`; the gate's `passed` list holds the submit-time checks (`step_order`, `approval_*`, `runtime_unchanged`, `signed_bytes_match`, `signed_dry_run_ok`).
+
 Runs recorded since the demo contract was deployed use the ABI form for the contract step (no raw hex, no script patching of `Contracts.call`); earlier ones used a raw `data` call through a script shim.
 
 Runs with `recordingVersion: 2` contain the full Manifest, the runtime facts and fingerprint, the policy, the
 rule-by-rule policy result, the preflight (with proof size), the signing envelope, the approval, the signing
-requests (payload and exact sign bytes, no signature) and one `gateChecks[]` entry per submit-gate check (result,
-the checks performed, and the inputs: fresh fingerprint, dry run, earlier steps). They also hold the SDK step log,
+requests (payload and exact sign bytes, no signature) and one `gateChecks[]` entry per SDK `onStep` event that carries a gate result (`check`: `ok`, `reasons`, and `passed`, the checks that passed with stable codes), with the dry run details. Nothing is recomputed: the gate result is the SDK's own. Older recordings recomputed it. They also hold the SDK step log,
 node status history, decoded events per step, the receipt, and for rollback the direct submission and the
 before/after balances. Older files (no `recordingVersion`) have the Manifest digest only.
 
