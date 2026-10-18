@@ -1,7 +1,7 @@
 {
  "kind": "v3-capabilities",
  "readOnly": true,
- "generatedAt": "2026-10-18T13:16:28.264Z",
+ "generatedAt": "2026-10-18T13:18:55.325Z",
  "rpcMethodsRead": true,
  "capabilities": [
   {
@@ -196,7 +196,12 @@
   "specVersion": 3002,
   "transactionVersion": 2,
   "metadataVersion": 14,
-  "atBlock": 89063,
-  "atBlockHash": "0xefcfb5aa6a0d21de8efa7dd0e53fb063e05febbf1aa2b1de9e994e63c9c624de"
+  "atBlock": 89087,
+  "atBlockHash": "0x9c3beb76005aec4161c43755367d61a93cb87539b2014a53a665bbbd845f2b2c",
+  "properties": {
+   "ss58Format": 42,
+   "tokenDecimals": 14,
+   "tokenSymbol": "tPOT"
+  }
  }
 }
