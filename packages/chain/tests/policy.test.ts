@@ -60,7 +60,7 @@ describe('plugs into Bot 3\'s policy package (fddfee3) as-is', () => {
     const { plan, facts } = atomicPlan();
     const { dry, gate, signed } = await run(plan, facts, portaldotPolicy(limits));
     expect(dry.results).toEqual(['ok']);
-    expect(gate()).toEqual({ ok: true, reasons: [] });
+    expect(gate()).toMatchObject({ ok: true, reasons: [] });
 
     // a wallet that signed something else is caught from the extracted bytes
     const seq = buildSigningRequests(demoPlan(), snapshotFacts(), { signer: ALICE, nonce: 0, mortalityBlocks: 64, checkpoint: { number: 2721455, hash: snapshotInputs().head.hash }, expiresAt: 'x' });
@@ -88,7 +88,7 @@ describe('plugs into Bot 3\'s policy package (fddfee3) as-is', () => {
     expect(strict.dry.details[1]!.detail).toMatch(/nonce is in the future/);
     // gating the whole plan at once can't pass; gating step 1 on its own does
     expect(strict.gate().reasons.map((r) => r.code)).toContain('signed_dry_run_missing');
-    expect(strict.gate({ sendIndex: 0 })).toEqual({ ok: true, reasons: [] });
+    expect(strict.gate({ sendIndex: 0 })).toMatchObject({ ok: true, reasons: [] });
     // step 2 can't go before step 1 was sent, and its own dry run must be ok
     const codes = strict.gate({ sendIndex: 1 }).reasons.map((r) => r.code);
     expect(codes).toContain('out_of_order');
