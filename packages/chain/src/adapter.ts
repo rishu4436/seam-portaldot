@@ -8,6 +8,7 @@ import { withClient, type ConnectOptions, type Endpoint } from './rpc.js';
 import { decodeRuntime } from './runtime.js';
 import { dryRunOne, dryRunSigned, type SignedDryRunDetail } from './dryrun.js';
 import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, verifySignedAgainstRequest, verifySignedBatch, signedExtrinsicDecoder, type DecodedSignedExtrinsic, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
+import { checkSigningWindow } from './window.js';
 import { lookupExtrinsic, type TxLookup } from './lookup.js';
 import { submitAndWatch, type StatusUpdate, type SubmitResult } from './submit.js';
 import type { PreflightResult, SignedDryRun, SigningEnvelope } from './types.js';
@@ -212,6 +213,12 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
       if (!v.ok) return refuse(v.reasons);
       const hash = extractSignedCall(signedTx, f).txHash;
       if (broadcast.has(hash)) return refuse(['replay_already_submitted']);
+      // SEAM-016: the checkpoint, nonce and era the wallet signed must still hold. Otherwise nothing is broadcast.
+      const win = await checkSigningWindow(endpoint, req, options);
+      if (!win.ok) {
+        lastSubmit = undefined;
+        return { actionId, status: 'failed', delivery: 'not_sent', events: [], error: `not sent: the signing window no longer holds (${win.reasons.join(', ')}: ${win.detail.join('; ')}); prepare and sign again` };
+      }
       if (options.dryRunBeforeSubmit !== false) {
         const d = await withClient(endpoint, (c) => dryRunOne(c, f, signedTx, 0), options);
         lastDryRun = [d];

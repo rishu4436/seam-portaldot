@@ -71,6 +71,11 @@ export class FakeNode implements RpcClient {
     return hash;
   }
 
+  /** Sets the next nonce the node reports for an account (SS58). */
+  setNonce(account: string, nonce: number) { this.nonces.set(account, nonce); }
+  /** The block at `number` is replaced by a different one (a reorg of the checkpoint). */
+  forkAt(number: number) { this.byNumber.set(number, blake2AsHex(`forked-${number}`, 256) as Hex); }
+
   /** From now on these RPC methods throw. */
   breakRpc(...methods: string[]) { this.o.failRpc = [...(this.o.failRpc ?? []), ...methods]; }
 
