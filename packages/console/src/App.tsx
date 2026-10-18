@@ -53,6 +53,22 @@ function Events({ list }: { list: string[] }) {
   return <ul className="evlist">{list.map((e, i) => <li key={i} className={evTone(e)}><code>{e}</code>{isEmitted(e) && <Pill tone="ok">contract event</Pill>}</li>)}</ul>;
 }
 
+function GateChecks({ list }: { list: tc.GateCheck[] }) {
+  if (!list.length) return null;
+  return (
+    <>
+      <h4>Submit gate, per step</h4>
+      {list.map((g) => (
+        <details key={g.index} className="small" open={!g.result.ok}>
+          <summary><b>{g.actionId}</b> {g.sendIndex != null && <span className="muted">(send #{g.sendIndex + 1}) </span>}<Pill tone={g.result.ok ? "ok" : "bad"}>{g.result.ok ? "all checks passed" : g.result.reasons.map((r) => r.code).join(", ")}</Pill> <span className="muted">SDK {g.sdkOutcome}{g.agreesWithSdk ? ", recomputed gate agrees" : ", GATE DISAGREES"}</span></summary>
+          <p className="muted small">{g.checksPerformed.length} checks: {g.checksPerformed.join(", ")}. {g.note}</p>
+          <dl className="kv small"><dt>Runtime</dt><dd>{g.inputs.runtimeUnchanged ? "unchanged since approval" : "changed"}</dd>{g.inputs.dryRunDetails?.map((d, i) => <><dt key={"k" + i}>Dry run</dt><dd key={"v" + i}>{d.outcome}: {d.detail}</dd></>)}{g.inputs.previousSteps?.length ? <><dt>Earlier steps</dt><dd>{g.inputs.previousSteps.map((p) => `${p.actionId} ${p.status}${p.block ? ` #${p.block}` : ""}`).join(", ")}</dd></> : null}</dl>
+        </details>
+      ))}
+    </>
+  );
+}
+
 function StateTable({ st, cols }: { st: tc.Rollback["state"]; cols: ("before" | "afterGate" | "after")[] }) {
   const names: Record<string, string> = { before: "Before", afterGate: "After gate", after: "After bypass" };
   const rows = Object.keys(st.before.asset);
@@ -160,7 +176,7 @@ export default function App() {
         </header>
         {real ? (
           <div className="banner real">
-            <b>Real run on a local test chain, not Portaldot.</b> Everything here was recorded from a real substrate-contracts-node v0.42.0 at <code>{tc.ENDPOINT}</code> (metadata v14, token UNIT): hashes, blocks, events, fees, dry runs and digests. The console replays that recording; it isn't connected live. Run {new Date(run!.ranAt).toLocaleString()} · <code>{run!.evidenceFile}</code>.
+            <b>Real run on a local test chain, not Portaldot.</b> Everything here was recorded from a real substrate-contracts-node v0.42.0 at <code>{tc.ENDPOINT}</code> (metadata v14, token UNIT): hashes, blocks, events, fees, dry runs and digests. The console replays that recording; it isn't connected live. Run {new Date(run!.ranAt).toLocaleString()}. Verify it in the repo: <code>evidence/README.md</code> explains the files; this run is <code>{run!.evidenceFile}</code> (others: {tc.importedFrom().files.map((f) => f.replace(/\.json$/, "")).join(", ")}).
             {run!.shimmed && <> One step was filled by hand: SEAM's compiler can't yet encode <code>Contracts.call</code> on metadata v14, so Bot 4's run script added the storage deposit limit and Weight V2 gas and recomputed the plan digest.</>}
           </div>
         ) : (
@@ -234,7 +250,7 @@ export default function App() {
                   );
                 })}
               </ol>
-              {real ? (tc.manifestDigest() ? <><Digest label="Manifest digest" value={tc.manifestDigest()} />{tc.manifestVerified() && <div className="note">The run saved only the Manifest's digest. This Manifest is rebuilt from Bot 4's run script, and its digest matches the recorded one exactly.</div>}</> : <div className="note">This rollback test wasn't built from a Manifest. It's Bot 4's hand-made batch_all, made to fail at step 2 on purpose.</div>) : <Digest label="Manifest digest" value={api.manifestDigest(manifest)} />}
+              {real ? <Digest label="Manifest digest" value={tc.manifestDigest()} /> : <Digest label="Manifest digest" value={api.manifestDigest(manifest)} />}
               <div className="actions"><button onClick={doCompile}>Compile plan</button></div>
             </div>
             <div className="card"><h3>Manifest</h3><pre className="code">{JSON.stringify(manifest, null, 2)}</pre></div>
@@ -251,7 +267,7 @@ export default function App() {
                   <tr key={s.actionId}>
                     <td><b>{s.actionId}</b></td>
                     <td><code>{s.capability}</code>{s.callIndex && <small className="muted"> [{s.callIndex.join(", ")}]</small>}</td>
-                    <td><small>{Object.entries(s.decoded).filter(([, v]) => v).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</small></td>
+                    <td><small>{s.decoded.message ? <><b>{s.decoded.message}({s.decoded.args ?? ""})</b> · selector <code>{s.decoded.selector}</code> · interface <code title={s.decoded.abiHash}>{short(s.decoded.abiHash, 6)}</code> · {Object.entries(s.decoded).filter(([k, v]) => v && !["message", "selector", "abiHash", "args", "data"].includes(k)).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</> : Object.entries(s.decoded).filter(([, v]) => v).map(([k, v]) => `${k}: ${short(v as string, 6)}`).join(" · ")}</small></td>
                     <td><code>{short(s.encodedCall, 6)}</code></td>
                     <td className="r">{s.shim && <><Pill tone="warn">Filled by run script</Pill> </>}{s.status === "ok" ? <Pill tone="ok">Ready</Pill> : <Pill tone="bad">Unavailable</Pill>}</td>
                   </tr>
@@ -260,7 +276,7 @@ export default function App() {
             </table>
             {plan.steps.filter((s) => s.reason).map((s) => <div key={s.actionId} className="note bad"><b>{s.actionId}:</b> {s.reason}</div>)}
             {plan.modeReason && <div className="note"><b>Why this mode:</b> {plan.modeReason}</div>}
-            {real && run?.shimmed && <div className="note"><b>Honest note:</b> on its own the compiler returned <code>{run.compiledMode}</code>: "{run.compiledModeReason}". The <code>call</code> step was filled by <code>shimContractsCall</code> in Bot 4's run script ({plan.steps.find((s) => s.shim)?.shim}). Every other step and the plan digest are the compiler's own output.</div>}
+            {real && run?.shimmed && <div className="note"><b>Honest note:</b> on its own the compiler returned <code>{run.compiledMode}</code>: "{run.compiledModeReason}". The <code>call</code> step was filled by <code>shimContractsCall</code> in Bot 4's run script ({plan.steps.find((s) => s.shim)?.shim}). Every other step is the compiler's own output, and the plan digest was recomputed with the compiler's own function.</div>}
             {real && tc.outerCall() && <div className="note"><b>Sent as one transaction:</b> <code>{tc.outerCall()!.capability}</code> <code title={tc.outerCall()!.encodedCall}>{short(tc.outerCall()!.encodedCall, 10)}</code></div>}
             <div className="digests">{plan.digest !== "0x" && <Digest label="Plan digest" value={plan.digest} />}<Digest label="Manifest" value={plan.manifestDigest} /><Digest label="Fingerprint" value={plan.fingerprintDigest} /></div>
             <div className="actions">{plan.mode === "unavailable" ? <div className="note bad">SEAM won't send this plan for preflight or signing, because a step can't run on this runtime. Remove the step or connect to a runtime that has it.</div> : <button onClick={doChecks}>Run preflight and policy</button>}</div>
@@ -269,7 +285,7 @@ export default function App() {
 
         {step === 3 && policy && (
           <section className="grid2">
-            {!pre ? <div className="card"><h3>Preflight</h3><p className="muted">This rollback test's evidence has no preflight. It records the plan, that policy allowed it, the approval hash and the submit gate's signed dry run, shown on the next screens.</p></div> : <div className="card">
+            {!pre ? null : <div className="card">
               <h3>Preflight</h3>{real && tc.preflightAt() && <p className="muted small">Read from the node at block #{tc.preflightAt()!.number} <code>{short(tc.preflightAt()!.hash, 6)}</code>. Weight is ref_time.</p>}
               <table className="tbl"><thead><tr><th>Step</th><th>Weight</th><th>Proof size</th><th>Fee</th><th>Storage</th><th className="r">Dry run</th></tr></thead><tbody>
                 {pre.steps.map((s) => (
@@ -342,6 +358,7 @@ export default function App() {
               {gate.gate.dryRun.map((d) => <dl key={d.txHash} className="kv"><dt>Signed dry run</dt><dd><Pill tone="bad">{d.outcome}</Pill> {d.detail}</dd><dt>Tx</dt><dd><code className="wrap">{d.txHash}</code></dd><dt>Raw result</dt><dd><code>{d.raw}</code></dd></dl>)}
               <h4>Balances after the gate (asset 1)</h4>
               <StateTable st={gate.state} cols={["before", "afterGate"]} />
+              <GateChecks list={tc.gateChecks()} />
             </div>
             <div className="card">
               <div className="row between"><h3>Rollback proof</h3><Pill tone={gate.verdict === "verified" ? "ok" : "warn"}>rollback {gate.verdict}</Pill></div>
@@ -356,7 +373,7 @@ export default function App() {
               <Events list={gate.bypass.events} />
               <p className="muted small">No Assets.Transferred or Assets.Issued: step 1's transfer and step 3's mint left nothing behind. Inner effects found: {gate.innerEffects.length}.</p>
               <h4>Balances and supply</h4>
-              <StateTable st={gate.state} cols={["before", "after"]} />
+              <StateTable st={gate.state} cols={["before", "afterGate", "after"]} />
               <div className="note">{gate.conclusion}</div>
               <p className="muted small">Evidence: <code>{gate.evidenceFile}</code>. This proof is why the atomic run may use <code>atomic_verified</code> on this runtime.</p>
             </div>
@@ -404,6 +421,7 @@ export default function App() {
                       )}
                     </div>
                   ))}
+                  {real && <GateChecks list={tc.gateChecks()} />}
                   <div className="digests"><Digest label="Receipt" value={receipt.digest} /><Digest label="Approval" value={receipt.approvalHash} /><Digest label="Plan" value={receipt.planDigest} /><Digest label="Policy" value={receipt.policyDigest} /></div>
                   <button className="ghost" onClick={() => { const b = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "seam-receipt.json"; a.click(); }}>Download receipt JSON</button>
                 </>

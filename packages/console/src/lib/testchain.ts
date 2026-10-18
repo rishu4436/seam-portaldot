@@ -14,10 +14,10 @@ const D = data as any;
 let current: TcScn = "sequential";
 export function setScenario(s: TcScn) { current = s; }
 export const scenario = () => current;
-const R = () => (current === "rollback" ? D.sequential : D[current]); // rollback shares the chain's facts
+const R = () => D[current]; // every run file now carries its own Manifest, facts, policy, preflight and envelope
 const SHOWN = ["Assets.transfer_keep_alive", "Assets.mint", "Contracts.call", "Utility.batch_all", "Revive.call", "Nfts.mint"];
 const DEC = 12;
-export const unit = (base?: string): Estimate => (base != null ? { value: `${(Number(base) / 10 ** DEC).toFixed(6)} ${D.facts.fingerprint.tokenSymbol}` } : { unknown: true });
+export const unit = (base?: string): Estimate => (base != null ? { value: `${(Number(base) / 10 ** DEC).toFixed(6)} ${D.sequential.facts.fingerprint.tokenSymbol}` } : { unknown: true });
 
 export const ENDPOINT: string = D.node.endpoint;
 export const node = () => D.node as { endpoint: string; binary: string; rpcSnapshotAt: string; pallets: string[]; declaredToken: { tokenSymbol: string; tokenDecimals: number; source: string } };
@@ -27,18 +27,18 @@ export const importedFrom = () => D.source as { dir: string; picked: string; fil
 
 export interface RunInfo { kind: string; ranAt: string; evidenceFile: string; runsOfThisKind: number; shimmed?: boolean; compiledMode?: string; compiledModeReason?: string; manifestVerified?: boolean; requireSignedDryRun?: boolean }
 export function info(): RunInfo {
-  const s = current === "rollback" ? D.rollback : D[current];
-  return { kind: s.kind, ranAt: s.ranAt, evidenceFile: s.evidenceFile, runsOfThisKind: s.runsOfThisKind, shimmed: s.shimmed, compiledMode: s.compiledMode, compiledModeReason: s.compiledModeReason, manifestVerified: s.manifestVerified, requireSignedDryRun: s.requireSignedDryRun };
+  const s = D[current];
+  return { kind: s.kind, ranAt: s.ranAt, evidenceFile: s.evidenceFile, runsOfThisKind: s.runsOfThisKind, shimmed: s.shimmed, compiledMode: s.compiledMode, compiledModeReason: s.compiledModeReason, requireSignedDryRun: s.requireSignedDryRun };
 }
 
 export function discover(_endpoint?: string): RuntimeFacts {
-  const f = D.facts;
+  const f = R().facts;
   const caps: Capability[] = SHOWN.map((id) => {
     const c = f.capabilities[id] ?? { status: "unknown" };
     return { id, status: c.status, pallet: id.split(".")[0], callIndex: c.palletIndex != null ? [c.palletIndex, c.callIndex] : undefined, argTypesPartial: c.argTypesConfidence === "partial" };
   });
   const rb = D.rollback;
-  const at = current === "rollback" ? rb.state.before.block : R().preflightDetail?.atBlock?.number ?? 0;
+  const at = R().facts.blockNumber ?? 0;
   return {
     endpoint: D.node.endpoint,
     discoveredAtBlock: at,
@@ -53,76 +53,55 @@ export function discover(_endpoint?: string): RuntimeFacts {
   };
 }
 
-function rollbackManifest() {
-  const rb = D.rollback;
-  return {
-    note: "Not a Manifest: this test was built by Bot 4's run-rollback.mjs to prove batch_all rollback. Steps as recorded.", planMode: rb.planMode,
-    actions: rb.steps.map((s: any) => { const [cap] = capOf(s.call); return { id: s.actionId, kind: cap === "Assets.mint" ? "assets.mint" : "assets.transfer", requires: cap, args: s.args }; }),
-  };
-}
-export function demoManifest(): Manifest { return (current === "rollback" ? rollbackManifest() : R().manifest) as unknown as Manifest; }
-export function manifestDigest(): Hex | undefined { return current === "rollback" ? undefined : R().manifestDigest; }
-export function manifestVerified(): boolean { return current !== "rollback" && !!R().manifestVerified; }
-
-const capOf = (call: string): [string, number, number] => {
-  const p = parseInt(call.slice(2, 4), 16), c = parseInt(call.slice(4, 6), 16);
-  const hit = Object.entries(D.facts.capabilities as Record<string, any>).find(([, v]) => v.palletIndex === p && v.callIndex === c);
-  return [hit ? hit[0] : `call [${p}, ${c}]`, p, c];
-};
+export function demoManifest(): Manifest { return R().manifest as Manifest; }
+export function manifestDigest(): Hex { return R().manifestDigest; }
 
 export function compile(): Plan {
-  if (current === "rollback") {
-    const rb = D.rollback;
-    return {
-      manifestDigest: "0x" as Hex, fingerprintDigest: D.facts.fingerprintDigest, signer: D.sequential.plan.signer.value, mode: rb.planMode, digest: "0x" as Hex,
-      modeReason: `All 3 steps in one ${rb.outerCall.capability}. Step "overdraw" asks for more than Alice holds, on purpose.`,
-      steps: rb.steps.map((s: any) => { const [cap, p, c] = capOf(s.call); return { actionId: s.actionId, capability: cap, callIndex: [p, c], encodedCall: s.call, status: "ok", decoded: { assetId: s.args.assetId, amount: s.args.amount, recipient: s.args.recipient } }; }),
-    } as Plan;
-  }
   const p = R().plan;
   return {
     manifestDigest: p.manifestDigest, fingerprintDigest: p.fingerprintDigest, signer: p.signer.value, mode: p.mode, digest: p.planDigest, modeReason: p.modeReason, explain: R().planText,
-    steps: p.steps.map((s: any) => ({
-      actionId: s.actionId, capability: s.capability, callIndex: [s.palletIndex, s.callIndex], encodedCall: s.encodedCall, status: s.status === "ok" ? "ok" : "unavailable",
-      shim: s.decodedArgs.shim,
-      decoded: { assetId: s.decodedArgs.assetId, amount: s.decodedArgs.amount, recipient: s.decodedArgs.recipient, contract: s.decodedArgs.contract, value: s.decodedArgs.value },
-    })),
+    steps: p.steps.map((s: any) => {
+      const a = s.decodedArgs;
+      return {
+        actionId: s.actionId, capability: s.capability, callIndex: [s.palletIndex, s.callIndex], encodedCall: s.encodedCall, status: s.status === "ok" ? "ok" : "unavailable",
+        shim: a.shim,
+        decoded: { assetId: a.assetId, amount: a.amount, recipient: a.recipient, contract: a.contract, value: a.value, message: a.message, selector: a.selector, abiHash: a.abiHash, args: a.args != null ? (typeof a.args === "string" ? a.args : JSON.stringify(a.args)) : undefined },
+      };
+    }),
   } as Plan;
 }
-export function outerCall(): { capability: string; encodedCall: Hex } | undefined { return current === "rollback" ? D.rollback.outerCall : R().plan.outerCall; }
+export function outerCall(): { capability: string; encodedCall: Hex } | undefined { return R().plan.outerCall; }
 
-/** undefined in the rollback test: its evidence has no preflight. */
-export function preflight(): PreflightResult | undefined {
-  if (current === "rollback") return undefined;
+export function preflight(): PreflightResult {
   const p = R().preflight;
   return { steps: p.steps.map((s: any) => ({ actionId: s.actionId, weight: s.weight.unknown ? { unknown: true } : { value: Number(s.weight.value).toLocaleString() }, proofSize: s.proofSize?.value ? { value: Number(s.proofSize.value).toLocaleString() } : { unknown: true }, fee: unit(s.fee.value), storageDeposit: s.storageDeposit.unknown ? { unknown: true } : unit(s.storageDeposit.value), dryRun: s.dryRun, note: s.note })), totalFee: unit(p.totalFee.value) };
 }
 /** Proof size the chain actually used per step (from ExtrinsicSuccess). Atomic: one batch, so the same total for every step. */
 export function usedProofSize(actionId: string): { value: string; shared: boolean } | undefined {
-  if (current === "rollback") return undefined;
   const u = R().usedProofSize?.[actionId];
   return u ? { value: Number(u.value).toLocaleString(), shared: current === "atomic" } : undefined;
 }
-export function preflightAt() { return current === "rollback" ? undefined : R().preflightDetail?.atBlock as { number: number; hash: Hex } | undefined; }
+export function preflightAt() { return R().preflightAt as { number: number; hash: Hex } | undefined; }
 
 export function checkPolicy(): PolicyResult {
-  if (current === "rollback") return { allowed: !!D.rollback.policyAllowed, rules: [], policyDigest: "0x" as Hex, explain: "The evidence records only allowed: true for this test, not the rule-by-rule result." };
   const r = R().policyResult;
   return { allowed: r.allowed, rules: r.rules, policyDigest: r.policyDigest, explain: R().policyText };
 }
-export function policyFile() { return current === "rollback" ? undefined : R().policy; }
+export function policyFile() { return R().policy; }
 
-export function envelope(): SigningEnvelope | undefined { return current === "rollback" ? undefined : R().envelope; }
-export function checkpoint(): { number: number; hash: Hex } | undefined { return current === "rollback" ? undefined : R().envelope.checkpoint; }
-export function signing() { return current === "rollback" ? undefined : R().signing as { count: number; specVersion: string; transactionVersion: string; era: string; signedExtensions: string[]; genesisHash: Hex }; }
+export function envelope(): SigningEnvelope { return R().envelope; }
+export function checkpoint(): { number: number; hash: Hex } | undefined { return R().envelope.checkpoint; }
+export function signing() { return R().signing as { count: number; specVersion: string; transactionVersion: string; era: string; signedExtensions: string[]; genesisHash: Hex }; }
 
 export function approve(): Approval {
-  if (current === "rollback") return { hash: D.rollback.approvalHash, covers: [], expiresAt: "", used: false };
   const a = R().approval;
   return { hash: a.hash, covers: a.covers, expiresAt: a.expiresAt, used: false };
 }
 
 export function submitBlock(): string | undefined { return current === "rollback" ? D.rollback.seamGate.reasons.map((r: any) => r.message).join(" ") : undefined; }
+
+export interface GateCheck { index: number; actionId: string; sendIndex: number | null; sdkOutcome: string; result: { ok: boolean; reasons: { code: string; message: string }[] }; agreesWithSdk: boolean; checksPerformed: string[]; note: string; inputs: { runtimeUnchanged?: boolean; signedDryRun?: string[]; dryRunDetails?: { outcome: string; detail: string }[]; previousSteps?: { actionId: string; status: string; block?: number }[] } }
+export function gateChecks(): GateCheck[] { return (R().gateChecks ?? []) as GateCheck[]; }
 
 /** The SDK's real onStep log. Atomic runs send one batch, so its events apply to every step. Rollback: derived from the gate result. */
 export function timeline(): StepEvent[] {
