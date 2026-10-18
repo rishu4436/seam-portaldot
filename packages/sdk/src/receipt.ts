@@ -194,3 +194,18 @@ export function receiptDigest(r: Omit<Receipt, 'receiptDigest'> | Receipt): Hex 
 export function checkReceipt(r: Receipt): boolean {
   return receiptDigest(r) === r.receiptDigest;
 }
+
+export type ReceiptCheckStatus = 'integrity_checked' | 'chain_verified' | 'unknown' | 'failed';
+
+export const INTEGRITY_ONLY_NOTE =
+  'integrity only, not on-chain proof: this checks that the receipt was not edited after it was written. Anyone can recompute that digest, so it does not show that any transaction exists. Use live verification (seam verify --endpoint) for that.';
+
+/**
+ * Offline check. The only possible answers are `integrity_checked` (the receipt's own digest matches) or `failed`.
+ * It can never return `chain_verified`.
+ */
+export function receiptIntegrity(r: Receipt): { status: 'integrity_checked' | 'failed'; note: string } {
+  return checkReceipt(r)
+    ? { status: 'integrity_checked', note: INTEGRITY_ONLY_NOTE }
+    : { status: 'failed', note: 'The receipt does not match its own digest: it was edited after SEAM produced it.' };
+}

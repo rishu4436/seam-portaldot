@@ -27,7 +27,8 @@ The developer-facing part of SEAM: Manifest helpers, execution receipts, plain-E
 seam digest  manifest.json
 seam compile manifest.json [--json]
 seam check   manifest.json --policy policy.json
-seam verify  receipt.json
+seam verify  receipt.json                       # offline: integrity only, not on-chain proof
+seam verify  --endpoint <ws> [--plan plan.json] receipt.json   # live chain re-read
 seam explain plan.json | policy-result.json | receipt.json
 ```
 Offline commands use the bundled Portaldot mainnet snapshot (spec 1002, block 2,721,455) by default. `--snapshot <dir|file> [--name n]` picks any snapshot saved by `seam snapshot` or `@seam/chain`'s `snapshotFromNode`, and `--endpoint <ws-url>` reads a live node. `seam check` validates the policy file with `parsePolicy` first.

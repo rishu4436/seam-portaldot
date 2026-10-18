@@ -114,7 +114,7 @@ These are checked at the last moment, before anything is sent.
 | `steps[]` | `actionId`, `status`, `txHash`, `block`, `events`, `verification`, `reason`. |
 | `result` | `verified`, `partial` or `not_verified`. |
 | `coverage` | `{ verified, expected }`: how many steps were confirmed on chain. |
-| `receiptDigest` | Lets anyone detect edits (`seam verify`). |
+| `receiptDigest` | Lets anyone detect edits (`seam verify`, integrity only: anyone can recompute it, so it is not proof of anything on chain). |
 
 Step status: `finalized`, `included` (in a block, not final yet), `submitted`, `failed`, `not_run`.
 
@@ -157,7 +157,8 @@ The gate result is `{ ok, reasons, passed }`. `passed` is a list of `{ code, det
 | `seam digest <manifest>` | Checks the Manifest and prints its digest. | 0 valid, 2 invalid |
 | `seam compile <manifest>` | Compiles against a runtime and explains the plan. | 0 ok, 2 can't compile, 3 unavailable |
 | `seam check <manifest> --policy <file>` | Checks the policy file, compiles, then runs every policy rule that doesn't need a node. | 0 passed, 2 bad policy file, 4 blocked |
-| `seam verify <receipt>` | Checks the receipt wasn't edited, then explains it. | 0 intact, 5 edited |
+| `seam verify <receipt>` | Offline: **integrity only, not on-chain proof** (status `integrity_checked`), then explains the receipt. | 0 integrity_checked, 5 edited |
+| `seam verify --endpoint <ws> [--plan <plan.json>] <receipt>` | Live: re-reads the chain. Status `chain_verified`, `unknown` or `failed`. | 0 chain_verified, 5 failed, 6 unknown |
 | `seam explain <file>` | Explains a plan, policy result or receipt in plain English. | 0 |
 | `seam snapshot <ws-endpoint> <out-dir>` | Saves a node's runtime, read-only, for offline use. | 0 |
 
