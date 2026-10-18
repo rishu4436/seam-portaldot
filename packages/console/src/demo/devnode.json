@@ -1,12 +1,12 @@
 {
- "importedAt": "2026-10-18T05:17:10.730Z",
+ "importedAt": "2026-10-18T05:25:29.173Z",
  "source": {
   "dir": "evidence/devnode",
   "readme": "evidence/README.md",
   "files": [
-   "sequential-1792300477774.json",
-   "rollback-1792300479791.json",
-   "atomic-1792300481962.json",
+   "sequential-1792301010881.json",
+   "rollback-1792301012980.json",
+   "atomic-1792301015006.json",
    "setup-1792300431212.json"
   ]
  },
@@ -70,9 +70,9 @@
   "id": "sequential",
   "kind": "sequential",
   "recordingVersion": 2,
-  "ranAt": "2026-10-18T05:14:37.774Z",
-  "evidenceFile": "evidence/devnode/runs/sequential-1792300477774.json",
-  "runsOfThisKind": 4,
+  "ranAt": "2026-10-18T05:23:30.881Z",
+  "evidenceFile": "evidence/devnode/runs/sequential-1792301010881.json",
+  "runsOfThisKind": 5,
   "endpoint": "ws://127.0.0.1:9944",
   "requireSignedDryRun": true,
   "compiledMode": "sequential",
@@ -640,7 +640,7 @@
     "batchAllRollback": "unknown"
    },
    "endpoint": "ws://127.0.0.1:9944",
-   "blockNumber": 35
+   "blockNumber": 49
   },
   "plan": {
    "planVersion": 1,
@@ -727,7 +727,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646779676"
+      "value": "646638432"
      },
      "storageDeposit": {
       "unknown": true
@@ -744,7 +744,7 @@
       "value": "5518582000"
      },
      "fee": {
-      "value": "5622044295"
+      "value": "5620600991"
      },
      "storageDeposit": {
       "unknown": true
@@ -761,7 +761,7 @@
       "value": "273273000"
      },
      "fee": {
-      "value": "380168286"
+      "value": "380096815"
      },
      "storageDeposit": {
       "unknown": true
@@ -774,22 +774,22 @@
     }
    ],
    "totalFee": {
-    "value": "6648992257"
+    "value": "6647336238"
    }
   },
   "preflightAt": {
-   "number": 35,
-   "hash": "0xbaaf56053638fb39ba87f21ddcf0d725843588aecca1e2f2425fb268fc031a20"
+   "number": 49,
+   "hash": "0x7c8b0e49e0d3ee92f0d9c63d105812d29ba6df294d688a019fcff7f6c6b632e6"
   },
   "envelope": {
    "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-   "nonce": 35,
+   "nonce": 49,
    "mortalityBlocks": 64,
    "checkpoint": {
-    "number": 34,
-    "hash": "0x67f91feb2896326bed320834316af89767ecfeaa73c0026705fd7ad539222db7"
+    "number": 48,
+    "hash": "0x566dbe7413a166a75253b6edfc09e00666fda3f4999f213237f5397399a833c8"
    },
-   "expiresAt": "2026-10-18T05:20:52.632Z"
+   "expiresAt": "2026-10-18T05:29:45.742Z"
   },
   "policy": {
    "version": "seam/policy/v1",
@@ -820,6 +820,14 @@
     "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": [
      "0x6c337222"
     ]
+   },
+   "allowedMessages": {
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": [
+     "settle"
+    ]
+   },
+   "pinnedAbiHashes": {
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807"
    },
    "maxAmountPerAsset": {
     "1": "1000000000000"
@@ -879,6 +887,24 @@
      "rule": "contract_allowed",
      "outcome": "pass",
      "reason": "contract is allowed",
+     "actionId": "call"
+    },
+    {
+     "rule": "selector_allowed",
+     "outcome": "pass",
+     "reason": "contract message 0x6c337222 is allowed",
+     "actionId": "call"
+    },
+    {
+     "rule": "message_allowed",
+     "outcome": "pass",
+     "reason": "contract message \"settle\" is allowed",
+     "actionId": "call"
+    },
+    {
+     "rule": "abi_pinned",
+     "outcome": "pass",
+     "reason": "contract interface (ABI) matches the pinned hash",
      "actionId": "call"
     },
     {
@@ -968,14 +994,14 @@
     {
      "rule": "fee_limit",
      "outcome": "pass",
-     "reason": "total fee 6648992257 is within limits"
+     "reason": "total fee 6647336238 is within limits"
     }
    ],
-   "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025"
+   "policyDigest": "0x9cd371bfa67923aaa68c6afdcd525f9b6a7d8c54fba3e870a7094475ad7b228e"
   },
-  "policyText": "Allowed: all 24 policy checks passed.",
+  "policyText": "Allowed: all 27 policy checks passed.",
   "approval": {
-   "hash": "0x6dda55fce134f1fe514027a8e8318078efa388043b3c161408470d08a8c5e6af",
+   "hash": "0x675b6fc03e55d79691958a5c019dc2b77e82279c465003ac2d4a3a057c22f5a2",
    "covers": [
     "manifest",
     "plan",
@@ -986,7 +1012,7 @@
     "signing envelope",
     "preflight"
    ],
-   "expiresAt": "2026-10-18T05:20:52.632Z",
+   "expiresAt": "2026-10-18T05:29:45.742Z",
    "used": false,
    "binding": {
     "manifestDigest": "0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f",
@@ -994,20 +1020,20 @@
     "planContentDigest": "0x7b6e9c91ce5b9f82f8f4c70c17443c82de5e0169b971de29c4bca542e736f68e",
     "callsDigest": "0xc7f2b48f66b0445aefcf7088fe95791d268c524c4e61e3156b55b5e90c22648c",
     "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
-    "policyResultDigest": "0xe05e8a98dd86a15ce590eeddf9ba748e7713e488786bed9475a201d5dac811fa",
-    "envelopeDigest": "0xf9fce64c9830f8bfb951b47ba9330d8c7234c8215adc0e849d889c6f81a8a4c9",
-    "preflightDigest": "0xcce2f746675c88397bc653be2e2f14688d7a0234d1f0ceb76972fb9a6b6518cb",
+    "policyDigest": "0x9cd371bfa67923aaa68c6afdcd525f9b6a7d8c54fba3e870a7094475ad7b228e",
+    "policyResultDigest": "0x0ce69442a01c9c190cb78b0a9349db91db71264dd5d4f22208599532da368ee8",
+    "envelopeDigest": "0xc1483b3f2fd34b86d838cdb2376ad6f00a90f9323588660594e119313719a90e",
+    "preflightDigest": "0xbf58a41591247914f336a0c3c7b8bbdbb9885727cffd85df98c7996732c82dbd",
     "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "nonce": 35,
+    "nonce": 49,
     "mortalityBlocks": 64,
-    "expiresAt": "2026-10-18T05:20:52.632Z"
+    "expiresAt": "2026-10-18T05:29:45.742Z"
    }
   },
   "signing": {
    "count": 3,
    "specVersion": "0x00000064",
-   "era": "0x2502",
+   "era": "0x0503",
    "signedExtensions": [
     "CheckNonZeroSender",
     "CheckSpecVersion",
@@ -1024,95 +1050,201 @@
    {
     "index": 0,
     "actionId": "pay",
-    "sendIndex": 0,
-    "checkedAt": "2026-10-18T05:14:34.706Z",
-    "sdkOutcome": "sent",
+    "phase": "sending",
+    "checkedAt": "2026-10-18T05:23:27.809Z",
+    "source": "onStep",
     "result": {
      "ok": true,
-     "reasons": []
-    },
-    "agreesWithSdk": true,
-    "checksPerformed": [
-     "approval_reused",
-     "approval_expired",
-     "approval_tampered",
-     "approval_mismatch",
-     "runtime_changed",
-     "signed_bytes_mismatch",
-     "signed_dry_run_failed",
-     "signed_dry_run_missing",
-     "send_index_invalid",
-     "out_of_order",
-     "previous_steps_missing",
-     "previous_step_failed"
-    ],
-    "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
-    "inputs": {
-     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "runtimeUnchanged": true,
-     "signedDryRun": [
-      "ok",
-      "unknown",
-      "unknown"
-     ],
-     "dryRunDetails": [
+     "reasons": [],
+     "passed": [
       {
-       "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
-       "outcome": "ok",
-       "detail": "dispatch ok"
+       "code": "step_order",
+       "detail": "step 1 is next in order"
+      },
+      {
+       "code": "approval_unused",
+       "detail": "step 1 of this approval hasn't been sent"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:45.742Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of signed step 1 succeeded"
       }
-     ],
-     "previousSteps": []
+     ]
+    },
+    "dryRun": [
+     {
+      "txHash": "0xa9b6c5fe753ce9f2e82a11e3d1e73cf038fe9c3d554f9a201ad43facc157d29c",
+      "outcome": "ok",
+      "detail": "dispatch ok"
+     }
+    ]
+   },
+   {
+    "index": 0,
+    "actionId": "pay",
+    "phase": "done",
+    "checkedAt": "2026-10-18T05:23:28.820Z",
+    "source": "onStep",
+    "result": {
+     "ok": true,
+     "reasons": [],
+     "passed": [
+      {
+       "code": "step_order",
+       "detail": "step 1 is next in order"
+      },
+      {
+       "code": "approval_unused",
+       "detail": "step 1 of this approval hasn't been sent"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:45.742Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of signed step 1 succeeded"
+      }
+     ]
     }
    },
    {
     "index": 1,
     "actionId": "call",
-    "sendIndex": 1,
-    "checkedAt": "2026-10-18T05:14:35.735Z",
-    "sdkOutcome": "sent",
+    "phase": "sending",
+    "checkedAt": "2026-10-18T05:23:28.839Z",
+    "source": "onStep",
     "result": {
      "ok": true,
-     "reasons": []
-    },
-    "agreesWithSdk": true,
-    "checksPerformed": [
-     "approval_reused",
-     "approval_expired",
-     "approval_tampered",
-     "approval_mismatch",
-     "runtime_changed",
-     "signed_bytes_mismatch",
-     "signed_dry_run_failed",
-     "signed_dry_run_missing",
-     "send_index_invalid",
-     "out_of_order",
-     "previous_steps_missing",
-     "previous_step_failed"
-    ],
-    "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
-    "inputs": {
-     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "runtimeUnchanged": true,
-     "signedDryRun": [
-      "unknown",
-      "ok",
-      "unknown"
-     ],
-     "dryRunDetails": [
+     "reasons": [],
+     "passed": [
       {
-       "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
-       "outcome": "ok",
-       "detail": "dispatch ok"
+       "code": "step_order",
+       "detail": "step 2 is next in order"
+      },
+      {
+       "code": "previous_steps_ok",
+       "detail": "the 1 earlier step(s) completed and verified"
+      },
+      {
+       "code": "approval_unused",
+       "detail": "step 2 of this approval hasn't been sent"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:45.742Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of signed step 2 succeeded"
       }
-     ],
-     "previousSteps": [
+     ]
+    },
+    "dryRun": [
+     {
+      "txHash": "0x2370812e1e28c527d48ebca2748460f5b603816e97e822c514cccd7dd035203f",
+      "outcome": "ok",
+      "detail": "dispatch ok"
+     }
+    ]
+   },
+   {
+    "index": 1,
+    "actionId": "call",
+    "phase": "done",
+    "checkedAt": "2026-10-18T05:23:29.850Z",
+    "source": "onStep",
+    "result": {
+     "ok": true,
+     "reasons": [],
+     "passed": [
       {
-       "actionId": "pay",
-       "status": "finalized",
-       "block": 36
+       "code": "step_order",
+       "detail": "step 2 is next in order"
+      },
+      {
+       "code": "previous_steps_ok",
+       "detail": "the 1 earlier step(s) completed and verified"
+      },
+      {
+       "code": "approval_unused",
+       "detail": "step 2 of this approval hasn't been sent"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:45.742Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of signed step 2 succeeded"
       }
      ]
     }
@@ -1120,55 +1252,104 @@
    {
     "index": 2,
     "actionId": "mint",
-    "sendIndex": 2,
-    "checkedAt": "2026-10-18T05:14:36.762Z",
-    "sdkOutcome": "sent",
+    "phase": "sending",
+    "checkedAt": "2026-10-18T05:23:29.867Z",
+    "source": "onStep",
     "result": {
      "ok": true,
-     "reasons": []
-    },
-    "agreesWithSdk": true,
-    "checksPerformed": [
-     "approval_reused",
-     "approval_expired",
-     "approval_tampered",
-     "approval_mismatch",
-     "runtime_changed",
-     "signed_bytes_mismatch",
-     "signed_dry_run_failed",
-     "signed_dry_run_missing",
-     "send_index_invalid",
-     "out_of_order",
-     "previous_steps_missing",
-     "previous_step_failed"
-    ],
-    "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
-    "inputs": {
-     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "runtimeUnchanged": true,
-     "signedDryRun": [
-      "unknown",
-      "unknown",
-      "ok"
-     ],
-     "dryRunDetails": [
+     "reasons": [],
+     "passed": [
       {
-       "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
-       "outcome": "ok",
-       "detail": "dispatch ok"
-      }
-     ],
-     "previousSteps": [
-      {
-       "actionId": "pay",
-       "status": "finalized",
-       "block": 36
+       "code": "step_order",
+       "detail": "step 3 is next in order"
       },
       {
-       "actionId": "call",
-       "status": "finalized",
-       "block": 37
+       "code": "previous_steps_ok",
+       "detail": "the 2 earlier step(s) completed and verified"
+      },
+      {
+       "code": "approval_unused",
+       "detail": "step 3 of this approval hasn't been sent"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:45.742Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of signed step 3 succeeded"
+      }
+     ]
+    },
+    "dryRun": [
+     {
+      "txHash": "0x69d73cb098357863c427ab895d3dbd889934ef35bc761c414cd74b2be1681018",
+      "outcome": "ok",
+      "detail": "dispatch ok"
+     }
+    ]
+   },
+   {
+    "index": 2,
+    "actionId": "mint",
+    "phase": "done",
+    "checkedAt": "2026-10-18T05:23:30.880Z",
+    "source": "onStep",
+    "result": {
+     "ok": true,
+     "reasons": [],
+     "passed": [
+      {
+       "code": "step_order",
+       "detail": "step 3 is next in order"
+      },
+      {
+       "code": "previous_steps_ok",
+       "detail": "the 2 earlier step(s) completed and verified"
+      },
+      {
+       "code": "approval_unused",
+       "detail": "step 3 of this approval hasn't been sent"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:45.742Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 3 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of signed step 3 succeeded"
       }
      ]
     }
@@ -1179,141 +1360,120 @@
     "index": 0,
     "actionId": "pay",
     "phase": "checking",
-    "at": "2026-10-18T05:14:34.693Z"
+    "at": "2026-10-18T05:23:27.795Z"
    },
    {
     "index": 0,
     "actionId": "pay",
     "phase": "sending",
-    "at": "2026-10-18T05:14:34.707Z",
-    "dryRun": [
-     {
-      "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
-      "outcome": "ok",
-      "detail": "dispatch ok"
-     }
-    ]
+    "at": "2026-10-18T05:23:27.809Z"
    },
    {
     "index": 0,
     "actionId": "pay",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-18T05:14:35.721Z"
+    "at": "2026-10-18T05:23:28.820Z"
    },
    {
     "index": 1,
     "actionId": "call",
     "phase": "checking",
-    "at": "2026-10-18T05:14:35.721Z"
+    "at": "2026-10-18T05:23:28.820Z"
    },
    {
     "index": 1,
     "actionId": "call",
     "phase": "sending",
-    "at": "2026-10-18T05:14:35.736Z",
-    "dryRun": [
-     {
-      "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
-      "outcome": "ok",
-      "detail": "dispatch ok"
-     }
-    ]
+    "at": "2026-10-18T05:23:28.839Z"
    },
    {
     "index": 1,
     "actionId": "call",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-18T05:14:36.748Z"
+    "at": "2026-10-18T05:23:29.850Z"
    },
    {
     "index": 2,
     "actionId": "mint",
     "phase": "checking",
-    "at": "2026-10-18T05:14:36.748Z"
+    "at": "2026-10-18T05:23:29.851Z"
    },
    {
     "index": 2,
     "actionId": "mint",
     "phase": "sending",
-    "at": "2026-10-18T05:14:36.763Z",
-    "dryRun": [
-     {
-      "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
-      "outcome": "ok",
-      "detail": "dispatch ok"
-     }
-    ]
+    "at": "2026-10-18T05:23:29.867Z"
    },
    {
     "index": 2,
     "actionId": "mint",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-18T05:14:37.773Z"
+    "at": "2026-10-18T05:23:30.880Z"
    }
   ],
   "statuses": [
    {
     "actionId": "pay",
     "status": "submitted",
-    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
-    "at": "2026-10-18T05:14:34.760Z"
+    "txHash": "0xa9b6c5fe753ce9f2e82a11e3d1e73cf038fe9c3d554f9a201ad43facc157d29c",
+    "at": "2026-10-18T05:23:27.856Z"
    },
    {
     "actionId": "pay",
     "status": "in_block",
-    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
-    "blockHash": "0xc658c35b986f18fe398506aa4d7a016cfd8b24b7e0cbc6f6d33a82c25655909d",
-    "at": "2026-10-18T05:14:34.760Z"
+    "txHash": "0xa9b6c5fe753ce9f2e82a11e3d1e73cf038fe9c3d554f9a201ad43facc157d29c",
+    "blockHash": "0x8b57b3a098c69bbe73e73c20cf8af060f1e74d4b0c8226ffec2cd69547173719",
+    "at": "2026-10-18T05:23:27.856Z"
    },
    {
     "actionId": "pay",
     "status": "finalized",
-    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
-    "blockHash": "0xc658c35b986f18fe398506aa4d7a016cfd8b24b7e0cbc6f6d33a82c25655909d",
-    "at": "2026-10-18T05:14:35.720Z"
+    "txHash": "0xa9b6c5fe753ce9f2e82a11e3d1e73cf038fe9c3d554f9a201ad43facc157d29c",
+    "blockHash": "0x8b57b3a098c69bbe73e73c20cf8af060f1e74d4b0c8226ffec2cd69547173719",
+    "at": "2026-10-18T05:23:28.819Z"
    },
    {
     "actionId": "call",
     "status": "submitted",
-    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
-    "at": "2026-10-18T05:14:35.784Z"
+    "txHash": "0x2370812e1e28c527d48ebca2748460f5b603816e97e822c514cccd7dd035203f",
+    "at": "2026-10-18T05:23:28.892Z"
    },
    {
     "actionId": "call",
     "status": "in_block",
-    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
-    "blockHash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd",
-    "at": "2026-10-18T05:14:35.784Z"
+    "txHash": "0x2370812e1e28c527d48ebca2748460f5b603816e97e822c514cccd7dd035203f",
+    "blockHash": "0x1d78879d612fd9d788dc31912b68c522a966baba497f3247b5074d056e4f960d",
+    "at": "2026-10-18T05:23:28.892Z"
    },
    {
     "actionId": "call",
     "status": "finalized",
-    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
-    "blockHash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd",
-    "at": "2026-10-18T05:14:36.747Z"
+    "txHash": "0x2370812e1e28c527d48ebca2748460f5b603816e97e822c514cccd7dd035203f",
+    "blockHash": "0x1d78879d612fd9d788dc31912b68c522a966baba497f3247b5074d056e4f960d",
+    "at": "2026-10-18T05:23:29.850Z"
    },
    {
     "actionId": "mint",
     "status": "submitted",
-    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
-    "at": "2026-10-18T05:14:36.812Z"
+    "txHash": "0x69d73cb098357863c427ab895d3dbd889934ef35bc761c414cd74b2be1681018",
+    "at": "2026-10-18T05:23:29.920Z"
    },
    {
     "actionId": "mint",
     "status": "in_block",
-    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
-    "blockHash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29",
-    "at": "2026-10-18T05:14:36.812Z"
+    "txHash": "0x69d73cb098357863c427ab895d3dbd889934ef35bc761c414cd74b2be1681018",
+    "blockHash": "0x656457bb6b0d1647f57a4f423ded62b3d02e5ba17ddb5bf0f46e13bff04665c6",
+    "at": "2026-10-18T05:23:29.920Z"
    },
    {
     "actionId": "mint",
     "status": "finalized",
-    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
-    "blockHash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29",
-    "at": "2026-10-18T05:14:37.772Z"
+    "txHash": "0x69d73cb098357863c427ab895d3dbd889934ef35bc761c414cd74b2be1681018",
+    "blockHash": "0x656457bb6b0d1647f57a4f423ded62b3d02e5ba17ddb5bf0f46e13bff04665c6",
+    "at": "2026-10-18T05:23:30.879Z"
    }
   ],
   "run": {
@@ -1323,23 +1483,23 @@
     "manifestDigest": "0x47d0c0efba99d3f775e2dcf12f6d1bdc05c6e77b57d496d899b478730dbdc63f",
     "planDigest": "0x02cdc56e1c230202b2653a6b52dcd59f1e9c8e50806e5e3bae39b2bb634b75b8",
     "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
-    "approvalHash": "0x6dda55fce134f1fe514027a8e8318078efa388043b3c161408470d08a8c5e6af",
+    "policyDigest": "0x9cd371bfa67923aaa68c6afdcd525f9b6a7d8c54fba3e870a7094475ad7b228e",
+    "approvalHash": "0x675b6fc03e55d79691958a5c019dc2b77e82279c465003ac2d4a3a057c22f5a2",
     "mode": "sequential",
     "steps": [
      {
       "actionId": "pay",
       "status": "finalized",
-      "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f",
+      "txHash": "0xa9b6c5fe753ce9f2e82a11e3d1e73cf038fe9c3d554f9a201ad43facc157d29c",
       "block": {
-       "number": 36,
-       "hash": "0xc658c35b986f18fe398506aa4d7a016cfd8b24b7e0cbc6f6d33a82c25655909d"
+       "number": 50,
+       "hash": "0x8b57b3a098c69bbe73e73c20cf8af060f1e74d4b0c8226ffec2cd69547173719"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646779676)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646638432)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646779676, 0)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 646638432, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":6208,\"refTime\":647133000}})"
       ],
       "verification": "verified",
@@ -1348,17 +1508,17 @@
      {
       "actionId": "call",
       "status": "finalized",
-      "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae",
+      "txHash": "0x2370812e1e28c527d48ebca2748460f5b603816e97e822c514cccd7dd035203f",
       "block": {
-       "number": 37,
-       "hash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd"
+       "number": 51,
+       "hash": "0x1d78879d612fd9d788dc31912b68c522a966baba497f3247b5074d056e4f960d"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 5621941069)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 5620497791)",
        "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
        "Contracts.Called({\"signed\":\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\"}, 0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a)",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4316104272)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1305836797, 0)",
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4314974718)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1305523073, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":55120,\"refTime\":1306644168}})"
       ],
       "verification": "verified",
@@ -1367,16 +1527,16 @@
      {
       "actionId": "mint",
       "status": "finalized",
-      "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
+      "txHash": "0x69d73cb098357863c427ab895d3dbd889934ef35bc761c414cd74b2be1681018",
       "block": {
-       "number": 38,
-       "hash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29"
+       "number": 52,
+       "hash": "0x656457bb6b0d1647f57a4f423ded62b3d02e5ba17ddb5bf0f46e13bff04665c6"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380158071)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380086604)",
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380158071, 0)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 380086604, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":3675,\"refTime\":380347000}})"
       ],
       "verification": "verified",
@@ -1388,22 +1548,22 @@
      "verified": 3,
      "expected": 3
     },
-    "receiptDigest": "0x9a7d8c1e7c92129a03b0cedda2930ae847b02729575a3fc049aec3090a53e650"
+    "receiptDigest": "0xc5e27f4db2d1d1d5e37c1a7b0a4c89e330c6249f4852f238422d532129925835"
    }
   },
-  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be",
+  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0xa9b6c5fe753ce9f2e82a11e3d1e73cf038fe9c3d554f9a201ad43facc157d29c\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0x2370812e1e28c527d48ebca2748460f5b603816e97e822c514cccd7dd035203f\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x69d73cb098357863c427ab895d3dbd889934ef35bc761c414cd74b2be1681018",
   "usedProofSize": {
    "pay": {
     "value": "6208",
-    "txHash": "0x64500105a0627f0ffc5e2e179cb2688d28dcde4be161867d3d6a750fe450636f"
+    "txHash": "0xa9b6c5fe753ce9f2e82a11e3d1e73cf038fe9c3d554f9a201ad43facc157d29c"
    },
    "call": {
     "value": "55120",
-    "txHash": "0xfafb6a227c1688be2780b983fa3c1d429969dc377a8b8ba830590575245480ae"
+    "txHash": "0x2370812e1e28c527d48ebca2748460f5b603816e97e822c514cccd7dd035203f"
    },
    "mint": {
     "value": "3675",
-    "txHash": "0x11ef07dea82f32e9fd5f96f186a332fb4dc8ab57b256ec96b30c9cf2d7a9f1be"
+    "txHash": "0x69d73cb098357863c427ab895d3dbd889934ef35bc761c414cd74b2be1681018"
    }
   },
   "decodedEmitted": {
@@ -1439,9 +1599,9 @@
   "id": "atomic",
   "kind": "atomic",
   "recordingVersion": 2,
-  "ranAt": "2026-10-18T05:14:41.962Z",
-  "evidenceFile": "evidence/devnode/runs/atomic-1792300481962.json",
-  "runsOfThisKind": 3,
+  "ranAt": "2026-10-18T05:23:35.006Z",
+  "evidenceFile": "evidence/devnode/runs/atomic-1792301015006.json",
+  "runsOfThisKind": 4,
   "endpoint": "ws://127.0.0.1:9944",
   "requireSignedDryRun": true,
   "compiledMode": "atomic_verified",
@@ -2012,7 +2172,7 @@
     "batchAllRollback": "verified"
    },
    "endpoint": "ws://127.0.0.1:9944",
-   "blockNumber": 39
+   "blockNumber": 53
   },
   "plan": {
    "planVersion": 1,
@@ -2105,7 +2265,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646739297"
+      "value": "646598063"
      },
      "storageDeposit": {
       "unknown": true
@@ -2122,7 +2282,7 @@
       "value": "5518582000"
      },
      "fee": {
-      "value": "5621631679"
+      "value": "5620188482"
      },
      "storageDeposit": {
       "unknown": true
@@ -2139,7 +2299,7 @@
       "value": "273273000"
      },
      "fee": {
-      "value": "380147853"
+      "value": "380076388"
      },
      "storageDeposit": {
       "unknown": true
@@ -2152,22 +2312,22 @@
     }
    ],
    "totalFee": {
-    "value": "6512750759"
+    "value": "6511074351"
    }
   },
   "preflightAt": {
-   "number": 39,
-   "hash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343"
+   "number": 53,
+   "hash": "0xbe35c099e9ea62751521340b75183f4c3fa7d4952776c012e1b72adb55fe97f2"
   },
   "envelope": {
    "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-   "nonce": 39,
+   "nonce": 53,
    "mortalityBlocks": 64,
    "checkpoint": {
-    "number": 38,
-    "hash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29"
+    "number": 52,
+    "hash": "0x656457bb6b0d1647f57a4f423ded62b3d02e5ba17ddb5bf0f46e13bff04665c6"
    },
-   "expiresAt": "2026-10-18T05:20:58.899Z"
+   "expiresAt": "2026-10-18T05:29:51.945Z"
   },
   "policy": {
    "version": "seam/policy/v1",
@@ -2198,6 +2358,14 @@
     "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": [
      "0x6c337222"
     ]
+   },
+   "allowedMessages": {
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": [
+     "settle"
+    ]
+   },
+   "pinnedAbiHashes": {
+    "0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a": "0x2b10e7d8ec1f55b4a2cbbf24fac200ba0770d8ebd068dcd820713249afc05807"
    },
    "maxAmountPerAsset": {
     "1": "1000000000000"
@@ -2257,6 +2425,24 @@
      "rule": "contract_allowed",
      "outcome": "pass",
      "reason": "contract is allowed",
+     "actionId": "call"
+    },
+    {
+     "rule": "selector_allowed",
+     "outcome": "pass",
+     "reason": "contract message 0x6c337222 is allowed",
+     "actionId": "call"
+    },
+    {
+     "rule": "message_allowed",
+     "outcome": "pass",
+     "reason": "contract message \"settle\" is allowed",
+     "actionId": "call"
+    },
+    {
+     "rule": "abi_pinned",
+     "outcome": "pass",
+     "reason": "contract interface (ABI) matches the pinned hash",
      "actionId": "call"
     },
     {
@@ -2346,14 +2532,14 @@
     {
      "rule": "fee_limit",
      "outcome": "pass",
-     "reason": "total fee 6512750759 is within limits"
+     "reason": "total fee 6511074351 is within limits"
     }
    ],
-   "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025"
+   "policyDigest": "0x9cd371bfa67923aaa68c6afdcd525f9b6a7d8c54fba3e870a7094475ad7b228e"
   },
-  "policyText": "Allowed: all 24 policy checks passed.",
+  "policyText": "Allowed: all 27 policy checks passed.",
   "approval": {
-   "hash": "0x92832fecb2455745de35cdffa49399f62986df67470e3c42ac8c69756fc9076e",
+   "hash": "0x81791deb7f665de79d347e73ca24509a651454e0855819edd3256a8a485cfdcb",
    "covers": [
     "manifest",
     "plan",
@@ -2364,7 +2550,7 @@
     "signing envelope",
     "preflight"
    ],
-   "expiresAt": "2026-10-18T05:20:58.899Z",
+   "expiresAt": "2026-10-18T05:29:51.945Z",
    "used": false,
    "binding": {
     "manifestDigest": "0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1",
@@ -2372,20 +2558,20 @@
     "planContentDigest": "0xf5d53023719885ce6053da735f6e8b1ce1b93db01bae93605eca22414e7870fc",
     "callsDigest": "0xccca0f7aaa9f7a13b89407d6de83eb2f104051fc9a3f7f810f6a6331f8590f8c",
     "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
-    "policyResultDigest": "0xa0e7f507ccac300b7bae790cef0956a0852bf76c875e462a9d5f0f35ad6aa5c7",
-    "envelopeDigest": "0xc4d0955ecc820e703b6afd8cc0f66090023c1e4322164afe88dae1d211860a0e",
-    "preflightDigest": "0x8ec453d605f7fcd1efacc2626431594bfee446bf79d51b9ef2612928dcac029d",
+    "policyDigest": "0x9cd371bfa67923aaa68c6afdcd525f9b6a7d8c54fba3e870a7094475ad7b228e",
+    "policyResultDigest": "0xe180b1866970d7750ed6220f49f9d107e869c2ca671a61deb556760a5ac60b5d",
+    "envelopeDigest": "0x48cf01b810ea2b76b6cb05ee3dc79631f6c970e0fd034bf1d91e97c2875c8446",
+    "preflightDigest": "0x3cd8dcfdf094a709fb010ab96d9e3dce45b45646f74fdfdb72a25951695a4cb9",
     "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "nonce": 39,
+    "nonce": 53,
     "mortalityBlocks": 64,
-    "expiresAt": "2026-10-18T05:20:58.899Z"
+    "expiresAt": "2026-10-18T05:29:51.945Z"
    }
   },
   "signing": {
    "count": 1,
    "specVersion": "0x00000064",
-   "era": "0x6502",
+   "era": "0x4503",
    "signedExtensions": [
     "CheckNonZeroSender",
     "CheckSpecVersion",
@@ -2402,41 +2588,88 @@
    {
     "index": 0,
     "actionId": "batch",
-    "sendIndex": null,
-    "checkedAt": "2026-10-18T05:14:40.945Z",
-    "sdkOutcome": "sent",
+    "phase": "sending",
+    "checkedAt": "2026-10-18T05:23:33.989Z",
+    "source": "onStep",
     "result": {
      "ok": true,
-     "reasons": []
-    },
-    "agreesWithSdk": true,
-    "checksPerformed": [
-     "approval_reused",
-     "approval_expired",
-     "approval_tampered",
-     "approval_mismatch",
-     "runtime_changed",
-     "signed_bytes_mismatch",
-     "signed_dry_run_failed",
-     "signed_dry_run_missing",
-     "send_index_invalid",
-     "out_of_order",
-     "previous_steps_missing",
-     "previous_step_failed"
-    ],
-    "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
-    "inputs": {
-     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "runtimeUnchanged": true,
-     "signedDryRun": [
-      "ok"
-     ],
-     "dryRunDetails": [
+     "reasons": [],
+     "passed": [
       {
-       "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
-       "outcome": "ok",
-       "detail": "dispatch ok"
+       "code": "approval_unused",
+       "detail": "this approval hasn't been used"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:51.945Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 1 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of the signed transaction(s) succeeded"
+      }
+     ]
+    },
+    "dryRun": [
+     {
+      "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
+      "outcome": "ok",
+      "detail": "dispatch ok"
+     }
+    ]
+   },
+   {
+    "index": 0,
+    "actionId": "batch",
+    "phase": "done",
+    "checkedAt": "2026-10-18T05:23:35.005Z",
+    "source": "onStep",
+    "result": {
+     "ok": true,
+     "reasons": [],
+     "passed": [
+      {
+       "code": "approval_unused",
+       "detail": "this approval hasn't been used"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:51.945Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 1 signed call(s) are byte-for-byte the approved calls"
+      },
+      {
+       "code": "signed_dry_run_ok",
+       "detail": "the dry run of the signed transaction(s) succeeded"
       }
      ]
     }
@@ -2447,49 +2680,42 @@
     "index": 0,
     "actionId": "batch",
     "phase": "checking",
-    "at": "2026-10-18T05:14:40.933Z"
+    "at": "2026-10-18T05:23:33.974Z"
    },
    {
     "index": 0,
     "actionId": "batch",
     "phase": "sending",
-    "at": "2026-10-18T05:14:40.946Z",
-    "dryRun": [
-     {
-      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
-      "outcome": "ok",
-      "detail": "dispatch ok"
-     }
-    ]
+    "at": "2026-10-18T05:23:33.989Z"
    },
    {
     "index": 0,
     "actionId": "batch",
     "phase": "done",
     "detail": "finalized",
-    "at": "2026-10-18T05:14:41.961Z"
+    "at": "2026-10-18T05:23:35.005Z"
    }
   ],
   "statuses": [
    {
     "actionId": "batch",
     "status": "submitted",
-    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
-    "at": "2026-10-18T05:14:40.996Z"
+    "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
+    "at": "2026-10-18T05:23:34.044Z"
    },
    {
     "actionId": "batch",
     "status": "in_block",
-    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
-    "blockHash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de",
-    "at": "2026-10-18T05:14:40.996Z"
+    "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
+    "blockHash": "0x56b7deeae2b5a1850aa5c33369dcf971fec6337cc5c8cee6a09cc35ab2bfb8e6",
+    "at": "2026-10-18T05:23:34.044Z"
    },
    {
     "actionId": "batch",
     "status": "finalized",
-    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
-    "blockHash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de",
-    "at": "2026-10-18T05:14:41.960Z"
+    "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
+    "blockHash": "0x56b7deeae2b5a1850aa5c33369dcf971fec6337cc5c8cee6a09cc35ab2bfb8e6",
+    "at": "2026-10-18T05:23:35.004Z"
    }
   ],
   "run": {
@@ -2499,20 +2725,20 @@
     "manifestDigest": "0x0b0e587699d032a26ac52e8376a28084960230669529811790cfee14668109b1",
     "planDigest": "0x0664a32365cd84c8649392ddbda96f9773f15385f5aadb3ccbeba770a1808e3d",
     "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-    "policyDigest": "0x1845ce374a2865753a28395c99b7c53b2972a22d6b6e1f17963752365e8fc025",
-    "approvalHash": "0x92832fecb2455745de35cdffa49399f62986df67470e3c42ac8c69756fc9076e",
+    "policyDigest": "0x9cd371bfa67923aaa68c6afdcd525f9b6a7d8c54fba3e870a7094475ad7b228e",
+    "approvalHash": "0x81791deb7f665de79d347e73ca24509a651454e0855819edd3256a8a485cfdcb",
     "mode": "atomic_verified",
     "steps": [
      {
       "actionId": "pay",
       "status": "finalized",
-      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
+      "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
       "block": {
-       "number": 40,
-       "hash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de"
+       "number": 54,
+       "hash": "0x56b7deeae2b5a1850aa5c33369dcf971fec6337cc5c8cee6a09cc35ab2bfb8e6"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6512750759)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6511074351)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Utility.ItemCompleted()",
        "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
@@ -2521,8 +2747,8 @@
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Utility.ItemCompleted()",
        "Utility.BatchCompleted()",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4315862133)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196888626, 0)",
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4314732644)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196341707, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":69000,\"refTime\":2198413505}})"
       ],
       "verification": "verified",
@@ -2531,13 +2757,13 @@
      {
       "actionId": "call",
       "status": "finalized",
-      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
+      "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
       "block": {
-       "number": 40,
-       "hash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de"
+       "number": 54,
+       "hash": "0x56b7deeae2b5a1850aa5c33369dcf971fec6337cc5c8cee6a09cc35ab2bfb8e6"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6512750759)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6511074351)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Utility.ItemCompleted()",
        "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
@@ -2546,8 +2772,8 @@
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Utility.ItemCompleted()",
        "Utility.BatchCompleted()",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4315862133)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196888626, 0)",
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4314732644)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196341707, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":69000,\"refTime\":2198413505}})"
       ],
       "verification": "verified",
@@ -2556,13 +2782,13 @@
      {
       "actionId": "mint",
       "status": "finalized",
-      "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
+      "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
       "block": {
-       "number": 40,
-       "hash": "0x63581239043ffaa011194db706679408646a8de02fe2476a6db2499cb345c6de"
+       "number": 54,
+       "hash": "0x56b7deeae2b5a1850aa5c33369dcf971fec6337cc5c8cee6a09cc35ab2bfb8e6"
       },
       "events": [
-       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6512750759)",
+       "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 6511074351)",
        "Assets.Transferred(1, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48, 2500)",
        "Utility.ItemCompleted()",
        "Contracts.ContractEmitted(0xc2bc5792947359c6339a7c58e3813f0b6bd88ef3d29c416df92be53b2662d39a, 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0700000000000000c4090000000000000000000000000000)",
@@ -2571,8 +2797,8 @@
        "Assets.Issued(1, 0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22, 7)",
        "Utility.ItemCompleted()",
        "Utility.BatchCompleted()",
-       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4315862133)",
-       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196888626, 0)",
+       "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 4314732644)",
+       "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 2196341707, 0)",
        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":69000,\"refTime\":2198413505}})"
       ],
       "verification": "verified",
@@ -2584,22 +2810,22 @@
      "verified": 3,
      "expected": 3
     },
-    "receiptDigest": "0xdcc91224fa942f72957b8253b9b9c107e07a3995b1da38d25cc6479964afcc1a"
+    "receiptDigest": "0x9782e0ab1188fcd27f636fc24d7e4649fd4f797f74efeead6281c8b88a506fd4"
    }
   },
-  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5",
+  "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4\n- call: finalized. The call succeeded and the contract emitted an event. Tx 0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4\n- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4",
   "usedProofSize": {
    "pay": {
     "value": "69000",
-    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5"
+    "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4"
    },
    "call": {
     "value": "69000",
-    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5"
+    "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4"
    },
    "mint": {
     "value": "69000",
-    "txHash": "0xe8a0fe9e152f63cda22cf3ca9a49c4188bb018589f54501f06d2c777dcd6ffb5"
+    "txHash": "0x533223b95e5d23a6c57714b422d7eccfe711dfd6dc202189dfdf62134312ebd4"
    }
   },
   "decodedEmitted": {
@@ -2682,15 +2908,15 @@
     "abi": "contracts/seam-demo/artifacts/metadata.json"
    }
   },
-  "rollbackEvidence": "runs/rollback-1792300479791.json"
+  "rollbackEvidence": "runs/rollback-1792301012980.json"
  },
  "rollback": {
   "id": "rollback",
   "kind": "batch_all-rollback",
   "recordingVersion": 2,
-  "ranAt": "2026-10-18T05:14:39.790Z",
-  "evidenceFile": "evidence/devnode/runs/rollback-1792300479791.json",
-  "runsOfThisKind": 3,
+  "ranAt": "2026-10-18T05:23:32.980Z",
+  "evidenceFile": "evidence/devnode/runs/rollback-1792301012980.json",
+  "runsOfThisKind": 4,
   "endpoint": "ws://127.0.0.1:9944",
   "compiledMode": "atomic_unverified",
   "compiledModeReason": "All steps go in one Utility.batch_all; rollback on failure has NOT been verified on this runtime (allowed by allowAtomicUnverified).",
@@ -3252,7 +3478,7 @@
     "batchAllRollback": "unknown"
    },
    "endpoint": "ws://127.0.0.1:9944",
-   "blockNumber": 38
+   "blockNumber": 52
   },
   "plan": {
    "planVersion": 1,
@@ -3329,7 +3555,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646749381"
+      "value": "646608144"
      },
      "storageDeposit": {
       "unknown": true
@@ -3346,7 +3572,7 @@
       "value": "540059000"
      },
      "fee": {
-      "value": "646749388"
+      "value": "646608151"
      },
      "storageDeposit": {
       "unknown": true
@@ -3363,7 +3589,7 @@
       "value": "273273000"
      },
      "fee": {
-      "value": "380152956"
+      "value": "380081490"
      },
      "storageDeposit": {
       "unknown": true
@@ -3376,22 +3602,22 @@
     }
    ],
    "totalFee": {
-    "value": "1537885119"
+    "value": "1537510667"
    }
   },
   "preflightAt": {
-   "number": 38,
-   "hash": "0xaf7aa79afa7b45e3a5e9396ecb5ea06fa4c8df993592e980a71364b3f0200b29"
+   "number": 52,
+   "hash": "0x656457bb6b0d1647f57a4f423ded62b3d02e5ba17ddb5bf0f46e13bff04665c6"
   },
   "envelope": {
    "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-   "nonce": 38,
+   "nonce": 52,
    "mortalityBlocks": 64,
    "checkpoint": {
-    "number": 37,
-    "hash": "0x8047e4c9c7466078596ae4f3bffacaaf715cd25a3c6b63aee2bb7ec9849fafdd"
+    "number": 51,
+    "hash": "0x1d78879d612fd9d788dc31912b68c522a966baba497f3247b5074d056e4f960d"
    },
-   "expiresAt": "2026-10-18T05:20:56.712Z"
+   "expiresAt": "2026-10-18T05:29:49.916Z"
   },
   "policy": {
    "version": "seam/policy/v1",
@@ -3418,11 +3644,6 @@
    "allowUnknown": {
     "storageDeposit": true,
     "dryRun": true
-   },
-   "allowedSelectors": {
-    "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty": [
-     "0x6c337222"
-    ]
    },
    "maxAmountPerAsset": {
     "1": "1000000000000000"
@@ -3577,14 +3798,14 @@
     {
      "rule": "fee_limit",
      "outcome": "pass",
-     "reason": "total fee 1537885119 is within limits"
+     "reason": "total fee 1537510667 is within limits"
     }
    ],
-   "policyDigest": "0x0d16df65ccbe8648a1158f62dc5a07aee751925d729d986b1878b809a1eec665"
+   "policyDigest": "0x8dc599b6e779bf787fb4f665fe23bd745fd9d099d21b0f4c15d808a4a62e432a"
   },
   "policyText": "Allowed: all 25 policy checks passed.",
   "approval": {
-   "hash": "0x324b07e98442e8ebdeca7d96addf5a68af3b0e886ecb250c60959d960f3e047c",
+   "hash": "0xb8db7a8d5da2c0cce4e247b237c2ab5ecbbeec1f76102d8137c9ecce1a6132bc",
    "covers": [
     "manifest",
     "plan",
@@ -3595,7 +3816,7 @@
     "signing envelope",
     "preflight"
    ],
-   "expiresAt": "2026-10-18T05:20:56.712Z",
+   "expiresAt": "2026-10-18T05:29:49.916Z",
    "used": false,
    "binding": {
     "manifestDigest": "0xe5714dd7f0e7af237841f9cb3eed2d0a6e275728ac2ef516caf54db6b212404a",
@@ -3603,20 +3824,20 @@
     "planContentDigest": "0xbe8647ab47bbd72e07c034e77ff1f222af91c0bb7450fa579c81c2822a4aed12",
     "callsDigest": "0x4a90a1675adfa404d917a08a74e7a50cb92e71bba3daa880123677d67469a27c",
     "fingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-    "policyDigest": "0x0d16df65ccbe8648a1158f62dc5a07aee751925d729d986b1878b809a1eec665",
-    "policyResultDigest": "0x8ecafe548af89524bce3c585cbc505f296bd2d528ba25bb013b1904359f40d75",
-    "envelopeDigest": "0xddafed713ebfdde8c9736018119258d1be6433caa9bb9586b153ceb2ea11f443",
-    "preflightDigest": "0x59750427905be4484a286913e4d15bdf55ad5bad2a8ee2709b7b56b9ed31c471",
+    "policyDigest": "0x8dc599b6e779bf787fb4f665fe23bd745fd9d099d21b0f4c15d808a4a62e432a",
+    "policyResultDigest": "0xa3815e6313403ab29523a22933de125175dba7cb7b3c64ab443b6b4c589206a6",
+    "envelopeDigest": "0x0fa0dbd729a3805aee16d3d39181f1047f9e4e9d60cdecb049fa36a5907698d6",
+    "preflightDigest": "0x96321b8c6924680b97aac87d7c5050c6ad1d496ee2928398bb8a7bfdc1a948ae",
     "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    "nonce": 38,
+    "nonce": 52,
     "mortalityBlocks": 64,
-    "expiresAt": "2026-10-18T05:20:56.712Z"
+    "expiresAt": "2026-10-18T05:29:49.916Z"
    }
   },
   "signing": {
    "count": 1,
    "specVersion": "0x00000064",
-   "era": "0x5502",
+   "era": "0x3503",
    "signedExtensions": [
     "CheckNonZeroSender",
     "CheckSpecVersion",
@@ -3633,9 +3854,9 @@
    {
     "index": 0,
     "actionId": "batch",
-    "sendIndex": null,
-    "checkedAt": "2026-10-18T05:14:38.765Z",
-    "sdkOutcome": "blocked",
+    "phase": "blocked",
+    "checkedAt": "2026-10-18T05:23:31.959Z",
+    "source": "run.check",
     "result": {
      "ok": false,
      "reasons": [
@@ -3643,39 +3864,41 @@
        "code": "signed_dry_run_failed",
        "message": "Blocked: the dry run of the signed transaction failed, so it would fail on chain."
       }
-     ]
-    },
-    "agreesWithSdk": true,
-    "checksPerformed": [
-     "approval_reused",
-     "approval_expired",
-     "approval_tampered",
-     "approval_mismatch",
-     "runtime_changed",
-     "signed_bytes_mismatch",
-     "signed_dry_run_failed",
-     "signed_dry_run_missing",
-     "send_index_invalid",
-     "out_of_order",
-     "previous_steps_missing",
-     "previous_step_failed"
-    ],
-    "note": "checkBeforeSubmit lists only failing checks; ok with no reasons means every check above passed. Recomputed from the exact inputs the SDK used.",
-    "inputs": {
-     "preparedFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "currentFingerprintDigest": "0x93abf7ebde62ae480d437daad5597111467898eddd3d2cdec3a9f6724d6bf942",
-     "runtimeUnchanged": true,
-     "signedDryRun": [
-      "failed"
      ],
-     "dryRunDetails": [
+     "passed": [
       {
-       "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
-       "outcome": "failed",
-       "detail": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount."
+       "code": "approval_unused",
+       "detail": "this approval hasn't been used"
+      },
+      {
+       "code": "approval_valid_time",
+       "detail": "the approval is valid until 2026-10-18T05:29:49.916Z"
+      },
+      {
+       "code": "approval_intact",
+       "detail": "the approval's contents match its hash"
+      },
+      {
+       "code": "approval_matches",
+       "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+      },
+      {
+       "code": "runtime_unchanged",
+       "detail": "the runtime is the one the plan was prepared for"
+      },
+      {
+       "code": "signed_bytes_match",
+       "detail": "the 1 signed call(s) are byte-for-byte the approved calls"
       }
      ]
-    }
+    },
+    "dryRun": [
+     {
+      "txHash": "0xb47b09bb6208483435e4dd4ce6065204f06e9786a09a53ad6d6658b65f71354a",
+      "outcome": "failed",
+      "detail": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount."
+     }
+    ]
    }
   ],
   "timeline": [
@@ -3683,7 +3906,7 @@
     "index": 0,
     "actionId": "batch",
     "phase": "checking",
-    "at": "2026-10-18T05:14:38.748Z"
+    "at": "2026-10-18T05:23:31.945Z"
    }
   ],
   "statuses": [],
@@ -3702,9 +3925,35 @@
      "message": "Blocked: the dry run of the signed transaction failed, so it would fail on chain."
     }
    ],
+   "passed": [
+    {
+     "code": "approval_unused",
+     "detail": "this approval hasn't been used"
+    },
+    {
+     "code": "approval_valid_time",
+     "detail": "the approval is valid until 2026-10-18T05:29:49.916Z"
+    },
+    {
+     "code": "approval_intact",
+     "detail": "the approval's contents match its hash"
+    },
+    {
+     "code": "approval_matches",
+     "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+    },
+    {
+     "code": "runtime_unchanged",
+     "detail": "the runtime is the one the plan was prepared for"
+    },
+    {
+     "code": "signed_bytes_match",
+     "detail": "the 1 signed call(s) are byte-for-byte the approved calls"
+    }
+   ],
    "dryRun": [
     {
-     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
+     "txHash": "0xb47b09bb6208483435e4dd4ce6065204f06e9786a09a53ad6d6658b65f71354a",
      "outcome": "failed",
      "detail": "dispatch failed: assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
      "raw": "0x0001030a00000000"
@@ -3714,7 +3963,7 @@
   },
   "directSubmit": {
    "note": "test-only bypass of the gate, local dev chain; the same signed bytes the gate refused",
-   "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
+   "txHash": "0xb47b09bb6208483435e4dd4ce6065204f06e9786a09a53ad6d6658b65f71354a",
    "status": "finalized",
    "history": [
     "submitted",
@@ -3724,65 +3973,65 @@
    "statuses": [
     {
      "status": "submitted",
-     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
-     "at": "2026-10-18T05:14:38.824Z"
+     "txHash": "0xb47b09bb6208483435e4dd4ce6065204f06e9786a09a53ad6d6658b65f71354a",
+     "at": "2026-10-18T05:23:32.012Z"
     },
     {
      "status": "in_block",
-     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
-     "blockHash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343",
-     "at": "2026-10-18T05:14:38.824Z"
+     "txHash": "0xb47b09bb6208483435e4dd4ce6065204f06e9786a09a53ad6d6658b65f71354a",
+     "blockHash": "0xbe35c099e9ea62751521340b75183f4c3fa7d4952776c012e1b72adb55fe97f2",
+     "at": "2026-10-18T05:23:32.012Z"
     },
     {
      "status": "finalized",
-     "txHash": "0x0e4b12f01288e0f9cc273768a4b379c51492faf5e71698dce7273ca49ffa55fb",
-     "blockHash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343",
-     "at": "2026-10-18T05:14:39.782Z"
+     "txHash": "0xb47b09bb6208483435e4dd4ce6065204f06e9786a09a53ad6d6658b65f71354a",
+     "blockHash": "0xbe35c099e9ea62751521340b75183f4c3fa7d4952776c012e1b72adb55fe97f2",
+     "at": "2026-10-18T05:23:32.972Z"
     }
    ],
    "block": {
-    "number": 39,
-    "hash": "0x9c5f7788e79ec0671aa8d11c66f1813b97b08d049cb7c25c329731c6a9bab343"
+    "number": 53,
+    "hash": "0xbe35c099e9ea62751521340b75183f4c3fa7d4952776c012e1b72adb55fe97f2"
    },
    "extrinsicIndex": 1,
    "success": false,
    "dispatchError": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
    "events": [
-    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1537885119)",
-    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 278237967)",
-    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1259647152, 0)",
+    "Balances.Withdraw(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1537510667)",
+    "Balances.Deposit(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 278165151)",
+    "TransactionPayment.TransactionFeePaid(0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d, 1259345516, 0)",
     "System.ExtrinsicFailed({\"module\":{\"error\":\"0x00000000\",\"index\":10}}, {\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16413,\"refTime\":1260466516}})"
    ]
   },
   "state": {
    "before": {
-    "block": 38,
-    "aliceNonce": 38,
+    "block": 52,
+    "aliceNonce": 52,
     "asset": {
-     "alice": "999999967500",
-     "bob": "32500",
-     "charlie": "91",
-     "supply": "1000000000091"
+     "alice": "999999955000",
+     "bob": "45000",
+     "charlie": "126",
+     "supply": "1000000000126"
     }
    },
    "afterGate": {
-    "block": 38,
-    "aliceNonce": 38,
+    "block": 52,
+    "aliceNonce": 52,
     "asset": {
-     "alice": "999999967500",
-     "bob": "32500",
-     "charlie": "91",
-     "supply": "1000000000091"
+     "alice": "999999955000",
+     "bob": "45000",
+     "charlie": "126",
+     "supply": "1000000000126"
     }
    },
    "after": {
-    "block": 39,
-    "aliceNonce": 39,
+    "block": 53,
+    "aliceNonce": 53,
     "asset": {
-     "alice": "999999967500",
-     "bob": "32500",
-     "charlie": "91",
-     "supply": "1000000000091"
+     "alice": "999999955000",
+     "bob": "45000",
+     "charlie": "126",
+     "supply": "1000000000126"
     }
    }
   },
