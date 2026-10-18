@@ -41,7 +41,7 @@ const manifest = devManifest({
     { id: 'mint', kind: 'assets.mint', args: { assetId: String(ASSET_ID), amount: '3', recipient: k.charlie.address }, preferredMode: 'atomic' }
   ]
 });
-const policy = devPolicy({ bob: k.bob.address, charlie: k.charlie.address, contract: k.bob.address, overrides: {
+const policy = devPolicy({ bob: k.bob.address, charlie: k.charlie.address, contract: k.bob.address, demo: false, overrides: {
   allowedModes: ['sequential', 'atomic_verified', 'atomic_unverified'], maxAmountPerAsset: { [String(ASSET_ID)]: '1000000000000000' }
 } });
 
@@ -60,14 +60,14 @@ const ev = direct.inclusion?.events ?? [];
 const innerEffects = ev.filter((e) => (e.pallet === 'Assets' && ['Transferred', 'Issued'].includes(e.name)) || (e.pallet === 'Utility' && e.name !== 'BatchInterrupted'));
 const rolledBack = direct.inclusion?.success === false && innerEffects.length === 0
   && JSON.stringify(after.asset) === JSON.stringify(before.asset);
-const gate = seam.gateChecks.find((g) => g.sdkOutcome === 'blocked');
+const gate = seam.gateChecks.find((g) => g.phase === 'blocked');
 const result = {
   kind: 'batch_all-rollback', recordingVersion: 2, ranAt: new Date().toISOString(),
   ...seam,
   planMode: seam.plan.mode,
   steps: seam.plan.steps.map((s) => ({ actionId: s.actionId, call: s.encodedCall, args: s.decodedArgs })), outerCall: seam.plan.outerCall,
   approvalHash: seam.approval?.approval?.hash,
-  seamGate: { stage: seam.run.stage, ok: seam.run.ok, reason: seam.run.reason, reasons: gate?.result.reasons ?? seam.run.check?.reasons, dryRun: gate?.inputs.dryRunDetails, nothingSent: afterGate.aliceNonce === before.aliceNonce },
+  seamGate: { stage: seam.run.stage, ok: seam.run.ok, reason: seam.run.reason, reasons: gate?.check.reasons ?? seam.run.check?.reasons, passed: gate?.check.passed, dryRun: gate?.dryRun, nothingSent: afterGate.aliceNonce === before.aliceNonce },
   directSubmit: { note: 'test-only bypass of the gate, local dev chain; the same signed bytes the gate refused', statuses: directStatuses, decodedEvents: direct.inclusion?.events, ...brief(direct) },
   state: { before, afterGate, after },
   innerEffects: innerEffects.map((e) => `${e.pallet}.${e.name}`),
