@@ -149,3 +149,26 @@ describe('SEAM-001 chain: adapter.submit is bound to the approved requests and s
     expect(refused(good)).toBe(false);
   });
 });
+
+describe('SEAM-001 chain: adapter.verifySigned (what the SDK calls before the gate)', () => {
+  it('returns the decoded calls for honest transactions', async () => {
+    const s = await setup();
+    const calls = s.requests.map((r) => r.callHex);
+    const { envelope } = await s.adapter.preflight(demoPlan(s.facts));
+    expect(s.adapter.verifySigned(s.honest, calls, envelope)).toEqual({ ok: true, signedCalls: calls, reasons: [] });
+  });
+  it('reports the real call when the transaction was swapped, and fails closed on fewer/extra/reordered', async () => {
+    const s = await setup();
+    const calls = s.requests.map((r) => r.callHex);
+    const { envelope } = await s.adapter.preflight(demoPlan(s.facts));
+    const swapped = s.forge(s.keys.alice, { ...s.requests[0]!.payload, method: s.requests[1]!.callHex });
+    const r = s.adapter.verifySigned([swapped, s.honest[1]!, s.honest[2]!], calls, envelope);
+    expect(r.ok).toBe(false);
+    expect(r.signedCalls[0]).toBe(s.requests[1]!.callHex); // decoded, not the approved one
+    expect(r.reasons.join()).toMatch(/step_0:call_mismatch/);
+    expect(s.adapter.verifySigned(s.honest.slice(0, 2), calls, envelope).ok).toBe(false);
+    expect(s.adapter.verifySigned([...s.honest, s.honest[0]!], calls, envelope).ok).toBe(false);
+    expect(s.adapter.verifySigned([s.honest[1]!, s.honest[0]!, s.honest[2]!], calls, envelope).ok).toBe(false);
+    expect(s.submits()).toBe(0);
+  });
+});

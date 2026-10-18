@@ -7,7 +7,7 @@ import { preflight, type PreflightReport } from './preflight.js';
 import { withClient, type ConnectOptions, type Endpoint } from './rpc.js';
 import { decodeRuntime } from './runtime.js';
 import { dryRunOne, dryRunSigned, type SignedDryRunDetail } from './dryrun.js';
-import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, verifySignedAgainstRequest, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
+import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, verifySignedAgainstRequest, verifySignedBatch, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
 import { submitAndWatch, type StatusUpdate, type SubmitResult } from './submit.js';
 import type { PreflightResult, SignedDryRun, SigningEnvelope } from './types.js';
 
@@ -33,6 +33,12 @@ export interface ChainAdapter {
    */
   dryRunSigned(signedTxs: Hex[]): Promise<SignedDryRun[]>;
   submit(signedTx: Hex, actionId: string): Promise<StepOutcome>;
+  /**
+   * SEAM-001: decodes every signed transaction and checks it against the signing requests for `calls` (one per call,
+   * in order, same envelope). `signedCalls` are decoded from the transactions, never taken from the wallet.
+   * Fewer, extra, reordered or altered transactions give ok false. Read-only; sends nothing.
+   */
+  verifySigned(signedTxs: Hex[], calls: Hex[], envelope: SigningEnvelope): { ok: boolean; signedCalls: Hex[]; reasons: string[] };
 }
 
 /** Mirrors @seam/sdk WalletSigner. */
@@ -205,6 +211,13 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
       const r = await dryRunSigned(endpoint, signedTxs, needFacts(), options);
       lastDryRun = r.details;
       return r.results;
+    },
+
+    verifySigned(signedTxs, calls, envelope) {
+      const f = needFacts();
+      const requests = signingRequestsForCalls(calls, f, envelope);
+      const v = verifySignedBatch(signedTxs, requests, { facts: f });
+      return { ok: v.ok, signedCalls: v.results.map((r) => r.signedCall as Hex), reasons: v.reasons };
     },
 
     signingRequests(calls, envelope) {
