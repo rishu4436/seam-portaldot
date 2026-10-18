@@ -132,12 +132,19 @@ The gate result is `{ ok, reasons, passed }`. `passed` is a list of `{ code, det
 
 | Code | Meaning |
 |---|---|
-| `message_allowed` | The contract message is in `allowedMessages`. |
-| `abi_pinned` | The call's interface hash matches `pinnedAbiHashes`. |
-| `selector_allowed` | The 4-byte selector is in `allowedSelectors`. |
-| `step_order` | A sequential step is next in order. |
+| `step_order` | The step is next in the approved order. |
+| `previous_steps_ok` | Sequential plans, step 2 onward: the earlier steps completed and verified. |
+| `approval_unused` | This step of the approval hasn't been sent before. |
+| `approval_valid_time` | The approval hasn't expired. |
+| `approval_intact` | The approval's contents match its hash. |
+| `approval_matches` | What is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight). |
+| `runtime_unchanged` | The chain runtime is the one the plan was prepared for. |
+| `signed_bytes_match` | The signed calls are byte-for-byte the approved calls. |
+| `signed_dry_run_ok` | The dry run of the signed transaction succeeded. |
 
-`explainSubmitCheck` lists these in plain words under "Checks that passed:". A code it doesn't know is shown as `code: detail`, unchanged. Code that compares the whole gate result with exact equality should compare fields (or use `toMatchObject`), because `passed` is a new field.
+`message_allowed`, `abi_pinned` and `selector_allowed` are **policy rules**. They appear in `policyResult.rules` (and `explainPolicy`), not in the gate's `passed` list. The gate's `passed` holds only the submit-time checks above.
+
+`explainSubmitCheck` lists these in fixed plain words under "Checks that passed:", as `- wording (code: detail)`. Any code in `reasons` is never listed as passed. A code it doesn't know is shown as `code: detail`, unchanged. Code that compares the whole gate result with exact equality should compare fields (or use `toMatchObject`), because `passed` is a new field.
 
 ## Progress callback: `onStep`
 

@@ -37,11 +37,20 @@ const BLOCK_WORDING: Record<string, string> = {
   abi_hash_mismatch: "Blocked: the interface (ABI) used for this call is not the one the policy pins for this contract.",
 };
 
-/** Fixed wording for gate pass codes. Anything else is shown verbatim, never guessed. */
+/**
+ * Fixed wording for the gate's submit-time pass codes. Anything else is shown verbatim, never guessed.
+ * message_allowed, abi_pinned and selector_allowed are policy rules (see policyResult.rules), not gate pass codes.
+ */
 const PASS_WORDING: Record<string, string> = {
-  message_allowed: 'the contract message is on the policy allowed list',
-  abi_pinned: "the call's interface (ABI) matches the one the policy pins",
-  selector_allowed: 'the 4-byte contract selector is on the policy allowed list',
+  step_order: 'this step is next in the approved order',
+  previous_steps_ok: 'the earlier steps completed and were verified',
+  approval_unused: "this step of the approval hasn't been sent before",
+  approval_valid_time: "the approval hasn't expired",
+  approval_intact: "the approval's contents still match its hash",
+  approval_matches: 'what is about to be sent is exactly what was approved',
+  runtime_unchanged: 'the chain runtime is the one the plan was prepared for',
+  signed_bytes_match: 'the signed transaction bytes are exactly the approved calls',
+  signed_dry_run_ok: 'a dry run of the signed transaction succeeded',
 };
 
 function explainPassed(check: SubmitCheck): string[] {
