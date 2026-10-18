@@ -104,3 +104,6 @@ Neither chain is the hosted Portaldot V3 testnet, and neither is mainnet. Succes
 - Cross-VM atomicity. `Utility.batch_all` rollback was observed on a local node only; it is not a V3 proof.
 - Any funded testnet or mainnet transaction. None has been made.
 - A "Fixed" row means the audit's offline/local acceptance tests pass on `main`. It does not mean V3 behaviour is verified.
+
+- Console LiveHost install merged (PR #8): fail-closed; `loadLiveHost` needs real RuntimeFacts; `buildRequest` awaits chain export `buildSigningRequest` from `@seam/chain/browser`. Not V3-verified.
+- `seam verify` docs and CLI help updated (bot5/verify-docs) to match receipt verification behaviour.
