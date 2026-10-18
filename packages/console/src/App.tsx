@@ -191,7 +191,7 @@ export default function App() {
       <main id="main" tabIndex={-1}>
         <div className="sr" role="status" aria-live="polite">{mode === "live" ? "LIVE V3 mode" : `Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}</div>
         <ModeBadge mode={mode} />
-        {mode === "live" ? <LivePanel /> : <>
+        {mode === "live" ? <LivePanel plan={plan} facts={facts} approval={approval} /> : <>
         <LocalNodeBanner />
         {evidence ? <LocalNodeEvidence banner={false} /> : <>
         <header className="top">
