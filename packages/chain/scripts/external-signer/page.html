@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SEAM external signer</title>
+<style>body{font:16px system-ui;max-width:42rem;margin:3rem auto;padding:0 1rem}button{font-size:1rem;padding:.6rem 1.2rem}pre{background:#f4f4f4;padding:1rem;overflow:auto;max-height:20rem}</style>
+<h1>SEAM external signer</h1>
+<p>This page passes signing requests from your local SEAM run to the polkadot.js extension. SEAM never sees your key; each request needs your approval in the extension popup. Local only (127.0.0.1).</p>
+<p><button id="go">Connect extension and start</button></p>
+<pre id="log"></pre>
+<script type="module">
+  import { runBridge } from '/bridge-client.js';
+  const out = document.getElementById('log');
+  const log = (m) => { out.textContent += m + '\n'; };
+  document.getElementById('go').onclick = async () => {
+    document.getElementById('go').disabled = true;
+    try {
+      const token = new URLSearchParams(location.search).get('t');
+      const r = await runBridge({ base: location.origin, token, injected: window.injectedWeb3, log });
+      log(`done, ${r.signed} signature(s) sent`);
+    } catch (e) { log('ERROR: ' + e.message); }
+  };
+</script>
