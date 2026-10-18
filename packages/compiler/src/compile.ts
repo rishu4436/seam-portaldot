@@ -1,7 +1,7 @@
 import { stringCamelCase } from "@polkadot/util";
 import { DOMAIN, NotCanonicalError, digestJson } from "./canonical.js";
 import { parseH160, parseNativeAddress } from "./address.js";
-import { V3_KINDS, V3_SHAPES, checkV3Shape } from "./v3-bindings.js";
+import { V3_KINDS, bindingsFor, checkV3Shape } from "./v3-bindings.js";
 import { computeFingerprintDigest } from "./facts.js";
 import { loadRuntime, type LoadedRuntime } from "./runtime.js";
 import { encodeInkMessage } from "./ink.js";
@@ -68,7 +68,7 @@ const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }>
  * (SEAM never guesses a value for an argument it does not understand).
  */
 function bindingsOf(kind: ActionKind): Record<string, string> {
-  return Object.fromEntries((V3_SHAPES[kind] ?? []).map((a) => [a.name, a.seamKey]));
+  return bindingsFor(kind);
 }
 
 const ARG_BINDINGS: Partial<Record<ActionKind, Record<string, string>>> = {
@@ -569,7 +569,7 @@ function isWeightV2(rawType: string): boolean {
 }
 
 function weightV2(rt: LoadedRuntime, metaArgs: { name: string; type: string }[]): boolean {
-  const g = metaArgs.find((a) => a.name === "gasLimit");
+  const g = metaArgs.find((a) => a.name === "gasLimit" || a.name === "weightLimit");
   return !!g && isWeightV2(rt.registry.createType(g.type as any).toRawType());
 }
 

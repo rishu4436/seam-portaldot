@@ -1,0 +1,598 @@
+{
+  "kind": "v3-call-layouts",
+  "source": "REAL: wss://test-node-v3.portaldot.dev portaldot-v3 spec 3002, decoded from evidence/v3-discovery/portaldot-v3-spec3002-metadata.hex",
+  "metadataVersion": 14,
+  "calls": {
+    "Revive.call": {
+      "palletIndex": 80,
+      "callIndex": 1,
+      "fields": [
+        {
+          "name": "dest",
+          "typeName": "H160",
+          "type": {
+            "id": 200,
+            "path": "primitive_types::H160",
+            "kind": "composite",
+            "fields": [
+              {
+                "name": null,
+                "typeName": "[u8; 20]",
+                "type": {
+                  "id": 201,
+                  "kind": "array",
+                  "len": 20,
+                  "of": {
+                    "id": 2,
+                    "kind": "primitive",
+                    "primitive": "U8"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "value",
+          "typeName": "BalanceOf<T>",
+          "type": {
+            "id": 256,
+            "kind": "compact",
+            "of": {
+              "id": 6,
+              "kind": "primitive",
+              "primitive": "U128"
+            }
+          }
+        },
+        {
+          "name": "weight_limit",
+          "typeName": "Weight",
+          "type": {
+            "id": 10,
+            "path": "sp_weights::weight_v2::Weight",
+            "kind": "composite",
+            "fields": [
+              {
+                "name": "ref_time",
+                "typeName": "u64",
+                "type": {
+                  "id": 11,
+                  "kind": "compact",
+                  "of": {
+                    "id": 12,
+                    "kind": "primitive",
+                    "primitive": "U64"
+                  }
+                }
+              },
+              {
+                "name": "proof_size",
+                "typeName": "u64",
+                "type": {
+                  "id": 11,
+                  "kind": "compact",
+                  "of": {
+                    "id": 12,
+                    "kind": "primitive",
+                    "primitive": "U64"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "storage_deposit_limit",
+          "typeName": "BalanceOf<T>",
+          "type": {
+            "id": 256,
+            "kind": "compact",
+            "of": {
+              "id": 6,
+              "kind": "primitive",
+              "primitive": "U128"
+            }
+          }
+        },
+        {
+          "name": "data",
+          "typeName": "Vec<u8>",
+          "type": {
+            "id": 14,
+            "kind": "sequence",
+            "of": {
+              "id": 2,
+              "kind": "primitive",
+              "primitive": "U8"
+            }
+          }
+        }
+      ]
+    },
+    "Revive.map_account": {
+      "palletIndex": 80,
+      "callIndex": 7,
+      "fields": []
+    },
+    "Revive.instantiate_with_code": {
+      "palletIndex": 80,
+      "callIndex": 3,
+      "fields": [
+        {
+          "name": "value",
+          "typeName": "BalanceOf<T>",
+          "type": {
+            "id": 256,
+            "kind": "compact",
+            "of": {
+              "id": 6,
+              "kind": "primitive",
+              "primitive": "U128"
+            }
+          }
+        },
+        {
+          "name": "weight_limit",
+          "typeName": "Weight",
+          "type": {
+            "id": 10,
+            "path": "sp_weights::weight_v2::Weight",
+            "kind": "composite",
+            "fields": [
+              {
+                "name": "ref_time",
+                "typeName": "u64",
+                "type": {
+                  "id": 11,
+                  "kind": "compact",
+                  "of": {
+                    "id": 12,
+                    "kind": "primitive",
+                    "primitive": "U64"
+                  }
+                }
+              },
+              {
+                "name": "proof_size",
+                "typeName": "u64",
+                "type": {
+                  "id": 11,
+                  "kind": "compact",
+                  "of": {
+                    "id": 12,
+                    "kind": "primitive",
+                    "primitive": "U64"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "storage_deposit_limit",
+          "typeName": "BalanceOf<T>",
+          "type": {
+            "id": 256,
+            "kind": "compact",
+            "of": {
+              "id": 6,
+              "kind": "primitive",
+              "primitive": "U128"
+            }
+          }
+        },
+        {
+          "name": "code",
+          "typeName": "Vec<u8>",
+          "type": {
+            "id": 14,
+            "kind": "sequence",
+            "of": {
+              "id": 2,
+              "kind": "primitive",
+              "primitive": "U8"
+            }
+          }
+        },
+        {
+          "name": "data",
+          "typeName": "Vec<u8>",
+          "type": {
+            "id": 14,
+            "kind": "sequence",
+            "of": {
+              "id": 2,
+              "kind": "primitive",
+              "primitive": "U8"
+            }
+          }
+        },
+        {
+          "name": "salt",
+          "typeName": "Option<[u8; 32]>",
+          "type": {
+            "id": 96,
+            "path": "Option",
+            "kind": "variant",
+            "variants": [
+              {
+                "name": "None",
+                "index": 0,
+                "fields": []
+              },
+              {
+                "name": "Some",
+                "index": 1,
+                "fields": [
+                  {
+                    "name": null,
+                    "typeName": null,
+                    "type": {
+                      "id": 1,
+                      "kind": "array",
+                      "len": 32,
+                      "of": {
+                        "id": 2,
+                        "kind": "primitive",
+                        "primitive": "U8"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "params": [
+              {
+                "name": "T",
+                "type": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "Revive.upload_code": {
+      "palletIndex": 80,
+      "callIndex": 4,
+      "fields": [
+        {
+          "name": "code",
+          "typeName": "Vec<u8>",
+          "type": {
+            "id": 14,
+            "kind": "sequence",
+            "of": {
+              "id": 2,
+              "kind": "primitive",
+              "primitive": "U8"
+            }
+          }
+        },
+        {
+          "name": "storage_deposit_limit",
+          "typeName": "BalanceOf<T>",
+          "type": {
+            "id": 256,
+            "kind": "compact",
+            "of": {
+              "id": 6,
+              "kind": "primitive",
+              "primitive": "U128"
+            }
+          }
+        }
+      ]
+    },
+    "Revive.__storage": [
+      "PristineCode",
+      "CodeInfoOf",
+      "AccountInfoOf",
+      "NativeDepositOf",
+      "ImmutableDataOf",
+      "DeletionQueue",
+      "DeletionQueueCounter",
+      "OriginalAccount",
+      "EthereumBlock",
+      "BlockHash",
+      "ReceiptInfoData",
+      "EthBlockBuilderIR",
+      "EthBlockBuilderFirstValues",
+      "DebugSettingsOf"
+    ],
+    "Nfts.mint": {
+      "palletIndex": 47,
+      "callIndex": 3,
+      "fields": [
+        {
+          "name": "collection",
+          "typeName": "T::CollectionId",
+          "type": {
+            "id": 4,
+            "kind": "primitive",
+            "primitive": "U32"
+          }
+        },
+        {
+          "name": "item",
+          "typeName": "T::ItemId",
+          "type": {
+            "id": 4,
+            "kind": "primitive",
+            "primitive": "U32"
+          }
+        },
+        {
+          "name": "mint_to",
+          "typeName": "AccountIdLookupOf<T>",
+          "type": {
+            "id": 254,
+            "path": "sp_runtime::multiaddress::MultiAddress",
+            "kind": "variant",
+            "variants": [
+              {
+                "name": "Id",
+                "index": 0,
+                "fields": [
+                  {
+                    "name": null,
+                    "typeName": "AccountId",
+                    "type": {
+                      "id": 0,
+                      "path": "sp_core::crypto::AccountId32",
+                      "kind": "composite",
+                      "fields": [
+                        {
+                          "name": null,
+                          "typeName": "[u8; 32]",
+                          "type": {
+                            "id": 1,
+                            "kind": "array",
+                            "len": 32,
+                            "of": {
+                              "id": 2,
+                              "kind": "primitive",
+                              "primitive": "U8"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "Index",
+                "index": 1,
+                "fields": [
+                  {
+                    "name": null,
+                    "typeName": "AccountIndex",
+                    "type": {
+                      "id": 220,
+                      "kind": "compact",
+                      "of": {
+                        "id": 4,
+                        "kind": "primitive",
+                        "primitive": "U32"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "Raw",
+                "index": 2,
+                "fields": [
+                  {
+                    "name": null,
+                    "typeName": "Vec<u8>",
+                    "type": {
+                      "id": 14,
+                      "kind": "sequence",
+                      "of": {
+                        "id": 2,
+                        "kind": "primitive",
+                        "primitive": "U8"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "Address32",
+                "index": 3,
+                "fields": [
+                  {
+                    "name": null,
+                    "typeName": "[u8; 32]",
+                    "type": {
+                      "id": 1,
+                      "kind": "array",
+                      "len": 32,
+                      "of": {
+                        "id": 2,
+                        "kind": "primitive",
+                        "primitive": "U8"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "Address20",
+                "index": 4,
+                "fields": [
+                  {
+                    "name": null,
+                    "typeName": "[u8; 20]",
+                    "type": {
+                      "id": 201,
+                      "kind": "array",
+                      "len": 20,
+                      "of": {
+                        "id": 2,
+                        "kind": "primitive",
+                        "primitive": "U8"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "params": [
+              {
+                "name": "AccountId",
+                "type": 0
+              },
+              {
+                "name": "AccountIndex",
+                "type": 4
+              }
+            ]
+          }
+        },
+        {
+          "name": "witness_data",
+          "typeName": "Option<MintWitness<T::ItemId, DepositBalanceOf<T, I>>>",
+          "type": {
+            "id": 439,
+            "path": "Option",
+            "kind": "variant",
+            "variants": [
+              {
+                "name": "None",
+                "index": 0,
+                "fields": []
+              },
+              {
+                "name": "Some",
+                "index": 1,
+                "fields": [
+                  {
+                    "name": null,
+                    "typeName": null,
+                    "type": {
+                      "id": 440,
+                      "path": "pallet_nfts::types::MintWitness",
+                      "kind": "composite",
+                      "fields": [
+                        {
+                          "name": "owned_item",
+                          "typeName": "Option<ItemId>",
+                          "type": {
+                            "id": 65,
+                            "path": "Option",
+                            "kind": "variant",
+                            "variants": [
+                              {
+                                "name": "None",
+                                "index": 0,
+                                "fields": []
+                              },
+                              {
+                                "name": "Some",
+                                "index": 1,
+                                "fields": [
+                                  {
+                                    "name": null,
+                                    "typeName": null,
+                                    "type": {
+                                      "id": 4,
+                                      "kind": "primitive",
+                                      "primitive": "U32"
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "params": [
+                              {
+                                "name": "T",
+                                "type": 4
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "name": "mint_price",
+                          "typeName": "Option<Balance>",
+                          "type": {
+                            "id": 327,
+                            "path": "Option",
+                            "kind": "variant",
+                            "variants": [
+                              {
+                                "name": "None",
+                                "index": 0,
+                                "fields": []
+                              },
+                              {
+                                "name": "Some",
+                                "index": 1,
+                                "fields": [
+                                  {
+                                    "name": null,
+                                    "typeName": null,
+                                    "type": {
+                                      "id": 6,
+                                      "kind": "primitive",
+                                      "primitive": "U128"
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            "params": [
+                              {
+                                "name": "T",
+                                "type": 6
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "params": [
+                        {
+                          "name": "ItemId",
+                          "type": 4
+                        },
+                        {
+                          "name": "Balance",
+                          "type": 6
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "params": [
+              {
+                "name": "T",
+                "type": 440
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "Nfts.__storage": [
+      "Collection",
+      "OwnershipAcceptance",
+      "Account",
+      "CollectionAccount",
+      "CollectionRoleOf",
+      "Item",
+      "CollectionMetadataOf",
+      "ItemMetadataOf",
+      "Attribute",
+      "ItemPriceOf",
+      "ItemAttributesApprovalsOf",
+      "NextCollectionId",
+      "PendingSwapOf",
+      "CollectionConfigOf",
+      "ItemConfigOf"
+    ]
+  }
+}

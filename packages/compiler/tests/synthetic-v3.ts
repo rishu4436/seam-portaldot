@@ -14,6 +14,10 @@ export const devHex = readFileSync(fx("devnode-metadata.hex"), "utf8").trim();
 export interface SyntheticOptions {
   /** Revive.call dest type: real dev-node MultiAddress (default), or a synthetic H160. */
   reviveDest?: "multiaddress" | "h160";
+  /** Rename Revive.call's gas_limit argument (real V3 spec 3002 calls it weight_limit). */
+  reviveWeightName?: string;
+  /** Make Revive.call's storage_deposit_limit a plain Compact<u128> instead of Option (real V3 spec 3002 layout). */
+  reviveStorage?: "compact" | "option" | "wrongType";
   /** Drop one Revive.call argument by name. */
   reviveDrop?: string;
   /** Swap the two last Revive.call arguments. */
@@ -55,6 +59,31 @@ export function syntheticHex(o: SyntheticOptions = {}): string {
       docs: [],
     });
   }
+  if (o.reviveWeightName) field("gas_limit").name = o.reviveWeightName;
+  if (o.reviveStorage === "compact")
+    field("storage_deposit_limit").type = add({ ...docsless, def: { compact: { type: u128 } } });
+  if (o.reviveStorage === "option") {
+    const c = add({ ...docsless, def: { compact: { type: u128 } } });
+    field("storage_deposit_limit").type = add({
+      path: ["Option"],
+      params: [{ name: "T", type: c }],
+      def: {
+        variant: {
+          variants: [
+            { name: "None", fields: [], index: 0, docs: [] },
+            {
+              name: "Some",
+              fields: [{ name: null, type: c, typeName: null, docs: [] }],
+              index: 1,
+              docs: [],
+            },
+          ],
+        },
+      },
+      docs: [],
+    });
+  }
+  if (o.reviveStorage === "wrongType") field("storage_deposit_limit").type = u32;
   if (o.reviveDrop)
     fields.splice(
       fields.findIndex((f) => f.name === o.reviveDrop),
