@@ -23,6 +23,13 @@ export interface FakeNodeOptions {
   rejectWith?: string;
   /** payment_queryInfo weight JSON. Default: the plain number spec 1002 returns (Weight V1). */
   queryInfoWeight?: unknown;
+  /** author_pendingExtrinsics (the pool). */
+  pending?: string[];
+  /** Finalized head = best head minus this many blocks. */
+  finalizedLag?: number;
+  /** These RPC methods throw (simulates an unreachable / broken node). */
+  failRpc?: string[];
+  /** Chain advances by this many empty blocks via advance(). */
 }
 
 interface FakeBlock { number: number; hash: Hex; extrinsics: string[]; events: Hex }
@@ -42,6 +49,29 @@ export class FakeNode implements RpcClient {
     this.byNumber.set(this.head.number, this.head.hash);
   }
 
+  /** Adds `count` empty blocks (time passing). */
+  advance(count: number) {
+    for (let i = 0; i < count; i++) {
+      const number = this.head.number + 1;
+      const hash = blake2AsHex(`fake-block-${number}`, 256) as Hex;
+      this.blocks.set(hash, { number, hash, extrinsics: [], events: '0x00' as Hex });
+      this.byNumber.set(number, hash);
+      this.head = { number, hash };
+    }
+  }
+
+  /** Blocks older than the snapshot head: empty synthetic blocks (the real chain has them; we have no bodies). */
+  private history(number: number): Hex | null {
+    if (!(number >= 0 && number < this.o.inputs.head.number)) return null;
+    const hash = blake2AsHex(`fake-old-block-${number}`, 256) as Hex;
+    this.blocks.set(hash, { number, hash, extrinsics: [], events: '0x00' as Hex });
+    this.byNumber.set(number, hash);
+    return hash;
+  }
+
+  /** From now on these RPC methods throw. */
+  breakRpc(...methods: string[]) { this.o.failRpc = [...(this.o.failRpc ?? []), ...methods]; }
+
   private header(hash: string) {
     const lc = hash.toLowerCase();
     if (lc === this.o.inputs.head.hash) return { number: `0x${this.o.inputs.head.number.toString(16)}`, parentHash: '0x' + '00'.repeat(32) };
@@ -56,17 +86,21 @@ export class FakeNode implements RpcClient {
   async send<T>(method: string, params: unknown[]): Promise<T> {
     this.log.push({ method, params });
     const r = (v: unknown) => v as T;
+    if (this.o.failRpc?.includes(method)) throw new Error(`FakeNode: ${method} unreachable`);
     switch (method) {
       case 'chain_getBlockHash':
         if (params.length === 0) return r(this.head.hash);
         if (params[0] === 0) return r(this.o.inputs.genesisHash);
-        return r(this.byNumber.get(params[0] as number) ?? null);
+        return r(this.byNumber.get(params[0] as number) ?? this.history(params[0] as number));
       case 'chain_getFinalizedHead':
-        return r(this.head.hash);
+        return r(this.byNumber.get(this.head.number - (this.o.finalizedLag ?? 0)) ?? this.head.hash);
+      case 'author_pendingExtrinsics':
+        return r(this.o.pending ?? []);
       case 'chain_getHeader':
         return r(this.header(String(params[0] ?? this.head.hash)));
       case 'chain_getBlock': {
         const b = this.blocks.get(String(params[0]).toLowerCase());
+        if (!b && String(params[0]).toLowerCase() === this.o.inputs.head.hash) return r({ block: { header: this.header(this.o.inputs.head.hash), extrinsics: [] } });
         return r(b ? { block: { header: this.header(b.hash), extrinsics: b.extrinsics } } : null);
       }
       case 'state_getMetadata':

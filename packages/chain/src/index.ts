@@ -74,3 +74,4 @@ export {
   type WalletSigner
 } from './adapter.js';
 export { dryRunSigned, dryRunOne, type SignedDryRunDetail } from './dryrun.js';
+export { lookupExtrinsic, type TxLookup, type LookupOptions } from './lookup.js';

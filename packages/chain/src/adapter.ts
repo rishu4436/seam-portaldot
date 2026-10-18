@@ -8,12 +8,17 @@ import { withClient, type ConnectOptions, type Endpoint } from './rpc.js';
 import { decodeRuntime } from './runtime.js';
 import { dryRunOne, dryRunSigned, type SignedDryRunDetail } from './dryrun.js';
 import { assembleSignedExtrinsic, extractSignedCall, signingRequestsForCalls, verifySignedAgainstRequest, verifySignedBatch, signedExtrinsicDecoder, type DecodedSignedExtrinsic, type AssembleOptions, type SignerPayloadJSON, type SigningRequest } from './signing.js';
+import { lookupExtrinsic, type TxLookup } from './lookup.js';
 import { submitAndWatch, type StatusUpdate, type SubmitResult } from './submit.js';
 import type { PreflightResult, SignedDryRun, SigningEnvelope } from './types.js';
 
 /** Mirrors @seam/sdk StepOutcome (seam-sdk/src/receipt.ts @ 6577346). */
+/** not_sent: refused before broadcast; rejected: the node refused it (not in the pool); accepted: the node took it; uncertain: ambiguous. */
+export type SubmitDelivery = 'not_sent' | 'rejected' | 'accepted' | 'uncertain';
+
 export interface StepOutcome {
   actionId: string;
+  delivery?: SubmitDelivery;
   status: 'finalized' | 'included' | 'submitted' | 'failed' | 'not_run';
   txHash?: Hex;
   block?: { number: number; hash: Hex };
@@ -33,6 +38,8 @@ export interface ChainAdapter {
    */
   dryRunSigned(signedTxs: Hex[]): Promise<SignedDryRun[]>;
   submit(signedTx: Hex, actionId: string): Promise<StepOutcome>;
+  /** SEAM-005: locate a transaction after an uncertain send (read-only; never reports absence it cannot prove). */
+  lookupTx(txHash: Hex): Promise<TxLookup>;
   /**
    * SEAM-001: decodes every signed transaction and checks it against the signing requests for `calls` (one per call,
    * in order, same envelope). `signedCalls` are decoded from the transactions, never taken from the wallet.
@@ -101,6 +108,17 @@ export function blockTimeFromFacts(facts: RuntimeFacts): number | undefined {
 }
 
 /** Maps a submitAndWatch result to the SDK's StepOutcome. */
+/** Classifies what we know about delivery from a finished watch. Anything ambiguous is 'uncertain'. */
+export function deliveryOf(r: SubmitResult): SubmitDelivery {
+  const nodeRefusal = /\b\d{4}:|invalid transaction|bad proof|stale|future|priority is too low|exhausts resources|ancient birth|outdated/i;
+  if (r.status === 'invalid' && r.history.every((h) => h === 'invalid') && r.error) {
+    if (/already imported|temporarily banned/i.test(r.error)) return 'uncertain';
+    return nodeRefusal.test(r.error) ? 'rejected' : 'uncertain';
+  }
+  if (r.timedOut && r.history.length === 0) return 'uncertain';
+  return 'accepted';
+}
+
 export function toStepOutcome(actionId: string, r: SubmitResult): StepOutcome {
   const out: StepOutcome = { actionId, status: 'submitted', txHash: r.txHash, events: (r.inclusion?.events ?? []).map(toChainEvent) };
   if (r.inclusion) out.block = { number: r.inclusion.number, hash: r.inclusion.hash };
@@ -116,6 +134,7 @@ export function toStepOutcome(actionId: string, r: SubmitResult): StepOutcome {
     out.status = 'included';
   }
   if (r.error && !out.error) out.error = r.error;
+  out.delivery = deliveryOf(r);
   return out;
 }
 
@@ -127,6 +146,7 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
   let facts = options.facts;
   let lastPreflight: PreflightReport | undefined;
   let lastSubmit: SubmitResult | undefined;
+  const sent = new Map<Hex, { fromBlock: number | undefined; validUntilBlock: number | undefined }>();
   let lastDryRun: SignedDryRunDetail[] | undefined;
   // SEAM-001: the approved signing requests of the current operation, in order. submit() only accepts the next one.
   let approved: { requests: SigningRequest[]; next: number } | undefined;
@@ -183,7 +203,7 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
       // Bound to the approved request: decode the real signed extrinsic, never trust what the wallet reported. Fail closed, send nothing.
       const refuse = (reasons: string[]): StepOutcome => {
         lastSubmit = undefined;
-        return { actionId, status: 'failed', events: [], error: `not sent: the signed transaction does not match the approved request (${reasons.join(', ')})` };
+        return { actionId, status: 'failed', delivery: 'not_sent', events: [], error: `not sent: the signed transaction does not match the approved request (${reasons.join(', ')})` };
       };
       if (!approved) return refuse(['no_approved_request']);
       const req = approved.requests[approved.next];
@@ -197,16 +217,33 @@ export function createPortaldotAdapter(endpoint: Endpoint, options: PortaldotAda
         lastDryRun = [d];
         if (d.outcome === 'failed') {
           lastSubmit = undefined;
-          return { actionId, status: 'failed', txHash: d.txHash, events: [], error: `not sent: the dry run right before submitting failed (${d.detail})` };
+          return { actionId, status: 'failed', delivery: 'not_sent', txHash: d.txHash, events: [], error: `not sent: the dry run right before submitting failed (${d.detail})` };
         }
       }
       approved.next++;
       broadcast.add(hash);
+      const birth = Number.parseInt(String(req.payload.blockNumber), 16);
+      sent.set(hash, { fromBlock: Number.isSafeInteger(birth) ? birth : undefined, validUntilBlock: req.era.mortal && Number.isSafeInteger(birth) ? birth + req.era.period : undefined });
       const opts: Parameters<typeof submitAndWatch>[3] = { ...options, facts: f };
       if (options.submitTimeoutMs !== undefined) opts.timeoutMs = options.submitTimeoutMs;
-      const r = await submitAndWatch(endpoint, signedTx, options.onStatus ? (u) => options.onStatus!(actionId, u) : undefined, opts);
+      let r: SubmitResult;
+      try {
+        r = await submitAndWatch(endpoint, signedTx, options.onStatus ? (u) => options.onStatus!(actionId, u) : undefined, opts);
+      } catch (e) {
+        lastSubmit = undefined;
+        // Refused before anything was sent (wrong chain, mainnet guard): not_sent. Anything else (connection lost, RPC error) is ambiguous.
+        if (e instanceof SeamChainError && (e.code === 'FACTS_MISMATCH' || e.code === 'MAINNET_SUBMIT_REFUSED')) {
+          return { actionId, status: 'failed', delivery: 'not_sent', txHash: hash, events: [], error: e.message };
+        }
+        return { actionId, status: 'submitted', delivery: 'uncertain', txHash: hash, events: [], error: `the send ended without an answer (${(e as Error).message}); the transaction may or may not be on chain` };
+      }
       lastSubmit = r;
       return toStepOutcome(actionId, r);
+    },
+
+    async lookupTx(txHash) {
+      const meta = sent.get(txHash.toLowerCase() as Hex);
+      return lookupExtrinsic(endpoint, txHash, { ...options, ...(meta?.fromBlock !== undefined ? { fromBlock: meta.fromBlock } : {}), ...(meta?.validUntilBlock !== undefined ? { validUntilBlock: meta.validUntilBlock } : {}) });
     },
 
     async dryRunSigned(signedTxs) {
