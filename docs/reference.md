@@ -176,3 +176,17 @@ The gate result is `{ ok, reasons, passed }`. `passed` is a list of `{ code, det
 The same Manifest compiles against each runtime using that runtime's own call indexes. Anything a runtime lacks comes out as unavailable with a reason.
 
 Every command takes `--json` for raw output. Exit code 1 means a usage error.
+
+## Outcome verifiers for `revive.call` and `nfts.mint`
+
+SEAM cannot yet compile these two actions (no observed Portaldot V3 metadata, reason code `NO_OBSERVED_V3_METADATA`), and **nothing here is verified on V3**. The SDK ships the receipt-side logic so it is ready, and fails closed in the meantime:
+
+- `verifyNftsMintOutcome({ status, events, shape, observedShape? }, { collection, item, mintTo })` and
+  `verifyReviveCallOutcome({ status, events, shape, observedShape? }, { dest, value, data })` return an `OutcomeVerdict`
+  (`verification`, `coverage`, `reason`, `code?`, `matchedEvent?`). Pass it to `buildReceipt({ plan, outcomes, verdicts: { [actionId]: verdict } })`.
+- `effect_proven` / `verified` only when the step is finalized and succeeded, an event of the given `shape` carries exactly the expected arguments, **and** you set `observedShape: true` because that shape was read from real runtime metadata. Otherwise the result is capped at `contract_emitted` and says "not verified on V3".
+- A failed dispatch is `failed` (`not_verified`, code `tx_failed`). A matching event name with different collection, item, owner, destination, value or data is `not_verified` (`effect_mismatch`). No events: `extrinsic_finalized`, unknown. Not finalized: `call_dispatched`, unknown.
+- The receipt re-checks a `verified` verdict against the step's own events (`matchedEvent`) and downgrades it if they do not back it. Without any verdict, these steps stay `unsupported_runtime`.
+- `SYNTHETIC_NFTS_SHAPE` and `SYNTHETIC_REVIVE_SHAPE` are made-up shapes for tests. They are not V3 event layouts.
+
+Fixed wording for step reason codes is in `REASON_CODE_WORDING` / `explainReasonCode(code)` (`NO_OBSERVED_V3_METADATA`, `V3_ARG_SHAPE_MISMATCH`, `ATOMIC_REQUIRED_UNAVAILABLE`); an unknown code has no wording.

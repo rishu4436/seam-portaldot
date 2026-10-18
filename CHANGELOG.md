@@ -17,6 +17,8 @@ audit item (SEAM-nnn) they close. Nothing here is a Portaldot V3 or Revive claim
 - SEAM-020: `examples/consumer` sample app, `bundledSnapshotDir()`, the SDK package ships its snapshot, `npm run smoke:pack`.
 - SEAM-013 (SDK side): the Manifest validator passes `atomicRequired` through.
 
+- SEAM-010 (SDK side): `verifyNftsMintOutcome` / `verifyReviveCallOutcome` and `buildReceipt({ verdicts })`: fail-closed outcome verifiers, `effect_proven` only for an exact match with an observed event shape; plus fixed wording for `NO_OBSERVED_V3_METADATA` and `V3_ARG_SHAPE_MISMATCH`. Not verified on V3.
+
 ### Docs
 - SEAM-024: README and docs say two local chains were used and neither is the hosted V3 testnet or mainnet; stale counts removed.
 - SEAM-025: added `SECURITY.md`, `CONTRIBUTING.md` and this changelog.
