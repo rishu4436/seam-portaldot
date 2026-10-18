@@ -140,3 +140,13 @@ npx seam verify --endpoint ws://127.0.0.1:9944 --plan plan.json receipt.json
 Live verification checks that each block is on the canonical chain at or below the finalized head, that it holds the transaction, that the signer and call are the planned ones (needs `--plan`), and that the receipt's events are the events on chain. An unreadable chain gives `unknown`, never verified.
 
 Next, see the [reference](reference.md) for every field, status and block reason.
+
+## Use the SDK from your own app (no repo paths)
+
+`examples/consumer/` is a separate app that imports only `@seam/sdk`, `@seam/compiler` and `@seam/policy`: it loads the snapshot that ships in the SDK package (`bundledSnapshotDir()`, the Portaldot mainnet runtime spec 1002, recorded, not live), compiles a Manifest, checks a policy and builds a receipt, all offline.
+
+```bash
+npm run smoke:pack   # builds, npm-packs the three packages, installs the tarballs into an empty folder, runs the example and the CLI
+```
+
+The packages are still `private` (not on npm); this proves the tarballs work from a clean install. Compatibility: Node 20+, ESM only.
