@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-18T05:22:53.947Z",
+  "generatedAt": "2026-10-18T05:26:17.422Z",
   "facts": {
     "fingerprint": {
       "genesisHash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
@@ -2652,7 +2652,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-18T05:32:53.975Z"
+      "expiresAt": "2026-10-18T05:36:17.452Z"
     },
     "policyResult": {
       "allowed": true,
@@ -2796,7 +2796,7 @@
     },
     "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0x42b3dce215ec63b3334bffb1bc1c5c6f96239d215b3fde2bba8220c2fb0ba80d",
+      "hash": "0x48e35271a3c05d181c563e1e590ac307030680b6e9e210a95e9737ce0e5ade16",
       "covers": [
         "manifest",
         "plan",
@@ -2807,7 +2807,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-18T05:32:53.975Z",
+      "expiresAt": "2026-10-18T05:36:17.452Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
@@ -2817,12 +2817,12 @@
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
         "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
-        "envelopeDigest": "0x2d84bc8203031dcd0665da2e30ddb7f429ae19c6b6759f008d62850a5864956e",
+        "envelopeDigest": "0x1907a33ea5ec61d9bbec1dc2fa92acec346f2cd5fc7aa82ce8ae1f5ac09fd05a",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-18T05:32:53.975Z"
+        "expiresAt": "2026-10-18T05:36:17.452Z"
       }
     },
     "timeline": [
@@ -2849,7 +2849,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:53.975Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
             },
             {
               "code": "approval_intact",
@@ -2893,7 +2893,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:53.975Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
             },
             {
               "code": "approval_intact",
@@ -2945,7 +2945,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:53.975Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
             },
             {
               "code": "approval_intact",
@@ -2993,7 +2993,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:53.975Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
             },
             {
               "code": "approval_intact",
@@ -3045,7 +3045,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:53.975Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
             },
             {
               "code": "approval_intact",
@@ -3093,7 +3093,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:53.975Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.452Z"
             },
             {
               "code": "approval_intact",
@@ -3127,7 +3127,7 @@
         "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
-        "approvalHash": "0x42b3dce215ec63b3334bffb1bc1c5c6f96239d215b3fde2bba8220c2fb0ba80d",
+        "approvalHash": "0x48e35271a3c05d181c563e1e590ac307030680b6e9e210a95e9737ce0e5ade16",
         "mode": "sequential",
         "steps": [
           {
@@ -3181,7 +3181,7 @@
           "verified": 3,
           "expected": 3
         },
-        "receiptDigest": "0xe99bbf726bb776eccac3e8753a2bc1e1408ba0b2f81c892b72dafbef1cc67354"
+        "receiptDigest": "0xfbb07c15dda528268b24ff2209dbde5ece5889ab4d01f76f97e2c9a91c8da298"
       }
     },
     "receiptText": "Verified: all 3 steps finalized and the chain shows exactly what was planned.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: finalized. The call succeeded and the contract emitted an event. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x7265636569707400000000000000000000000000000000000000000000000000"
@@ -3484,7 +3484,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-18T05:32:54.017Z"
+      "expiresAt": "2026-10-18T05:36:17.497Z"
     },
     "policyResult": {
       "allowed": true,
@@ -3628,7 +3628,7 @@
     },
     "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0x51a21ec233c437fcd8dafc54fe26d1a2b821b2bc3427b463037a30592d50f8c9",
+      "hash": "0x5c969494e8aa16a2ff07d3d55d2fd18640853a18255f65da72c1b4cd024349d0",
       "covers": [
         "manifest",
         "plan",
@@ -3639,7 +3639,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-18T05:32:54.017Z",
+      "expiresAt": "2026-10-18T05:36:17.497Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
@@ -3649,12 +3649,12 @@
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
         "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
-        "envelopeDigest": "0x1106310bef38a06d6bf3762dd4e9502761906b1b81a89d308174dad94c4065d0",
+        "envelopeDigest": "0x66c9de0173d882d68baf73f7465892dcec40c9cb12bf9ed65b153ce70d783ba7",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-18T05:32:54.017Z"
+        "expiresAt": "2026-10-18T05:36:17.497Z"
       }
     },
     "timeline": [
@@ -3687,7 +3687,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.017Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.497Z"
             },
             {
               "code": "approval_intact",
@@ -3732,7 +3732,7 @@
           },
           {
             "code": "approval_valid_time",
-            "detail": "the approval is valid until 2026-10-18T05:32:54.017Z"
+            "detail": "the approval is valid until 2026-10-18T05:36:17.497Z"
           },
           {
             "code": "approval_intact",
@@ -3940,7 +3940,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-18T05:32:54.043Z"
+      "expiresAt": "2026-10-18T05:36:17.526Z"
     },
     "policyResult": {
       "allowed": true,
@@ -4084,7 +4084,7 @@
     },
     "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0x0f3cc84b2fdfc91c74aac715f0a7f71098fa168628c9356579c3e81737bd0afe",
+      "hash": "0x70bb3974dd0c2c1dac82be35c72e12e9c98b243b584e83e870279dbf18d45ac6",
       "covers": [
         "manifest",
         "plan",
@@ -4095,7 +4095,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-18T05:32:54.043Z",
+      "expiresAt": "2026-10-18T05:36:17.526Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
@@ -4105,12 +4105,12 @@
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
         "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
-        "envelopeDigest": "0x4bc99d1e88bdc3abf7dcba66059dac4113c93a92ae70e15598b7bbc9adac3645",
+        "envelopeDigest": "0x6aa46c492a67d19c2d3cdfa23a2f8c477deac2493a80b1cd64271a825964e55c",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-18T05:32:54.043Z"
+        "expiresAt": "2026-10-18T05:36:17.526Z"
       }
     },
     "timeline": [
@@ -4137,7 +4137,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.043Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
             },
             {
               "code": "approval_intact",
@@ -4181,7 +4181,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.043Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
             },
             {
               "code": "approval_intact",
@@ -4233,7 +4233,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.043Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
             },
             {
               "code": "approval_intact",
@@ -4281,7 +4281,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.043Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.526Z"
             },
             {
               "code": "approval_intact",
@@ -4316,7 +4316,7 @@
         "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
-        "approvalHash": "0x0f3cc84b2fdfc91c74aac715f0a7f71098fa168628c9356579c3e81737bd0afe",
+        "approvalHash": "0x70bb3974dd0c2c1dac82be35c72e12e9c98b243b584e83e870279dbf18d45ac6",
         "mode": "sequential",
         "steps": [
           {
@@ -4361,7 +4361,7 @@
           "verified": 1,
           "expected": 3
         },
-        "receiptDigest": "0xcaaf6aa95c7d0e8427f4038bf33765fe356acd2c9ea10a36cfaca8098ac95d77"
+        "receiptDigest": "0xf23e38ead4983e3daded0eff0a50491e09851594706af9026c8ec19da03c3f96"
       }
     },
     "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: failed. The transaction failed on chain: Contracts.ContractTrapped. Tx 0x736574746c650000000000000000000000000000000000000000000000000000\n- receipt: not run. Not run. SEAM stopped because step 2 (settle) did not complete and verify: The transaction failed on chain: Contracts.ContractTrapped."
@@ -4541,7 +4541,7 @@
         "number": 2721455,
         "hash": "0x739ac186fb1c9da824a064361e5b6c533462dfeba1a8e620875d4626c39194e9"
       },
-      "expiresAt": "2026-10-18T05:32:54.067Z"
+      "expiresAt": "2026-10-18T05:36:17.552Z"
     },
     "policyResult": {
       "allowed": true,
@@ -4685,7 +4685,7 @@
     },
     "policyText": "Allowed: all 23 policy checks passed.",
     "approval": {
-      "hash": "0x4a73c61b911434a15d06c83250b1224bfac219dfb1566c5fc381c5150afeb59a",
+      "hash": "0xf21b7ec02cca28fa543ac91a0e4aca0d8281756f695354e1819da5aff3538da9",
       "covers": [
         "manifest",
         "plan",
@@ -4696,7 +4696,7 @@
         "signing envelope",
         "preflight"
       ],
-      "expiresAt": "2026-10-18T05:32:54.067Z",
+      "expiresAt": "2026-10-18T05:36:17.552Z",
       "used": false,
       "binding": {
         "manifestDigest": "0x07f185e975c9c6bc67621537667d6569055f8c22a9d3f71044bdcc2026bc08a2",
@@ -4706,12 +4706,12 @@
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
         "policyResultDigest": "0x852332ce4567bb0a797344360cb88b85ef09b07e55bf1b7f0f6e8a515b77767a",
-        "envelopeDigest": "0x67164933ce0e944e58bf47b5e1898ad645be7bf12c8ae6674d314b8b9ff4567f",
+        "envelopeDigest": "0x107672694b1bafdbc6f06431a4a8d79e79783892771a19273f09c44a6040c024",
         "preflightDigest": "0x9cab9b7fb44a0fdce993ea5231c71d19895219ce26194f059585190eee358e01",
         "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         "nonce": 7,
         "mortalityBlocks": 64,
-        "expiresAt": "2026-10-18T05:32:54.067Z"
+        "expiresAt": "2026-10-18T05:36:17.552Z"
       }
     },
     "timeline": [
@@ -4738,7 +4738,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.067Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.552Z"
             },
             {
               "code": "approval_intact",
@@ -4782,7 +4782,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.067Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.552Z"
             },
             {
               "code": "approval_intact",
@@ -4840,7 +4840,7 @@
             },
             {
               "code": "approval_valid_time",
-              "detail": "the approval is valid until 2026-10-18T05:32:54.067Z"
+              "detail": "the approval is valid until 2026-10-18T05:36:17.552Z"
             },
             {
               "code": "approval_intact",
@@ -4871,7 +4871,7 @@
         "planDigest": "0x5707e9c4cc40a6c9dfe51aff864f1801579be3f577bee907ef65031bf4e7ab3e",
         "fingerprintDigest": "0xfa84b636f16022d59470133e37c4130e936421a85d272363fb394b1116eba896",
         "policyDigest": "0x78f107d221d6e46076c07cea55773783a9ee0219346dee017e0a4331fcd3420d",
-        "approvalHash": "0x4a73c61b911434a15d06c83250b1224bfac219dfb1566c5fc381c5150afeb59a",
+        "approvalHash": "0xf21b7ec02cca28fa543ac91a0e4aca0d8281756f695354e1819da5aff3538da9",
         "mode": "sequential",
         "steps": [
           {
@@ -4909,7 +4909,7 @@
           "verified": 1,
           "expected": 3
         },
-        "receiptDigest": "0x44f6696951e308d639b57dbb4bca20b4a07544ea0e6af6e4d59b699ce10c9b24"
+        "receiptDigest": "0x42c1446739dce183bc0054cf6e219b9f9d26c46df106bbf80074d12b65b29aa1"
       }
     },
     "receiptText": "Partial: 1 of 3 steps verified, and SEAM stopped before the rest ran.\n- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x7061790000000000000000000000000000000000000000000000000000000000\n- settle: not run. Not run. SEAM stopped before sending it: Blocked: the runtime version (a runtime upgrade) changed since this plan was prepared. Rediscover the runtime, recompile, run preflight again and get a new approval.\n- receipt: not run. Not run, because an earlier step did not complete."
