@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- synthetic metadata fixture manipulates raw JSON */
 // SYNTHETIC metadata fixtures. NOT real Portaldot V3 metadata. They are the committed dev-node metadata (V14) with
 // hand-edited pallet/call definitions, built only to exercise the compiler's shape verification. A pass against these
 // proves nothing about any real chain.
