@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MODES, COVERAGE_LABEL, PROVENANCE_LABEL, TX_STATE_LABEL, SIGNING_LABEL, type Coverage, type Mode, type ModeDowngrade, type Provenance, type TxState } from "../lib/modes";
+import { MODES, COVERAGE_LABEL, SIMULATION_LABEL, PROVENANCE_LABEL, SEAM_CODE_LABEL, type SeamCode, type SimulationBasis, TX_STATE_LABEL, SIGNING_LABEL, type Coverage, type Mode, type ModeDowngrade, type Provenance, type TxState } from "../lib/modes";
 import { runLive, v3RpcUrl, type LiveOutcome } from "../lib/live";
 import "./modes.css";
 
@@ -27,7 +27,10 @@ export function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode)
 }
 
 const Tag = ({ tone, children }: { tone: string; children: React.ReactNode }) => <span className={`pill ${tone}`}>{children}</span>;
-export const CoverageBadge = ({ c }: { c: Coverage }) => <Tag tone={c === "whole_plan" ? "ok" : c === "unknown" ? "warn" : "info"}>{COVERAGE_LABEL[c]}</Tag>;
+export const CoverageBadge = ({ c }: { c: Coverage }) => <Tag tone={c === "effect_proven" ? "ok" : c === "none" || c === "contract_emitted" ? "warn" : "info"}>{COVERAGE_LABEL[c]}</Tag>;
+export const SimulationBadge = ({ b }: { b: SimulationBasis }) => <Tag tone={b === "signed_dry_run" ? "ok" : b === "none" ? "warn" : "info"}>{SIMULATION_LABEL[b]}</Tag>;
+export const SeamCodeBadge = ({ c }: { c: SeamCode }) => <Tag tone={SEAM_CODE_LABEL[c].tone}>{SEAM_CODE_LABEL[c].text}</Tag>;
+export const WeakProofBadge = ({ show }: { show: boolean }) => show ? <span className="pill warn" title="Backed by estimates or a policy exception, not a dry run of the signed transaction">weaker proof</span> : null;
 export const ProvenanceBadge = ({ p }: { p: Provenance }) => <Tag tone={PROVENANCE_LABEL[p].tone}>{PROVENANCE_LABEL[p].text}</Tag>;
 export const TxStateBadge = ({ s }: { s: TxState }) => <Tag tone={TX_STATE_LABEL[s].tone}>{TX_STATE_LABEL[s].text}</Tag>;
 
@@ -85,6 +88,7 @@ export function LivePanel() {
               <dt>Network</dt><dd>{out.fingerprint ? `${out.fingerprint.specName ?? "?"} spec ${out.fingerprint.specVersion ?? "?"}` : "unknown"}</dd>
               <dt>Fingerprint</dt><dd><code>{out.fingerprint?.digest ?? "unknown"}</code>{out.fingerprint?.fingerprintSchemaVersion != null && <small className="muted"> schema v{out.fingerprint.fingerprintSchemaVersion}</small>}</dd>
               <dt>Signing</dt><dd>{SIGNING_LABEL[out.signing]}</dd>
+              <dt>Simulation</dt><dd><SimulationBadge b={out.simulation} /></dd>
               <dt>Coverage</dt><dd><CoverageBadge c={out.coverage} /></dd>
               <dt>Transaction</dt><dd><TxStateBadge s={out.txState} /></dd>
               <dt>Provenance</dt><dd><ProvenanceBadge p={out.provenance} /></dd>

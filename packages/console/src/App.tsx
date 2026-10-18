@@ -3,8 +3,8 @@ import * as api from "./lib/mock";
 import * as tc from "./lib/testchain";
 import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
 import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
-import { LivePanel, ModeBadge, ModeSwitch, CoverageBadge, ProvenanceBadge, DowngradeWarning, JsonActions } from "./components/Modes";
-import type { Mode, Coverage, Provenance } from "./lib/modes";
+import { LivePanel, ModeBadge, ModeSwitch, SimulationBadge, WeakProofBadge, SeamCodeBadge, ProvenanceBadge, DowngradeWarning, JsonActions } from "./components/Modes";
+import { classifyReceipt, isWeakProof, type Mode, type Provenance, type SimulationBasis } from "./lib/modes";
 import type { Approval, Plan, PolicyResult, PreflightResult, Receipt, RuntimeFacts, SigningEnvelope, StepStatus } from "./lib/types";
 
 type Source = "mainnet" | "testchain";
@@ -153,7 +153,8 @@ export default function App() {
   const run = real ? tc.info() : undefined;
   // Replays never re-read a chain: recorded = integrity only, offline = unknown.
   const provenance: Provenance = real ? "integrity_checked" : "unknown";
-  const coverage: Coverage = real ? (tc.dryRunFor(0) ? "signed_tx" : "unknown") : "estimated_only";
+  const simulation: SimulationBasis = real ? (tc.dryRunFor(0) ? "signed_dry_run" : "none") : "fee_estimate_only";
+  const weakProof = !!policy && isWeakProof({ weakProof: policy.weakProof, gatePassedCodes: real ? tc.gateChecks().flatMap((g) => g.result.passed?.map((p) => p.code) ?? []) : [] });
 
   return (
     <div className="shell">
@@ -314,7 +315,7 @@ export default function App() {
         {step === 3 && policy && (
           <section className="grid2">
             {!pre ? null : <div className="card">
-              <h3>Preflight</h3><p className="small">Coverage: <CoverageBadge c={coverage} /></p>{real && tc.preflightAt() && <p className="muted small">Read from the node at block #{tc.preflightAt()!.number} <code>{short(tc.preflightAt()!.hash, 6)}</code>. Weight is ref_time.</p>}
+              <h3>Preflight</h3><p className="small">Simulation: <SimulationBadge b={simulation} /></p>{real && tc.preflightAt() && <p className="muted small">Read from the node at block #{tc.preflightAt()!.number} <code>{short(tc.preflightAt()!.hash, 6)}</code>. Weight is ref_time.</p>}
               <table className="tbl"><thead><tr><th>Step</th><th>Weight</th><th>Proof size</th><th>Fee</th><th>Storage</th><th className="r">Dry run</th></tr></thead><tbody>
                 {pre.steps.map((s) => (
                   <tr key={s.actionId}><td><b>{s.actionId}</b></td><td>{s.weight.value ?? "unknown"}</td><td>{s.proofSize?.value ? <>{s.proofSize.value}{real && tc.usedProofSize(s.actionId) && <small className="muted"><br />used {tc.usedProofSize(s.actionId)!.value}{tc.usedProofSize(s.actionId)!.shared ? " (whole batch)" : ""}</small>}</> : <Pill tone="warn">Unknown</Pill>}</td><td>{s.fee.value ?? "unknown"}</td><td>{s.storageDeposit.unknown ? <Pill tone="warn">Unknown</Pill> : s.storageDeposit.value}</td><td className="r"><Pill tone={triTone(s.dryRun)}>{s.dryRun}</Pill></td></tr>
@@ -324,7 +325,7 @@ export default function App() {
               {real && pre.steps.filter((s) => s.note).map((s) => <div key={s.actionId} className="note small"><b>{s.actionId}:</b> {s.note}</div>)}
             </div>}
             <div className="card">
-              <div className="row between"><h3>Policy</h3>{policy.allowed ? <Pill tone="ok">Allowed</Pill> : <Pill tone="bad">Blocked</Pill>}</div>
+              <div className="row between"><h3>Policy</h3><span>{policy.allowed ? <Pill tone="ok">Allowed</Pill> : <Pill tone="bad">Blocked</Pill>} <WeakProofBadge show={weakProof} /></span></div>
               {real && policy.explain && <p className="muted">{policy.explain}</p>}
               <ul className="rules">
                 {policy.rules.map((r, i) => (
@@ -433,10 +434,10 @@ export default function App() {
               </ol>
             </div>
             <div className="card">
-              <div className="row between"><h3>Execution receipt</h3>{receipt && <ProvenanceBadge p={provenance} />}{receipt && <Pill tone={receipt.overall === "verified" ? "ok" : receipt.overall === "partial" ? "warn" : "bad"}>{receipt.overall.replace("_", " ")}</Pill>}</div>
+              <div className="row between"><h3>Execution receipt</h3>{receipt && <ProvenanceBadge p={provenance} />}{receipt && <SeamCodeBadge c={classifyReceipt(receipt)} />}{receipt && <WeakProofBadge show={weakProof} />}</div>
               {!receipt ? <p className="muted">Waiting for finalization…</p> : (
                 <>
-                  <p className="big">{receipt.checks.confirmed} of {receipt.checks.expected} steps verified</p>
+                  <p className="big">{receipt.checks.confirmed} of {receipt.checks.expected} steps verified{classifyReceipt(receipt) !== "verified" && " (run not verified)"}</p>
                   {receipt.steps.map((s) => (
                     <div key={s.actionId} className="rstep">
                       <div className="row between"><b>{s.actionId}</b><Pill tone={triTone(s.verification === "verified" ? "ok" : s.verification === "unknown" ? "unknown" : "bad")}>{s.verification.replace("_", " ")}</Pill></div>

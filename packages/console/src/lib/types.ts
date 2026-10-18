@@ -98,11 +98,11 @@ export interface PreflightResult { steps: PreflightStep[]; totalFee: Estimate }
 export interface SigningEnvelope { signer: string; nonce: number; mortalityBlocks: number; expiresAt: string }
 
 export interface PolicyRuleResult { rule: string; outcome: "pass" | "block" | "unknown"; reason: string; actionId?: string }
-export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex; explain?: string }
+export interface PolicyResult { allowed: boolean; rules: PolicyRuleResult[]; policyDigest: Hex; explain?: string; /** Rule ids (rule or rule:actionId) that passed only on weaker proof. */ weakProof?: string[] }
 
 export interface Approval { hash: Hex; covers: string[]; expiresAt: string; used: boolean }
 
-export type StepStatus = "finalized" | "included" | "submitted" | "failed" | "not_run" | "checking" | "blocked";
+export type StepStatus = "finalized" | "included" | "submitted" | "failed" | "not_run" | "uncertain" | "checking" | "blocked";
 export type Verification = "verified" | "not_verified" | "unknown";
 
 export interface ReceiptStep {
