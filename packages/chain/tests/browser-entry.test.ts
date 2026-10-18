@@ -85,6 +85,8 @@ describe("browser entry has no node-only code", () => {
     expect(text).not.toMatch(/node:(fs|net|path|url|child_process|os|crypto)/);
     expect(text).not.toMatch(/require\(["'](fs|net|child_process|ws|node:[a-z_]+)["']\)/);
     expect(text).toMatch(/verifySignedAgainstRequest/);
+    expect(text).toMatch(/function buildSigningRequest\b/);
+    expect(text).toMatch(/function buildSigningRequests\b/);
   });
 
   it("control: the node entry cannot be bundled for the browser (the check can fail)", () => {
@@ -110,6 +112,8 @@ describe("browser entry has no node-only code", () => {
       "toMultiSignature",
       "signedExtrinsicDecoder",
       "checkSignedExtrinsic",
+      "buildSigningRequest",
+      "buildSigningRequests",
       "SeamChainError",
     ]) {
       expect(typeof (browser as any)[n], n).toBe("function");
@@ -189,6 +193,41 @@ describe("browser entry verifies like the node entry", () => {
     expect(
       browser.verifySignedBatch([s.honest[1]!, s.honest[0]!, s.honest[2]!], s.requests, ctx).ok,
     ).toBe(false);
+  });
+});
+
+describe("browser signing-request builders", () => {
+  it("build the same requests as the node entry (same function objects, same bytes)", async () => {
+    const s = await setup();
+    expect(browser.buildSigningRequest).toBe(node.buildSigningRequest);
+    expect(browser.buildSigningRequests).toBe(node.buildSigningRequests);
+    const checkpoint = { number: 100, hash: ("0x" + "ab".repeat(32)) as Hex };
+    const one = browser.buildSigningRequest(s.requests[0]!.callHex, s.facts, {
+      signer: s.keys.alice.address,
+      nonce: 3,
+      mortalityBlocks: 64,
+      checkpoint,
+    });
+    expect(one).toEqual(
+      node.buildSigningRequest(s.requests[0]!.callHex, s.facts, {
+        signer: s.keys.alice.address,
+        nonce: 3,
+        mortalityBlocks: 64,
+        checkpoint,
+      }),
+    );
+    expect(one.nonce).toBe(3);
+    const plan = demoPlan(s.facts);
+    const env = {
+      signer: s.keys.alice.address,
+      nonce: 0,
+      mortalityBlocks: 64,
+      checkpoint,
+      expiresAt: "x",
+    };
+    const many = browser.buildSigningRequests(plan, s.facts, env);
+    expect(many.length).toBe(3);
+    expect(many).toEqual(node.buildSigningRequests(plan, s.facts, env));
   });
 });
 
