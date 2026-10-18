@@ -17,6 +17,8 @@ Setup (section 0) happens before the demo and is not counted. The earlier versio
 
 **PENDING: browser-wallet scene.** No run has been signed in a browser wallet yet. A wallet-signed scene stays PENDING until the Portaldot testnet is up and a real signed run exists. Do not show or invent a tx hash for it; all hashes in this script come from the local chain only. If it is added later, it must fit by trimming another step so the total stays at or under 180 s.
 
+**Contract deploy: say it is an "unchecked setup step".** If the deploy is mentioned or shown, label it that way: it is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action. Policy covers the compiled plan steps only.
+
 **Say this first (10 s):** "Everything you will see ran on a local substrate-contracts-node dev chain, not Portaldot V3 testnet. The testnet RPC and faucet are pending. The mainnet snapshot is read-only."
 
 All outputs below were produced by running the command on the repo at the time of writing. Tx hashes and block numbers exist only on that local chain and change on every fresh run. Evidence files are in [`evidence/devnode/runs`](../evidence/README.md).
