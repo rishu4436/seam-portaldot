@@ -464,10 +464,7 @@ export class Seam {
    * newly signed run may happen. Anything else (unknown, RPC unreachable, a plain not_found, a lookup that throws)
    * leaves it uncertain: absence is never claimed without proof.
    */
-  async reconcile(p: {
-    uncertain: UncertainSend;
-    txHash?: Hex;
-  }): Promise<{
+  async reconcile(p: { uncertain: UncertainSend; txHash?: Hex }): Promise<{
     state: "committed" | "released" | "still_uncertain";
     lookup?: TxLookup;
     detail?: string;
