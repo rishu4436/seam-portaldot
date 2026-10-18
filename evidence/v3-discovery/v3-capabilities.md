@@ -1,8 +1,10 @@
 # V3 capabilities (read-only discovery)
 
-Source: wss://test-node-v3.portaldot.dev, chain "PortaldotV3 Test", portaldot-v3 spec 3002, genesis 0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd, block 89063. Read 2026-10-18T13:16:28.264Z.
+Source: wss://test-node-v3.portaldot.dev, chain "PortaldotV3 Test", portaldot-v3 spec 3002, genesis 0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd, block 89087. Read 2026-10-18T13:18:55.325Z.
 
 **This file only describes what that one node reported. V3 is NOT VERIFIED until this has been run against a real hosted V3 RPC and the output reviewed.**
+
+Chain properties (system_properties): ss58Format 42, tokenSymbol "tPOT", tokenDecimals 14.
 
 | item | kind | status | detail |
 |---|---|---|---|

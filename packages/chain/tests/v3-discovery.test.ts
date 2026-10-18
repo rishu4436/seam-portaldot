@@ -151,6 +151,21 @@ describe("discoverV3 over the fake node", () => {
     expect(existsSync(out)).toBe(false);
     expect(node.submitted).toEqual([]);
   });
+  it("records system_properties (ss58Format, tokenSymbol, tokenDecimals) in the capabilities json and md", async () => {
+    const inputs = { ...snapshotInputs(), genesisHash: `0x${"33".repeat(32)}` as const };
+    const node = new FakeNode({ inputs, facts: snapshotFacts() });
+    const out = tmp();
+    const res = await discoverV3(node, out);
+    const want = inputs.properties;
+    expect(res.capabilities.chain!.properties).toEqual(want);
+    const json = JSON.parse(
+      readFileSync(join(out, "v3-capabilities.json"), "utf8"),
+    ) as V3Capabilities;
+    expect(json.chain!.properties).toEqual(want);
+    const md = readFileSync(join(out, "v3-capabilities.md"), "utf8");
+    expect(md).toMatch(/Chain properties \(system_properties\):/);
+    expect(md).toContain(`tokenDecimals ${String(want.tokenDecimals)}`);
+  });
   it("rpc_methods failing leaves RPC items NOT VERIFIED (not absent)", async () => {
     const inputs = { ...snapshotInputs(), genesisHash: `0x${"22".repeat(32)}` as const };
     const node = new FakeNode({ inputs, facts: snapshotFacts(), failRpc: ["rpc_methods"] });

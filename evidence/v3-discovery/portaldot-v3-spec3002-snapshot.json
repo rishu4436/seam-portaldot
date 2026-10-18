@@ -1,7 +1,7 @@
 {
  "endpoint": "",
- "block": 89063,
- "block_hash": "0xefcfb5aa6a0d21de8efa7dd0e53fb063e05febbf1aa2b1de9e994e63c9c624de",
+ "block": 89088,
+ "block_hash": "0xb8dc42e00bab2ead126b5f4333e86da23cd5fed18714ddb464a66a4aa246beb3",
  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
  "runtime": {
   "specName": "portaldot-v3",
@@ -140,7 +140,7 @@
   "WeightReclaim"
  ],
  "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
- "fetchedAt": "2026-10-18T13:16:29.691Z",
+ "fetchedAt": "2026-10-18T13:18:56.851Z",
  "rpcMethods": [
   "account_nextIndex",
   "archive_v1_body",
