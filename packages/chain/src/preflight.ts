@@ -42,7 +42,24 @@ export interface PreflightTxDetail {
   error?: string;
 }
 
+/**
+ * SEAM-018: what was really simulated. `basis` per step:
+ *   signed_dry_run        system_dryRun of the real signed transaction passed (atomic: the whole batch)
+ *   contract_dry_run      ContractsApi_call of this call alone against current state
+ *   asset_existence_check only that the asset exists; not balances, permissions or later state
+ *   fee_estimate_only     payment_queryInfo only; the call itself was not executed
+ */
+export type CoverageBasis = 'signed_dry_run' | 'contract_dry_run' | 'asset_existence_check' | 'fee_estimate_only';
+export interface SimulationCoverage {
+  /** 'signed_dry_run' only for an atomic plan whose real signed batch dry-ran ok. Otherwise 'none'. Never 'none' hidden behind per-step ok. */
+  wholePlan: 'signed_dry_run' | 'none';
+  steps: { actionId: string; basis: CoverageBasis; proves: string }[];
+  summary: string;
+}
+
 export interface PreflightReport {
+  /** What was and was not simulated (SEAM-018). */
+  coverage: SimulationCoverage;
   /** The agreed PreflightResult shape, ready for evaluatePolicy and createApproval. */
   result: PreflightResult;
   /** Next nonce for the signer, from system_accountNextIndex (or options.nonce). */
@@ -264,6 +281,7 @@ export async function preflight(endpoint: Endpoint, plan: Plan, facts: RuntimeFa
 
     const contractDryRuns: Record<string, unknown> = {};
     const steps: PreflightStep[] = [];
+    const coverage: SimulationCoverage['steps'] = [];
     for (const [i, s] of plan.steps.entries()) {
       const tx = atomic ? transactions[0]! : transactions[i]!;
       const info = atomic ? standalone.get(s.actionId) : tx.queryInfo;
@@ -300,6 +318,17 @@ export async function preflight(endpoint: Endpoint, plan: Plan, facts: RuntimeFa
       else if (info?.proofSize !== undefined) proofSize = known(info.proofSize);
       else notes.push(info ? 'proof size: unknown, payment_queryInfo gave a two-part weight without proof_size' : 'proof size: unknown, payment_queryInfo gave no answer');
       if (contractProof !== undefined) notes.push(`contract needs proof size ${contractProof} (ContractsApi_call gas_required)`);
+      const batchOk = atomic && tx.dryRun?.outcome === 'ok';
+      const basis: CoverageBasis = batchOk || (!atomic && tx.dryRun?.outcome === 'ok') ? 'signed_dry_run'
+        : s.kind === 'contracts.call' && dryRun !== 'unknown' ? 'contract_dry_run'
+        : (s.kind === 'assets.transfer' || s.kind === 'assets.mint') && s.decodedArgs.assetId !== undefined && dryRun !== 'failed' && !tx.dryRun ? 'asset_existence_check'
+        : 'fee_estimate_only';
+      const proves = { signed_dry_run: atomic ? 'the whole signed batch dry-ran ok at the current block' : 'this signed transaction dry-ran ok alone, against current state',
+        contract_dry_run: 'this call alone dry-ran against current state; not the effect of earlier steps',
+        asset_existence_check: 'only that the asset exists; not balances, permissions or state changed by other steps',
+        fee_estimate_only: 'only a fee and weight estimate; the call was not executed' }[basis];
+      coverage.push({ actionId: s.actionId, basis, proves });
+      notes.push(`simulation coverage: ${basis} (${proves})`);
       steps.push({
         actionId: s.actionId,
         weight: info ? known(info.weight) : UNKNOWN,
@@ -313,6 +342,15 @@ export async function preflight(endpoint: Endpoint, plan: Plan, facts: RuntimeFa
 
     const fees = transactions.map((t) => t.queryInfo?.partialFee);
     const totalFee: Estimate = fees.every((f) => f !== undefined) ? known(fees.reduce((a, f) => a + BigInt(f!), 0n)) : UNKNOWN;
-    return { result: { steps, totalFee }, nonce, nonceSource, atBlock, transactions, contractDryRuns };
+    const wholePlan: SimulationCoverage['wholePlan'] = atomic && transactions[0]?.dryRun?.outcome === 'ok' ? 'signed_dry_run' : 'none';
+    const signedOk = transactions.filter((t) => t.dryRun?.outcome === 'ok').length;
+    const summary = wholePlan === 'signed_dry_run'
+      ? 'A signed dry-run of the whole atomic batch passed at the current block. State can still change before it is sent.'
+      : atomic
+        ? 'The batch was not simulated as a whole (no signed dry-run of it yet). Per-step results are estimates and checks only.'
+        : signedOk > 0
+          ? `The plan was not simulated as a whole. Only the first step's signed transaction can be dry-run now; later steps depend on earlier ones (${signedOk} of ${transactions.length} signed transactions dry-ran ok).`
+          : 'The plan was not simulated as a whole. Each step is checked alone against current state; later steps depend on earlier ones.';
+    return { coverage: { wholePlan, steps: coverage, summary }, result: { steps, totalFee }, nonce, nonceSource, atBlock, transactions, contractDryRuns };
   }, opts);
 }
