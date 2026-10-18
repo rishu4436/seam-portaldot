@@ -11,6 +11,10 @@
 //   --asset-id N (default: a free id is picked and created)     --contract 0x.. (use a deployed seam_demo)
 //   --external SS58_ADDRESS [--port N]   sign in a browser wallet (polkadot.js extension) instead of SEAM_SIGNER: opens a local
 //     page on 127.0.0.1, prints its URL, and every transaction waits for your approval in the extension
+//   --http-url URL   JSON-RPC over HTTP, if the node serves it on another port than the WebSocket (older nodes); used by the shape check
+//   --wasm FILE [--ctor-data 0x..] [--endowment N] [--call-data 0x..]   deploy a bare Wasm contract and call it by raw data,
+//     for runtimes the ink! 5 demo cannot run on (the old pallet-contracts of Portaldot spec 1002 needs the seal_* API
+//     and an endowment above the subsistence threshold, see fixtures/portaldot-local/)
 //   --no-deploy   --only sequential,rollback,atomic   --types FILE   --block-time-ms N
 //   --token SYMBOL:DECIMALS (only if the node reports no token; same flag as `seam compile`)
 // Env: SEAM_SIGNER (seed phrase, secret URI, or path to a file / polkadot-js JSON keystore; never printed or saved),
@@ -23,10 +27,12 @@ import {
   freshRecipients, fundRecipients, runAllFlows, makeGuard, makeSaver
 } from './seam-run.mjs';
 
+/** settle(7, 2500) encoded like the ink! message, so the emitted event is easy to read. */
+const DEFAULT_CALL_DATA = '0x6c3372220700000000000000c4090000000000000000000000000000';
 const argv = process.argv.slice(2);
 const flag = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
 const has = (n) => argv.includes(n);
-const FLAGS_WITH_VALUE = new Set(['--out', '--asset-id', '--contract', '--only', '--types', '--block-time-ms', '--token', '--external', '--port']);
+const FLAGS_WITH_VALUE = new Set(['--out', '--asset-id', '--contract', '--only', '--types', '--block-time-ms', '--token', '--external', '--port', '--http-url', '--wasm', '--ctor-data', '--endowment', '--call-data']);
 const positional = argv.filter((a, i) => !a.startsWith('--') && !FLAGS_WITH_VALUE.has(argv[i - 1]));
 const rpc = positional[0];
 if (!rpc || has('--help')) { console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1).filter((l, i, a) => a.slice(0, i + 1).every((x) => x.startsWith('//'))).map((l) => l.replace(/^\/\/ ?/, '')).join('\n')); process.exit(rpc ? 0 : 2); }
@@ -47,7 +53,7 @@ const guard = makeGuard(signer?.secrets ?? []);
 const save = makeSaver(outDir, guard);
 const log = (m) => console.log(m);
 
-const { facts, report } = await runtimeReport(rpc, discoverOpts);
+const { facts, report } = await runtimeReport(rpc, discoverOpts, { httpUrl: flag('--http-url') });
 report.endpoint = rpc;
 console.log(report.summary);
 console.log(`runtime report: ${save('runtime-report.json', report)}`);
@@ -55,6 +61,7 @@ console.log(`runtime report: ${save('runtime-report.json', report)}`);
 if (!signer && !externalAddress) { console.log('SEAM_SIGNER is not set (and no --external): read-only run, nothing signed.'); process.exit(0); }
 if (!has('--yes')) { console.error('A signer is configured but --yes is missing. Nothing was signed or sent. Re-run with --yes to deploy and run the flows.'); process.exit(3); }
 
+env.typesBundle ??= facts.source.typesBundle; // the pinned types the facts were built with (none for V14+)
 const ss58 = facts.fingerprint.ss58Prefix;
 const address = signer ? signer.addressFor(ss58) : externalAddress;
 log(`signer address (public): ${address}`);
@@ -74,12 +81,12 @@ summary.assetSetup = (await ensureAsset({ endpoint: rpc, facts, signPayload: sig
 
 let contract = flag('--contract');
 if (!contract && !has('--no-deploy')) {
-  const d = await deployThroughSeam({ endpoint: rpc, facts, signPayload: signPayloadFor(facts), address });
+  const d = await deployThroughSeam({ endpoint: rpc, facts, signPayload: signPayloadFor(facts), address, ...(flag('--wasm') ? { wasmFile: flag('--wasm'), ctorData: flag('--ctor-data') ?? '0x', endowment: BigInt(flag('--endowment') ?? 0) } : {}) });
   summary.deploy = { ok: d.ok, contract: d.contract, txHash: d.txHash, block: d.block, status: d.status, dryRun: d.dryRun, refused: d.refused, error: d.error, dispatchError: d.dispatchError, codeHash: d.codeHash, constructor: d.constructor };
   save(`runs/deploy-${Date.now()}.json`, { kind: 'deploy', ranAt: new Date().toISOString(), signer: address, ...summary.deploy, events: d.events });
   if (!d.ok) { save('testnet-summary.json', summary); console.error('deploy failed:', JSON.stringify(summary.deploy)); process.exit(1); }
   contract = d.contract;
-  log(`deployed seam_demo at ${contract} (tx ${d.txHash})`);
+  log(`deployed contract at ${contract} (tx ${d.txHash})`);
 }
 if (!contract) { save('testnet-summary.json', summary); console.error('no contract: pass --contract 0x.. or drop --no-deploy'); process.exit(1); }
 summary.contract = contract;
@@ -87,7 +94,7 @@ summary.contract = contract;
 const recipients = await freshRecipients(ss58);
 summary.recipients = recipients;
 summary.recipientFunding = (await fundRecipients({ endpoint: rpc, facts, signPayload: signPayloadFor(facts), address, recipients })).map(({ what, txHash, status, success }) => ({ what, txHash, status, success }));
-summary.flows = await runAllFlows({ endpoint: rpc, discoverOpts, signer, signPayloadFor, address, assetId, contract, recipients, env, save, log, only: flag('--only')?.split(',') });
+summary.flows = await runAllFlows({ endpoint: rpc, discoverOpts, signer, signPayloadFor, address, assetId, contract, recipients, env, save, log, only: flag('--only')?.split(','), rawCall: flag('--wasm') ? { data: flag('--call-data') ?? DEFAULT_CALL_DATA } : undefined });
 summary.finishedAt = new Date().toISOString();
 console.log(`summary: ${save('testnet-summary.json', summary)}`);
 console.log(JSON.stringify(summary.flows, null, 1));

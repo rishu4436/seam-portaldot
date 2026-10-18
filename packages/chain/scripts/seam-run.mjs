@@ -6,7 +6,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { Keyring } from '@polkadot/keyring';
-import { cryptoWaitReady, mnemonicGenerate, encodeAddress } from '@polkadot/util-crypto';
+import { cryptoWaitReady, mnemonicGenerate, encodeAddress, blake2AsHex } from '@polkadot/util-crypto';
 import { u8aToHex, hexToU8a } from '@polkadot/util';
 import {
   discover, listRpcMethods, refetchFingerprint, decodeRuntime, storageKey, withClient, readSigningCheckpoint,
@@ -72,7 +72,10 @@ export async function loadSigner(env = process.env) {
 export const payloadSigner = (signer, facts) => async (payload) => ({ signature: signer.sign(signBytesOf(payload, facts)) });
 
 /** Read-only: discover, refetch the fingerprint, and describe the runtime in plain terms. */
-export async function runtimeReport(endpoint, discoverOpts = {}) {
+/** Weight V2 (refTime + proofSize) vs the old single-number Weight (Compact<Weight>, V13). */
+export const isWeightV2 = (type) => /WeightV2/.test(type ?? '');
+
+export async function runtimeReport(endpoint, discoverOpts = {}, { httpUrl } = {}) {
   assertNotMainnetUrl(endpoint);
   const facts = await discover(endpoint, discoverOpts);
   assertNotMainnetFacts(facts);
@@ -84,7 +87,7 @@ export async function runtimeReport(endpoint, discoverOpts = {}) {
   const cap = (k) => facts.capabilities[k];
   const gasType = (k) => cap(k)?.args?.find((a) => a.name === 'gas_limit')?.type;
   const callGas = gasType('Contracts.call');
-  const shape = !callGas ? 'no Contracts.call' : /Weight/.test(callGas) ? 'V14 (Weight V2: refTime + proofSize)' : 'V13 (single u64 gas limit)';
+  const shape = !callGas ? 'no Contracts.call' : isWeightV2(callGas) ? 'V14 (Weight V2: refTime + proofSize, storage_deposit_limit)' : 'V13 (single Weight gas limit, no storage_deposit_limit)';
   const mdv = metadataVersionOf(facts.source.metadataHex);
   const fp = facts.fingerprint;
   const report = {
@@ -102,7 +105,7 @@ export async function runtimeReport(endpoint, discoverOpts = {}) {
   };
   // Bot 2's read-only shape check (packages/compiler/scripts/v3-shape-check.mjs): called, not duplicated. Best effort.
   try {
-    const out = execFileSync('node', [fileURLToPath(new URL('../../compiler/scripts/v3-shape-check.mjs', import.meta.url)), endpoint, '--json'], { encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    const out = execFileSync('node', [fileURLToPath(new URL('../../compiler/scripts/v3-shape-check.mjs', import.meta.url)), httpUrl ?? endpoint, '--json'], { encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'] });
     report.shapeCheck = JSON.parse(out);
   } catch (e) { report.shapeCheck = { unavailable: String(e.stderr || e.message).split('\n').filter(Boolean).slice(-2).join(' ') }; }
   report.summary = `${fp.specName} spec ${fp.specVersion}, metadata V${mdv}, ${pallets.length} pallets; Contracts ${report.has.Contracts ? 'yes' : 'no'}, Revive ${report.has.Revive ? 'yes' : 'no'}; contract call shape: ${shape}; token ${fp.tokenSymbol}/${fp.tokenDecimals}.`;
@@ -131,19 +134,26 @@ export async function sendThroughSeamSigning({ endpoint, facts, signPayload, add
 /** Weight argument in the shape this runtime wants (V14: refTime + proofSize, V13: one number). */
 export function weightArg(facts, key, { refTime, proofSize }) {
   const t = facts.capabilities[key]?.args?.find((a) => a.name === 'gas_limit')?.type ?? '';
-  return /Weight/.test(t) ? { refTime: BigInt(refTime), proofSize: BigInt(proofSize) } : BigInt(refTime);
+  return isWeightV2(t) ? { refTime: BigInt(refTime), proofSize: BigInt(proofSize) } : BigInt(refTime);
 }
 
 /**
  * Deploys the demo contract. Signing, signed dry run and submission all use SEAM's own path. It is not a manifest
  * plan step: the compiler has no contracts.instantiate action kind yet (see docs/testnet-run.md).
  */
-export async function deployThroughSeam({ endpoint, facts, signPayload, address, bundlePath = DEMO_BUNDLE, gas = { refTime: 100_000_000_000n, proofSize: 1_000_000n }, onStatus }) {
+export async function deployThroughSeam({ endpoint, facts, signPayload, address, bundlePath = DEMO_BUNDLE, wasmFile, ctorData = '0x', endowment = 0n, gas = { refTime: 100_000_000_000n, proofSize: 1_000_000n }, onStatus }) {
   if (facts.capabilities['Contracts.instantiate_with_code']?.status !== 'observed') throw new Error('this runtime has no Contracts.instantiate_with_code (Revive-only runtime? SEAM does not deploy through Revive yet)');
-  const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
-  const ctor = bundle.spec.constructors.find((c) => c.label === 'new');
+  // wasmFile: a bare Wasm contract (no ink! bundle), e.g. the old-API emitter for the V13 runtime.
+  const wasmHex = wasmFile ? `0x${readFileSync(wasmFile).toString('hex')}` : undefined;
+  const bundle = wasmFile ? { source: { wasm: wasmHex, hash: blake2AsHex(hexToU8a(wasmHex), 256) }, spec: { constructors: [{ label: 'raw', selector: ctorData }] } } : JSON.parse(readFileSync(bundlePath, 'utf8'));
+  const ctor = bundle.spec.constructors.find((c) => c.label === (wasmFile ? 'raw' : 'new'));
   const salt = u8aToHex(new TextEncoder().encode(`seam-demo-${Date.now()}`));
-  const callHex = encodeCall(facts, 'Contracts', 'instantiate_with_code', [0, weightArg(facts, 'Contracts.instantiate_with_code', gas), null, bundle.source.wasm, ctor.selector, salt]);
+  // Build the arguments by name, so the V13 shape (endowment, gas_limit, code, data, salt) and V14 both work.
+  const byName = { value: BigInt(endowment), endowment: BigInt(endowment), gas_limit: weightArg(facts, 'Contracts.instantiate_with_code', gas), storage_deposit_limit: null, code: bundle.source.wasm, data: ctor.selector, salt };
+  const callHex = encodeCall(facts, 'Contracts', 'instantiate_with_code', facts.capabilities['Contracts.instantiate_with_code'].args.map((a) => {
+    if (!(a.name in byName)) throw new Error(`unknown instantiate_with_code argument ${a.name}`);
+    return byName[a.name];
+  }));
   const r = await sendThroughSeamSigning({ endpoint, facts, signPayload, address, callHex, onStatus });
   const inst = (r.events ?? []).find((e) => e.startsWith('Contracts.Instantiated('));
   const args = inst ? inst.slice('Contracts.Instantiated('.length, -1).split(', ') : undefined;
@@ -191,7 +201,9 @@ export async function ensureAsset({ endpoint, facts, signPayload, address, asset
  * asset. Plain setup transfers from the signer (signed dry run first), recorded as setup steps.
  */
 export async function fundRecipients({ endpoint, facts, signPayload, address, recipients }) {
-  const amount = 10n ** BigInt(Math.max(facts.fingerprint.tokenDecimals - 2, 0));
+  // Twice the existential deposit (read from the runtime), so the new account survives.
+  const ed = BigInt(decodeRuntime(facts).decorated().consts.balances?.existentialDeposit?.toString() ?? 0);
+  const amount = ed > 0n ? ed * 2n : 10n ** BigInt(Math.max(facts.fingerprint.tokenDecimals - 2, 0));
   const method = facts.capabilities['Balances.transfer_keep_alive']?.status === 'observed' ? 'transfer_keep_alive' : 'transfer';
   const steps = [];
   for (const to of recipients) {
@@ -209,21 +221,21 @@ export async function freshRecipients(ss58) {
   return [kr.addFromMnemonic(mnemonicGenerate()).address, kr.addFromMnemonic(mnemonicGenerate()).address];
 }
 
-const gasFor = (facts) => /Weight/.test(facts.capabilities['Contracts.call']?.args?.find((a) => a.name === 'gas_limit')?.type ?? '')
-  ? { gasLimit: '5000000000', proofSize: '1000000' } : { gasLimit: '5000000000' };
+const gasFor = (facts) => isWeightV2(facts.capabilities['Contracts.call']?.args?.find((a) => a.name === 'gas_limit')?.type)
+  ? { gasLimit: '5000000000', proofSize: '1000000' } : { gasLimit: '5000000000', v13: true };
 
 /**
  * The three flows. `save(rel, value)` writes sanitized evidence. Returns a summary of what ran.
  * Rollback includes a TEST-ONLY direct submission of the one failing signed batch the gate refused, to observe the
  * chain's own rollback; it costs a fee. All other submissions go through the SEAM gate.
  */
-export async function runAllFlows({ endpoint, discoverOpts, signer, signPayloadFor, address, assetId, contract, recipients, env, save, log = () => {}, only }) {
+export async function runAllFlows({ endpoint, discoverOpts, signer, signPayloadFor, address, assetId, contract, recipients, env, save, log = () => {}, only, rawCall }) {
   const [bob, charlie] = recipients;
   const accounts = { signer: address, a: bob, b: charlie };
   const out = {};
   const want = (n) => !only || only.includes(n);
-  const common = (facts) => ({ alice: address, bob, charlie, contract, genesis: facts.fingerprint.genesisHash, assetId, gas: gasFor(facts), specVersion: facts.fingerprint.specVersion });
-  const policyFor = (extra = {}) => devPolicy({ bob, charlie, contract, assetId, overrides: { maxGasLimit: '100000000000', ...extra } });
+  const common = (facts) => ({ callData: rawCall?.data, alice: address, bob, charlie, contract, genesis: facts.fingerprint.genesisHash, assetId, gas: gasFor(facts), specVersion: facts.fingerprint.specVersion });
+  const policyFor = (extra = {}) => devPolicy({ bob, charlie, contract, assetId, demo: !rawCall, rawSelector: rawCall?.data?.slice(0, 10), overrides: { maxGasLimit: '100000000000', ...extra } });
 
   if (want('sequential')) {
     const facts = await discover(endpoint, discoverOpts);

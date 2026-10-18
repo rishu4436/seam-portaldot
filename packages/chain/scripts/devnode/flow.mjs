@@ -25,11 +25,11 @@ export const ABIS = { seam_demo: JSON.parse(readFileSync(fileURLToPath(new URL('
 export const SEAM_DEMO_ABI_HASH = computeAbiHash(ABIS.seam_demo);
 
 /** `demo: false` (rollback flow, no contract step) leaves out the seam_demo message and ABI rules. No maxStorageDeposit: the step sets storageDepositLimit: null. */
-export function devPolicy({ bob, charlie, contract, demo = true, assetId = ASSET_ID, overrides = {} }) {
+export function devPolicy({ bob, charlie, contract, demo = true, rawSelector, assetId = ASSET_ID, overrides = {} }) {
   return portaldotPolicy({
     allowedAssets: [String(assetId)],
     allowedContracts: [contract],
-    allowedSelectors: demo ? { [contract]: ['0x6c337222'] } : undefined,
+    allowedSelectors: demo ? { [contract]: ['0x6c337222'] } : rawSelector ? { [contract]: [rawSelector] } : undefined,
     allowedMessages: demo ? { [contract]: ['settle'] } : undefined,
     pinnedAbiHashes: demo ? { [contract]: SEAM_DEMO_ABI_HASH } : undefined,
     allowedRecipients: [bob, charlie],
@@ -41,7 +41,7 @@ export function devPolicy({ bob, charlie, contract, demo = true, assetId = ASSET
   });
 }
 
-export function devManifest({ alice, bob, charlie, contract, genesis, atomic = false, actions, assetId = ASSET_ID, gas = { gasLimit: '5000000000', proofSize: GAS_PROOF_SIZE }, specVersion = 100 }) {
+export function devManifest({ alice, bob, charlie, contract, genesis, atomic = false, actions, callData, assetId = ASSET_ID, gas = { gasLimit: '5000000000', proofSize: GAS_PROOF_SIZE }, specVersion = 100 }) {
   const pref = atomic ? { preferredMode: 'atomic' } : {};
   return {
     version: 1,
@@ -49,7 +49,9 @@ export function devManifest({ alice, bob, charlie, contract, genesis, atomic = f
     signer: { type: 'ss58', value: alice },
     actions: actions ?? [
       { id: 'pay', kind: 'assets.transfer', args: { assetId: String(assetId), amount: '2500', recipient: bob }, ...pref },
-      { id: 'call', kind: 'contracts.call', args: { contract, value: '0', gasLimit: gas.gasLimit, ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}), storageDepositLimit: null, message: 'settle', args: { order_id: SETTLE.orderId, amount: SETTLE.amount }, abiRef: 'seam_demo' }, ...pref },
+      { id: 'call', kind: 'contracts.call', args: callData
+        ? { contract, value: '0', gasLimit: gas.gasLimit, ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}), ...(gas.v13 ? {} : { storageDepositLimit: null }), data: callData } // raw data: runtimes the ink! ABI path cannot serve
+        : { contract, value: '0', gasLimit: gas.gasLimit, ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}), ...(gas.v13 ? {} : { storageDepositLimit: null }), message: 'settle', args: { order_id: SETTLE.orderId, amount: SETTLE.amount }, abiRef: 'seam_demo' }, ...pref },
       { id: 'mint', kind: 'assets.mint', args: { assetId: String(assetId), amount: '7', recipient: charlie }, ...pref }
     ]
   };
