@@ -3,9 +3,24 @@
 Status: DRAFT by Bot 1. Source: `docs/demo-script.md` (bot5/readme-judges), README, console screenshots in `/workspace/bot1-testchain-shots/` (v3/v4).
 Deadline: Nov 6, 9:30 AM IST. Video must be 3 min or less.
 
-**Honesty rule for the whole video:** every on-chain scene is from a **local substrate-contracts-node dev chain (spec 100, metadata V14), signed with the public `//Alice` dev account**. Mainnet is a **read-only snapshot** (spec 1002, V13). **No Portaldot V3 testnet run exists yet.** Never show or say a testnet tx hash until Rishu's RPC/faucet run produces one. A persistent on-screen lower-third reads: `LOCAL TEST CHAIN, NOT PORTALDOT` (the console already has this green banner; add it as a caption on terminal scenes).
+**Honesty rule for the whole video:** every on-chain scene is from a **local dev chain, signed with the public `//Alice` dev account**: either the organizers' **local Portaldot dev node (spec 1002, metadata V13)**, recorded in `evidence/portaldot-local-node/`, or the earlier substrate-contracts-node run (spec 100, V14) in `evidence/devnode/`. Always say which one is on screen. Mainnet is a **read-only snapshot** (spec 1002, V13). **No Portaldot V3 testnet run exists yet.** Never show or say a testnet tx hash until Rishu's RPC/faucet run produces one. A persistent on-screen lower-third reads: `LOCAL TEST CHAIN, NOT PORTALDOT` (the console's green banner covers the substrate-contracts-node view; add it as a caption on terminal scenes). For the Portaldot node scenes the banner and caption read: `Local Portaldot dev node, spec 1002, not the public testnet`. The console and landing page now show that banner on every view.
 
 Note: the written 3-minute script adds up to about 3:20 of spoken steps. This storyboard trims it to fit: the `npm run test:e2e` run is shown as a sped-up recording ending on `Tests  3 passed (3)` instead of live (about 15 s real time).
+
+## Local Portaldot dev node scenes (new; use these in place of, or beside, scenes 5-7)
+
+Open the console, click **Local Portaldot node, real run** in the sidebar (or the landing page section "Real run on a local Portaldot node"). Everything on that view is generated from `evidence/portaldot-local-node/` by `packages/console/scripts/import-local-node.mjs`. Read hashes off the screen; never retype them.
+
+| Beat | On screen | Voiceover | Proves (file) |
+|---|---|---|---|
+| L1 | Banner `Local Portaldot dev node, spec 1002, not the public testnet`, then the Node and runtime card (spec 1002, V13, Contracts yes, Revive no). | "This is the organizers' own node, running on this machine. Same runtime family as mainnet, a throwaway chain. Not the public testnet." | `runtime-report.json` |
+| L2 | Deploy card: tx `0xa635cbeb…1554`, block #79. Read the note under it. | "The demo contract in ink! 5 can't run on this older runtime, so we deployed a small hand-written Wasm emitter." | `runs/deploy-*.json` |
+| L3 | Sequential card: pay #88, call #91, mint #94, gate row per step all passed. | "Three steps, three transactions, and the gate re-checks before each send. The contract step is a raw-data call, not a call by message name." | `runs/sequential-*.json` (`gateChecks`) |
+| L4 | Atomic card: one batch, block #100, same tx on all three steps. | "The same three steps in one batch." | `runs/atomic-*.json` |
+| L5 | Rollback card: gate blocked `signed_dry_run_failed`, nothing sent; labelled bypass fails with `assets.BalanceLow`; balances unchanged. | "The gate refused. We then sent those exact bytes anyway as a test. The whole batch failed with `BalanceLow` and nothing was left behind except the fee." | `runs/rollback-*.json` |
+| L6 | "Not done yet" card, all PENDING. | "Not done yet: signing in a real browser wallet, and a run on the hosted V3 testnet." | none (PENDING) |
+
+Do not call the contract step "contract by message" or "settle by name" in any Portaldot-node beat: it is raw data shaped like `settle(7, 2500)`. Scenes 5 and 7 above, which show a call by message name and a decoded `Settled` event, come from the **substrate-contracts-node** run (spec 100); say so when they are on screen.
 
 ## Scene table
 
@@ -18,12 +33,15 @@ Note: the written 3-minute script adds up to about 3:20 of spoken steps. This st
 | 5 | 0:55-1:30 | Terminal: `npx seam verify /tmp/sequential-receipt.json` (3 finalized steps, 3 different tx). Cut to console Receipt screen (`sequential-5-receipt-v3.png`): per-step tx, Contract Event, decoded `ContractEmitted: Settled`, submit gate list per step. | "Sequential: three steps, three transactions. The contract was called by name, `settle`, and verified by its event. Before each send, the gate re-checked everything." | `evidence/devnode/runs/sequential-1792301010881.json`; `gateChecks` has `sending` and `done` per step, all `ok: true`, with `passed` list |
 | 6 | 1:30-1:55 | Terminal: `npx seam verify /tmp/atomic-receipt.json`; highlight same Tx `0x533223b9...` on all 3 steps. Then console atomic receipt (`atomic-5-receipt-v3.png`). | "Atomic: the same three steps in one `batch_all`. SEAM only allows this mode because rollback was verified on this chain first." | `evidence/devnode/runs/atomic-1792301015006.json`; `compiledMode` = `atomic_verified` |
 | 7 | 1:55-2:40 | Console rollback receipt (`tc-rollback-checks-v4.png`): red "SEAM blocked this submission, Signed Dry Run Failed", "Nothing was sent", balances before/after identical. Scroll to Rollback proof panel: "Test-only bypass", `ExtrinsicFailed`, nonce 52 to 53. Optionally terminal `explainSubmitCheck` one-liner. | "Here the gate refused to send, because the signed transaction would fail. Then, as a labelled test-only bypass, we sent those exact bytes anyway. The whole batch failed. Steps one and three left nothing behind. Only the fee was charged." | `evidence/devnode/runs/rollback-1792301012980.json`: `directSubmit.dispatchError` = `assets.BalanceLow`; `state.before/after.asset` identical (alice 999999955000, bob 45000, charlie 126); `aliceNonce` 52 to 53; reason code `signed_dry_run_failed` |
-| 8 | 2:40-2:52 | **PENDING.** Wallet signing scene (browser wallet popup showing the exact call, then "signed"). See capture notes below. If no real browser-wallet run exists by recording day, replace with console Approve screen (`sequential-4-approve.png`) and say it is dev-account signing. | PENDING version: "SEAM never holds keys. Your own wallet signs, and the gate checks the signed bytes match the approval." Fallback: "On this local chain we signed with the public Alice dev account. A real wallet run is next." | Nothing yet. No browser-wallet run exists. Fallback proves only `signed_bytes_match` on the dev account |
+| 8 | 2:40-2:52 | **PENDING (wallet signing; every run so far used the public //Alice key).** Wallet signing scene (browser wallet popup showing the exact call, then "signed"). See capture notes below. If no real browser-wallet run exists by recording day, replace with console Approve screen (`sequential-4-approve.png`) and say it is dev-account signing. | PENDING version: "SEAM never holds keys. Your own wallet signs, and the gate checks the signed bytes match the approval." Fallback: "On this local chain we signed with the public Alice dev account. A real wallet run is next." | Nothing yet. No browser-wallet run exists. Fallback proves only `signed_bytes_match` on the dev account |
 | 9 | 2:52-3:00 | End card: repo URL, "Next: Portaldot V3 testnet (RPC + faucet pending)". | "Next step is the Portaldot V3 testnet. The repo and checklist are linked below." | `docs/testnet-checklist.md` (PENDING) |
 
 Total: 3:00 at most. If over, drop scene 2 (10 s) and shorten scene 4.
 
 ## PENDING scenes (do not fabricate)
+
+Still PENDING and never to be shown as done: browser-wallet signing, anything on the hosted Portaldot V3 testnet, and a contract call by message name on the Portaldot runtime (needs an ink! 3-era demo contract).
+
 
 | Scene | What to capture once Rishu provides RPC and faucet |
 |---|---|
