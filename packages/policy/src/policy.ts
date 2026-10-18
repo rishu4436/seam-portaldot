@@ -117,7 +117,9 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
   const pass = (rule: string, reason: string, actionId?: string) => rules.push({ rule, outcome: "pass", reason, actionId });
   const block = (rule: string, reason: string, actionId?: string) => rules.push({ rule, outcome: "block", reason, actionId });
   const unknown = (rule: string, reason: string, allowed: boolean, actionId?: string) =>
-    rules.push({ rule, outcome: allowed ? "pass" : "unknown", reason: allowed ? `${reason} (allowed by policy)` : reason, actionId });
+    rules.push(allowed
+      ? { rule, outcome: "pass", reason: `${reason} (allowed by policy, weaker proof)`, actionId, weak: true }
+      : { rule, outcome: "unknown", reason, actionId });
 
   // Integrity: the plan wasn't edited after compiling, and belongs to this Manifest.
   if (planDigest(plan) !== plan.planDigest) block("plan_integrity", "Blocked: the plan was changed after it was compiled (its digest doesn't match).");
@@ -261,7 +263,8 @@ export function evaluatePolicy({ policy, plan, facts, preflight, manifest }: Pol
     est("fee_limit", "total fee", preflight.totalFee, policy.maxFee, policy.allowUnknown.fee);
   }
 
-  return { allowed: rules.every((r) => r.outcome === "pass"), rules, policyDigest: policyDigest(policy) };
+  const weak = rules.filter((r) => r.weak).map((r) => (r.actionId ? `${r.rule}:${r.actionId}` : r.rule));
+  return { allowed: rules.every((r) => r.outcome === "pass"), rules, policyDigest: policyDigest(policy), ...(weak.length ? { weakProof: weak } : {}) };
 }
 
 /** First blocking or unknown reason, for short messages. */

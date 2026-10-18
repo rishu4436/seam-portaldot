@@ -158,7 +158,7 @@ describe("attack cases", () => {
 
   it("9. sequential run fails at step 2: stop, never run step 3, partial receipt", () => {
     const done: ReceiptStep[] = [
-      { actionId: "pay", status: "finalized", events: ["Assets.Transferred"], verification: "verified", reason: "ok" },
+      { actionId: "pay", status: "finalized", txHash: ("0x" + "11".repeat(32)) as Hex, block: { number: 10, hash: ("0x" + "11".repeat(32)) as Hex }, events: ["Assets.Transferred"], verification: "verified", reason: "ok" },
       { actionId: "call", status: "failed", events: ["System.ExtrinsicFailed"], verification: "not_verified", reason: "contract trapped" },
     ];
     const gate = canRunNextStep(done);
@@ -283,7 +283,7 @@ describe("unknowns and approval rules", () => {
     expect(submit(run, { store, signedDryRun: [...pre], sendIndex: 0, previousSteps: [] }).ok).toBe(true);
     store.markUsed(usageKey(run.approval.hash, 0));
     expect(codes(submit(run, { store, signedDryRun: [...pre], sendIndex: 0, previousSteps: [] }))).toContain("approval_reused");
-    const done: ReceiptStep = { actionId: "pay", status: "finalized", events: ["Assets.Transferred"], verification: "verified", reason: "ok" };
+    const done: ReceiptStep = { actionId: "pay", status: "finalized", txHash: ("0x" + "11".repeat(32)) as Hex, block: { number: 10, hash: ("0x" + "11".repeat(32)) as Hex }, events: ["Assets.Transferred"], verification: "verified", reason: "ok" };
     // Step 2 needs its own fresh dry run and step 1's result.
     expect(codes(submit(run, { store, signedDryRun: ["ok", "unknown", "unknown"], sendIndex: 1, previousSteps: [done] }))).toContain("signed_dry_run_missing");
     expect(codes(submit(run, { store, signedDryRun: ["ok", "ok", "unknown"], sendIndex: 1, previousSteps: [] }))).toContain("previous_steps_missing");
