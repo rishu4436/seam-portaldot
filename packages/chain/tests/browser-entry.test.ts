@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test pokes raw polkadot objects */
 /**
  * @seam/chain/browser: the offline signature checks and assembler without node builtins, and the same verdicts as the node entry.
  */
