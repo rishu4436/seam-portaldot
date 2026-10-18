@@ -52,7 +52,7 @@ Check a recorded receipt from the repo, no chain needed:
 
 ```bash
 node -e 'const r=require("./evidence/devnode/runs/sequential-1792301010881.json");require("fs").writeFileSync("/tmp/receipt.json",JSON.stringify(r.run.receipt))'
-npx seam verify /tmp/receipt.json
+npx seam verify /tmp/receipt.json   # offline: integrity only, not on-chain proof
 ```
 
 Open the console:

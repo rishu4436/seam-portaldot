@@ -126,10 +126,17 @@ Every run ends in a receipt that says what the chain actually shows, step by ste
 
 ```bash
 npx seam verify receipt.json
-# Receipt is intact (digest matches).
+# Receipt status: integrity_checked (integrity only, not on-chain proof: ...)
 # Verified: all 3 steps finalized and the chain shows exactly what was planned.
 ```
 
-If anyone edits the receipt afterwards, `seam verify` says so.
+Offline, `seam verify` checks **integrity only, not on-chain proof**: it detects edits to a receipt, but anyone can edit a receipt and recompute its digest, so it does not show that any transaction exists. To check against the chain, re-read it live:
+
+```bash
+npx seam verify --endpoint ws://127.0.0.1:9944 --plan plan.json receipt.json
+# Receipt status: chain_verified (live, read from ws://...)   or   failed / unknown
+```
+
+Live verification checks that each block is on the canonical chain at or below the finalized head, that it holds the transaction, that the signer and call are the planned ones (needs `--plan`), and that the receipt's events are the events on chain. An unreadable chain gives `unknown`, never verified.
 
 Next, see the [reference](reference.md) for every field, status and block reason.

@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { compile, SeamCompileError, type RuntimeFacts } from '@seam/compiler';
 import { evaluatePolicy, parsePolicy } from '@seam/policy';
 import { parseManifest } from './manifest.js';
-import { checkReceipt, type Receipt } from './receipt.js';
+import { receiptIntegrity, type Receipt } from './receipt.js';
+import { createChainReader, verifyReceiptLive } from './verify-live.js';
 import { explainManifestIssues, explainPlan, explainPolicy, explainReceipt } from './explain.js';
 import { factsFromSnapshot } from './offline.js';
 import { parseAbiFlags, parseTokenFlag } from './cliargs.js';
@@ -15,7 +16,9 @@ const HELP = `seam <command> [file] [options]
   seam digest  <manifest.json>                    Check a Manifest and print its digest
   seam compile <manifest.json> [--json]           Compile against the runtime snapshot and explain the plan
   seam check   <manifest.json> --policy <p.json>  Compile, then run the policy check
-  seam verify  <receipt.json>                     Check a receipt was not edited, and explain it
+  seam verify  <receipt.json>                     Offline: integrity only (not edited since written). NOT on-chain proof
+  seam verify  --endpoint <ws> [--plan <plan.json>] <receipt.json>
+                                                  Live: re-read the chain (canonical + finalized block, tx, signer, call, events)
   seam explain <plan|policy-result|receipt.json>  Explain any SEAM result in plain English
   seam snapshot <ws-endpoint> <out-dir> [--name n]  Save a node's runtime (read-only) for offline use
 
@@ -54,6 +57,16 @@ async function compileOrExit(m: ReturnType<typeof loadManifest> & { ok: true }) 
     if (e instanceof SeamCompileError) { out(['The Manifest could not be compiled:', ...e.issues.map((i) => `- ${i.path ?? '$'}: ${i.message}`)].join('\n'), e.issues); process.exit(2); }
     throw e;
   }
+}
+/** Arguments that are neither flags nor flag values: [command, file...]. */
+function positional(valueFlags: string[]): string[] {
+  const o: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (valueFlags.includes(a)) i++;
+    else if (!a.startsWith('--')) o.push(a);
+  }
+  return o;
 }
 const flagValues = (n: string) => argv.flatMap((a, i) => (a === n ? [argv[i + 1]] : []));
 const tokenFlag = () => parseTokenFlag(argv.includes('--token') ? argv[argv.indexOf('--token') + 1] ?? '' : undefined);
@@ -106,11 +119,27 @@ async function main() {
       process.exit(offlineOk ? 0 : 4);
     }
     case 'verify': {
-      if (!file) throw new Error('missing receipt file');
-      const r = read(file) as Receipt;
-      const intact = checkReceipt(r);
-      out(`${intact ? 'Receipt is intact (digest matches).' : 'WARNING: this receipt was edited after SEAM produced it (digest does not match).'}\n${explainReceipt(r)}`, { intact, receipt: r });
-      process.exit(intact ? 0 : 5);
+      const rf = positional(['--endpoint', '--plan', '--snapshot', '--name', '--token', '--abi'])[1];
+      if (!rf) throw new Error('missing receipt file');
+      const r = read(rf) as Receipt;
+      const integrity = receiptIntegrity(r);
+      if (integrity.status === 'failed') {
+        out(`WARNING: ${integrity.note}\n${explainReceipt(r)}`, { status: 'failed', integrity, receipt: r });
+        process.exit(5);
+      }
+      const endpoint = flag('--endpoint');
+      if (!endpoint) {
+        out(`Receipt status: integrity_checked (${integrity.note})\n${explainReceipt(r)}`, { status: 'integrity_checked', note: integrity.note, receipt: r });
+        break;
+      }
+      const planFile = flag('--plan');
+      const facts = await loadFacts();
+      const reader = await createChainReader(endpoint, facts);
+      const live = await verifyReceiptLive(r, reader, { plan: planFile ? read(planFile) : undefined });
+      const lines = [`Receipt status: ${live.status} (live, read from ${endpoint}).`, ...live.problems.map((x) => `- PROBLEM: ${x}`), ...live.notes.map((x) => `- note: ${x}`),
+        live.status === 'chain_verified' ? 'The transactions, blocks, signer, call and events in this receipt match the chain. What they prove is what the result below says.' : '', explainReceipt(r)].filter(Boolean);
+      out(lines.join('\n'), { status: live.status, live, receipt: r });
+      process.exit(live.status === 'chain_verified' ? 0 : live.status === 'failed' ? 5 : 6);
     }
     case 'explain': {
       if (!file) throw new Error('missing file');
