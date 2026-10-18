@@ -85,28 +85,17 @@ describe("REAL V3 testnet metadata (spec 3002)", () => {
       "data",
     ]);
   });
-  it("revive.call: compiler refuses with V3_ARG_SHAPE_MISMATCH purely on the argument NAME weightLimit vs gasLimit; preflight passes it through", async () => {
+  it("revive.call: compiler now accepts the real weight_limit name (Forge alias); preflight still unobserved / proves nothing", async () => {
     const plan = compile(manifest([revive]), facts);
-    expect(plan.steps[0]).toMatchObject({
-      status: "unavailable",
-      reasonCode: "V3_ARG_SHAPE_MISMATCH",
-    });
-    expect(plan.steps[0]!.reason).toContain(
-      'argument 2 should be "gasLimit" (weight), metadata has "weightLimit"',
-    );
+    expect(plan.steps[0]!.status).toBe("ok");
     const node = new FakeNode({ inputs, facts });
     const r = await preflight(node, plan, facts, { nonce: 0 });
-    expect(r.coverage.steps[0]).toEqual({
+    expect(r.coverage.steps[0]).toMatchObject({
       actionId: "rv",
       basis: "unobserved",
       proves: "nothing",
-      reasonCode: "V3_ARG_SHAPE_MISMATCH",
     });
     expect(r.coverage.wholePlan).toBe("none");
-    expect(r.v3!.steps[0]).toMatchObject({
-      compiler: "unavailable",
-      simulation: { attempted: false, via: [] },
-    });
     // map_account exists in the real metadata, but nothing proves the signer is mapped.
     expect(r.v3!.accountMapping).toMatchObject({ status: "unknown", mapAccountInMetadata: true });
   });
