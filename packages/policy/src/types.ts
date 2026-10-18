@@ -43,7 +43,7 @@ export interface PolicyResult {
 
 export interface Approval { hash: Hex; covers: string[]; expiresAt: string; used: boolean }
 
-export type StepStatus = "finalized" | "included" | "submitted" | "failed" | "not_run";
+export type StepStatus = "finalized" | "included" | "submitted" | "failed" | "not_run" | "uncertain";
 export type Verification = "verified" | "not_verified" | "unknown";
 export interface ReceiptStep {
   actionId: string;
