@@ -22,7 +22,7 @@
     "test:devnode": "SEAM_DEVNODE=1 vitest run tests/devnode.test.ts",
     "devnode": "scripts/devnode.sh"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": true,
   "dependencies": {
     "@polkadot/rpc-provider": "^17.0.2",
