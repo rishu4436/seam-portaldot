@@ -239,3 +239,7 @@ hand-written Wasm) is only the earlier stand-in.
 ## Testnet run
 
 `scripts/testnet-run.mjs RPC_URL` (read-only report; `--yes` plus `SEAM_SIGNER` or `--external ADDRESS` to deploy and run the flows) is described in [docs/testnet-run.md](docs/testnet-run.md), including the browser-wallet steps. Tested on the local dev node only.
+
+## Browser entry (`@seam/chain/browser`)
+
+`import { verifySignedAgainstRequest, verifySignedBatch, assembleSignedExtrinsic } from '@seam/chain/browser'` gives the offline signature checks and the extrinsic assembler without any node builtin, WebSocket client or `@seam/compiler` runtime import (the compiler reads its types file with `node:fs` at load time, so the chain's signing code builds its registry with `src/runtime-core.ts`, a browser-safe copy of the compiler's `loadRuntime`; a test keeps the two in step). The functions are the same objects the node entry exports. It does not connect, discover or submit. `RuntimeFacts` must still be produced elsewhere (node side, or a saved snapshot) and passed in.

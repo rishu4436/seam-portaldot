@@ -1,7 +1,8 @@
 import { Metadata, TypeRegistry, expandMetadata } from '@polkadot/types';
 import { compactStripLength, hexToU8a, u8aToHex } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
-import { loadRuntime, parsePinnedTypes, type Hex, type LoadedRuntime, type RuntimeFacts } from '@seam/compiler';
+import type { Hex, LoadedRuntime, RuntimeFacts } from '@seam/compiler';
+import { loadRuntimeCore, parsePinnedTypes } from './runtime-core.js';
 import { SeamChainError } from './errors.js';
 import { quietly } from './quiet.js';
 
@@ -39,7 +40,7 @@ export const SYSTEM_EVENTS_KEY: Hex = '0x26aa394eea5630e07c48ae0c9558cef780d41e5
 
 /** The compiler's pinned runtime (same registry compile() encodes with). Used to build and read extrinsics. */
 export function encodeRuntime(facts: RuntimeFacts): LoadedRuntime {
-  const rt = loadRuntime(facts.source.metadataHex, facts.source.typesBundle);
+  const rt = loadRuntimeCore(facts.source.metadataHex, facts.source.typesBundle);
   if (rt.metadataHash !== facts.fingerprint.metadataHash || rt.typesBundleHash !== facts.fingerprint.typesBundleHash) {
     throw new SeamChainError('FACTS_MISMATCH', 'facts.source does not hash to the fingerprint (metadata or types file was changed)');
   }
