@@ -14,6 +14,7 @@ import {
   type RuntimeFingerprint,
 } from "@seam/compiler";
 import { SeamChainError } from "./errors.js";
+import { metadataLayoutHash, pinMetadata } from "./metadata-layout.js";
 import { quietly } from "./quiet.js";
 import {
   endpointLabel,
@@ -46,6 +47,13 @@ export interface DiscoverOptions extends ConnectOptions {
    * if the node does report a value and it differs, discovery fails. Never filled in by SEAM itself.
    */
   declaredToken?: { tokenSymbol: string; tokenDecimals: number };
+  /**
+   * The metadata a plan/approval was prepared with (facts.source.metadataHex). When the node's metadata differs from
+   * it ONLY in storage default values (see metadataLayoutHash), discovery keeps these pinned bytes, so the
+   * fingerprint and its digest stay the same and the runtime lock does not trip on V3's state-dependent
+   * Revive.EthBlockBuilderIR fallback. Any other difference keeps the live bytes, so the lock blocks as before.
+   */
+  pinnedMetadataHex?: Hex;
 }
 
 /** Options that shape the facts (everything except connection settings). */
@@ -229,11 +237,19 @@ export function tokenProvenanceOf(properties: ChainPropertiesJson): {
   };
 }
 
+/** Inputs with the pinned metadata bytes when the live ones differ only in storage defaults (see pinMetadata). */
+export function pinnedInputs(inputs: ChainInputs, pinnedMetadataHex?: Hex): ChainInputs {
+  if (!pinnedMetadataHex || inputs.metadataDrift) return inputs;
+  const { metadataHex, drift } = pinMetadata(inputs.metadataHex, pinnedMetadataHex);
+  return drift ? { ...inputs, metadataHex, metadataDrift: drift } : inputs;
+}
+
 /**
  * Pure: chain inputs -> the compiler's RuntimeFacts. specName/specVersion/transactionVersion/ss58Prefix
  * from the node are passed to factsFromMetadata, which throws if they disagree with the metadata itself.
  */
 export function factsFromChainInputs(inputs: ChainInputs, opts: FactsOptions = {}): RuntimeFacts {
+  inputs = pinnedInputs(inputs, opts.pinnedMetadataHex);
   const { tokenSymbol, tokenDecimals } = tokenInfo(inputs.properties, opts.declaredToken);
   const input: Parameters<typeof factsFromMetadata>[0] = {
     metadataHex: inputs.metadataHex,
@@ -272,12 +288,16 @@ export function fingerprintFromChainInputs(
     typeof typesBundleOrOpts === "string"
       ? { typesBundle: typesBundleOrOpts }
       : (typesBundleOrOpts ?? {});
-  const facts = factsFromChainInputs(inputs, opts);
-  return {
+  const pinned = pinnedInputs(inputs, opts.pinnedMetadataHex);
+  const facts = factsFromChainInputs(pinned, opts);
+  const out: FreshFingerprint = {
     fingerprint: facts.fingerprint,
     fingerprintDigest: computeFingerprintDigest(facts.fingerprint),
     atBlock: inputs.head,
+    metadataLayoutHash: metadataLayoutHash(pinned.metadataHex),
   };
+  if (pinned.metadataDrift) out.metadataDrift = pinned.metadataDrift;
+  return out;
 }
 
 /** Live discovery: connects, reads raw metadata, runtime version, genesis, properties and head, returns RuntimeFacts. */
@@ -305,6 +325,7 @@ function factsOptionsOf(opts: DiscoverOptions): FactsOptions {
   if (opts.batchAllRollbackProof !== undefined)
     out.batchAllRollbackProof = opts.batchAllRollbackProof;
   if (opts.declaredToken !== undefined) out.declaredToken = opts.declaredToken;
+  if (opts.pinnedMetadataHex !== undefined) out.pinnedMetadataHex = opts.pinnedMetadataHex;
   return out;
 }
 
