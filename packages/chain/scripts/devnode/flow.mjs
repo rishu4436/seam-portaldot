@@ -4,7 +4,8 @@
 // events) -> buildReceipt.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { hexToU8a, u8aToHex } from "@polkadot/util";
+import { bnToU8a, hexToU8a, u8aConcat, u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
 import { compile, computeManifestDigest, computeAbiHash } from "@seam/compiler";
 import { evaluatePolicy, portaldotPolicy } from "@seam/policy";
 import { Seam, buildReceipt, checkReceipt } from "@seam/sdk";
@@ -29,6 +30,73 @@ export const ABIS = {
     ),
   ),
 };
+
+/**
+ * What the `settle` step must have done, committed before the run (SEAM-004: a bare ContractEmitted proves nothing).
+ * The exact `data` of seam_demo's Settled event, SCALE-encoded in ABI field order from the manifest's own values:
+ * caller (AccountId, the signer), order_id (u64 LE), amount (Balance = u128 LE). Not read from the chain.
+ */
+export function settleEffect(caller, { orderId = SETTLE.orderId, amount = SETTLE.amount } = {}) {
+  const abi = ABIS.seam_demo;
+  const ev = abi.spec.events.find((e) => e.label === "Settled");
+  const def = (id) => abi.types.find((t) => t.id === id)?.type.def;
+  const shape = (id) => {
+    const d = def(id);
+    if (d?.primitive) return d.primitive;
+    const f = d?.composite?.fields;
+    const inner = f?.length === 1 ? def(f[0].type)?.array : undefined;
+    return inner?.len === 32 && def(inner.type)?.primitive === "u8" ? "[u8;32]" : JSON.stringify(d);
+  };
+  const layout = ev?.args.map((a) => `${a.label}:${shape(a.type.type)}`).join(",");
+  if (layout !== "caller:[u8;32],order_id:u64,amount:u128")
+    throw new Error(`seam_demo Settled event layout changed (${layout}); update settleEffect`);
+  return {
+    emittedData: u8aToHex(
+      u8aConcat(
+        decodeAddress(caller),
+        bnToU8a(BigInt(orderId), { bitLength: 64, isLe: true }),
+        bnToU8a(BigInt(amount), { bitLength: 128, isLe: true }),
+      ),
+    ),
+  };
+}
+
+/**
+ * The batch run-rollback.mjs sends to observe Utility.batch_all rollback: the same kinds as devManifest (transfer,
+ * seam_demo settle, mint) all succeed inside the batch, then a last transfer overdraws and fails it. The rollback
+ * proof's composition is these kinds, so it covers every kind of the atomic demo plan (SEAM-012).
+ */
+export function rollbackActions({
+  bob,
+  charlie,
+  contract,
+  callData,
+  assetId = ASSET_ID,
+  gas = { gasLimit: "5000000000", proofSize: GAS_PROOF_SIZE },
+}) {
+  const atomic = { preferredMode: "atomic" };
+  return [
+    {
+      id: "pay",
+      kind: "assets.transfer",
+      args: { assetId: String(assetId), amount: "5", recipient: bob },
+      ...atomic,
+    },
+    { ...contractCallAction({ contract, gas, callData }), ...atomic },
+    {
+      id: "mint",
+      kind: "assets.mint",
+      args: { assetId: String(assetId), amount: "3", recipient: charlie },
+      ...atomic,
+    },
+    {
+      id: "overdraw",
+      kind: "assets.transfer",
+      args: { assetId: String(assetId), amount: "900000000000000", recipient: bob },
+      ...atomic,
+    },
+  ];
+}
 
 /** Interface hash of the seam_demo ABI. The policy pins it independently of the manifest. */
 export const SEAM_DEMO_ABI_HASH = computeAbiHash(ABIS.seam_demo);
@@ -62,6 +130,37 @@ export function devPolicy({
   });
 }
 
+/** The demo contracts.call action (seam_demo settle by ABI, or raw `callData` where the ABI path cannot serve). */
+export function contractCallAction({
+  contract,
+  callData,
+  gas = { gasLimit: "5000000000", proofSize: GAS_PROOF_SIZE },
+}) {
+  return {
+    id: "call",
+    kind: "contracts.call",
+    args: callData
+      ? {
+          contract,
+          value: "0",
+          gasLimit: gas.gasLimit,
+          ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
+          ...(gas.v13 ? {} : { storageDepositLimit: null }),
+          data: callData,
+        } // raw data: runtimes the ink! ABI path cannot serve
+      : {
+          contract,
+          value: "0",
+          gasLimit: gas.gasLimit,
+          ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
+          ...(gas.v13 ? {} : { storageDepositLimit: null }),
+          message: "settle",
+          args: { order_id: SETTLE.orderId, amount: SETTLE.amount },
+          abiRef: "seam_demo",
+        },
+  };
+}
+
 export function devManifest({
   alice,
   bob,
@@ -87,30 +186,7 @@ export function devManifest({
         args: { assetId: String(assetId), amount: "2500", recipient: bob },
         ...pref,
       },
-      {
-        id: "call",
-        kind: "contracts.call",
-        args: callData
-          ? {
-              contract,
-              value: "0",
-              gasLimit: gas.gasLimit,
-              ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
-              ...(gas.v13 ? {} : { storageDepositLimit: null }),
-              data: callData,
-            } // raw data: runtimes the ink! ABI path cannot serve
-          : {
-              contract,
-              value: "0",
-              gasLimit: gas.gasLimit,
-              ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
-              ...(gas.v13 ? {} : { storageDepositLimit: null }),
-              message: "settle",
-              args: { order_id: SETTLE.orderId, amount: SETTLE.amount },
-              abiRef: "seam_demo",
-            },
-        ...pref,
-      },
+      { ...contractCallAction({ contract, gas, callData }), ...pref },
       {
         id: "mint",
         kind: "assets.mint",
@@ -123,6 +199,8 @@ export function devManifest({
 
 /**
  * Full run. Returns everything needed for the evidence file. Never returns signatures, signed extrinsics or keys.
+ * effects (optional): per actionId, what a contracts.call must have done (see settleEffect); without it the SDK
+ * cannot verify a contract step and a sequential run stops after it.
  * onSigned (optional) receives the signed extrinsics in memory only (the rollback script resends one); not recorded.
  */
 export async function runFlow({
@@ -135,6 +213,7 @@ export async function runFlow({
   atomic = false,
   compileOptions = {},
   onSigned,
+  effects,
 }) {
   // env overrides the dev-node defaults (testnet-run.mjs). signPayload(payload) -> { signature } is any external signer.
   const endpoint = env.endpoint ?? ENDPOINT;
@@ -220,6 +299,7 @@ export async function runFlow({
   const run = await seam.execute({
     ...ctx,
     wallet,
+    ...(effects ? { effects } : {}),
     onStep: (e) => {
       const at = new Date().toISOString();
       steps.push({ index: e.index, actionId: e.actionId, phase: e.phase, detail: e.detail, at });
