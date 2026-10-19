@@ -12,18 +12,59 @@ Every transaction below went through SEAM's signing path: signing request, then 
 
 ## Spending
 
-The hard cap was **10 tPOT**, counting fees, held deposits and transfers out. Spend is measured as the drop in free balance from the baseline in `budget.json`.
+Phase 1 (setup, Nfts, Assets, SEAM plans) had a hard cap of **10 tPOT**; phase 2 (Revive contract) added **20 tPOT** on top (`budget.json`). The caps count fees, held deposits and transfers out. Spend is measured as the drop in free balance from the baseline in `budget.json`.
 
 | | tPOT |
 |---|---|
 | Free balance at start | 1000.0 |
-| Free balance at end | 996.95965697887353 |
-| **Total spent** | **3.04034302112647** |
+| Free balance after phase 1 | 996.95965697887353 |
+| **Phase 1 spent** | **3.04034302112647** |
 | Of which held deposits (reserved, refundable): NFT collection 1.0, asset class 1.0, 4 NFT items 4 x 0.1 | 2.4 |
 | Of which sent to two fresh recipient addresses (2 x ED, so they can hold the asset) | 0.4 |
 | Of which transaction fees (15 transactions) | about 0.24 |
 
-## Transactions
+## Phase 2: Revive contract (2026-10-19, 17:49 to 17:52 IST)
+
+| | tPOT |
+|---|---|
+| Free balance at end of phase 2 | 982.79031676575229 |
+| **Phase 2 spent** (of 20) | **14.16934021312124** |
+| Of which the contract's storage base deposit, held on the contract account `0x86b9…d95b` + `0xEE`x12 (`StorageDepositReserve`) | 9.144 |
+| Of which the code upload deposit, held on the Revive pallet account (`CodeUploadDepositReserve`, `CodeInfoOf.deposit`) | 4.98 |
+| Of which fees (3 transactions) | 0.04534021312124 |
+| **Refunded** | **0**: see "terminate" below |
+| **Total spent, both phases** | **17.20968323424771** of 23.04 (free 982.79031676575229, reserved 2.4) |
+
+| # | step | call | tx hash | block | finalized | fee (tPOT) | outcome | explorer | record |
+|---|---|---|---|---|---|---|---|---|---|
+| R1 | revive.instantiate_with_code | `Revive.instantiate_with_code(value 0, weight 50e9/1e6, storage_deposit_limit 15 tPOT, code 0x600d600c600039600d6000f336600a5760006000a0005b33ff, data 0x, salt None)` | `0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2` | #102843 | yes | 0.015612 | success: `Revive.Instantiated(0x81ed…01ec, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95b)`; deposits 4.98 + 9.144 held | [block](https://node-console.portaldot.dev/#/explorer/query/0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1) | `runs/revive-deploy-1792412368928.json` |
+| R2 | SEAM plan: revive.call (data `0x`) | `Revive.call(dest 0x86b9…d95b, value 0, weight_limit 5e9/200000, storage_deposit_limit 0.1 tPOT, data 0x)` | `0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482` | #102853 | yes | 0.014809 | success: `Revive.ContractEmitted(0x86b9…d95b, 0x, [])` | [block](https://node-console.portaldot.dev/#/explorer/query/0x65ffd82b0ce6f7d211d58daf11b904ee8a5002bf39dc88a09647a9875098e4bd) | `runs/plan-revive-call-1792412445848.json` |
+| R3 | SEAM plan: revive.call (data `0x01`, SELFDESTRUCT) | `Revive.call(dest 0x86b9…d95b, value 0, …, data 0x01)` | `0xc0ad1497f394767ccd74b1f7adfd8e37977761396070dcf55b3bb455eaa6338f` | #102862 | yes | 0.014919 | success, but the contract was **not removed** (no refund, see below) | [block](https://node-console.portaldot.dev/#/explorer/query/0xb4c7334ed7adec3d5c665adc81e5c601b8473d163fb925f3f32992811dca8a7d) | `runs/plan-revive-terminate-1792412498767.json` |
+| R4 | revive.remove_code (signed dry run only) | `Revive.remove_code(0x6a81ea8307e3415bf79a339455e3767ec3ac15c9b76393f786ee78327929a0e4)` | not sent | | | | dry run failed: `revive.CodeInUse` | | `runs/revive-remove-code-1792412521183.json` |
+
+**About the contract:**
+- It is a 13-byte EVM contract. This runtime has `allowEVMBytecode = true`, and its `CodeInfoOf` reports `codeType: Evm`, `codeLen: 13`.
+- Runtime code: `0x36600a5760006000a0005b33ff`. Empty calldata emits `LOG0`; any other calldata runs `SELFDESTRUCT(caller)`.
+- The deploy was signed through SEAM's signing path and passed a signed dry run first. It is a setup step, outside the Manifest/Policy boundary, because the compiler has no instantiate action.
+
+**The two calls are SEAM plans.** Each went manifest `revive.call` -> compile -> preflight -> policy -> approve -> sign -> submit gate -> submit -> receipt:
+- Policy rules on each: the contract is allow-listed, and the exact calldata is allow-listed as the selector.
+- At the gate: fresh fingerprint, and the signed dry run passed.
+- SEAM's receipt for both steps: `finalized` / `unknown` (`unsupported_runtime`), because no revive verdict was passed.
+
+**`verifyReviveCallOutcome` cannot use the real V3 event yet.**
+- The SDK verifier expects an event carrying `(dest, data[, value])` with exactly that many fields.
+- V3 spec 3002 has no per-call Revive event. Its events are only `ContractEmitted(contract, data, topics)`, `Instantiated(deployer, contract)` and `EthExtrinsicRevert(dispatch_error)`.
+- `ContractEmitted.data` is the contract's log data, not the call data, and the event has 3 fields.
+- So the effect evidence is the raw `ContractEmitted` from the contract itself. Mapping it into a receipt verdict is open SDK work.
+
+**Terminate and refund:**
+- `SELFDESTRUCT` from a later transaction succeeded, but `AccountInfoOf` and the 9.144 tPOT hold are unchanged before and after. Pallet-revive follows EIP-6780: a contract is only deleted when it self-destructs in the same transaction that created it.
+- `remove_code` is refused with `CodeInUse` (refcount 1), checked by signed dry run, nothing sent.
+- The runtime has no other user-callable path to delete a contract or release its deposit (`set_code` is not for users).
+- **Result: the 14.124 tPOT deposit stays held and was not refunded.** It is a test-only wallet. Nothing more was attempted.
+
+## Transactions (phase 1)
 
 All are finalized. In the explorer column, a link opens the block in the Portaldot Node Console using the polkadot-js Apps `#/explorer/query/<block hash>` pattern. That pattern is assumed from the UI, not documented, and the console may need to be pointed at the V3 node first.
 
@@ -76,12 +117,15 @@ Both attempts were rebuilt from the chain by signer and nonce (`--step find`). T
 - **`nfts.mint` plan path:** `nfts.mint` as a SEAM plan step works through compile, policy, the gate and a finalized receipt. With `verifyNftsMintOutcome` and the shape read from metadata, the step is verified.
 - **`Utility.batch_all`:** atomic execution and rollback on failure both hold for `assets.transfer`, `assets.mint` and `nfts.mint`. The `atomic_verified` mode was selected from real rollback evidence.
 
+## Also V3-verified in phase 2
+
+- `Revive.instantiate_with_code` with EVM bytecode works. The real deposits are a code upload deposit of 4.98 tPOT for 13 bytes and a contract base deposit of 9.144 tPOT; for comparison, signed dry runs fail at a 13 tPOT limit and pass at 14. `storage_deposit_limit` is a plain `Compact<u128>` enforced on chain.
+- **SEAM-compiled `revive.call`.** The real layout is `dest H160, value, weight_limit, storage_deposit_limit, data`. It went through policy and the gate, finalized, and the contract executed: `Revive.ContractEmitted`.
+
 ## What is still NOT verified
 
-- **`Revive.call` and contract deploys.** No contract was deployed.
-  - Even a 6-byte EVM contract (`0x60006000a000`, LOG0) needs a storage deposit between **13 and 14 tPOT**. Signed dry runs fail with `StorageDepositLimitExhausted` at a limit of 13 tPOT and pass at 14 (`runs/revive-deploy-dryrun-limit13.json` and `-limit14.json`).
-  - That is above the 10 tPOT cap, so nothing was sent. The SEAM `revive.call` step and its verifier are still unverified on V3.
-  - Unblocking this needs a cap of about 15 tPOT. That money is a held deposit, refundable if the contract is terminated.
+- **A SEAM receipt verdict for `revive.call`.** See phase 2: the call and its `ContractEmitted` are on chain, but `verifyReviveCallOutcome` does not fit V3's event shape.
+- **A deposit refund for a deployed Revive contract.** It isn't possible on this runtime once the contract outlives its creating transaction (EIP-6780).
 - **A fresh account mapping**, meaning an account that was not already auto-mapped.
 - **Contracts (ink!) on V3**, the PolkaVM path, and cross-VM atomicity.
 - **The SEAM preflight `simulation coverage` for `nfts.mint`.** It still says `unobserved`, by design, because the code does not upgrade it from evidence yet.
