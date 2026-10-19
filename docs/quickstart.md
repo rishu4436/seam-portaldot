@@ -60,6 +60,8 @@ npx seam compile docs/examples/missing-pallet-manifest.json
 # - nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec 1002).
 ```
 
+(That is the bundled mainnet snapshot, spec 1002. Against the V3 testnet runtime, spec 3002, `nfts.mint` compiles.)
+
 SEAM reads what the runtime really offers instead of assuming, so a missing pallet becomes a plain answer instead of a failed transaction. Add `--json` to any command to get the raw plan.
 
 ## 5. Check it against a policy
@@ -101,7 +103,7 @@ const run = await seam.execute({ ...prepared, policy, facts, approval: approval.
 console.log(run.ok ? explainReceipt(run.receipt) : run.reason);
 ```
 
-> The Portaldot V3 testnet RPC isn't public yet. Until it is, step 6 runs against a local dev node. Submitting to mainnet is refused unless you set `allowMainnet`.
+> Step 6 can run against a local dev node or the hosted Portaldot V3 testnet (`wss://test-node-v3.portaldot.dev`, spec 3002, `tPOT`, 14 decimals; a funded run is recorded in [`evidence/testnet-v3`](../evidence/testnet-v3/README.md)). That node drops WebSocket connections often (code 1006) and its metadata bytes drift between blocks, which can make a prepared plan go stale within minutes (see the evidence README). Submitting to mainnet is refused unless you set `allowMainnet`.
 
 **Calling a contract by function name.** Instead of hand-encoded `data`, name the ink! message and give the ABI:
 
@@ -143,7 +145,7 @@ Live verification re-reads the chain. For every step it checks that the block is
 - every planned step present in the receipt, finalized, and not `not_run`;
 - each step re-derived from the chain's own events as `verified` with coverage `effect_proven`.
 
-For an atomic plan only the outer batch call bytes are compared; the inner calls are not decoded. Anything that cannot be read or compared gives `unknown`; any mismatch gives `failed`. From the CLI, steps that need an extra assertion (a `contracts.call`, which needs the SDK's `effects`) stay `unknown`, and `revive.call` and `nfts.mint` steps stay `unknown` until their outcome verifier returns `effect_proven` for a runtime event shape that was actually observed (none has been: see [the reference](reference.md#outcome-verifiers-for-revivecall-and-nftsmint)). Nothing is verified on Portaldot V3.
+For an atomic plan only the outer batch call bytes are compared; the inner calls are not decoded. Anything that cannot be read or compared gives `unknown`; any mismatch gives `failed`. From the CLI, steps that need an extra assertion (a `contracts.call`, which needs the SDK's `effects`) stay `unknown`, `revive.call` and `nfts.mint` steps stay `unknown` in live verification, because it does not yet pass the runtime (and, for `revive.call`, the call bytes) that the spec 3002 default checks need; a `revive.call` check without an expected contract event is `unknown` anyway, because V3 has no per-call event (see [the reference](reference.md#outcome-verifiers-for-revivecall-and-nftsmint)). What is and isn't verified on Portaldot V3 is listed in the [README](../README.md#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified).
 
 Next, see the [reference](reference.md) for every field, status and block reason.
 

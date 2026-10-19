@@ -1,6 +1,6 @@
 # SEAM architecture
 
-> **Evidence scope:** two local chains were used: a `substrate-contracts-node` dev chain and a local Portaldot dev node (spec 1002). Neither is the hosted Portaldot V3 testnet or mainnet, and local success does not show V3 or Revive support. Portaldot mainnet is only read (snapshot). Nothing has been submitted to the V3 testnet or mainnet.
+> **Evidence scope:** two local chains were used: a `substrate-contracts-node` dev chain and a local Portaldot dev node (spec 1002). Neither is the hosted Portaldot V3 testnet or mainnet, and local success does not show V3 or Revive support. Separately, the hosted Portaldot V3 testnet (spec 3002) was used in one funded run (two phases, 18 finalized transactions, [`evidence/testnet-v3`](../evidence/testnet-v3/README.md)): Assets, Nfts, SEAM sequential and `atomic_verified` plans, `Utility.batch_all` rollback, an EVM contract deploy and a SEAM `revive.call` are verified there; a per-call Revive effect (V3 has no such event), a fresh account mapping, ink!/PolkaVM, cross-VM and browser-extension signing are not. Portaldot mainnet is only read (snapshot); nothing has been submitted to it.
 
 ## Pipeline
 

@@ -15,8 +15,14 @@ The developer-facing part of SEAM: Manifest helpers, execution receipts, plain-E
 
 - `assets.transfer` needs `Assets.Transferred(asset, signer, recipient, amount)`, and `assets.mint` needs `Assets.Issued(asset, recipient, amount)`. Both must be finalized.
 - `contracts.call` needs a `Contracts.ContractEmitted` event from that contract. Success alone is reported as unknown.
+- `nfts.mint` is checked by default against `Nfts.Issued(collection, item, owner)` with the planned collection, item and recipient. It can be `verified` only when you pass `runtime` (a `RuntimeFingerprint` fits) for `portaldot-v3` spec 3002, the one runtime where that event shape was observed ([`evidence/testnet-v3`](../../evidence/testnet-v3/README.md)). Without `runtime`, or on any other runtime, a match is capped at `contract_emitted` ("not verified on V3"). An explicit `verdicts` entry wins over the default.
+- `revive.call` on `portaldot-v3` spec 3002 is checked by default with `verifyReviveCallV3Outcome`: the outcome's `callHex` (the extrinsic's call bytes) must decode to exactly the planned dest, value, weight, deposit limit and data, and the call must succeed. That alone is `unknown` with `basis: "call_args_and_success"` (V3 has no per-call event); it is `verified` only if `effects[actionId].emittedData` (and optional `emittedTopics`) is given and a matching `Revive.ContractEmitted` from `dest` is in the step's events. Without `callHex` it is `unknown`; on other runtimes it stays `unsupported_runtime`.
 - A failed step makes the rest `not_run` and the result `partial`. A success with the wrong or missing event is `not_verified`.
 - `checkReceipt(r)` recomputes `receiptDigest` (`seam/receipt/v1`) to detect edits.
+
+## Status on Portaldot V3
+
+One funded run on the hosted V3 testnet (spec 3002, ss58 42, `tPOT`, 14 decimals) verified the SEAM signing path, dry runs and fees, Assets, `Nfts.create`/`mint`, sequential and `atomic_verified` plans with `assets.*` and `nfts.mint`, and `Utility.batch_all` rollback for those calls. A 13-byte EVM contract was deployed and called through a SEAM `revive.call` plan (it ran and emitted `Revive.ContractEmitted`). Not verified on V3: a per-call Revive event (there is none), a fresh account mapping, ink!/PolkaVM, cross-VM atomicity, and browser-extension signing. Details and tx hashes: [README](../../README.md#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified), [`evidence/testnet-v3`](../../evidence/testnet-v3/README.md).
 
 ## Flow
 
