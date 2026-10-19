@@ -19,12 +19,12 @@ Sending it for real goes through approval, an external wallet and a per-step gat
 
 ## Status, in one place
 
-- **Verified so far:** local runs only, on a `substrate-contracts-node` dev chain and a **local Portaldot dev node, spec 1002**. **Portaldot V3 and Revive are not verified.**
+- **Verified so far:** local runs on a `substrate-contracts-node` dev chain and a **local Portaldot dev node, spec 1002**, plus **one funded run on the hosted Portaldot V3 testnet (spec 3002)** for Assets, Nfts, `Utility.batch_all`, one EVM contract deploy and a SEAM-compiled `revive.call` ([details](#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified)). **ink!/PolkaVM, cross-VM and a fresh account mapping are not verified on V3**, and a `revive.call` receipt can be `verified` only with an expected contract event (V3 has no per-call event).
 - **No users and no transaction volume yet.** Nothing here has been used by anyone outside the team.
 - **Business model: a hypothesis, not a result.** SEAM stays open source. One idea to test is a hosted service for teams building on Portaldot (runtime-change monitoring and independent receipt verification). No customer, price or demand has been validated, and no such service exists today ([RuntimeGuard scope](docs/runtimeguard.md)).
 
 > ## Honesty first
-> **Two local chains were used, and neither is the hosted Portaldot V3 testnet or mainnet.** (1) A `substrate-contracts-node` v0.42.0 dev chain (`--dev`, spec 100, metadata V14) and (2) a **local Portaldot dev node (spec 1002, metadata V13)**, see [the section below](#local-portaldot-dev-node-spec-1002-not-the-hosted-testnet). Local success proves the chain engine on those runtimes only. It does **not** show that anything works on the Portaldot V3 runtime, including Revive, and no `atomic_verified` result exists for V3. Portaldot mainnet is only read (a read-only snapshot, spec 1002, metadata V13, block 2,721,455); nothing was ever submitted to it. The V3 testnet RPC and faucet are still pending, so no testnet addresses or transaction hashes exist yet. See [Next step: Portaldot V3 testnet](#next-step-portaldot-v3-testnet) and [docs/testnet-checklist.md](docs/testnet-checklist.md).
+> **Three chains were used: two local dev chains and the hosted Portaldot V3 testnet. Mainnet was only read.** (1) A `substrate-contracts-node` v0.42.0 dev chain (`--dev`, spec 100, metadata V14), (2) a **local Portaldot dev node (spec 1002, metadata V13)**, see [the section below](#local-portaldot-dev-node-spec-1002-not-the-hosted-testnet), and (3) the **hosted Portaldot V3 testnet** (`portaldot-v3` spec 3002): 18 finalized transactions from one disposable test wallet (two phases), see [the V3 section](#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified) and [`evidence/testnet-v3`](evidence/testnet-v3/README.md). On V3, only what that section lists is verified. One EVM contract was deployed and called through a SEAM plan; **ink!/PolkaVM and cross-VM atomicity are not verified**. Portaldot mainnet is only read (a read-only snapshot, spec 1002, metadata V13, block 2,721,455); nothing was ever submitted to it.
 
 ## What is built
 
@@ -113,7 +113,7 @@ Execution is either **sequential** (each step is gated just before it is sent; t
 - [docs/quickstart.md](docs/quickstart.md): clone to a compiled, policy-checked plan, offline.
 - [docs/reference.md](docs/reference.md): every Manifest field, plan mode, policy rule, block reason and receipt status.
 - [docs/demo-script.md](docs/demo-script.md): the ~3 minute judge walkthrough.
-- [docs/testnet-checklist.md](docs/testnet-checklist.md): steps for Portaldot V3 testnet (**pending**).
+- [docs/testnet-checklist.md](docs/testnet-checklist.md): steps for the Portaldot V3 testnet. The first funded run is in [`evidence/testnet-v3`](evidence/testnet-v3/README.md).
 - [docs/submission-checklist.md](docs/submission-checklist.md): dates, rules, submission items.
 - [evidence/README.md](evidence/README.md): what each recorded run holds. Latest recordings: [sequential](evidence/devnode/runs/sequential-1792301010881.json), [rollback](evidence/devnode/runs/rollback-1792301012980.json), [atomic](evidence/devnode/runs/atomic-1792301015006.json).
 
@@ -123,7 +123,7 @@ Shows (local dev chain only): a three-step Manifest (transfer, ink! contract cal
 
 Also shows (local Portaldot dev node, spec 1002): the same three flows signed with `//Alice`, with a raw-data call to a hand-written Wasm emitter instead of contract-by-message (see the section below).
 
-Does not show: anything on Portaldot V3 testnet or mainnet; behavior of Portaldot's runtime for contract calls (mainnet is the older spec 1002 / metadata V13 runtime, so the V3 runtime still needs to be re-checked); a run signed in a real browser wallet. Dev-chain runs signed with the public `//Alice` dev account.
+Does not show (for these local runs): anything on Portaldot V3 or mainnet (V3 is covered separately [below](#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified)); behavior of Portaldot's runtime for contract calls (mainnet is the older spec 1002 / metadata V13 runtime, so the V3 runtime still needs to be re-checked); a run signed in a real browser wallet. Dev-chain runs signed with the public `//Alice` dev account.
 
 ## Local Portaldot dev node (spec 1002), not the hosted testnet
 
@@ -150,15 +150,47 @@ This is a **local Portaldot dev node, spec 1002**: the organizers' own `portaldo
 - The contract deploy remains an **unchecked setup step**: it goes through the dry-run and gate path, but policy does not evaluate it and the compiler has no instantiate action.
 - A mainnet-built plan is blocked at the gate on this node (fingerprint differs, see above).
 - The old pallet needed an endowment above the subsistence threshold (`--endowment 2e15`); recipients were funded with 2x the existential deposit (1e14).
-- Still **PENDING**: the hosted V3 testnet (no RPC or faucet yet) and a run signed in a real polkadot.js wallet.
+- Still **PENDING**: a run signed in a real polkadot.js wallet. (The hosted V3 testnet has since been used: see the next section.)
 
-## Next step: Portaldot V3 testnet
+## Portaldot V3 testnet (spec 3002): what is and isn't verified
+
+Source: [`evidence/testnet-v3/README.md`](evidence/testnet-v3/README.md). Nothing beyond that file is claimed here.
+
+**Node:** `wss://test-node-v3.portaldot.dev`, `portaldot-v3` spec 3002, transaction version 2, ss58 prefix 42, token `tPOT` with 14 decimals (the stated config says `tPOTv3`; the node reports `tPOT`), genesis `0xd4f9acbc…83bd`. A test network, not mainnet. Runs on 2026-10-19 from a disposable test wallet: phase 1 (16:48 to 17:32 IST, blocks #102233 to #102671) spent 3.04 tPOT of a 10 tPOT cap; phase 2, Revive (17:49 to 17:52 IST, blocks #102843 to #102862), spent 14.17 tPOT of a further 20 tPOT, almost all of it a contract deposit that cannot be refunded on this runtime (EIP-6780).
+
+**Verified on V3** (finalized transactions; each has a record in [`evidence/testnet-v3/runs`](evidence/testnet-v3/runs)):
+
+| What                                                                                                                                  | tx hash                                                 | block                     | record                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------- | ------------------------------------------ |
+| SEAM signing path, signed `system_dryRun`, `payment_queryInfo` fees (every tx below)                                                  |                                                         |                           |                                            |
+| `Revive.map_account` call path (account was **already** auto-mapped)                                                                  | `0x7577717d…1812`                                       | #102233                   | `map-account-1792408724499.json`           |
+| `Nfts.create`                                                                                                                         | `0x390bc579…23af`                                       | #102241                   | `nfts-create-1792408936565.json`           |
+| `Nfts.mint`, event `Nfts.Issued(collection, item, owner)`                                                                             | `0x9ea5ff6b…8f75`                                       | #102327                   | `nfts-mint-1792409706466.json`             |
+| `Assets.create` / `mint` / `transfer_keep_alive`                                                                                      | `0xbc93ca2f…7194`, `0x8b84f63e…82be`, `0x5a3fcfe8…0ea4` | #102411, #102493, #102529 | `assets-*.json`                            |
+| SEAM sequential plan: `assets.transfer` (verified) + `nfts.mint`                                                                      | `0x67015f59…971a`, `0x5adae6e9…44da`                    | #102653, #102657          | `plan-sequential-1792411270138.json`       |
+| `Utility.batch_all` rollback (gate blocked it; test-only direct send failed with `assets.BalanceLow`, every inner effect rolled back) | `0xd1662231…da80`                                       | #102665                   | `plan-rollback-1792411297498.json`         |
+| SEAM `atomic_verified` plan: `assets.mint` + `nfts.mint` in one `batch_all`                                                           | `0x6be1232e…f355`                                       | #102671                   | `plan-atomic-1792411355057.json`           |
+| `Revive.instantiate_with_code`, 13-byte EVM contract `0x86b9…d95b` (setup step, outside policy)                                       | `0xad39bce1…acb2`                                       | #102843                   | `revive-deploy-1792412368928.json`         |
+| SEAM plan `revive.call` (data `0x`), contract emitted `Revive.ContractEmitted(0x86b9…d95b, 0x, [])`                                   | `0xec917338…7482`                                       | #102853                   | `plan-revive-call-1792412445848.json`      |
+| SEAM plan `revive.call` (data `0x01`, SELFDESTRUCT; contract **not** removed, EIP-6780)                                               | `0xc0ad1497…338f`                                       | #102862                   | `plan-revive-terminate-1792412498767.json` |
+
+In that run, SEAM's own receipt left the `nfts.mint` steps `unknown` (`unsupported_runtime`), because no nfts verdict was passed; a receipt built with `verifyNftsMintOutcome` and the metadata's `Nfts.Issued` field order verified them. The two `revive.call` receipts were likewise `unknown` (`unsupported_runtime`). The SDK now applies default checks for both kinds when the receipt is given the spec 3002 runtime: `nfts.mint` against `Nfts.Issued`, and `revive.call` against the extrinsic's own call bytes plus success, which is weaker and stays `unknown` unless the caller also expects a `Revive.ContractEmitted` that matches (see [docs/reference.md](docs/reference.md#outcome-verifiers-for-revivecall-and-nftsmint)).
+
+**NOT verified on V3:**
+
+- A per-call Revive effect. V3 has no event carrying a call's (dest, data, value), so a `revive.call` receipt rests on its call bytes and success, plus an expected `ContractEmitted` when one is given. No recorded receipt was produced with that check; the tests replay the recorded events.
+- A deposit refund for a deployed contract (not possible on this runtime once the contract outlives its creating transaction; `remove_code` refused with `CodeInUse`).
+- Contract deploys through policy: `instantiate_with_code` is a setup step; the compiler has no instantiate action.
+- A fresh account mapping (the signer was already auto-mapped).
+- ink! contracts, the PolkaVM path, and cross-VM atomicity. `batch_all` rollback is shown only for `assets.transfer`, `assets.mint` and `nfts.mint`.
+- Preflight simulation coverage for `nfts.mint` (still `unobserved` by design).
+- A real browser-extension signature (a local keystore signer was used).
+
+**Chain findings** (from the evidence, not yet fixed in `@seam/chain`): the metadata bytes drift between blocks without a runtime upgrade (one storage fallback, `Revive.EthBlockBuilderIR`), so a pinned raw metadata hash goes stale within minutes; the node's WebSocket drops with code 1006 often.
 
 **Contract deploy is an "unchecked setup step".** The demo contract deploy is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action. Only the compiled plan steps (such as `settle`) are covered by policy.
 
-The testnet script `scripts/testnet-run.mjs` is merged but has only run against the local dev node. Nothing has run on Portaldot V3, and the real polkadot.js extension is untested (only a stand-in wallet).
-
-Blocked only on the V3 testnet **RPC URL** and **faucet**. Once we have them: read the runtime, re-lock the fingerprint, re-check the compiler against V3 (does it still use the old contracts pallet?), run the demo flow, and record contract addresses and transaction hashes. Exact steps: [docs/testnet-checklist.md](docs/testnet-checklist.md).
+The local-node testnet script `scripts/testnet-run.mjs` and the steps in [docs/testnet-checklist.md](docs/testnet-checklist.md) remain for re-runs. The V3 run used `scripts/v3-funded-run.mjs`.
 
 ## License
 
