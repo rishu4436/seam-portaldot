@@ -1,0 +1,155 @@
+{
+ "kind": "v3-tx",
+ "label": "revive.map_account",
+ "call": "Revive.map_account()",
+ "callHex": "0x5007",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 0,
+ "checkpoint": {
+  "number": 102229,
+  "hash": "0xe83257cffdd48bcbe3f0d3c6415dc2d09b3138c52cb2d503384781d963228920"
+ },
+ "signedDryRun": {
+  "result": "ok",
+  "detail": [
+   {
+    "txHash": "0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812",
+    "outcome": "ok",
+    "detail": "dispatch ok",
+    "raw": "0x0000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 829353000,
+   "proof_size": 16272
+  },
+  "class": "normal",
+  "partialFee": "1090750465056"
+ },
+ "estimatedFee": "1090750465056",
+ "estimatedFeeTpot": "0.01090750465056",
+ "expectedDeposit": "500000000000000",
+ "budgetBefore": {
+  "spent": "0",
+  "spentTpot": "0.0",
+  "leftTpot": "10.0"
+ },
+ "balanceBefore": {
+  "free": "100000000000000000",
+  "reserved": "0"
+ },
+ "txHash": "0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812",
+ "txHashLocal": "0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812",
+ "status": "finalized",
+ "finalized": true,
+ "statuses": [
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:18:27.540Z"
+  },
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:18:27.540Z"
+  },
+  {
+   "status": "in_block",
+   "blockHash": "0xd76f83f9390cd788e7e12778c81fee6bafe02c8d776e02ea1124dfd7f7859b4a",
+   "at": "2026-10-19T11:18:30.110Z"
+  },
+  {
+   "status": "finalized",
+   "blockHash": "0xd76f83f9390cd788e7e12778c81fee6bafe02c8d776e02ea1124dfd7f7859b4a",
+   "at": "2026-10-19T11:18:43.011Z"
+  }
+ ],
+ "block": {
+  "number": 102233,
+  "hash": "0xd76f83f9390cd788e7e12778c81fee6bafe02c8d776e02ea1124dfd7f7859b4a"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xd76f83f9390cd788e7e12778c81fee6bafe02c8d776e02ea1124dfd7f7859b4a",
+ "success": true,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1090750465056"
+   ],
+   "eventIndex": 1,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+    "1090750465056"
+   ],
+   "eventIndex": 2,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1090750465056",
+    "0"
+   ],
+   "eventIndex": 3,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16272,\"refTime\":937510000}}"
+   ],
+   "eventIndex": 4,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "{\"weight\":\"SpWeightsWeightV2Weight\",\"class\":\"FrameSupportDispatchDispatchClass\",\"paysFee\":\"FrameSupportDispatchPays\"}"
+   ],
+   "topics": []
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1090750465056)",
+  "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1090750465056)",
+  "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1090750465056, 0)",
+  "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16272,\"refTime\":937510000}})"
+ ],
+ "actualFee": "1090750465056",
+ "balanceAfter": {
+  "free": "99998909249534944",
+  "reserved": "0"
+ },
+ "freeDrop": "1090750465056",
+ "freeDropTpot": "0.01090750465056",
+ "reservedIncreaseTpot": "0.0",
+ "outcome": "success",
+ "derivedH160": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+ "originalAccountBefore": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "originalAccountAfter": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "mappingVerified": true
+}

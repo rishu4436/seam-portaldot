@@ -1,0 +1,110 @@
+{
+ "kind": "v3-tx",
+ "label": "seam-plan-sequential attempt 1 (nonce 8)",
+ "call": "assets.transferKeepAlive([806707,{\"id\":\"5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB\"},500])",
+ "callFromChain": "assets.transferKeepAlive([806707,{\"id\":\"5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB\"},500])",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 8,
+ "recordNote": "the sending process lost its WebSocket after submission and died before writing this record; rebuilt from the chain by signer + nonce",
+ "recoveredBy": "lookupExtrinsic + readInclusion after the watch ended early",
+ "txHash": "0x86daea7ed7f5346e248376d78f4756adf16f6988f67b1a1cad8bd1d775c446b6",
+ "status": "finalized",
+ "finalized": true,
+ "block": {
+  "number": 102612,
+  "hash": "0xaa123631c32a5b319d694338118570eaebc7dcaf18ea93e46619544d37f25ded"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xaa123631c32a5b319d694338118570eaebc7dcaf18ea93e46619544d37f25ded",
+ "success": true,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1480910683880"
+   ],
+   "eventIndex": 1,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Assets",
+   "name": "Transferred",
+   "args": [
+    "806707",
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+    "500"
+   ],
+   "eventIndex": 2,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "u32",
+    "AccountId32",
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+    "1480910683880"
+   ],
+   "eventIndex": 3,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1480910683880",
+    "0"
+   ],
+   "eventIndex": 4,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":18392,\"refTime\":1145368000}}"
+   ],
+   "eventIndex": 5,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "{\"weight\":\"SpWeightsWeightV2Weight\",\"class\":\"FrameSupportDispatchDispatchClass\",\"paysFee\":\"FrameSupportDispatchPays\"}"
+   ],
+   "topics": []
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910683880)",
+  "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 500)",
+  "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910683880)",
+  "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910683880, 0)",
+  "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":18392,\"refTime\":1145368000}})"
+ ],
+ "actualFee": "1480910683880",
+ "outcome": "success"
+}
