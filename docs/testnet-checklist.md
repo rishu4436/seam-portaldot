@@ -1,6 +1,6 @@
 # Portaldot V3 testnet checklist
 
-> **STATUS: PENDING. Nothing here has been run on Portaldot V3 testnet.** We do not yet have the V3 testnet RPC URL or faucet. Do not treat any step below as done. Items marked "unverified" are things we expect but have not confirmed.
+> **STATUS: first funded V3 run done; see [`evidence/testnet-v3`](../evidence/testnet-v3/README.md) for exactly what it verified.** The V3 testnet is `wss://test-node-v3.portaldot.dev` (spec 3002). The run used `scripts/v3-funded-run.mjs`, not every step below; items not covered by that evidence are still not done. Phase 2 deployed one EVM contract and ran a SEAM `revive.call`; ink!/PolkaVM, cross-VM and a fresh account mapping are NOT verified on V3. Items marked "unverified" are things we expect but have not confirmed.
 
 ## Local Portaldot dev node (spec 1002), not the hosted testnet
 

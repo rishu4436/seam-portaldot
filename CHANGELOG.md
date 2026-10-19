@@ -1,11 +1,21 @@
 # Changelog
 
 All notable changes to SEAM. Packages are pre-release (`0.1.0`, private). Format loosely follows Keep a Changelog; entries name the
-audit item (SEAM-nnn) they close. Nothing here is a Portaldot V3 or Revive claim: no V3 result has been verified.
+audit item (SEAM-nnn) they close. Portaldot V3 claims are limited to what `evidence/testnet-v3/README.md` records.
 
 ## Unreleased
 
 ### SDK / CLI
+
+- SEAM-010 (SDK side): `nfts.mint` receipt steps are checked by default with `verifyNftsMintOutcome` against the planned collection,
+  item and recipient, using `V3_SPEC3002_NFTS_SHAPE` (`Nfts.Issued(collection, item, owner)`, observed on the V3 testnet, spec 3002).
+  `verified` only when `buildReceipt({ runtime })` is `portaldot-v3` spec 3002; otherwise capped at `contract_emitted`. Explicit
+  `verdicts` still win and forged ones are still downgraded. Tests use the real recorded V3 events.
+- SEAM-010 (SDK side): `verifyReviveCallV3Outcome` and `decodeV3ReviveCall`, the default for `revive.call` receipt steps on
+  `portaldot-v3` spec 3002. V3 has no per-call Revive event, so it checks the extrinsic's own call bytes (`StepOutcome.callHex`)
+  against the plan, `ExtrinsicSuccess`, and an expected `Revive.ContractEmitted` from `dest` when `effects` gives one. Without an
+  expected event it is `unknown` with `basis: "call_args_and_success"` (never `effect_proven`); with a matching one it is `verified`
+  with `basis: "call_args_success_and_emitted"`. Tests replay the recorded V3 Revive call records plus tampered variants.
 - SEAM-004, SEAM-010: receipts carry a verifier coverage level (`none`, `call_dispatched`, `extrinsic_finalized`, `contract_emitted`,
   `effect_proven`). A generic `ContractEmitted` event is `unknown`; only the exact expected event data or a matching state readback
   (caller-supplied `effects`) is `verified`. Revive and Nfts steps report `unsupported_runtime`. New step status `uncertain`.
@@ -19,9 +29,14 @@ audit item (SEAM-nnn) they close. Nothing here is a Portaldot V3 or Revive claim
 
 - SEAM-010 (SDK side): `verifyNftsMintOutcome` / `verifyReviveCallOutcome` and `buildReceipt({ verdicts })`: fail-closed outcome verifiers, `effect_proven` only for an exact match with an observed event shape; plus fixed wording for `NO_OBSERVED_V3_METADATA` and `V3_ARG_SHAPE_MISMATCH`. Not verified on V3.
 
-- Docs: `seam verify --endpoint` documented as it really behaves: `chain_verified` needs a matching plan, on-chain call bytes equal to the planned call (atomic: outer batch call only), every step present and finalized, and each step re-derived `effect_proven`; no plan or an uncomparable input gives `unknown`. `revive.call` and `nfts.mint` stay `unknown` in live verification. CLI help text updated. Nothing is verified on V3.
+- Docs: `seam verify --endpoint` documented as it really behaves: `chain_verified` needs a matching plan, on-chain call bytes equal to the planned call (atomic: outer batch call only), every step present and finalized, and each step re-derived `effect_proven`; no plan or an uncomparable input gives `unknown`. `revive.call` and `nfts.mint` stay `unknown` in live verification. CLI help text updated.
 
 ### Docs
+
+- V3 status: README, SDK README, reference, quickstart, RuntimeGuard and this changelog now say what the first funded V3 testnet
+  run (spec 3002, `evidence/testnet-v3`) verified (signing, dry runs and fees, Assets, Nfts, SEAM sequential and `atomic_verified`
+  plans, `batch_all` rollback, `Revive.map_account` call path, an EVM contract deploy and a SEAM `revive.call`) and what it did not (a per-call Revive event, deposit refund, fresh account mapping,
+  ink!/PolkaVM, cross-VM, browser-extension signing). Stale "local nodes only / nothing on V3" wording removed.
 - SEAM-024: README and docs say two local chains were used and neither is the hosted V3 testnet or mainnet; stale counts removed.
 - SEAM-025: added `SECURITY.md`, `CONTRIBUTING.md` and this changelog.
 
@@ -30,6 +45,7 @@ audit item (SEAM-nnn) they close. Nothing here is a Portaldot V3 or Revive claim
 Initial monorepo: compiler, policy, SDK/CLI, chain adapter and recorded demo console, with local-chain evidence only.
 
 ### Interface/version notes
+
 - Receipt version stays `1`; new step fields (`coverage`, `code`) are additive. Receipts written before them still pass integrity checks.
 - Fingerprint digest schema is unchanged (V1).
 - `Seam.execute({ verdicts })`: optional `Record<actionId, OutcomeVerdict>` passed to every receipt the run builds (final receipt and the per-step receipts that gate the next step), like `effects`. Without it nothing changes; `execute` never computes a verdict. Not verified on V3.

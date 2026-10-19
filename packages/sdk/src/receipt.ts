@@ -1,6 +1,12 @@
 import { digestJson } from "@seam/compiler";
 import type { Hex, Plan, PlanStep } from "@seam/compiler";
-import type { OutcomeVerdict } from "./outcomes.js";
+import {
+  isObservedV3,
+  nftsShapeFor,
+  verifyNftsMintOutcome,
+  verifyReviveCallV3Outcome,
+} from "./outcomes.js";
+import type { EffectBasis, NftsRuntime, OutcomeVerdict } from "./outcomes.js";
 import { overallResult, type ReceiptStep, type StepStatus } from "@seam/policy";
 
 /**
@@ -32,7 +38,12 @@ export type StepCode =
   | "not_run";
 
 /** A receipt step: the policy package's ReceiptStep plus how much the chain showed and why it is unknown or not verified. */
-export type SdkReceiptStep = ReceiptStep & { coverage: VerifierCoverage; code?: StepCode };
+export type SdkReceiptStep = ReceiptStep & {
+  coverage: VerifierCoverage;
+  code?: StepCode;
+  /** Set on revive.call steps judged by `verifyReviveCallV3Outcome`: what the result rests on. */
+  basis?: EffectBasis;
+};
 
 /** What the caller expects a contracts.call to have done, committed before the run. SEAM does not guess this from the ABI. */
 export interface ContractEffect {
@@ -40,6 +51,8 @@ export interface ContractEffect {
   emittedData?: Hex;
   /** A value read back from the contract after the call. `actual` undefined/null means it could not be read. */
   stateReadback?: { expected: string; actual?: string | null };
+  /** revive.call on V3 only: exact topics of the expected `Revive.ContractEmitted`, in order. Checked only when given. */
+  emittedTopics?: Hex[];
 }
 
 /**
@@ -61,6 +74,8 @@ export interface StepOutcome {
   events: ChainEvent[];
   /** Decoded dispatch error, when the transaction failed. */
   error?: string;
+  /** The call bytes of the extrinsic as signed and included. The V3 revive.call check needs them; without them it is unknown. */
+  callHex?: Hex;
 }
 
 export interface Receipt {
@@ -114,6 +129,7 @@ export function verifyStep(
   outcome: StepOutcome | undefined,
   effect?: ContractEffect,
   verdict?: OutcomeVerdict,
+  runtime?: NftsRuntime,
 ): SdkReceiptStep {
   const base = { actionId: step.actionId };
   if (!outcome || outcome.status === "not_run") {
@@ -190,8 +206,16 @@ export function verifyStep(
   const base1: VerifierCoverage = final ? "extrinsic_finalized" : "call_dispatched";
   const want = expectedEvent(step, signerAccountId);
   if (!want) {
-    if (verdict && (step.kind === "revive.call" || step.kind === "nfts.mint"))
-      return applyVerdict(r, outcome, verdict, final, base1);
+    // An explicit verdict wins. Otherwise nfts.mint and revive.call get their default checks (observed spec 3002 only).
+    const v =
+      verdict ??
+      (step.kind === "nfts.mint"
+        ? defaultNftsVerdict(step, outcome, runtime)
+        : step.kind === "revive.call"
+          ? defaultReviveVerdict(step, outcome, effect, runtime)
+          : undefined);
+    if (v && (step.kind === "revive.call" || step.kind === "nfts.mint"))
+      return applyVerdict(r, outcome, v, final, base1);
     return r(
       "unknown",
       base1,
@@ -226,6 +250,66 @@ export function verifyStep(
  * Takes a verifier's verdict for revive.call / nfts.mint, but never trusts it past what the receipt itself shows:
  * `verified` needs a finalized step whose own events contain the verdict's matchedEvent; otherwise it is downgraded.
  */
+/** The default nfts.mint verdict from the step's own events and its planned collection, item and recipient. */
+function defaultNftsVerdict(
+  step: PlanStep,
+  outcome: StepOutcome,
+  runtime: NftsRuntime | undefined,
+): OutcomeVerdict | undefined {
+  const a = step.decodedArgs as Record<string, unknown>;
+  const { collection, item, recipientAccountId } = a;
+  if (typeof collection !== "string" || typeof item !== "string") return undefined;
+  if (typeof recipientAccountId !== "string") return undefined;
+  if (outcome.status !== "finalized" && outcome.status !== "included") return undefined;
+  const { shape, observed } = nftsShapeFor(runtime);
+  return verifyNftsMintOutcome(
+    {
+      status: outcome.status,
+      events: outcome.events,
+      shape,
+      observedShape: observed,
+      ...(runtime?.ss58Prefix !== undefined ? { ss58Prefix: runtime.ss58Prefix } : {}),
+    },
+    { collection, item, mintTo: recipientAccountId as Hex },
+  );
+}
+
+/**
+ * The default revive.call verdict on V3 spec 3002 (`verifyReviveCallV3Outcome`). On any other runtime there is none, so
+ * the step stays `unsupported_runtime`. `effect.emittedData`/`emittedTopics` give the expected contract event;
+ * `effect.stateReadback` is not used for revive.call.
+ */
+function defaultReviveVerdict(
+  step: PlanStep,
+  outcome: StepOutcome,
+  effect: ContractEffect | undefined,
+  runtime: NftsRuntime | undefined,
+): OutcomeVerdict | undefined {
+  if (!isObservedV3(runtime)) return undefined;
+  if (outcome.status !== "finalized" && outcome.status !== "included") return undefined;
+  const a = step.decodedArgs as Record<string, string | null | undefined>;
+  return verifyReviveCallV3Outcome(
+    {
+      status: outcome.status,
+      events: outcome.events,
+      ...(outcome.callHex ? { callHex: outcome.callHex } : {}),
+      ...(runtime ? { runtime } : {}),
+    },
+    {
+      palletIndex: step.palletIndex,
+      callIndex: step.callIndex,
+      contract: a.contract as string,
+      value: a.value as string,
+      data: a.data as string,
+      gasLimit: a.gasLimit as string,
+      proofSize: a.proofSize as string,
+      storageDepositLimit: a.storageDepositLimit ?? null,
+      ...(effect?.emittedData !== undefined ? { emittedData: effect.emittedData } : {}),
+      ...(effect?.emittedTopics ? { emittedTopics: effect.emittedTopics } : {}),
+    },
+  );
+}
+
 function applyVerdict(
   r: (
     v: ReceiptStep["verification"],
@@ -248,10 +332,16 @@ function applyVerdict(
         "effect_unproven",
       );
     }
-    return r("verified", "effect_proven", v.reason);
+    return withBasis(r("verified", "effect_proven", v.reason), v);
   }
-  return r(v.verification, v.coverage === "effect_proven" ? base1 : v.coverage, v.reason, v.code);
+  return withBasis(
+    r(v.verification, v.coverage === "effect_proven" ? base1 : v.coverage, v.reason, v.code),
+    v,
+  );
 }
+
+const withBasis = (s: SdkReceiptStep, v: OutcomeVerdict): SdkReceiptStep =>
+  v.basis ? { ...s, basis: v.basis } : s;
 
 function verifyContractCall(
   r: (
@@ -343,8 +433,18 @@ export interface ReceiptInput {
   stoppedReason?: string;
   /** Per actionId: what a contracts.call must have done. Without it a contract call can reach `contract_emitted` at most, never verified. */
   effects?: Record<string, ContractEffect>;
-  /** Per actionId: a verdict from verifyReviveCallOutcome / verifyNftsMintOutcome. Without one, revive.call and nfts.mint stay `unsupported_runtime`. */
+  /**
+   * Per actionId: a verdict from verifyReviveCallOutcome / verifyNftsMintOutcome. An explicit verdict wins. Without one,
+   * revive.call and nfts.mint get the default checks (see `runtime`).
+   */
   verdicts?: Record<string, OutcomeVerdict>;
+  /**
+   * The runtime the plan ran on (a RuntimeFingerprint fits). nfts.mint can reach `verified` by default only when this is
+   * `portaldot-v3` spec 3002, where `Nfts.Issued(collection, item, owner)` was observed. Without it, or on any other
+   * runtime, a matching Nfts.Issued is capped at `contract_emitted` ("not verified on V3"). revive.call gets its default
+   * (`verifyReviveCallV3Outcome`) only on that runtime, and needs each outcome's `callHex`.
+   */
+  runtime?: NftsRuntime;
 }
 
 export function buildReceipt({
@@ -355,6 +455,7 @@ export function buildReceipt({
   stoppedReason,
   effects,
   verdicts,
+  runtime,
 }: ReceiptInput): Receipt {
   const byId = new Map(outcomes.map((o) => [o.actionId, o]));
   const atomic = plan.mode === "atomic_verified" || plan.mode === "atomic_unverified";
@@ -365,6 +466,7 @@ export function buildReceipt({
       atomic ? (byId.get(s.actionId) ?? byId.get("batch")) : byId.get(s.actionId),
       effects?.[s.actionId],
       verdicts?.[s.actionId],
+      runtime,
     ),
   );
   const firstNotRun = steps.find((s) => s.status === "not_run");
