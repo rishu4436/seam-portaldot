@@ -37,10 +37,19 @@ export const ABIS = {
  * caller (AccountId, the signer), order_id (u64 LE), amount (Balance = u128 LE). Not read from the chain.
  */
 export function settleEffect(caller, { orderId = SETTLE.orderId, amount = SETTLE.amount } = {}) {
-  const ev = ABIS.seam_demo.spec.events.find((e) => e.label === "Settled");
-  const fields = ev?.args.map((a) => a.label).join(",");
-  if (fields !== "caller,order_id,amount")
-    throw new Error(`seam_demo Settled event fields changed: ${fields}`);
+  const abi = ABIS.seam_demo;
+  const ev = abi.spec.events.find((e) => e.label === "Settled");
+  const def = (id) => abi.types.find((t) => t.id === id)?.type.def;
+  const shape = (id) => {
+    const d = def(id);
+    if (d?.primitive) return d.primitive;
+    const f = d?.composite?.fields;
+    const inner = f?.length === 1 ? def(f[0].type)?.array : undefined;
+    return inner?.len === 32 && def(inner.type)?.primitive === "u8" ? "[u8;32]" : JSON.stringify(d);
+  };
+  const layout = ev?.args.map((a) => `${a.label}:${shape(a.type.type)}`).join(",");
+  if (layout !== "caller:[u8;32],order_id:u64,amount:u128")
+    throw new Error(`seam_demo Settled event layout changed (${layout}); update settleEffect`);
   return {
     emittedData: u8aToHex(
       u8aConcat(
@@ -61,6 +70,7 @@ export function rollbackActions({
   bob,
   charlie,
   contract,
+  callData,
   assetId = ASSET_ID,
   gas = { gasLimit: "5000000000", proofSize: GAS_PROOF_SIZE },
 }) {
@@ -72,21 +82,7 @@ export function rollbackActions({
       args: { assetId: String(assetId), amount: "5", recipient: bob },
       ...atomic,
     },
-    {
-      id: "call",
-      kind: "contracts.call",
-      args: {
-        contract,
-        value: "0",
-        gasLimit: gas.gasLimit,
-        proofSize: gas.proofSize,
-        storageDepositLimit: null,
-        message: "settle",
-        args: { order_id: SETTLE.orderId, amount: SETTLE.amount },
-        abiRef: "seam_demo",
-      },
-      ...atomic,
-    },
+    { ...contractCallAction({ contract, gas, callData }), ...atomic },
     {
       id: "mint",
       kind: "assets.mint",
@@ -134,6 +130,37 @@ export function devPolicy({
   });
 }
 
+/** The demo contracts.call action (seam_demo settle by ABI, or raw `callData` where the ABI path cannot serve). */
+export function contractCallAction({
+  contract,
+  callData,
+  gas = { gasLimit: "5000000000", proofSize: GAS_PROOF_SIZE },
+}) {
+  return {
+    id: "call",
+    kind: "contracts.call",
+    args: callData
+      ? {
+          contract,
+          value: "0",
+          gasLimit: gas.gasLimit,
+          ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
+          ...(gas.v13 ? {} : { storageDepositLimit: null }),
+          data: callData,
+        } // raw data: runtimes the ink! ABI path cannot serve
+      : {
+          contract,
+          value: "0",
+          gasLimit: gas.gasLimit,
+          ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
+          ...(gas.v13 ? {} : { storageDepositLimit: null }),
+          message: "settle",
+          args: { order_id: SETTLE.orderId, amount: SETTLE.amount },
+          abiRef: "seam_demo",
+        },
+  };
+}
+
 export function devManifest({
   alice,
   bob,
@@ -159,30 +186,7 @@ export function devManifest({
         args: { assetId: String(assetId), amount: "2500", recipient: bob },
         ...pref,
       },
-      {
-        id: "call",
-        kind: "contracts.call",
-        args: callData
-          ? {
-              contract,
-              value: "0",
-              gasLimit: gas.gasLimit,
-              ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
-              ...(gas.v13 ? {} : { storageDepositLimit: null }),
-              data: callData,
-            } // raw data: runtimes the ink! ABI path cannot serve
-          : {
-              contract,
-              value: "0",
-              gasLimit: gas.gasLimit,
-              ...(gas.proofSize !== undefined ? { proofSize: gas.proofSize } : {}),
-              ...(gas.v13 ? {} : { storageDepositLimit: null }),
-              message: "settle",
-              args: { order_id: SETTLE.orderId, amount: SETTLE.amount },
-              abiRef: "seam_demo",
-            },
-        ...pref,
-      },
+      { ...contractCallAction({ contract, gas, callData }), ...pref },
       {
         id: "mint",
         kind: "assets.mint",

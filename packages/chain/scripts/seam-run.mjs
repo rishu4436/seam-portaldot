@@ -30,7 +30,14 @@ import {
   PORTALDOT_MAINNET_GENESIS,
   metadataVersionOf,
 } from "../dist/index.js";
-import { runFlow, devManifest, devPolicy, ABIS } from "./devnode/flow.mjs";
+import {
+  runFlow,
+  devManifest,
+  devPolicy,
+  rollbackActions,
+  settleEffect,
+  ABIS,
+} from "./devnode/flow.mjs";
 import { encodeCall, brief, rollbackProofFromEvidence } from "./devnode/lib.mjs";
 
 export const DEMO_BUNDLE = fileURLToPath(
@@ -221,6 +228,22 @@ async function nonceOf(endpoint, address) {
 }
 
 /**
+ * Why a setup call's signed dry run refused, with the node's own detail. A chain still at its genesis block (a fresh
+ * dev node) cannot pass any signed dry run: system_dryRun applies the extrinsic without initializing a new block, so
+ * System.BlockHash(0) still holds frame_system's genesis placeholder (0x4545…45) instead of the genesis hash, and
+ * CheckGenesis / CheckMortality sign against the real genesis hash, so the node reports BadProof. Fail closed and
+ * say so; the transaction pool (which initializes block 1 first) would accept it, but SEAM does not send unchecked.
+ */
+export function explainRefusedDryRun(outcome, detail, checkpoint) {
+  const why = detail?.detail ? ` (${detail.detail})` : "";
+  const genesis =
+    checkpoint?.number === 0 && /BadProof/.test(detail?.detail ?? "")
+      ? "; the chain is still at its genesis block, where every signed dry run reports BadProof (System.BlockHash(0) is a placeholder until block 1 is built). Produce one block first (local dev node: scripts/devnode/past-genesis.mjs)"
+      : "";
+  return `signed dry run said ${outcome}${why}; nothing was sent${genesis}`;
+}
+
+/**
  * Signs one call through SEAM's signing path (signing request -> signer -> assemble, which verifies the signature),
  * runs the signed dry run, and only submits if it passed. Used for setup steps SEAM has no manifest action for.
  */
@@ -249,7 +272,7 @@ export async function sendThroughSeamSigning({
     return {
       dryRun: dry[0],
       details: adapter.lastDryRun,
-      refused: `signed dry run said ${dry[0]}; nothing was sent`,
+      refused: explainRefusedDryRun(dry[0], adapter.lastDryRun?.[0], checkpoint),
       txHash: undefined,
     };
   const res = await submitAndWatch(endpoint, xt, onStatus, { facts, timeoutMs: 120_000 });
@@ -449,6 +472,15 @@ const gasFor = (facts) =>
     : { gasLimit: "5000000000", v13: true };
 
 /**
+ * SEAM-004: what the demo contract step must have done, committed from the manifest values before the run (the signer
+ * is the Settled event's caller). A raw-call runtime (--wasm) has no ABI to derive it from, so there the contract step
+ * stays unproven (the SDK reports effect_unproven) and a sequential run stops after it.
+ */
+export function flowEffects({ address, rawCall }) {
+  return rawCall ? undefined : { call: settleEffect(address) };
+}
+
+/**
  * The three flows. `save(rel, value)` writes sanitized evidence. Returns a summary of what ran.
  * Rollback includes a TEST-ONLY direct submission of the one failing signed batch the gate refused, to observe the
  * chain's own rollback; it costs a fee. All other submissions go through the SEAM gate.
@@ -493,6 +525,7 @@ export async function runAllFlows({
       rawSelector: rawCall?.data?.slice(0, 10),
       overrides: { maxGasLimit: "100000000000", ...extra },
     });
+  const effects = flowEffects({ address, rawCall });
 
   if (want("sequential")) {
     const facts = await discover(endpoint, discoverOpts);
@@ -505,6 +538,7 @@ export async function runAllFlows({
       signPayload: signPayloadFor(facts),
       env: { ...env, endpoint },
       atomic: false,
+      effects,
     });
     const file = save(`runs/sequential-${Date.now()}.json`, {
       kind: "sequential",
@@ -533,37 +567,19 @@ export async function runAllFlows({
     const dec = decodeRuntime(facts);
     const manifest = devManifest({
       ...common(facts),
-      actions: [
-        {
-          id: "pay",
-          kind: "assets.transfer",
-          args: { assetId: String(assetId), amount: "5", recipient: bob },
-          preferredMode: "atomic",
-        },
-        {
-          id: "overdraw",
-          kind: "assets.transfer",
-          args: { assetId: String(assetId), amount: "900000000000000", recipient: bob },
-          preferredMode: "atomic",
-        },
-        {
-          id: "mint",
-          kind: "assets.mint",
-          args: { assetId: String(assetId), amount: "3", recipient: charlie },
-          preferredMode: "atomic",
-        },
-      ],
+      // SEAM-012: the batch covers every kind of the atomic plan (transfer, contract call, mint), then fails.
+      actions: rollbackActions({
+        bob,
+        charlie,
+        contract,
+        callData: rawCall?.data,
+        assetId,
+        gas: gasFor(facts),
+      }),
     });
-    const policy = devPolicy({
-      bob,
-      charlie,
-      contract: address,
-      demo: false,
-      assetId,
-      overrides: {
-        allowedModes: ["sequential", "atomic_verified", "atomic_unverified"],
-        maxAmountPerAsset: { [String(assetId)]: "1000000000000000" },
-      },
+    const policy = policyFor({
+      allowedModes: ["sequential", "atomic_verified", "atomic_unverified"],
+      maxAmountPerAsset: { [String(assetId)]: "1000000000000000" },
     });
     const before = await stateOf(endpoint, facts, assetId, accounts);
     let signed;
@@ -603,6 +619,7 @@ export async function runAllFlows({
     const innerEffects = ev.filter(
       (e) =>
         (e.pallet === "Assets" && ["Transferred", "Issued"].includes(e.name)) ||
+        (e.pallet === "Contracts" && ["ContractEmitted", "Called"].includes(e.name)) ||
         (e.pallet === "Utility" && e.name !== "BatchInterrupted"),
     );
     const rolledBack =
@@ -671,6 +688,7 @@ export async function runAllFlows({
         signPayload: signPayloadFor(facts),
         env: { ...env, endpoint },
         atomic: true,
+        effects,
       });
       const file = save(`runs/atomic-${Date.now()}.json`, {
         kind: "atomic",
