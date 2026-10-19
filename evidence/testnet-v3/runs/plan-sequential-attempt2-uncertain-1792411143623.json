@@ -1,0 +1,8582 @@
+{
+ "kind": "seam-plan-sequential",
+ "recordingVersion": 2,
+ "ranAt": "2026-10-19T11:59:03.623Z",
+ "endpoint": {
+  "url": "https://test-node-v3.portaldot.dev"
+ },
+ "manifest": {
+  "version": 1,
+  "chain": {
+   "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+   "specVersion": 3002
+  },
+  "signer": {
+   "type": "ss58",
+   "value": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+  },
+  "actions": [
+   {
+    "id": "pay",
+    "kind": "assets.transfer",
+    "args": {
+     "assetId": "806707",
+     "amount": "500",
+     "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+    }
+   },
+   {
+    "id": "nft",
+    "kind": "nfts.mint",
+    "args": {
+     "collection": "0",
+     "item": "2",
+     "recipient": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+    }
+   }
+  ]
+ },
+ "manifestDigest": "0xbb398248291918b8b347d20212985561923abf98f1a592278ba0b2ded50b0fef",
+ "facts": {
+  "fingerprint": {
+   "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+   "specName": "portaldot-v3",
+   "specVersion": 3002,
+   "transactionVersion": 2,
+   "metadataHash": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340",
+   "ss58Prefix": 42,
+   "tokenSymbol": "tPOT",
+   "tokenDecimals": 14,
+   "typesBundleHash": null
+  },
+  "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+  "capabilities": {
+   "AssetConversion.add_liquidity": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "asset1",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "asset2",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "amount1_desired",
+      "type": "u128"
+     },
+     {
+      "name": "amount2_desired",
+      "type": "u128"
+     },
+     {
+      "name": "amount1_min",
+      "type": "u128"
+     },
+     {
+      "name": "amount2_min",
+      "type": "u128"
+     },
+     {
+      "name": "mint_to",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversion.create_pool": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "asset1",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "asset2",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversion.create_pool_with_fee": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "creator",
+      "type": "AccountId32"
+     },
+     {
+      "name": "asset1",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "asset2",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "fee",
+      "type": "Permill"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversion.remove_liquidity": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "asset1",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "asset2",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "lp_token_burn",
+      "type": "u128"
+     },
+     {
+      "name": "amount1_min_receive",
+      "type": "u128"
+     },
+     {
+      "name": "amount2_min_receive",
+      "type": "u128"
+     },
+     {
+      "name": "withdraw_to",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversion.set_pool_fee": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "(FrameSupportTokensFungibleUnionOfNativeOrWithId,FrameSupportTokensFungibleUnionOfNativeOrWithId)"
+     },
+     {
+      "name": "fee",
+      "type": "Permill"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversion.swap_exact_tokens_for_tokens": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "path",
+      "type": "Vec<FrameSupportTokensFungibleUnionOfNativeOrWithId>"
+     },
+     {
+      "name": "amount_in",
+      "type": "u128"
+     },
+     {
+      "name": "amount_out_min",
+      "type": "u128"
+     },
+     {
+      "name": "send_to",
+      "type": "AccountId32"
+     },
+     {
+      "name": "keep_alive",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversion.swap_tokens_for_exact_tokens": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "path",
+      "type": "Vec<FrameSupportTokensFungibleUnionOfNativeOrWithId>"
+     },
+     {
+      "name": "amount_out",
+      "type": "u128"
+     },
+     {
+      "name": "amount_in_max",
+      "type": "u128"
+     },
+     {
+      "name": "send_to",
+      "type": "AccountId32"
+     },
+     {
+      "name": "keep_alive",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversion.touch": {
+    "status": "observed",
+    "palletIndex": 65,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "asset1",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "asset2",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetConversionMigration.migrate_to_new_account": {
+    "status": "observed",
+    "palletIndex": 79,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "asset1",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "asset2",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetRate.create": {
+    "status": "observed",
+    "palletIndex": 20,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "asset_kind",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "rate",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetRate.remove": {
+    "status": "observed",
+    "palletIndex": 20,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "asset_kind",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "AssetRate.update": {
+    "status": "observed",
+    "palletIndex": 20,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "asset_kind",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "rate",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.approve_transfer": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.block": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 31,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.burn": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.cancel_approval": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.clear_metadata": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.create": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "min_balance",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.destroy_accounts": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.destroy_approvals": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.finish_destroy": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.force_asset_status": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "issuer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "freezer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "min_balance",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "is_sufficient",
+      "type": "bool"
+     },
+     {
+      "name": "is_frozen",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.force_cancel_approval": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.force_clear_metadata": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.force_create": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "is_sufficient",
+      "type": "bool"
+     },
+     {
+      "name": "min_balance",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.force_set_metadata": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "name",
+      "type": "Bytes"
+     },
+     {
+      "name": "symbol",
+      "type": "Bytes"
+     },
+     {
+      "name": "decimals",
+      "type": "u8"
+     },
+     {
+      "name": "is_frozen",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.force_transfer": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "source",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.freeze": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.freeze_asset": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.mint": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.refund": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 27,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "allow_burn",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.refund_other": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 30,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.set_metadata": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "name",
+      "type": "Bytes"
+     },
+     {
+      "name": "symbol",
+      "type": "Bytes"
+     },
+     {
+      "name": "decimals",
+      "type": "u8"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.set_min_balance": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 28,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "min_balance",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.set_reserves": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 33,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "reserves",
+      "type": "Vec<Null>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.set_team": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 16,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "issuer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "freezer",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.start_destroy": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.thaw": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.thaw_asset": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 14,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.touch": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 26,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.touch_other": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 29,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.transfer": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.transfer_all": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 32,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "keep_alive",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.transfer_approved": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 25,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "destination",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.transfer_keep_alive": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Assets.transfer_ownership": {
+    "status": "observed",
+    "palletIndex": 39,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Babe.plan_config_change": {
+    "status": "observed",
+    "palletIndex": 2,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "config",
+      "type": "SpConsensusBabeDigestsNextConfigDescriptor"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Babe.report_equivocation": {
+    "status": "observed",
+    "palletIndex": 2,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusSlotsEquivocationProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Babe.report_equivocation_unsigned": {
+    "status": "observed",
+    "palletIndex": 2,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusSlotsEquivocationProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.burn": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "keep_alive",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.force_adjust_total_issuance": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "direction",
+      "type": "PalletBalancesAdjustmentDirection"
+     },
+     {
+      "name": "delta",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.force_set_balance": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "new_free",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.force_transfer": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "source",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.force_unreserve": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.transfer_all": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "keep_alive",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.transfer_allow_death": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.transfer_keep_alive": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Balances.upgrade_accounts": {
+    "status": "observed",
+    "palletIndex": 6,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "who",
+      "type": "Vec<AccountId32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Beefy.report_double_voting": {
+    "status": "observed",
+    "palletIndex": 41,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusBeefyDoubleVotingProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Beefy.report_double_voting_unsigned": {
+    "status": "observed",
+    "palletIndex": 41,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusBeefyDoubleVotingProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Beefy.report_fork_voting": {
+    "status": "observed",
+    "palletIndex": 41,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusBeefyForkVotingProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Beefy.report_fork_voting_unsigned": {
+    "status": "observed",
+    "palletIndex": 41,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusBeefyForkVotingProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Beefy.report_future_block_voting": {
+    "status": "observed",
+    "palletIndex": 41,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusBeefyFutureBlockVotingProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Beefy.report_future_block_voting_unsigned": {
+    "status": "observed",
+    "palletIndex": 41,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusBeefyFutureBlockVotingProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Beefy.set_new_genesis": {
+    "status": "observed",
+    "palletIndex": 41,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "delay_in_blocks",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.accept_curator": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.approve_bounty": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.approve_bounty_with_curator": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "curator",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "fee",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.award_bounty": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.claim_bounty": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.close_bounty": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.extend_bounty_expiry": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "remark",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.poke_deposit": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.propose_bounty": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "description",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.propose_curator": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "curator",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "fee",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.reclaim_bounty_funds": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Bounties.unassign_curator": {
+    "status": "observed",
+    "palletIndex": 37,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.assign": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     },
+     {
+      "name": "task",
+      "type": "u32"
+     },
+     {
+      "name": "finality",
+      "type": "PalletBrokerFinality"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.claim_revenue": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     },
+     {
+      "name": "max_timeslices",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.configure": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "config",
+      "type": "PalletBrokerConfigRecord"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.disable_auto_renew": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "core",
+      "type": "u16"
+     },
+     {
+      "name": "task",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.drop_contribution": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.drop_history": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 16,
+    "args": [
+     {
+      "name": "when",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.drop_region": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 14,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.drop_renewal": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "core",
+      "type": "u16"
+     },
+     {
+      "name": "when",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.enable_auto_renew": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "core",
+      "type": "u16"
+     },
+     {
+      "name": "task",
+      "type": "u32"
+     },
+     {
+      "name": "workload_end_hint",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.force_reserve": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "workload",
+      "type": "Vec<PalletBrokerScheduleItem>"
+     },
+     {
+      "name": "core",
+      "type": "u16"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.force_transfer": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 28,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     },
+     {
+      "name": "new_owner",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.interlace": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     },
+     {
+      "name": "pivot",
+      "type": "FpCoretimeCoreMask"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.notify_core_count": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "core_count",
+      "type": "u16"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.notify_revenue": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "revenue",
+      "type": "PalletBrokerOnDemandRevenueRecord"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.partition": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     },
+     {
+      "name": "pivot",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.pool": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     },
+     {
+      "name": "payee",
+      "type": "AccountId32"
+     },
+     {
+      "name": "finality",
+      "type": "PalletBrokerFinality"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.purchase": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "price_limit",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.purchase_credit": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "amount",
+      "type": "u128"
+     },
+     {
+      "name": "beneficiary",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.remove_assignment": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 26,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.remove_lease": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "task",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.remove_potential_renewal": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 27,
+    "args": [
+     {
+      "name": "core",
+      "type": "u16"
+     },
+     {
+      "name": "when",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.renew": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "core",
+      "type": "u16"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.request_core_count": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "core_count",
+      "type": "u16"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.reserve": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "workload",
+      "type": "Vec<PalletBrokerScheduleItem>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.set_lease": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "task",
+      "type": "u32"
+     },
+     {
+      "name": "until",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.start_sales": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "end_price",
+      "type": "u128"
+     },
+     {
+      "name": "extra_cores",
+      "type": "u16"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.swap_leases": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 99,
+    "args": [
+     {
+      "name": "id",
+      "type": "u32"
+     },
+     {
+      "name": "other",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.transfer": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "region_id",
+      "type": "FpCoretimeRegionId"
+     },
+     {
+      "name": "new_owner",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Broker.unreserve": {
+    "status": "observed",
+    "palletIndex": 73,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "item_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ChildBounties.accept_curator": {
+    "status": "observed",
+    "palletIndex": 54,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ChildBounties.add_child_bounty": {
+    "status": "observed",
+    "palletIndex": 54,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "description",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ChildBounties.award_child_bounty": {
+    "status": "observed",
+    "palletIndex": 54,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ChildBounties.claim_child_bounty": {
+    "status": "observed",
+    "palletIndex": 54,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ChildBounties.close_child_bounty": {
+    "status": "observed",
+    "palletIndex": 54,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ChildBounties.propose_curator": {
+    "status": "observed",
+    "palletIndex": 54,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "curator",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "fee",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ChildBounties.unassign_curator": {
+    "status": "observed",
+    "palletIndex": 54,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.call": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "gas_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Option<Compact<u128>>"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.call_old_weight": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "gas_limit",
+      "type": "Compact<u64>"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Option<Compact<u128>>"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.instantiate": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "gas_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Option<Compact<u128>>"
+     },
+     {
+      "name": "code_hash",
+      "type": "H256"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "salt",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.instantiate_old_weight": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "gas_limit",
+      "type": "Compact<u64>"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Option<Compact<u128>>"
+     },
+     {
+      "name": "code_hash",
+      "type": "H256"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "salt",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.instantiate_with_code": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "gas_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Option<Compact<u128>>"
+     },
+     {
+      "name": "code",
+      "type": "Bytes"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "salt",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.instantiate_with_code_old_weight": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "gas_limit",
+      "type": "Compact<u64>"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Option<Compact<u128>>"
+     },
+     {
+      "name": "code",
+      "type": "Bytes"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "salt",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.migrate": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "weight_limit",
+      "type": "SpWeightsWeightV2Weight"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.remove_code": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "code_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.set_code": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "code_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Contracts.upload_code": {
+    "status": "observed",
+    "palletIndex": 21,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "code",
+      "type": "Bytes"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Option<Compact<u128>>"
+     },
+     {
+      "name": "determinism",
+      "type": "PalletContractsWasmDeterminism"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ElectionProviderMultiPhase.governance_fallback": {
+    "status": "observed",
+    "palletIndex": 10,
+    "callIndex": 4,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "ElectionProviderMultiPhase.set_emergency_election_result": {
+    "status": "observed",
+    "palletIndex": 10,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "supports",
+      "type": "Vec<(AccountId32,SpNposElectionsSupport)>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ElectionProviderMultiPhase.set_minimum_untrusted_score": {
+    "status": "observed",
+    "palletIndex": 10,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "maybe_next_score",
+      "type": "Option<SpNposElectionsElectionScore>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ElectionProviderMultiPhase.submit": {
+    "status": "observed",
+    "palletIndex": 10,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "raw_solution",
+      "type": "PalletElectionProviderMultiPhaseRawSolution"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ElectionProviderMultiPhase.submit_unsigned": {
+    "status": "observed",
+    "palletIndex": 10,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "raw_solution",
+      "type": "PalletElectionProviderMultiPhaseRawSolution"
+     },
+     {
+      "name": "witness",
+      "type": "PalletElectionProviderMultiPhaseSolutionOrSnapshotSize"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "FastUnstake.control": {
+    "status": "observed",
+    "palletIndex": 66,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "eras_to_check",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "FastUnstake.deregister": {
+    "status": "observed",
+    "palletIndex": 66,
+    "callIndex": 1,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "FastUnstake.register_fast_unstake": {
+    "status": "observed",
+    "palletIndex": 66,
+    "callIndex": 0,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Grandpa.note_stalled": {
+    "status": "observed",
+    "palletIndex": 18,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "delay",
+      "type": "u32"
+     },
+     {
+      "name": "best_finalized_block_number",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Grandpa.report_equivocation": {
+    "status": "observed",
+    "palletIndex": 18,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusGrandpaEquivocationProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Grandpa.report_equivocation_unsigned": {
+    "status": "observed",
+    "palletIndex": 18,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "equivocation_proof",
+      "type": "SpConsensusGrandpaEquivocationProof"
+     },
+     {
+      "name": "key_owner_proof",
+      "type": "SpSessionMembershipProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.accept_username": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "username",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.add_registrar": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "account",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.add_sub": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "sub",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "data",
+      "type": "Data"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.add_username_authority": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "authority",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "suffix",
+      "type": "Bytes"
+     },
+     {
+      "name": "allocation",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.cancel_request": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "reg_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.clear_identity": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 3,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Identity.kill_identity": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.kill_username": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "username",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.provide_judgement": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "reg_index",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "judgement",
+      "type": "PalletIdentityJudgement"
+     },
+     {
+      "name": "identity",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.quit_sub": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 14,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Identity.remove_expired_approval": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "username",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.remove_registrar": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "index",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.remove_sub": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "sub",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.remove_username": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "username",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.remove_username_authority": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 16,
+    "args": [
+     {
+      "name": "suffix",
+      "type": "Bytes"
+     },
+     {
+      "name": "authority",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.rename_sub": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "sub",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "data",
+      "type": "Data"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.request_judgement": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "reg_index",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "max_fee",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.set_account_id": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "index",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "new",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.set_fee": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "index",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "fee",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.set_fields": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "index",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "fields",
+      "type": "u64"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.set_identity": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "info",
+      "type": "PalletIdentityLegacyIdentityInfo"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.set_primary_username": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "username",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.set_subs": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "subs",
+      "type": "Vec<(AccountId32,Data)>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.set_username_for": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "username",
+      "type": "Bytes"
+     },
+     {
+      "name": "signature",
+      "type": "Option<SpRuntimeMultiSignature>"
+     },
+     {
+      "name": "use_allocation",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Identity.unbind_username": {
+    "status": "observed",
+    "palletIndex": 28,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "username",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "ImOnline.heartbeat": {
+    "status": "observed",
+    "palletIndex": 23,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "heartbeat",
+      "type": "PalletImOnlineHeartbeat"
+     },
+     {
+      "name": "signature",
+      "type": "PalletImOnlineSr25519AppSr25519Signature"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Indices.claim": {
+    "status": "observed",
+    "palletIndex": 5,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Indices.force_transfer": {
+    "status": "observed",
+    "palletIndex": 5,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "new",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "index",
+      "type": "u32"
+     },
+     {
+      "name": "freeze",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Indices.free": {
+    "status": "observed",
+    "palletIndex": 5,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Indices.freeze": {
+    "status": "observed",
+    "palletIndex": 5,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Indices.poke_deposit": {
+    "status": "observed",
+    "palletIndex": 5,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Indices.transfer": {
+    "status": "observed",
+    "palletIndex": 5,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "new",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Lottery.buy_ticket": {
+    "status": "observed",
+    "palletIndex": 44,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Lottery.set_calls": {
+    "status": "observed",
+    "palletIndex": 44,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "calls",
+      "type": "Vec<Call>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Lottery.start_lottery": {
+    "status": "observed",
+    "palletIndex": 44,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "price",
+      "type": "u128"
+     },
+     {
+      "name": "length",
+      "type": "u32"
+     },
+     {
+      "name": "delay",
+      "type": "u32"
+     },
+     {
+      "name": "repeat",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Lottery.stop_repeat": {
+    "status": "observed",
+    "palletIndex": 44,
+    "callIndex": 3,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "MessageQueue.execute_overweight": {
+    "status": "observed",
+    "palletIndex": 67,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "message_origin",
+      "type": "u32"
+     },
+     {
+      "name": "page",
+      "type": "u32"
+     },
+     {
+      "name": "index",
+      "type": "u32"
+     },
+     {
+      "name": "weight_limit",
+      "type": "SpWeightsWeightV2Weight"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MessageQueue.reap_page": {
+    "status": "observed",
+    "palletIndex": 67,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "message_origin",
+      "type": "u32"
+     },
+     {
+      "name": "page_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MetaTx.dispatch": {
+    "status": "observed",
+    "palletIndex": 89,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "meta_tx",
+      "type": "PalletMetaTxMetaTx"
+     },
+     {
+      "name": "meta_tx_encoded_len",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Mixnet.register": {
+    "status": "observed",
+    "palletIndex": 75,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "registration",
+      "type": "PalletMixnetRegistration"
+     },
+     {
+      "name": "signature",
+      "type": "SpMixnetAppSignature"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.accept_curator": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.award_bounty": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.check_status": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.close_bounty": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.fund_bounty": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "asset_kind",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "curator",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "metadata",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.fund_child_bounty": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "metadata",
+      "type": "H256"
+     },
+     {
+      "name": "curator",
+      "type": "Option<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.increase_value": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.propose_curator": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "curator",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.retry_payment": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiAssetBounties.unassign_curator": {
+    "status": "observed",
+    "palletIndex": 90,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "parent_bounty_id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "child_bounty_id",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiBlockMigrations.clear_historic": {
+    "status": "observed",
+    "palletIndex": 72,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "selector",
+      "type": "PalletMigrationsHistoricCleanupSelector"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiBlockMigrations.force_onboard_mbms": {
+    "status": "observed",
+    "palletIndex": 72,
+    "callIndex": 2,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "MultiBlockMigrations.force_set_active_cursor": {
+    "status": "observed",
+    "palletIndex": 72,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     },
+     {
+      "name": "inner_cursor",
+      "type": "Option<Bytes>"
+     },
+     {
+      "name": "started_at",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "MultiBlockMigrations.force_set_cursor": {
+    "status": "observed",
+    "palletIndex": 72,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "cursor",
+      "type": "Option<PalletMigrationsMigrationCursor>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Multisig.approve_as_multi": {
+    "status": "observed",
+    "palletIndex": 36,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "threshold",
+      "type": "u16"
+     },
+     {
+      "name": "other_signatories",
+      "type": "Vec<AccountId32>"
+     },
+     {
+      "name": "maybe_timepoint",
+      "type": "Option<PalletMultisigTimepoint>"
+     },
+     {
+      "name": "call_hash",
+      "type": "[u8;32]"
+     },
+     {
+      "name": "max_weight",
+      "type": "SpWeightsWeightV2Weight"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Multisig.as_multi": {
+    "status": "observed",
+    "palletIndex": 36,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "threshold",
+      "type": "u16"
+     },
+     {
+      "name": "other_signatories",
+      "type": "Vec<AccountId32>"
+     },
+     {
+      "name": "maybe_timepoint",
+      "type": "Option<PalletMultisigTimepoint>"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     },
+     {
+      "name": "max_weight",
+      "type": "SpWeightsWeightV2Weight"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Multisig.as_multi_threshold_1": {
+    "status": "observed",
+    "palletIndex": 36,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "other_signatories",
+      "type": "Vec<AccountId32>"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Multisig.cancel_as_multi": {
+    "status": "observed",
+    "palletIndex": 36,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "threshold",
+      "type": "u16"
+     },
+     {
+      "name": "other_signatories",
+      "type": "Vec<AccountId32>"
+     },
+     {
+      "name": "timepoint",
+      "type": "PalletMultisigTimepoint"
+     },
+     {
+      "name": "call_hash",
+      "type": "[u8;32]"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Multisig.poke_deposit": {
+    "status": "observed",
+    "palletIndex": 36,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "threshold",
+      "type": "u16"
+     },
+     {
+      "name": "other_signatories",
+      "type": "Vec<AccountId32>"
+     },
+     {
+      "name": "call_hash",
+      "type": "[u8;32]"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NftFractionalization.fractionalize": {
+    "status": "observed",
+    "palletIndex": 48,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "nft_collection_id",
+      "type": "u32"
+     },
+     {
+      "name": "nft_id",
+      "type": "u32"
+     },
+     {
+      "name": "asset_id",
+      "type": "u32"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "fractions",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NftFractionalization.unify": {
+    "status": "observed",
+    "palletIndex": 48,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "nft_collection_id",
+      "type": "u32"
+     },
+     {
+      "name": "nft_id",
+      "type": "u32"
+     },
+     {
+      "name": "asset_id",
+      "type": "u32"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.approve_item_attributes": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.approve_transfer": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "maybe_deadline",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.burn": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.buy_item": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 32,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "bid_price",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.cancel_approval": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 16,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.cancel_item_attributes_approval": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "witness",
+      "type": "PalletNftsCancelAttributesApprovalWitness"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.cancel_swap": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 35,
+    "args": [
+     {
+      "name": "offered_collection",
+      "type": "u32"
+     },
+     {
+      "name": "offered_item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.claim_swap": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 36,
+    "args": [
+     {
+      "name": "send_collection",
+      "type": "u32"
+     },
+     {
+      "name": "send_item",
+      "type": "u32"
+     },
+     {
+      "name": "receive_collection",
+      "type": "u32"
+     },
+     {
+      "name": "receive_item",
+      "type": "u32"
+     },
+     {
+      "name": "witness_price",
+      "type": "Option<PalletNftsPriceWithDirection>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.clear_all_transfer_approvals": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.clear_attribute": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_item",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "namespace",
+      "type": "PalletNftsAttributeNamespace"
+     },
+     {
+      "name": "key",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.clear_collection_metadata": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 27,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.clear_metadata": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 25,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.create": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "config",
+      "type": "PalletNftsCollectionConfig"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.create_swap": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 34,
+    "args": [
+     {
+      "name": "offered_collection",
+      "type": "u32"
+     },
+     {
+      "name": "offered_item",
+      "type": "u32"
+     },
+     {
+      "name": "desired_collection",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_desired_item",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "maybe_price",
+      "type": "Option<PalletNftsPriceWithDirection>"
+     },
+     {
+      "name": "duration",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.destroy": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "witness",
+      "type": "PalletNftsDestroyWitness"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.force_collection_config": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 14,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "config",
+      "type": "PalletNftsCollectionConfig"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.force_collection_owner": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.force_create": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "config",
+      "type": "PalletNftsCollectionConfig"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.force_mint": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "mint_to",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "item_config",
+      "type": "PalletNftsItemConfig"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.force_set_attribute": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "set_as",
+      "type": "Option<AccountId32>"
+     },
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_item",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "namespace",
+      "type": "PalletNftsAttributeNamespace"
+     },
+     {
+      "name": "key",
+      "type": "Bytes"
+     },
+     {
+      "name": "value",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.lock_collection": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "lock_settings",
+      "type": "u64"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.lock_item_properties": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "lock_metadata",
+      "type": "bool"
+     },
+     {
+      "name": "lock_attributes",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.lock_item_transfer": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.mint": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "mint_to",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "witness_data",
+      "type": "Option<PalletNftsMintWitness>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.mint_pre_signed": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 37,
+    "args": [
+     {
+      "name": "mint_data",
+      "type": "PalletNftsPreSignedMint"
+     },
+     {
+      "name": "signature",
+      "type": "SpRuntimeMultiSignature"
+     },
+     {
+      "name": "signer",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.pay_tips": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 33,
+    "args": [
+     {
+      "name": "tips",
+      "type": "Vec<PalletNftsItemTip>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.redeposit": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "items",
+      "type": "Vec<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_accept_ownership": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 28,
+    "args": [
+     {
+      "name": "maybe_collection",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_attribute": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_item",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "namespace",
+      "type": "PalletNftsAttributeNamespace"
+     },
+     {
+      "name": "key",
+      "type": "Bytes"
+     },
+     {
+      "name": "value",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_attributes_pre_signed": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 38,
+    "args": [
+     {
+      "name": "data",
+      "type": "PalletNftsPreSignedAttributes"
+     },
+     {
+      "name": "signature",
+      "type": "SpRuntimeMultiSignature"
+     },
+     {
+      "name": "signer",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_collection_max_supply": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 29,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "max_supply",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_collection_metadata": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 26,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_metadata": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_price": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 31,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "price",
+      "type": "Option<u128>"
+     },
+     {
+      "name": "whitelisted_buyer",
+      "type": "Option<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.set_team": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "issuer",
+      "type": "Option<MultiAddress>"
+     },
+     {
+      "name": "admin",
+      "type": "Option<MultiAddress>"
+     },
+     {
+      "name": "freezer",
+      "type": "Option<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.transfer": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.transfer_ownership": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "new_owner",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.unlock_item_transfer": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Nfts.update_mint_settings": {
+    "status": "observed",
+    "palletIndex": 47,
+    "callIndex": 30,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "mint_settings",
+      "type": "PalletNftsMintSettings"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.adjust_pool_deposit": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.apply_slash": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "member_account",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.bond_extra": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "extra",
+      "type": "PalletNominationPoolsBondExtra"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.bond_extra_other": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 14,
+    "args": [
+     {
+      "name": "member",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "extra",
+      "type": "PalletNominationPoolsBondExtra"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.chill": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.claim_commission": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.claim_payout": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 2,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.claim_payout_other": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 16,
+    "args": [
+     {
+      "name": "other",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.create": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "root",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "nominator",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "bouncer",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.create_with_pool_id": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "root",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "nominator",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "bouncer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "pool_id",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.join": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "pool_id",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.migrate_delegation": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "member_account",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.migrate_pool_to_delegate_stake": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 25,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.nominate": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "validators",
+      "type": "Vec<AccountId32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.pool_withdraw_unbonded": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "num_slashing_spans",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_claim_permission": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "permission",
+      "type": "PalletNominationPoolsClaimPermission"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_commission": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "new_commission",
+      "type": "Option<(Perbill,AccountId32)>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_commission_change_rate": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "change_rate",
+      "type": "PalletNominationPoolsCommissionChangeRate"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_commission_claim_permission": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "permission",
+      "type": "Option<PalletNominationPoolsCommissionClaimPermission>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_commission_max": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "max_commission",
+      "type": "Perbill"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_configs": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "min_join_bond",
+      "type": "PalletNominationPoolsConfigOpU128"
+     },
+     {
+      "name": "min_create_bond",
+      "type": "PalletNominationPoolsConfigOpU128"
+     },
+     {
+      "name": "max_pools",
+      "type": "PalletNominationPoolsConfigOpU32"
+     },
+     {
+      "name": "max_members",
+      "type": "PalletNominationPoolsConfigOpU32"
+     },
+     {
+      "name": "max_members_per_pool",
+      "type": "PalletNominationPoolsConfigOpU32"
+     },
+     {
+      "name": "global_max_commission",
+      "type": "PalletNominationPoolsConfigOpPerbill"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_metadata": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "metadata",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.set_state": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "state",
+      "type": "PalletNominationPoolsPoolState"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.unbond": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "member_account",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "unbonding_points",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.update_roles": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "pool_id",
+      "type": "u32"
+     },
+     {
+      "name": "new_root",
+      "type": "PalletNominationPoolsConfigOpAccountId32"
+     },
+     {
+      "name": "new_nominator",
+      "type": "PalletNominationPoolsConfigOpAccountId32"
+     },
+     {
+      "name": "new_bouncer",
+      "type": "PalletNominationPoolsConfigOpAccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "NominationPools.withdraw_unbonded": {
+    "status": "observed",
+    "palletIndex": 62,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "member_account",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "num_slashing_spans",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Oracle.feed_values": {
+    "status": "observed",
+    "palletIndex": 85,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "values",
+      "type": "Vec<(u32,u128)>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Parameters.set_parameter": {
+    "status": "observed",
+    "palletIndex": 76,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "key_value",
+      "type": "PortaldotV3RuntimeRuntimeParameters"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.approve_transfer": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.block": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 31,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.burn": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.cancel_approval": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.clear_metadata": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.create": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "min_balance",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.destroy_accounts": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.destroy_approvals": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.finish_destroy": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.force_asset_status": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "issuer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "freezer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "min_balance",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "is_sufficient",
+      "type": "bool"
+     },
+     {
+      "name": "is_frozen",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.force_cancel_approval": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.force_clear_metadata": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.force_create": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "is_sufficient",
+      "type": "bool"
+     },
+     {
+      "name": "min_balance",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.force_set_metadata": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "name",
+      "type": "Bytes"
+     },
+     {
+      "name": "symbol",
+      "type": "Bytes"
+     },
+     {
+      "name": "decimals",
+      "type": "u8"
+     },
+     {
+      "name": "is_frozen",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.force_transfer": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "source",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.freeze": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.freeze_asset": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.mint": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.refund": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 27,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "allow_burn",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.refund_other": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 30,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.set_metadata": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "name",
+      "type": "Bytes"
+     },
+     {
+      "name": "symbol",
+      "type": "Bytes"
+     },
+     {
+      "name": "decimals",
+      "type": "u8"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.set_min_balance": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 28,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "min_balance",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.set_reserves": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 33,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "reserves",
+      "type": "Vec<Null>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.set_team": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 16,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "issuer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "freezer",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.start_destroy": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.thaw": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.thaw_asset": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 14,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.touch": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 26,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.touch_other": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 29,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.transfer": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.transfer_all": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 32,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "keep_alive",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.transfer_approved": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 25,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "destination",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.transfer_keep_alive": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "PoolAssets.transfer_ownership": {
+    "status": "observed",
+    "palletIndex": 40,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "id",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Preimage.ensure_updated": {
+    "status": "observed",
+    "palletIndex": 34,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "hashes",
+      "type": "Vec<H256>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Preimage.note_preimage": {
+    "status": "observed",
+    "palletIndex": 34,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "bytes",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Preimage.request_preimage": {
+    "status": "observed",
+    "palletIndex": 34,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Preimage.unnote_preimage": {
+    "status": "observed",
+    "palletIndex": 34,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Preimage.unrequest_preimage": {
+    "status": "observed",
+    "palletIndex": 34,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.add_proxy": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "proxy_type",
+      "type": "PortaldotV3RuntimeProxyType"
+     },
+     {
+      "name": "delay",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.announce": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "real",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "call_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.create_pure": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "proxy_type",
+      "type": "PortaldotV3RuntimeProxyType"
+     },
+     {
+      "name": "delay",
+      "type": "u32"
+     },
+     {
+      "name": "index",
+      "type": "u16"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.kill_pure": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "spawner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "proxy_type",
+      "type": "PortaldotV3RuntimeProxyType"
+     },
+     {
+      "name": "index",
+      "type": "u16"
+     },
+     {
+      "name": "height",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "ext_index",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.poke_deposit": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 10,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.proxy": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "real",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "force_proxy_type",
+      "type": "Option<PortaldotV3RuntimeProxyType>"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.proxy_announced": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "real",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "force_proxy_type",
+      "type": "Option<PortaldotV3RuntimeProxyType>"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.reject_announcement": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "call_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.remove_announcement": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "real",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "call_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.remove_proxies": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 3,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Proxy.remove_proxy": {
+    "status": "observed",
+    "palletIndex": 35,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "proxy_type",
+      "type": "PortaldotV3RuntimeProxyType"
+     },
+     {
+      "name": "delay",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.approve_attempt": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "lost",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "friend_group_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.cancel_attempt": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "lost",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "friend_group_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.control_inherited_account": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "recovered",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.finish_attempt": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "lost",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "friend_group_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.initiate_attempt": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "lost",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "friend_group_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.revoke_inheritor": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 1,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.set_friend_groups": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "friend_groups",
+      "type": "Vec<PalletRecoveryFriendGroup>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Recovery.slash_attempt": {
+    "status": "observed",
+    "palletIndex": 30,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "friend_group_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "RegistrarPara.cancel_registration": {
+    "status": "observed",
+    "palletIndex": 95,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "para_id",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "RegistrarPara.receive": {
+    "status": "observed",
+    "palletIndex": 95,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "message",
+      "type": "RegistrarPrimitivesMessageToPara"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "RegistrarPara.register": {
+    "status": "observed",
+    "palletIndex": 95,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "para_id",
+      "type": "u32"
+     },
+     {
+      "name": "genesis_head",
+      "type": "Bytes"
+     },
+     {
+      "name": "code_len",
+      "type": "u32"
+     },
+     {
+      "name": "code_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "RegistrarPara.reserve": {
+    "status": "observed",
+    "palletIndex": 95,
+    "callIndex": 0,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "RegistrarRelay.apply_authorized_code": {
+    "status": "observed",
+    "palletIndex": 96,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "para_id",
+      "type": "u32"
+     },
+     {
+      "name": "validation_code",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "RegistrarRelay.authorize_code": {
+    "status": "observed",
+    "palletIndex": 96,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "message",
+      "type": "RegistrarPrimitivesMessageToRelay"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "RegistrarRelay.cancel_authorization": {
+    "status": "observed",
+    "palletIndex": 96,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "message",
+      "type": "RegistrarPrimitivesMessageToRelay"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Remark.store": {
+    "status": "observed",
+    "palletIndex": 56,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "remark",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.batch_map_accounts": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "accounts",
+      "type": "Vec<AccountId32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.call": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "dest",
+      "type": "H160"
+     },
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "weight_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.dispatch_as_fallback_account": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.eth_call": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "dest",
+      "type": "H160"
+     },
+     {
+      "name": "value",
+      "type": "U256"
+     },
+     {
+      "name": "weight_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "eth_gas_limit",
+      "type": "U256"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "transaction_encoded",
+      "type": "Bytes"
+     },
+     {
+      "name": "effective_gas_price",
+      "type": "U256"
+     },
+     {
+      "name": "encoded_len",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.eth_instantiate_with_code": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "value",
+      "type": "U256"
+     },
+     {
+      "name": "weight_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "eth_gas_limit",
+      "type": "U256"
+     },
+     {
+      "name": "code",
+      "type": "Bytes"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "transaction_encoded",
+      "type": "Bytes"
+     },
+     {
+      "name": "effective_gas_price",
+      "type": "U256"
+     },
+     {
+      "name": "encoded_len",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.eth_substrate_call": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "call",
+      "type": "Call"
+     },
+     {
+      "name": "transaction_encoded",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.eth_transact": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "payload",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.instantiate": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "weight_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "code_hash",
+      "type": "H256"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "salt",
+      "type": "Option<[u8;32]>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.instantiate_with_code": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "weight_limit",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "code",
+      "type": "Bytes"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "salt",
+      "type": "Option<[u8;32]>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.map_account": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 7,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Revive.remove_code": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "code_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.set_code": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "dest",
+      "type": "H160"
+     },
+     {
+      "name": "code_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Revive.unmap_account": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 8,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Revive.upload_code": {
+    "status": "observed",
+    "palletIndex": 80,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "code",
+      "type": "Bytes"
+     },
+     {
+      "name": "storage_deposit_limit",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.enter": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 0,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.extend": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 2,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.force_enter": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 1,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.force_exit": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 4,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.force_extend": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 3,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.force_release_deposit": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "account",
+      "type": "AccountId32"
+     },
+     {
+      "name": "block",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.force_slash_deposit": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "account",
+      "type": "AccountId32"
+     },
+     {
+      "name": "block",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "SafeMode.release_deposit": {
+    "status": "observed",
+    "palletIndex": 70,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "account",
+      "type": "AccountId32"
+     },
+     {
+      "name": "block",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.cancel": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "when",
+      "type": "u32"
+     },
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.cancel_named": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "id",
+      "type": "[u8;32]"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.cancel_retry": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "task",
+      "type": "(u32,u32)"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.cancel_retry_named": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "id",
+      "type": "[u8;32]"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.schedule": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "when",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_periodic",
+      "type": "Option<(u32,u32)>"
+     },
+     {
+      "name": "priority",
+      "type": "u8"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.schedule_after": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "after",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_periodic",
+      "type": "Option<(u32,u32)>"
+     },
+     {
+      "name": "priority",
+      "type": "u8"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.schedule_named": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "id",
+      "type": "[u8;32]"
+     },
+     {
+      "name": "when",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_periodic",
+      "type": "Option<(u32,u32)>"
+     },
+     {
+      "name": "priority",
+      "type": "u8"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.schedule_named_after": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "id",
+      "type": "[u8;32]"
+     },
+     {
+      "name": "after",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_periodic",
+      "type": "Option<(u32,u32)>"
+     },
+     {
+      "name": "priority",
+      "type": "u8"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.set_retry": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "task",
+      "type": "(u32,u32)"
+     },
+     {
+      "name": "retries",
+      "type": "u8"
+     },
+     {
+      "name": "period",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Scheduler.set_retry_named": {
+    "status": "observed",
+    "palletIndex": 32,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "id",
+      "type": "[u8;32]"
+     },
+     {
+      "name": "retries",
+      "type": "u8"
+     },
+     {
+      "name": "period",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Session.purge_keys": {
+    "status": "observed",
+    "palletIndex": 12,
+    "callIndex": 1,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Session.set_keys": {
+    "status": "observed",
+    "palletIndex": 12,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "keys",
+      "type": "PortaldotV3RuntimeSessionKeys"
+     },
+     {
+      "name": "proof",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.bond": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "payee",
+      "type": "PalletStakingRewardDestination"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.bond_extra": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "max_additional",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.cancel_deferred_slash": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "era",
+      "type": "u32"
+     },
+     {
+      "name": "slash_indices",
+      "type": "Vec<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.chill": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 6,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Staking.chill_other": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "stash",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.deprecate_controller_batch": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 28,
+    "args": [
+     {
+      "name": "controllers",
+      "type": "Vec<AccountId32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.force_apply_min_commission": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "validator_stash",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.force_new_era": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 13,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Staking.force_new_era_always": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 16,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Staking.force_no_eras": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 12,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Staking.force_unstake": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "stash",
+      "type": "AccountId32"
+     },
+     {
+      "name": "num_slashing_spans",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.increase_validator_count": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "additional",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.kick": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "who",
+      "type": "Vec<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.manual_slash": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 33,
+    "args": [
+     {
+      "name": "validator_stash",
+      "type": "AccountId32"
+     },
+     {
+      "name": "era",
+      "type": "u32"
+     },
+     {
+      "name": "slash_fraction",
+      "type": "Perbill"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.migrate_currency": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 30,
+    "args": [
+     {
+      "name": "stash",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.nominate": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "targets",
+      "type": "Vec<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.payout_stakers": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "validator_stash",
+      "type": "AccountId32"
+     },
+     {
+      "name": "era",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.payout_stakers_by_page": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 26,
+    "args": [
+     {
+      "name": "validator_stash",
+      "type": "AccountId32"
+     },
+     {
+      "name": "era",
+      "type": "u32"
+     },
+     {
+      "name": "page",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.reap_stash": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "stash",
+      "type": "AccountId32"
+     },
+     {
+      "name": "num_slashing_spans",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.rebond": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.restore_ledger": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 29,
+    "args": [
+     {
+      "name": "stash",
+      "type": "AccountId32"
+     },
+     {
+      "name": "maybe_controller",
+      "type": "Option<AccountId32>"
+     },
+     {
+      "name": "maybe_total",
+      "type": "Option<u128>"
+     },
+     {
+      "name": "maybe_unlocking",
+      "type": "Option<Vec<PalletStakingUnlockChunk>>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.scale_validator_count": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "factor",
+      "type": "Percent"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.set_controller": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 8,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Staking.set_invulnerables": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 14,
+    "args": [
+     {
+      "name": "invulnerables",
+      "type": "Vec<AccountId32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.set_min_commission": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 25,
+    "args": [
+     {
+      "name": "new",
+      "type": "Perbill"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.set_payee": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "payee",
+      "type": "PalletStakingRewardDestination"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.set_staking_configs": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "min_nominator_bond",
+      "type": "PalletStakingPalletConfigOpU128"
+     },
+     {
+      "name": "min_validator_bond",
+      "type": "PalletStakingPalletConfigOpU128"
+     },
+     {
+      "name": "max_nominator_count",
+      "type": "PalletStakingPalletConfigOpU32"
+     },
+     {
+      "name": "max_validator_count",
+      "type": "PalletStakingPalletConfigOpU32"
+     },
+     {
+      "name": "chill_threshold",
+      "type": "PalletStakingPalletConfigOpPercent"
+     },
+     {
+      "name": "min_commission",
+      "type": "PalletStakingPalletConfigOpPerbill"
+     },
+     {
+      "name": "max_staked_rewards",
+      "type": "PalletStakingPalletConfigOpPercent"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.set_validator_count": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "new",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.unbond": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "value",
+      "type": "Compact<u128>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.update_payee": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 27,
+    "args": [
+     {
+      "name": "controller",
+      "type": "AccountId32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.validate": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "prefs",
+      "type": "PalletStakingValidatorPrefs"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Staking.withdraw_unbonded": {
+    "status": "observed",
+    "palletIndex": 11,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "num_slashing_spans",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Sudo.remove_key": {
+    "status": "observed",
+    "palletIndex": 22,
+    "callIndex": 4,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Sudo.set_key": {
+    "status": "observed",
+    "palletIndex": 22,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "new",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Sudo.sudo": {
+    "status": "observed",
+    "palletIndex": 22,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Sudo.sudo_as": {
+    "status": "observed",
+    "palletIndex": 22,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Sudo.sudo_unchecked_weight": {
+    "status": "observed",
+    "palletIndex": 22,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "call",
+      "type": "Call"
+     },
+     {
+      "name": "weight",
+      "type": "SpWeightsWeightV2Weight"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.apply_authorized_upgrade": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "code",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.authorize_upgrade": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "code_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.authorize_upgrade_without_checks": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "code_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.kill_prefix": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "prefix",
+      "type": "Bytes"
+     },
+     {
+      "name": "subkeys",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.kill_storage": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "keys",
+      "type": "Vec<Bytes>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.remark": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "remark",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.remark_with_event": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "remark",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.set_code": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "code",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.set_code_without_checks": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "code",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.set_heap_pages": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "pages",
+      "type": "u64"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "System.set_storage": {
+    "status": "observed",
+    "palletIndex": 0,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "items",
+      "type": "Vec<(Bytes,Bytes)>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.close": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "proposal_hash",
+      "type": "H256"
+     },
+     {
+      "name": "index",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "proposal_weight_bound",
+      "type": "SpWeightsWeightV2Weight"
+     },
+     {
+      "name": "length_bound",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.disapprove_proposal": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "proposal_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.execute": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "proposal",
+      "type": "Call"
+     },
+     {
+      "name": "length_bound",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.kill": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "proposal_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.propose": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "threshold",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "proposal",
+      "type": "Call"
+     },
+     {
+      "name": "length_bound",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.release_proposal_cost": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "proposal_hash",
+      "type": "H256"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.set_members": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "new_members",
+      "type": "Vec<AccountId32>"
+     },
+     {
+      "name": "prime",
+      "type": "Option<AccountId32>"
+     },
+     {
+      "name": "old_count",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalCommittee.vote": {
+    "status": "observed",
+    "palletIndex": 15,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "proposal",
+      "type": "H256"
+     },
+     {
+      "name": "index",
+      "type": "Compact<u32>"
+     },
+     {
+      "name": "approve",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalMembership.add_member": {
+    "status": "observed",
+    "palletIndex": 17,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalMembership.change_key": {
+    "status": "observed",
+    "palletIndex": 17,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "new",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalMembership.clear_prime": {
+    "status": "observed",
+    "palletIndex": 17,
+    "callIndex": 6,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalMembership.remove_member": {
+    "status": "observed",
+    "palletIndex": 17,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalMembership.reset_members": {
+    "status": "observed",
+    "palletIndex": 17,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "members",
+      "type": "Vec<AccountId32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalMembership.set_prime": {
+    "status": "observed",
+    "palletIndex": 17,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "who",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TechnicalMembership.swap_member": {
+    "status": "observed",
+    "palletIndex": 17,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "remove",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "add",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Timestamp.set": {
+    "status": "observed",
+    "palletIndex": 3,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "now",
+      "type": "Compact<u64>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TransactionStorage.check_proof": {
+    "status": "observed",
+    "palletIndex": 51,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "proof",
+      "type": "SpTransactionStorageProofTransactionStorageProof"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TransactionStorage.renew": {
+    "status": "observed",
+    "palletIndex": 51,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "block",
+      "type": "u32"
+     },
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TransactionStorage.store": {
+    "status": "observed",
+    "palletIndex": 51,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "data",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Treasury.check_status": {
+    "status": "observed",
+    "palletIndex": 19,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Treasury.payout": {
+    "status": "observed",
+    "palletIndex": 19,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Treasury.remove_approval": {
+    "status": "observed",
+    "palletIndex": 19,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "proposal_id",
+      "type": "Compact<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Treasury.spend": {
+    "status": "observed",
+    "palletIndex": 19,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "asset_kind",
+      "type": "FrameSupportTokensFungibleUnionOfNativeOrWithId"
+     },
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "valid_from",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Treasury.spend_local": {
+    "status": "observed",
+    "palletIndex": 19,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "amount",
+      "type": "Compact<u128>"
+     },
+     {
+      "name": "beneficiary",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Treasury.void_spend": {
+    "status": "observed",
+    "palletIndex": 19,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TxPause.pause": {
+    "status": "observed",
+    "palletIndex": 69,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "full_name",
+      "type": "(Bytes,Bytes)"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "TxPause.unpause": {
+    "status": "observed",
+    "palletIndex": 69,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "ident",
+      "type": "(Bytes,Bytes)"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.approve_transfer": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 13,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "delegate",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.burn": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "check_owner",
+      "type": "Option<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.buy_item": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 25,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "bid_price",
+      "type": "u128"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.cancel_approval": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 14,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_check_delegate",
+      "type": "Option<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.clear_attribute": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 17,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_item",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "key",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.clear_collection_metadata": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 21,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.clear_metadata": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 19,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.create": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.destroy": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "witness",
+      "type": "PalletUniquesDestroyWitness"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.force_create": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "free_holding",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.force_item_status": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 15,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "issuer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "freezer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "free_holding",
+      "type": "bool"
+     },
+     {
+      "name": "is_frozen",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.freeze": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.freeze_collection": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 9,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.mint": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "owner",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.redeposit": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "items",
+      "type": "Vec<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.set_accept_ownership": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 22,
+    "args": [
+     {
+      "name": "maybe_collection",
+      "type": "Option<u32>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.set_attribute": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 16,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "maybe_item",
+      "type": "Option<u32>"
+     },
+     {
+      "name": "key",
+      "type": "Bytes"
+     },
+     {
+      "name": "value",
+      "type": "Bytes"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.set_collection_max_supply": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 23,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "max_supply",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.set_collection_metadata": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 20,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "is_frozen",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.set_metadata": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 18,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "data",
+      "type": "Bytes"
+     },
+     {
+      "name": "is_frozen",
+      "type": "bool"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.set_price": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 24,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "price",
+      "type": "Option<u128>"
+     },
+     {
+      "name": "whitelisted_buyer",
+      "type": "Option<MultiAddress>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.set_team": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 12,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "issuer",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "admin",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "freezer",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.thaw": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 8,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.thaw_collection": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 10,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.transfer": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "item",
+      "type": "u32"
+     },
+     {
+      "name": "dest",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Uniques.transfer_ownership": {
+    "status": "observed",
+    "palletIndex": 46,
+    "callIndex": 11,
+    "args": [
+     {
+      "name": "collection",
+      "type": "u32"
+     },
+     {
+      "name": "new_owner",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.as_derivative": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "index",
+      "type": "u16"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.batch": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "calls",
+      "type": "Vec<Call>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.batch_all": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "calls",
+      "type": "Vec<Call>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.dispatch_as": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "as_origin",
+      "type": "PortaldotV3RuntimeOriginCaller"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.dispatch_as_fallible": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 7,
+    "args": [
+     {
+      "name": "as_origin",
+      "type": "PortaldotV3RuntimeOriginCaller"
+     },
+     {
+      "name": "call",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.force_batch": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "calls",
+      "type": "Vec<Call>"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.if_else": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 6,
+    "args": [
+     {
+      "name": "main",
+      "type": "Call"
+     },
+     {
+      "name": "fallback",
+      "type": "Call"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Utility.with_weight": {
+    "status": "observed",
+    "palletIndex": 1,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "call",
+      "type": "Call"
+     },
+     {
+      "name": "weight",
+      "type": "SpWeightsWeightV2Weight"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Vesting.force_remove_vesting_schedule": {
+    "status": "observed",
+    "palletIndex": 31,
+    "callIndex": 5,
+    "args": [
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "schedule_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Vesting.force_vested_transfer": {
+    "status": "observed",
+    "palletIndex": 31,
+    "callIndex": 3,
+    "args": [
+     {
+      "name": "source",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "schedule",
+      "type": "PalletVestingVestingInfo"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Vesting.merge_schedules": {
+    "status": "observed",
+    "palletIndex": 31,
+    "callIndex": 4,
+    "args": [
+     {
+      "name": "schedule1_index",
+      "type": "u32"
+     },
+     {
+      "name": "schedule2_index",
+      "type": "u32"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Vesting.vest": {
+    "status": "observed",
+    "palletIndex": 31,
+    "callIndex": 0,
+    "args": [],
+    "argTypesConfidence": "full"
+   },
+   "Vesting.vest_other": {
+    "status": "observed",
+    "palletIndex": 31,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "Vesting.vested_transfer": {
+    "status": "observed",
+    "palletIndex": 31,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "target",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "schedule",
+      "type": "PalletVestingVestingInfo"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "VoterList.put_in_front_of": {
+    "status": "observed",
+    "palletIndex": 52,
+    "callIndex": 1,
+    "args": [
+     {
+      "name": "lighter",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "VoterList.put_in_front_of_other": {
+    "status": "observed",
+    "palletIndex": 52,
+    "callIndex": 2,
+    "args": [
+     {
+      "name": "heavier",
+      "type": "MultiAddress"
+     },
+     {
+      "name": "lighter",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   },
+   "VoterList.rebag": {
+    "status": "observed",
+    "palletIndex": 52,
+    "callIndex": 0,
+    "args": [
+     {
+      "name": "dislocated",
+      "type": "MultiAddress"
+     }
+    ],
+    "argTypesConfidence": "full"
+   }
+  },
+  "behaviour": {
+   "batchAllRollback": "unknown"
+  },
+  "metadataVersion": 14,
+  "tokenProvenance": {
+   "tokenSymbol": "observed",
+   "tokenDecimals": "observed"
+  },
+  "source": {
+   "metadataHex": "<omitted from evidence: 561916 bytes, blake2-256 0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340; the node serves it with state_getMetadata (spec 3002)>",
+   "typesBundle": "{\"types\":{}}"
+  },
+  "stateVersion": 1,
+  "signingAccountBytes": 32,
+  "blockNumber": 102636
+ },
+ "fingerprint": {
+  "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "specName": "portaldot-v3",
+  "specVersion": 3002,
+  "transactionVersion": 2,
+  "metadataHash": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340",
+  "ss58Prefix": 42,
+  "tokenSymbol": "tPOT",
+  "tokenDecimals": 14,
+  "typesBundleHash": null
+ },
+ "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+ "compiledMode": "sequential",
+ "compiledModeReason": "Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+ "plan": {
+  "planVersion": 1,
+  "manifestDigest": "0xbb398248291918b8b347d20212985561923abf98f1a592278ba0b2ded50b0fef",
+  "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+  "signer": {
+   "type": "ss58",
+   "value": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+   "publicKey": "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467"
+  },
+  "mode": "sequential",
+  "modeReason": "Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+  "steps": [
+   {
+    "actionId": "pay",
+    "kind": "assets.transfer",
+    "capability": "Assets.transfer_keep_alive",
+    "palletIndex": 39,
+    "callIndex": 9,
+    "decodedArgs": {
+     "assetId": "806707",
+     "amount": "500",
+     "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+     "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+    },
+    "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172d107",
+    "status": "ok"
+   },
+   {
+    "actionId": "nft",
+    "kind": "nfts.mint",
+    "capability": "Nfts.mint",
+    "palletIndex": 47,
+    "callIndex": 3,
+    "decodedArgs": {
+     "collection": "0",
+     "item": "2",
+     "recipient": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+     "recipientAccountId": "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467"
+    },
+    "encodedCall": "0x2f0300000000020000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700",
+    "status": "ok"
+   }
+  ],
+  "planDigest": "0x9cb69f2f74d354e6028150c74357678862decc5ab5a23be555414a185fd14c9d"
+ },
+ "preflight": {
+  "steps": [
+   {
+    "actionId": "pay",
+    "weight": {
+     "value": "1037211000"
+    },
+    "fee": {
+     "value": "1480910633733"
+    },
+    "storageDeposit": {
+     "unknown": true
+    },
+    "proofSize": {
+     "value": "18392"
+    },
+    "dryRun": "unknown",
+    "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime; simulation coverage: asset_existence_check (only that the asset exists; not balances, permissions or state changed by other steps)"
+   },
+   {
+    "actionId": "nft",
+    "weight": {
+     "value": "1066757000"
+    },
+    "fee": {
+     "value": "1510933493092"
+    },
+    "storageDeposit": {
+     "unknown": true
+    },
+    "proofSize": {
+     "value": "16510"
+    },
+    "dryRun": "unknown",
+    "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime; simulation coverage: unobserved (nothing)"
+   }
+  ],
+  "totalFee": {
+   "value": "2991844126825"
+  }
+ },
+ "preflightDetail": {
+  "nonce": 10,
+  "atBlock": {
+   "number": 102636,
+   "hash": "0x5c4aab290706a23d582cd8a95abe7459f4eec0506ab7ac2743832620e181fec6"
+  },
+  "transactions": [
+   {
+    "actionIds": [
+     "pay"
+    ],
+    "nonce": 10,
+    "queryInfo": {
+     "weight": "1037211000",
+     "class": "normal",
+     "partialFee": "1480910633733",
+     "weightVersion": 2,
+     "proofSize": "18392"
+    },
+    "feeDetails": {
+     "inclusionFee": {
+      "baseFee": "0x6725848",
+      "lenFee": "0x15896dfd000",
+      "adjustedWeightFee": "0x2fd4d2bd"
+     }
+    }
+   },
+   {
+    "actionIds": [
+     "nft"
+    ],
+    "nonce": 11,
+    "queryInfo": {
+     "weight": "1066757000",
+     "class": "normal",
+     "partialFee": "1510933493092",
+     "weightVersion": 2,
+     "proofSize": "16510"
+    },
+    "feeDetails": {
+     "inclusionFee": {
+      "baseFee": "0x6725848",
+      "lenFee": "0x15f93037c00",
+      "adjustedWeightFee": "0x3131a11c"
+     }
+    }
+   }
+  ],
+  "contractDryRuns": {}
+ },
+ "envelope": {
+  "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "nonce": 10,
+  "mortalityBlocks": 64,
+  "checkpoint": {
+   "number": 102635,
+   "hash": "0xa3d88fc9627eaeeec173ad9ebd2ba645314d47930e595ee5a66029ad676acd25"
+  },
+  "expiresAt": "2026-10-19T12:05:15.675Z"
+ },
+ "policy": {
+  "version": "seam/policy/v1",
+  "allowedCapabilities": "any",
+  "allowedAssets": [
+   "806707"
+  ],
+  "allowedContracts": [
+   "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+  ],
+  "allowedRecipients": [
+   "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+   "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v",
+   "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+  ],
+  "maxSteps": 10,
+  "allowedModes": [
+   "sequential",
+   "atomic_verified"
+  ],
+  "requireHumanApproval": true,
+  "maxApprovalSeconds": 600,
+  "requireSignedDryRun": true,
+  "allowUnknown": {
+   "storageDeposit": true,
+   "dryRun": true
+  },
+  "maxAmountPerAsset": {
+   "806707": "1000000000000"
+  },
+  "maxNativeValue": "0",
+  "maxGasLimit": "50000000000"
+ },
+ "policyResult": {
+  "allowed": true,
+  "rules": [
+   {
+    "rule": "plan_integrity",
+    "outcome": "pass",
+    "reason": "plan digest matches its contents"
+   },
+   {
+    "rule": "runtime_match",
+    "outcome": "pass",
+    "reason": "plan was compiled against the current runtime"
+   },
+   {
+    "rule": "mode_allowed",
+    "outcome": "pass",
+    "reason": "execution mode sequential is allowed"
+   },
+   {
+    "rule": "capability",
+    "outcome": "pass",
+    "reason": "Assets.transfer_keep_alive is observed and allowed",
+    "actionId": "pay"
+   },
+   {
+    "rule": "asset_allowed",
+    "outcome": "pass",
+    "reason": "asset 806707 is allowed",
+    "actionId": "pay"
+   },
+   {
+    "rule": "recipient_allowed",
+    "outcome": "pass",
+    "reason": "recipient is allowed",
+    "actionId": "pay"
+   },
+   {
+    "rule": "amount_limit",
+    "outcome": "pass",
+    "reason": "amount 500 is within the limit of 1000000000000",
+    "actionId": "pay"
+   },
+   {
+    "rule": "capability",
+    "outcome": "pass",
+    "reason": "Nfts.mint is observed and allowed",
+    "actionId": "nft"
+   },
+   {
+    "rule": "recipient_allowed",
+    "outcome": "pass",
+    "reason": "recipient is allowed",
+    "actionId": "nft"
+   },
+   {
+    "rule": "weight_limit",
+    "outcome": "pass",
+    "reason": "weight 1037211000 is within limits",
+    "actionId": "pay"
+   },
+   {
+    "rule": "storage_limit",
+    "outcome": "pass",
+    "reason": "storage deposit is unknown (allowed by policy, weaker proof)",
+    "actionId": "pay",
+    "weak": true
+   },
+   {
+    "rule": "dry_run",
+    "outcome": "pass",
+    "reason": "The dry run result is unknown. (allowed by policy, weaker proof)",
+    "actionId": "pay",
+    "weak": true
+   },
+   {
+    "rule": "weight_limit",
+    "outcome": "pass",
+    "reason": "weight 1066757000 is within limits",
+    "actionId": "nft"
+   },
+   {
+    "rule": "storage_limit",
+    "outcome": "pass",
+    "reason": "storage deposit is unknown (allowed by policy, weaker proof)",
+    "actionId": "nft",
+    "weak": true
+   },
+   {
+    "rule": "dry_run",
+    "outcome": "pass",
+    "reason": "The dry run result is unknown. (allowed by policy, weaker proof)",
+    "actionId": "nft",
+    "weak": true
+   },
+   {
+    "rule": "fee_limit",
+    "outcome": "pass",
+    "reason": "total fee 2991844126825 is within limits"
+   }
+  ],
+  "policyDigest": "0xa29f30ca81595c46c4b3b5c83d97798ecd15a809b668d423b27dc11beea7700d",
+  "weakProof": [
+   "storage_limit:pay",
+   "dry_run:pay",
+   "storage_limit:nft",
+   "dry_run:nft"
+  ]
+ },
+ "approval": {
+  "ok": true,
+  "approval": {
+   "hash": "0xb91683a5bc3d6acdf265540b9e359dee7e2db4ba13f76bc7888eb7213960a905",
+   "covers": [
+    "manifest",
+    "plan",
+    "encoded calls",
+    "runtime fingerprint",
+    "policy",
+    "policy result",
+    "signing envelope",
+    "preflight"
+   ],
+   "expiresAt": "2026-10-19T12:05:15.675Z",
+   "used": false,
+   "binding": {
+    "manifestDigest": "0xbb398248291918b8b347d20212985561923abf98f1a592278ba0b2ded50b0fef",
+    "planDigest": "0x9cb69f2f74d354e6028150c74357678862decc5ab5a23be555414a185fd14c9d",
+    "planContentDigest": "0x709350d5988678ecd2cd593606c6db1f0618886e4e41f03251a49473c5c400e5",
+    "callsDigest": "0x9c09b9e0e24af88b9ac084a00d09ad3f58f6cbc08ff5e3ca91d89e5b007e2786",
+    "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+    "policyDigest": "0xa29f30ca81595c46c4b3b5c83d97798ecd15a809b668d423b27dc11beea7700d",
+    "policyResultDigest": "0x8114c2013a1180f5718f5f98fb5f376d8624d45161d75b2100b7e1950bedc9aa",
+    "envelopeDigest": "0x63e273cb73d08c46941e6389d611f50fa71d217d478227e720759f66a1996892",
+    "preflightDigest": "0x6b3a957a6217aa632ddac3c2f987aa4f741ef2d3889e4127e2552f87cb9eec53",
+    "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "nonce": 10,
+    "mortalityBlocks": 64,
+    "expiresAt": "2026-10-19T12:05:15.675Z"
+   }
+  }
+ },
+ "signingRequests": [
+  {
+   "payload": {
+    "specVersion": "0x00000bba",
+    "transactionVersion": "0x00000002",
+    "address": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "assetId": null,
+    "blockHash": "0xa3d88fc9627eaeeec173ad9ebd2ba645314d47930e595ee5a66029ad676acd25",
+    "blockNumber": "0x000190eb",
+    "era": "0xb502",
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "metadataHash": null,
+    "method": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172d107",
+    "mode": 0,
+    "nonce": "0x0000000a",
+    "signedExtensions": [
+     "AuthorizeCall",
+     "CheckNonZeroSender",
+     "CheckSpecVersion",
+     "CheckTxVersion",
+     "CheckGenesis",
+     "CheckMortality",
+     "CheckNonce",
+     "CheckWeight",
+     "ChargeAssetTxPayment",
+     "CheckMetadataHash",
+     "EthSetOrigin",
+     "WeightReclaim"
+    ],
+    "tip": "0x00000000000000000000000000000000",
+    "version": 4,
+    "withSignedTransaction": false
+   },
+   "signBytesHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172d107b50228000000ba0b000002000000d4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bda3d88fc9627eaeeec173ad9ebd2ba645314d47930e595ee5a66029ad676acd2500"
+  },
+  {
+   "payload": {
+    "specVersion": "0x00000bba",
+    "transactionVersion": "0x00000002",
+    "address": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "assetId": null,
+    "blockHash": "0xa3d88fc9627eaeeec173ad9ebd2ba645314d47930e595ee5a66029ad676acd25",
+    "blockNumber": "0x000190eb",
+    "era": "0xb502",
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "metadataHash": null,
+    "method": "0x2f0300000000020000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700",
+    "mode": 0,
+    "nonce": "0x0000000b",
+    "signedExtensions": [
+     "AuthorizeCall",
+     "CheckNonZeroSender",
+     "CheckSpecVersion",
+     "CheckTxVersion",
+     "CheckGenesis",
+     "CheckMortality",
+     "CheckNonce",
+     "CheckWeight",
+     "ChargeAssetTxPayment",
+     "CheckMetadataHash",
+     "EthSetOrigin",
+     "WeightReclaim"
+    ],
+    "tip": "0x00000000000000000000000000000000",
+    "version": 4,
+    "withSignedTransaction": false
+   },
+   "signBytesHex": "0x2f0300000000020000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700b5022c000000ba0b000002000000d4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bda3d88fc9627eaeeec173ad9ebd2ba645314d47930e595ee5a66029ad676acd2500"
+  }
+ ],
+ "gateChecks": [
+  {
+   "index": 0,
+   "actionId": "pay",
+   "phase": "sending",
+   "at": "2026-10-19T11:59:00.444Z",
+   "check": {
+    "ok": true,
+    "reasons": [],
+    "passed": [
+     {
+      "code": "step_order",
+      "detail": "step 1 is next in order"
+     },
+     {
+      "code": "approval_unused",
+      "detail": "step 1 of this approval hasn't been sent"
+     },
+     {
+      "code": "approval_valid_time",
+      "detail": "the approval is valid until 2026-10-19T12:05:15.675Z"
+     },
+     {
+      "code": "approval_intact",
+      "detail": "the approval's contents match its hash"
+     },
+     {
+      "code": "approval_matches",
+      "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+     },
+     {
+      "code": "runtime_unchanged",
+      "detail": "the runtime is the one the plan was prepared for"
+     },
+     {
+      "code": "signed_bytes_match",
+      "detail": "the 2 call(s) decoded from the signed transaction bytes are exactly the approved calls"
+     },
+     {
+      "code": "signed_dry_run_ok",
+      "detail": "the dry run of signed step 1 succeeded"
+     }
+    ]
+   },
+   "dryRun": [
+    {
+     "txHash": "0x5c6f24c920fb94dbe80a912f349bba2bec3277e25873c81b1ec700cb191c71be",
+     "outcome": "ok",
+     "detail": "dispatch ok",
+     "raw": "0x0000"
+    }
+   ]
+  },
+  {
+   "index": 0,
+   "actionId": "pay",
+   "phase": "done",
+   "at": "2026-10-19T11:59:03.623Z",
+   "check": {
+    "ok": true,
+    "reasons": [],
+    "passed": [
+     {
+      "code": "step_order",
+      "detail": "step 1 is next in order"
+     },
+     {
+      "code": "approval_unused",
+      "detail": "step 1 of this approval hasn't been sent"
+     },
+     {
+      "code": "approval_valid_time",
+      "detail": "the approval is valid until 2026-10-19T12:05:15.675Z"
+     },
+     {
+      "code": "approval_intact",
+      "detail": "the approval's contents match its hash"
+     },
+     {
+      "code": "approval_matches",
+      "detail": "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)"
+     },
+     {
+      "code": "runtime_unchanged",
+      "detail": "the runtime is the one the plan was prepared for"
+     },
+     {
+      "code": "signed_bytes_match",
+      "detail": "the 2 call(s) decoded from the signed transaction bytes are exactly the approved calls"
+     },
+     {
+      "code": "signed_dry_run_ok",
+      "detail": "the dry run of signed step 1 succeeded"
+     }
+    ]
+   }
+  }
+ ],
+ "stepLog": [
+  {
+   "index": 0,
+   "actionId": "pay",
+   "phase": "checking",
+   "at": "2026-10-19T11:58:57.850Z"
+  },
+  {
+   "index": 0,
+   "actionId": "pay",
+   "phase": "sending",
+   "at": "2026-10-19T11:59:00.444Z"
+  },
+  {
+   "index": 0,
+   "actionId": "pay",
+   "phase": "done",
+   "detail": "uncertain",
+   "at": "2026-10-19T11:59:03.623Z"
+  }
+ ],
+ "statuses": [],
+ "run": {
+  "ok": true,
+  "stoppedReason": "SEAM stopped: step 1 (pay) has an uncertain outcome and must be reconciled before anything else is sent. 1013: Transaction Already Imported: Any { .. }",
+  "uncertain": {
+   "actionId": "pay",
+   "index": 0,
+   "sendIndex": 0,
+   "usageKey": "0xb91683a5bc3d6acdf265540b9e359dee7e2db4ba13f76bc7888eb7213960a905#0",
+   "idempotencyKey": "0xb91683a5bc3d6acdf265540b9e359dee7e2db4ba13f76bc7888eb7213960a905:0",
+   "txHash": "0x5c6f24c920fb94dbe80a912f349bba2bec3277e25873c81b1ec700cb191c71be",
+   "reason": "1013: Transaction Already Imported: Any { .. }"
+  },
+  "receipt": {
+   "receiptVersion": 1,
+   "manifestDigest": "0xbb398248291918b8b347d20212985561923abf98f1a592278ba0b2ded50b0fef",
+   "planDigest": "0x9cb69f2f74d354e6028150c74357678862decc5ab5a23be555414a185fd14c9d",
+   "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+   "policyDigest": "0xa29f30ca81595c46c4b3b5c83d97798ecd15a809b668d423b27dc11beea7700d",
+   "approvalHash": "0xb91683a5bc3d6acdf265540b9e359dee7e2db4ba13f76bc7888eb7213960a905",
+   "mode": "sequential",
+   "steps": [
+    {
+     "actionId": "pay",
+     "status": "uncertain",
+     "txHash": "0x5c6f24c920fb94dbe80a912f349bba2bec3277e25873c81b1ec700cb191c71be",
+     "events": [],
+     "verification": "unknown",
+     "coverage": "none",
+     "reason": "SEAM could not tell whether this transaction was broadcast. It was not retried; check the chain for the transaction before doing anything else.",
+     "code": "uncertain"
+    },
+    {
+     "actionId": "nft",
+     "status": "not_run",
+     "events": [],
+     "verification": "unknown",
+     "coverage": "none",
+     "code": "not_run",
+     "reason": "Not run. SEAM stopped: step 1 (pay) has an uncertain outcome and must be reconciled before anything else is sent. 1013: Transaction Already Imported: Any { .. }"
+    }
+   ],
+   "result": "partial",
+   "coverage": {
+    "verified": 0,
+    "expected": 2
+   },
+   "receiptDigest": "0x841a985aadbdd776e8c0671bc2adf1951de64ae5fd03ea76a56575effe829c3e"
+  }
+ },
+ "receiptIntact": true,
+ "lastSubmit": {
+  "txHash": "0x5c6f24c920fb94dbe80a912f349bba2bec3277e25873c81b1ec700cb191c71be",
+  "status": "invalid",
+  "history": [
+   "invalid"
+  ],
+  "timedOut": false,
+  "error": "1013: Transaction Already Imported: Any { .. }"
+ },
+ "signedForSubmission": 2,
+ "nftVerdictReceipt": {
+  "nftsIssuedFieldsFromMetadata": [
+   "collection",
+   "item",
+   "owner"
+  ],
+  "verdicts": {
+   "nft": {
+    "verification": "unknown",
+    "coverage": "none",
+    "code": "no_trace",
+    "reason": "No success event was found for the NFT mint transaction."
+   }
+  },
+  "receipt": {
+   "receiptVersion": 1,
+   "manifestDigest": "0xbb398248291918b8b347d20212985561923abf98f1a592278ba0b2ded50b0fef",
+   "planDigest": "0x9cb69f2f74d354e6028150c74357678862decc5ab5a23be555414a185fd14c9d",
+   "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+   "policyDigest": "0xa29f30ca81595c46c4b3b5c83d97798ecd15a809b668d423b27dc11beea7700d",
+   "approvalHash": "0xb91683a5bc3d6acdf265540b9e359dee7e2db4ba13f76bc7888eb7213960a905",
+   "mode": "sequential",
+   "steps": [
+    {
+     "actionId": "pay",
+     "status": "not_run",
+     "events": [],
+     "verification": "unknown",
+     "coverage": "none",
+     "code": "not_run",
+     "reason": "Not run, because an earlier step did not complete."
+    },
+    {
+     "actionId": "nft",
+     "status": "not_run",
+     "events": [],
+     "verification": "unknown",
+     "coverage": "none",
+     "code": "not_run",
+     "reason": "Not run, because an earlier step did not complete."
+    }
+   ],
+   "result": "partial",
+   "coverage": {
+    "verified": 0,
+    "expected": 2
+   },
+   "receiptDigest": "0xa90dd718f950362173cc572a279a7ea313b2168f3afb6c71686d37d52d7046b4"
+  },
+  "receiptIntact": true,
+  "outcomesUsed": [
+   {
+    "actionId": "pay",
+    "status": "not_run",
+    "txHash": "0x5c6f24c920fb94dbe80a912f349bba2bec3277e25873c81b1ec700cb191c71be",
+    "events": []
+   },
+   {
+    "actionId": "nft",
+    "status": "not_run",
+    "events": []
+   }
+  ]
+ }
+}

@@ -1,0 +1,82 @@
+{
+ "kind": "v3-tx",
+ "label": "seam-plan-sequential attempt 1 (nonce 9)",
+ "call": "nfts.mint([0,1,{\"id\":\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\"},null])",
+ "callFromChain": "nfts.mint([0,1,{\"id\":\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\"},null])",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 9,
+ "recordNote": "the sending process lost its WebSocket after submission and died before writing this record; rebuilt from the chain by signer + nonce",
+ "recoveredBy": "lookupExtrinsic; readInclusion refused (RUNTIME_CHANGED: block 0x24f4a1f92d1c93426eab972396dda10c564bf8082e06fc8c90ad8f7404b8db61 has metadata 0xd1d106312f5d840cda8a4f6e568bf77065e8bf7e155841a235871f2); decoded with the block's own metadata after checking it differs only in storage fallbacks",
+ "txHash": "0xdcdb39b5302d0d4296ea731ed4ed8761ee57f81734697d0baedbb34d603005cf",
+ "status": "finalized",
+ "finalized": true,
+ "block": {
+  "number": 102616,
+  "hash": "0x24f4a1f92d1c93426eab972396dda10c564bf8082e06fc8c90ad8f7404b8db61"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x24f4a1f92d1c93426eab972396dda10c564bf8082e06fc8c90ad8f7404b8db61",
+ "success": true,
+ "dispatchError": null,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1510933536418"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Reserved",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "10000000000000"
+   ]
+  },
+  {
+   "pallet": "Nfts",
+   "name": "Issued",
+   "args": [
+    "0",
+    "1",
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+    "1510933536418"
+   ]
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1510933536418",
+    "0"
+   ]
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+   ]
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933536418)",
+  "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+  "Nfts.Issued(0, 1, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+  "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1510933536418)",
+  "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933536418, 0)",
+  "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+ ],
+ "actualFee": "1510933536418",
+ "outcome": "success"
+}

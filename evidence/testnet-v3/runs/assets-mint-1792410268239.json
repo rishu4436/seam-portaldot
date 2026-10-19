@@ -1,0 +1,139 @@
+{
+ "kind": "v3-tx",
+ "label": "assets.mint",
+ "call": "Assets.mint(id=806707, beneficiary=5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, amount=1000000000)",
+ "callHex": "0x2706ce3c31000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846702286bee",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 6,
+ "checkpoint": {
+  "number": 102489,
+  "hash": "0x2ab3102b63e77ba6fe92bec2630e901713e630e04e4cf3a459cd1e200c240f07"
+ },
+ "signedDryRun": {
+  "result": "ok",
+  "detail": [
+   {
+    "txHash": "0x8b84f63e44abd99a7c9561f4e80e087a32e013ec965e8bb70160c6fad73182be",
+    "outcome": "ok",
+    "detail": "dispatch ok",
+    "raw": "0x0000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 769913000,
+   "proof_size": 15859
+  },
+  "class": "normal",
+  "partialFee": "1500704043195"
+ },
+ "estimatedFee": "1500704043195",
+ "estimatedFeeTpot": "0.01500704043195",
+ "expectedDeposit": "0",
+ "budgetBefore": {
+  "spent": "258834841620678",
+  "spentTpot": "2.58834841620678",
+  "leftTpot": "7.41165158379322"
+ },
+ "balanceBefore": {
+  "free": "99741165158379322",
+  "reserved": "210000000000000"
+ },
+ "txHashLocal": "0x8b84f63e44abd99a7c9561f4e80e087a32e013ec965e8bb70160c6fad73182be",
+ "outcome": "success",
+ "recoveredBy": "lookupExtrinsic; readInclusion refused (RUNTIME_CHANGED: block 0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec has metadata 0xb4cc12ba483dd1cfcca713bf8b4421a822a40df18e866bd66196ee1); decoded with the block's own metadata after checking it differs only in storage fallbacks",
+ "txHash": "0x8b84f63e44abd99a7c9561f4e80e087a32e013ec965e8bb70160c6fad73182be",
+ "status": "finalized",
+ "finalized": true,
+ "statuses": [
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:44:29.171Z"
+  },
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:44:29.171Z"
+  },
+  {
+   "status": "in_block",
+   "blockHash": "0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec",
+   "at": "2026-10-19T11:44:30.114Z"
+  }
+ ],
+ "block": {
+  "number": 102493,
+  "hash": "0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec",
+ "success": true,
+ "dispatchError": null,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1500704043195"
+   ]
+  },
+  {
+   "pallet": "Assets",
+   "name": "Issued",
+   "args": [
+    "806707",
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1000000000"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+    "1500704043195"
+   ]
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1500704043195",
+    "0"
+   ]
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"weight\":{\"refTime\":878070000,\"proofSize\":15859},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+   ]
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1500704043195)",
+  "Assets.Issued(806707, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1000000000)",
+  "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1500704043195)",
+  "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1500704043195, 0)",
+  "System.ExtrinsicSuccess({\"weight\":{\"refTime\":878070000,\"proofSize\":15859},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+ ],
+ "actualFee": "1500704043195",
+ "balanceAfter": {
+  "free": "99739664454336127",
+  "reserved": "210000000000000"
+ },
+ "freeDrop": "1500704043195",
+ "freeDropTpot": "0.01500704043195",
+ "reservedIncreaseTpot": "0.0",
+ "error": "included in 0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec but its events could not be read: RUNTIME_CHANGED: block 0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec has metadata 0xb4cc12ba483dd1cfcca713bf8b4421a822a40df18e866bd66196ee1838cf2982, not the pinned 0x76317f9ed2d37d69a326e27b086a67569845d6183188e5d537d302b0715f7de9; its events cannot be decoded safely",
+ "assetBalanceAfter": {
+  "balance": 1000000000,
+  "status": "Liquid",
+  "reason": {
+   "consumer": null
+  },
+  "extra": null
+ }
+}

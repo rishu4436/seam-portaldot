@@ -1,0 +1,142 @@
+{
+ "kind": "v3-tx",
+ "label": "balances.transfer_keep_alive",
+ "call": "Balances.transfer_keep_alive(5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v, 20000000000000)",
+ "callHex": "0x06030034d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a0b0040e59c3012",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 5,
+ "checkpoint": {
+  "number": 102452,
+  "hash": "0x958d7f0481e9c212c12bdb11f05432f759f783fca9e6210d7fa9e658a3d9f9d9"
+ },
+ "signedDryRun": {
+  "result": "ok",
+  "detail": [
+   {
+    "txHash": "0x18f8a01153581e611a3753bf3c54160b99b97cff82dac5437d191a33e97dda70",
+    "outcome": "ok",
+    "detail": "dispatch ok",
+    "raw": "0x0000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 656445000,
+   "proof_size": 15777
+  },
+  "class": "normal",
+  "partialFee": "1490616269860"
+ },
+ "estimatedFee": "1490616269860",
+ "estimatedFeeTpot": "0.0149061626986",
+ "expectedDeposit": "20000000000000",
+ "budgetBefore": {
+  "spent": "237344225350818",
+  "spentTpot": "2.37344225350818",
+  "leftTpot": "7.62655774649182"
+ },
+ "balanceBefore": {
+  "free": "99762655774649182",
+  "reserved": "210000000000000"
+ },
+ "txHashLocal": "0x18f8a01153581e611a3753bf3c54160b99b97cff82dac5437d191a33e97dda70",
+ "outcome": "success",
+ "recoveredBy": "lookupExtrinsic; readInclusion refused (RUNTIME_CHANGED: block 0x732604870d73fe39738a84ec396f1bbc31276bea8cc8dc90d13101bc76375890 has metadata 0xd78809974d106e01f576d483076380b468a423d66b1256a0aef7189); decoded with the block's own metadata after checking it differs only in storage fallbacks",
+ "txHash": "0x18f8a01153581e611a3753bf3c54160b99b97cff82dac5437d191a33e97dda70",
+ "status": "finalized",
+ "finalized": true,
+ "statuses": [
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:40:43.869Z"
+  },
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:40:43.869Z"
+  }
+ ],
+ "block": {
+  "number": 102456,
+  "hash": "0x732604870d73fe39738a84ec396f1bbc31276bea8cc8dc90d13101bc76375890"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x732604870d73fe39738a84ec396f1bbc31276bea8cc8dc90d13101bc76375890",
+ "success": true,
+ "dispatchError": null,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1490616269860"
+   ]
+  },
+  {
+   "pallet": "System",
+   "name": "NewAccount",
+   "args": [
+    "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Endowed",
+   "args": [
+    "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v",
+    "20000000000000"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Transfer",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v",
+    "20000000000000"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+    "1490616269860"
+   ]
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1490616269860",
+    "0"
+   ]
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+   ]
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1490616269860)",
+  "System.NewAccount(5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v)",
+  "Balances.Endowed(5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v, 20000000000000)",
+  "Balances.Transfer(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v, 20000000000000)",
+  "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1490616269860)",
+  "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1490616269860, 0)",
+  "System.ExtrinsicSuccess({\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+ ],
+ "actualFee": "1490616269860",
+ "balanceAfter": {
+  "free": "99741165158379322",
+  "reserved": "210000000000000"
+ },
+ "freeDrop": "21490616269860",
+ "freeDropTpot": "0.2149061626986",
+ "reservedIncreaseTpot": "0.0"
+}
