@@ -1,6 +1,6 @@
 // Real sequential SEAM run on the local dev node: transfer -> contract call (emits event) -> mint, strict policy.
 import { devFacts, devKeys, loadState, saveEvidence } from "./lib.mjs";
-import { devManifest, devPolicy, runFlow } from "./flow.mjs";
+import { devManifest, devPolicy, runFlow, settleEffect } from "./flow.mjs";
 
 const facts = await devFacts();
 const k = await devKeys();
@@ -14,7 +14,13 @@ const manifest = devManifest({
   genesis: facts.fingerprint.genesisHash,
 });
 const policy = devPolicy({ bob: k.bob.address, charlie: k.charlie.address, contract: st.contract });
-const out = await runFlow({ facts, manifest, policy, alice: k.alice });
+const out = await runFlow({
+  facts,
+  manifest,
+  policy,
+  alice: k.alice,
+  effects: { call: settleEffect(k.alice.address) },
+});
 const file = saveEvidence(`runs/sequential-${Date.now()}.json`, {
   kind: "sequential",
   recordingVersion: 2,
