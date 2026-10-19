@@ -190,8 +190,15 @@ describe("verify-live hardening: chain_verified requires plan + call comparison 
       }),
     };
     const v = await verifyReceiptLive(rec, chain, { plan: cplan });
-    expect(v.status).toBe("unknown");
-    expect(v.notes.join(" ")).toMatch(/not effect_proven|state assertion|effect/i);
+    // The planned Transferred event is missing, so the receipt itself says not_verified: that re-checks as failed.
+    if (rec.steps[0]!.verification === "not_verified") {
+      expect(v.status).toBe("failed");
+      expect(v.problems.join(" ")).toMatch(/not_verified/);
+    } else {
+      expect(v.status).toBe("unknown");
+      expect(v.notes.join(" ")).toMatch(/not effect_proven|state assertion|effect/i);
+    }
+    expect(v.status).not.toBe("chain_verified");
   });
   it("atomic: outer batch call bytes match => chain_verified", async () => {
     const v = await verifyReceiptLive(

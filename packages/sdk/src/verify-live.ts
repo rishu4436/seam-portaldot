@@ -5,6 +5,7 @@ import {
   type RuntimeFingerprint,
 } from "@seam/compiler";
 import type { NftsRuntime } from "./outcomes.js";
+import { perStepOfBatch } from "./flow.js";
 import {
   checkReceipt,
   verifyStep,
@@ -129,6 +130,14 @@ export async function verifyReceiptLive(
 
   for (const s of receipt.steps) {
     const mine = problems.length;
+    // A receipt that itself says not_verified is a failed run, whatever the chain shows.
+    if (s.verification === "not_verified") {
+      problems.push(
+        `${s.actionId}: the receipt says not_verified${s.code ? ` (${s.code})` : ""}, so the run is not verified.`,
+      );
+      steps.push({ actionId: s.actionId, status: "failed" });
+      continue;
+    }
     let stepUnknown = false;
     const flag = () => {
       unknown = true;
@@ -213,13 +222,33 @@ export async function verifyReceiptLive(
       if (chainEvents.length !== s.events.length || chainEvents.some((e, i) => e !== s.events[i])) {
         problems.push(`${s.actionId}: the events in the receipt are not the events on chain.`);
       } else if (plan && planStep) {
+        // The step's own call: for atomic plans its exact slice of the on-chain batch call (perStepOfBatch gives none
+        // unless the batch is exactly the planned one), for sequential plans the on-chain call itself.
+        const stepCall = atomic
+          ? tx.callHex === undefined
+            ? undefined
+            : perStepOfBatch(
+                plan,
+                [
+                  {
+                    actionId: "batch",
+                    status: "finalized",
+                    txHash: s.txHash,
+                    block: s.block,
+                    events: tx.events,
+                    callHex: tx.callHex,
+                  },
+                ],
+                undefined,
+              ).find((o) => o.actionId === s.actionId)?.callHex
+          : tx.callHex;
         const outcome: StepOutcome = {
           actionId: s.actionId,
           status: "finalized",
           txHash: s.txHash,
           block: s.block,
           events: tx.events,
-          ...(tx.callHex !== undefined ? { callHex: tx.callHex } : {}),
+          ...(stepCall !== undefined ? { callHex: stepCall } : {}),
         };
         const again = verifyStep(
           planStep,
@@ -230,7 +259,11 @@ export async function verifyReceiptLive(
           runtime,
         );
         const needsRuntime = planStep.kind === "nfts.mint" || planStep.kind === "revive.call";
-        if (again.verification !== s.verification && !runtime && needsRuntime) {
+        if (again.verification === "not_verified")
+          problems.push(
+            `${s.actionId}: the receipt says ${s.verification}, the chain's events give not_verified${again.code ? ` (${again.code})` : ""}.`,
+          );
+        else if (again.verification !== s.verification && !runtime && needsRuntime) {
           notes.push(
             `${s.actionId}: the receipt says ${s.verification}, but without the runtime fingerprint the ${planStep.kind} check is capped at ${again.verification}, so it is not chain_verified.`,
           );
