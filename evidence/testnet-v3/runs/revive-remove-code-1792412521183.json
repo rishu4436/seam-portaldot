@@ -1,0 +1,116 @@
+{
+ "kind": "v3-tx",
+ "label": "revive.remove_code",
+ "call": "Revive.remove_code(0x6a81ea8307e3415bf79a339455e3767ec3ac15c9b76393f786ee78327929a0e4)",
+ "callHex": "0x50056a81ea8307e3415bf79a339455e3767ec3ac15c9b76393f786ee78327929a0e4",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 19,
+ "checkpoint": {
+  "number": 102865,
+  "hash": "0x6ed362bc46b5245fe4310e489f8871ef93e9b4c2a167dfb3695745d65b7df2a7"
+ },
+ "signedDryRun": {
+  "result": "failed",
+  "detail": [
+   {
+    "txHash": "0x0ce34477d256c90ead1ef87e0a474817ba74ec632868b548ca152092d5f4818e",
+    "outcome": "failed",
+    "detail": "dispatch failed: revive.CodeInUse: Code removal was denied because the code is still in use by at least one contract.",
+    "raw": "0x0001035019000000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 895245000,
+   "proof_size": 16072
+  },
+  "class": "normal",
+  "partialFee": "1410800396726"
+ },
+ "estimatedFee": "1410800396726",
+ "estimatedFeeTpot": "0.01410800396726",
+ "expectedDeposit": "0",
+ "budgetBefore": {
+  "spent": "1720968323424771",
+  "spentTpot": "17.20968323424771",
+  "leftTpot": "5.83065978687876"
+ },
+ "balanceBefore": {
+  "free": "98279031676575229",
+  "reserved": "240000000000000"
+ },
+ "outcome": "not sent: signed dry run said failed",
+ "stateBefore": {
+  "block": 102867,
+  "signer": {
+   "free": "98279031676575229",
+   "reserved": "240000000000000"
+  },
+  "contract": {
+   "info": {
+    "accountType": {
+     "contract": {
+      "trieId": "0x41daeea164ccec7f6f4e644b559c7ecd79066be60f7e2f370584acd9f82f2dd3",
+      "codeHash": "0x6a81ea8307e3415bf79a339455e3767ec3ac15c9b76393f786ee78327929a0e4",
+      "storageBytes": 0,
+      "storageItems": 0,
+      "storageByteDeposit": 0,
+      "storageItemDeposit": 0,
+      "storageBaseDeposit": 914400000000000,
+      "immutableDataLen": 0
+     }
+    },
+    "dust": 0
+   },
+   "accountId": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee",
+   "free": "10000000000000",
+   "reserved": "914400000000000"
+  },
+  "pristineCode": true,
+  "codeInfo": {
+   "owner": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+   "deposit": 498000000000000,
+   "refcount": 1,
+   "codeLen": 13,
+   "codeType": "Evm",
+   "behaviourVersion": 0
+  }
+ },
+ "stateAfter": {
+  "block": 102867,
+  "signer": {
+   "free": "98279031676575229",
+   "reserved": "240000000000000"
+  },
+  "contract": {
+   "info": {
+    "accountType": {
+     "contract": {
+      "trieId": "0x41daeea164ccec7f6f4e644b559c7ecd79066be60f7e2f370584acd9f82f2dd3",
+      "codeHash": "0x6a81ea8307e3415bf79a339455e3767ec3ac15c9b76393f786ee78327929a0e4",
+      "storageBytes": 0,
+      "storageItems": 0,
+      "storageByteDeposit": 0,
+      "storageItemDeposit": 0,
+      "storageBaseDeposit": 914400000000000,
+      "immutableDataLen": 0
+     }
+    },
+    "dust": 0
+   },
+   "accountId": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee",
+   "free": "10000000000000",
+   "reserved": "914400000000000"
+  },
+  "pristineCode": true,
+  "codeInfo": {
+   "owner": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+   "deposit": 498000000000000,
+   "refcount": 1,
+   "codeLen": 13,
+   "codeType": "Evm",
+   "behaviourVersion": 0
+  }
+ }
+}

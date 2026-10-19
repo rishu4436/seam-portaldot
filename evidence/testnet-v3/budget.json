@@ -1,11 +1,23 @@
 {
  "kind": "spending-budget",
  "account": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
- "capPlanck": "1000000000000000",
- "cap": "10.0 tPOT",
+ "capPlanck": "2304034302112647",
+ "cap": "23.04034302112647 tPOT (phase 1 10 tPOT, of which 3.04 spent, + phase 2 20 tPOT)",
  "baselineFree": "100000000000000000",
  "baselineReserved": "0",
  "baselineAt": "2026-10-19T11:17:48.613Z",
  "baselineBlock": 102226,
- "note": "spend = baselineFree - free now (fees + held deposits + transfers out). Hard stop before a tx would pass the cap."
+ "note": "spend = baselineFree - free now (fees + held deposits + transfers out). Hard stop before a tx would pass the cap.",
+ "phases": [
+  {
+   "phase": "1: setup, Nfts, Assets, SEAM plans",
+   "cap": "10 tPOT",
+   "spentAtEnd": "3.04034302112647 tPOT"
+  },
+  {
+   "phase": "2: Revive contract (deploy, SEAM revive.call, terminate)",
+   "cap": "20 tPOT on top of phase 1 (spend decision delegated by the repo owner)",
+   "totalCap": "23.04034302112647 tPOT"
+  }
+ ]
 }
