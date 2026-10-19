@@ -2,7 +2,7 @@
 // batchAllRollback is 'verified' only because run-rollback.mjs showed the rollback on this runtime (pass its file).
 import { readFileSync } from "node:fs";
 import { devFacts, devKeys, rollbackProofFromEvidence, loadState, saveEvidence } from "./lib.mjs";
-import { devManifest, devPolicy, runFlow } from "./flow.mjs";
+import { devManifest, devPolicy, runFlow, settleEffect } from "./flow.mjs";
 
 const evidenceFile = process.argv[2];
 const evidence = evidenceFile ? JSON.parse(readFileSync(evidenceFile, "utf8")) : undefined;
@@ -20,7 +20,14 @@ const manifest = devManifest({
   atomic: true,
 });
 const policy = devPolicy({ bob: k.bob.address, charlie: k.charlie.address, contract: st.contract });
-const out = await runFlow({ facts, manifest, policy, alice: k.alice, atomic: true });
+const out = await runFlow({
+  facts,
+  manifest,
+  policy,
+  alice: k.alice,
+  atomic: true,
+  effects: { call: settleEffect(k.alice.address) },
+});
 const file = saveEvidence(`runs/atomic-${Date.now()}.json`, {
   kind: "atomic",
   recordingVersion: 2,
