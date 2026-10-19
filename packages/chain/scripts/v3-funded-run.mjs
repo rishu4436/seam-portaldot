@@ -1036,19 +1036,56 @@ if (STEP === "plans") {
 }
 
 /**
- * Revive: deploy a tiny EVM contract (this runtime has allowEVMBytecode = true) and call it through a SEAM plan.
- * Runtime code 0x60006000a000 = PUSH1 0, PUSH1 0, LOG0, STOP: every call emits one empty-topic event, so the call's
- * effect is visible as Revive.ContractEmitted. Init code copies those 6 bytes and returns them.
- * storage_deposit_limit is a hard on-chain limit (--deposit-limit tPOT, default 2): the deploy fails rather than
- * charge more. Without --submit it is only signed and dry-run.
+ * Revive: a 13-byte EVM test contract (this runtime has allowEVMBytecode = true), called through a SEAM plan.
+ * Runtime code 0x36600a5760006000a0005b33ff:
+ *   CALLDATASIZE PUSH1 0x0a JUMPI          empty calldata -> fall through, else jump to 0x0a
+ *   PUSH1 0 PUSH1 0 LOG0 STOP              empty call: emits one empty-topic event (Revive.ContractEmitted)
+ *   JUMPDEST CALLER SELFDESTRUCT           any calldata: self-destruct, beneficiary = caller (to free the deposit)
+ * Init code copies those 13 bytes and returns them.
+ * --revive-action deploy | inspect | call | terminate | remove-code
+ * storage_deposit_limit is a hard on-chain limit (--deposit-limit tPOT): the deploy fails rather than charge more.
+ * Without --submit everything is only signed and dry-run.
  */
 if (STEP === "revive") {
-  const RUNTIME = "60006000a000";
-  const INIT = `0x6006600c60003960066000f3${RUNTIME}`;
+  const RUNTIME = "36600a5760006000a0005b33ff";
+  const INIT = `0x600d600c600039600d6000f3${RUNTIME}`;
+  const action = flag("--revive-action") ?? "deploy";
   const limitPlanck =
-    BigInt(Math.round(Number(flag("--deposit-limit") ?? 2) * 1e6)) * (UNIT / 1_000_000n);
+    BigInt(Math.round(Number(flag("--deposit-limit") ?? 15) * 1e6)) * (UNIT / 1_000_000n);
   const weight = { refTime: 50_000_000_000n, proofSize: 1_000_000n };
-  if (!state.reviveContract) {
+  const contractInfo = async (h160) => readStorage(q.revive.accountInfoOf, h160);
+  const contractBalances = async (h160) => {
+    const inf = await contractInfo(h160);
+    // The contract's own AccountId32 (fallback account: h160 ++ 0xEE x 12) holds its storage deposit.
+    const acct = `${h160}${"ee".repeat(12)}`;
+    const a = await accountOf(acct);
+    return { info: inf, accountId: acct, free: a.free.toString(), reserved: a.reserved.toString() };
+  };
+  const snapshot = async () => {
+    const me = await accountOf(ADDRESS);
+    const out = {
+      block: (await head()).best,
+      signer: { free: me.free.toString(), reserved: me.reserved.toString() },
+    };
+    if (state.reviveContract) out.contract = await contractBalances(state.reviveContract);
+    if (state.reviveCodeHash)
+      out.pristineCode = (await readStorage(q.revive.pristineCode, state.reviveCodeHash)) !== null;
+    if (state.reviveCodeHash)
+      out.codeInfo = await readStorage(q.revive.codeInfoOf, state.reviveCodeHash);
+    return out;
+  };
+
+  if (action === "inspect") {
+    console.log(JSON.stringify(await snapshot(), null, 1));
+    process.exit(0);
+  }
+
+  if (action === "deploy") {
+    if (state.reviveContract) {
+      console.error(`already deployed: ${state.reviveContract}`);
+      process.exit(1);
+    }
+    const before = await snapshot();
     const args = facts.capabilities["Revive.instantiate_with_code"].args.map((a) => {
       const by = {
         value: 0n,
@@ -1067,118 +1104,170 @@ if (STEP === "revive") {
       name: "revive-deploy",
       label: "revive.instantiate_with_code",
       callHex,
-      decoded: `Revive.instantiate_with_code(value=0, weight_limit={ref_time:${weight.refTime},proof_size:${weight.proofSize}}, storage_deposit_limit=${limitPlanck} (${fmt(limitPlanck)} tPOT), code=${INIT} (EVM: runtime ${RUNTIME} = LOG0 on every call), data=0x, salt=None)`,
+      decoded: `Revive.instantiate_with_code(value=0, weight_limit={ref_time:${weight.refTime},proof_size:${weight.proofSize}}, storage_deposit_limit=${limitPlanck} (${fmt(limitPlanck)} tPOT), code=${INIT}, data=0x, salt=None)`,
       expectedDeposit: limitPlanck,
     });
     const inst = (rec.events ?? []).find((e) => e.pallet === "Revive" && e.name === "Instantiated");
     rec.contract = inst ? inst.args[1] : undefined;
+    rec.evmInitCode = INIT;
     rec.evmRuntimeCode = `0x${RUNTIME}`;
-    writeRun("revive-deploy", rec);
-    if (!rec.success || !rec.contract) {
-      console.log(`deploy: ${rec.outcome}; ${JSON.stringify(rec.signedDryRun?.detail)}`);
-      process.exit(rec.outcome?.startsWith("dry run only") ? 0 : 1);
+    rec.stateBefore = before;
+    if (rec.contract) {
+      state.reviveContract = rec.contract;
+      const inf = await contractInfo(rec.contract);
+      const ci = inf?.accountType?.contract ?? inf?.contract ?? inf;
+      state.reviveCodeHash = ci?.codeHash ?? ci?.code_hash;
+      state.reviveDeployTx = rec.txHash;
+      saveState();
+      rec.stateAfter = await snapshot();
+      rec.depositFromEvents = (rec.events ?? [])
+        .filter((e) => e.pallet === "Balances" && ["Transfer", "Held", "Reserved"].includes(e.name))
+        .map((e) => `${e.pallet}.${e.name}(${e.args.join(", ")})`);
     }
-    state.reviveContract = rec.contract;
-    state.reviveDeployTx = rec.txHash;
-    saveState();
+    writeRun("revive-deploy", rec);
+    console.log(
+      `deploy: ${rec.outcome}; contract ${rec.contract}; code hash ${state.reviveCodeHash}; ${rec.outcome?.startsWith("dry") || rec.outcome?.startsWith("not") ? JSON.stringify(rec.signedDryRun?.detail) : ""}`,
+    );
+    process.exit(rec.success || rec.outcome?.startsWith("dry run only") ? 0 : 1);
   }
-  // revive.call compiled by SEAM -> preflight -> policy (contract allow-listed) -> approve -> sign -> gate -> submit -> receipt.
-  const f = await retry(() => discover(RPC));
-  const contract = state.reviveContract;
-  const manifest = {
-    version: 1,
-    chain: { genesisHash: f.fingerprint.genesisHash, specVersion: f.fingerprint.specVersion },
-    signer: { type: "ss58", value: ADDRESS },
-    actions: [
-      {
-        id: "call",
-        kind: "revive.call",
-        args: {
-          contract,
-          value: "0",
-          data: "0x",
-          gasLimit: "5000000000",
-          proofSize: "200000",
-          storageDepositLimit: "10000000000000",
+
+  if (action === "call" || action === "terminate") {
+    // revive.call compiled by SEAM -> preflight -> policy (contract + selector allow-listed) -> approve -> sign ->
+    // gate (fresh fingerprint + signed dry run) -> submit -> receipt.
+    const contract = state.reviveContract;
+    if (!contract) throw new Error("no contract deployed");
+    const data = action === "call" ? "0x" : "0x01";
+    const f = await retry(() => discover(RPC));
+    const manifest = {
+      version: 1,
+      chain: { genesisHash: f.fingerprint.genesisHash, specVersion: f.fingerprint.specVersion },
+      signer: { type: "ss58", value: ADDRESS },
+      actions: [
+        {
+          id: action,
+          kind: "revive.call",
+          args: {
+            contract,
+            value: "0",
+            data,
+            gasLimit: "5000000000",
+            proofSize: "200000",
+            storageDepositLimit: "10000000000000",
+          },
         },
+      ],
+    };
+    const policy = devPolicy({
+      bob: state.recipients[0],
+      charlie: state.recipients[1],
+      contract,
+      demo: false,
+      assetId: state.assetId,
+      overrides: {
+        allowedContracts: [contract],
+        allowedSelectors: { [contract]: [data] },
+        allowedRecipients: [ADDRESS],
+        maxGasLimit: "100000000000",
       },
-    ],
-  };
-  const policy = devPolicy({
-    bob: state.recipients[0],
-    charlie: state.recipients[1],
-    contract,
-    demo: false,
-    assetId: state.assetId,
-    overrides: {
-      allowedContracts: [contract],
-      allowedRecipients: [ADDRESS],
-      maxGasLimit: "100000000000",
-    },
-  });
-  const env = {
-    endpoint: RPC,
-    blockTimeMs: 6000,
-    declaredToken: {
-      tokenSymbol: f.fingerprint.tokenSymbol,
-      tokenDecimals: f.fingerprint.tokenDecimals,
-    },
-  };
-  if (!SUBMIT) {
+    });
+    const env = {
+      endpoint: RPC,
+      blockTimeMs: 6000,
+      declaredToken: {
+        tokenSymbol: f.fingerprint.tokenSymbol,
+        tokenDecimals: f.fingerprint.tokenDecimals,
+      },
+    };
     const plan = compile(manifest, f, {});
     console.log(
-      "revive.call plan:",
-      plan.mode,
-      plan.modeReason,
-      JSON.stringify(
-        plan.steps.map((x) => ({
-          kind: x.kind,
-          available: x.available,
-          reason: x.reasonCode ?? x.reason,
-        })),
-      ),
+      `revive.call plan: ${plan.mode}; ${JSON.stringify(plan.steps.map((x) => ({ kind: x.kind, args: x.decodedArgs, call: x.encodedCall })))}`,
     );
+    if (!SUBMIT) {
+      const adapter = createPortaldotAdapter(RPC, { facts: f, blockTimeMs: 6000 });
+      const { preflight } = await retry(() => adapter.preflight(plan));
+      const pr = evaluatePolicy({ policy, plan, facts: f, preflight, manifest });
+      console.log(
+        "policy:",
+        pr.allowed,
+        JSON.stringify(pr.rules.filter((r) => r.outcome !== "pass")),
+        JSON.stringify(preflight.simulation ?? preflight.steps),
+      );
+      process.exit(0);
+    }
+    const b = await budget();
+    if (b.spent + UNIT / 5n + 10_000_000_000_000n > BigInt(b.capPlanck)) {
+      console.error("STOP: revive.call would exceed the cap");
+      process.exit(1);
+    }
+    const before = await snapshot();
+    const n0 = await nextNonce(ADDRESS);
+    let r;
+    for (let i = 0; i < 5 && !r; i++) {
+      try {
+        r = await runFlow({
+          facts: f,
+          manifest,
+          policy,
+          signPayload: payloadSigner(signer, f),
+          env,
+          atomic: false,
+        });
+      } catch (e) {
+        if ((await nextNonce(ADDRESS)) !== n0) throw e;
+        console.warn(
+          `runFlow failed before sending (${String(e.message).slice(0, 120)}); retrying`,
+        );
+        await new Promise((res) => setTimeout(res, 4000));
+      }
+    }
+    const rel = `runs/plan-revive-${action}-${ts()}.json`;
+    const base = {
+      kind: `seam-plan-revive-${action}`,
+      recordingVersion: 2,
+      ranAt: new Date().toISOString(),
+      contract,
+      data,
+      ...r,
+      stateBefore: before,
+    };
+    save(rel, base);
+    const st = r.run?.receipt?.steps?.[0];
+    let inc;
+    try {
+      inc = st?.txHash && st.block?.hash ? await inclusionOf(st.block.hash, st.txHash) : undefined;
+    } catch (e) {
+      inc = { error: String(e.message) };
+    }
+    const after = await snapshot();
+    save(rel, { ...base, inclusionEvents: inc, stateAfter: after });
+    console.log(
+      `revive.${action}: stage ${r.stage ?? r.run?.stage ?? "run"} result ${r.run?.receipt?.result} ${r.run?.reason ?? ""} tx ${st?.txHash} block #${st?.block?.number} step ${st?.status}/${st?.verification}`,
+    );
+    console.log(
+      (inc?.events ?? []).map((e) => `${e.pallet}.${e.name}(${e.args.join(", ")})`).join("\n"),
+    );
+    console.log("before", JSON.stringify(before), "\nafter", JSON.stringify(after));
+    state[`revive_${action}File`] = rel.split("/").pop();
+    saveState();
     process.exit(0);
   }
-  const b = await budget();
-  if (b.spent + UNIT / 5n + 10_000_000_000_000n > BigInt(b.capPlanck)) {
-    console.error("STOP: revive.call would exceed the cap");
-    process.exit(1);
+
+  if (action === "remove-code") {
+    const codeHash = state.reviveCodeHash;
+    const before = await snapshot();
+    const rec = await sendTx({
+      name: "revive-remove-code",
+      label: "revive.remove_code",
+      callHex: encodeCall(facts, "Revive", "remove_code", [codeHash]),
+      decoded: `Revive.remove_code(${codeHash})`,
+    });
+    rec.stateBefore = before;
+    rec.stateAfter = await snapshot();
+    writeRun("revive-remove-code", rec);
+    console.log(`remove_code: ${rec.outcome}; ${JSON.stringify(rec.signedDryRun?.detail)}`);
+    process.exit(0);
   }
-  const r = await runFlow({
-    facts: f,
-    manifest,
-    policy,
-    signPayload: payloadSigner(signer, f),
-    env,
-    atomic: false,
-  });
-  const rel = `runs/plan-revive-call-${ts()}.json`;
-  const base = {
-    kind: "seam-plan-revive-call",
-    recordingVersion: 2,
-    ranAt: new Date().toISOString(),
-    contract,
-    ...r,
-  };
-  save(rel, base);
-  const st = r.run?.receipt?.steps?.[0];
-  let inc;
-  try {
-    inc = st?.txHash && st.block?.hash ? await inclusionOf(st.block.hash, st.txHash) : undefined;
-  } catch (e) {
-    inc = { error: String(e.message) };
-  }
-  save(rel, { ...base, inclusionEvents: inc });
-  console.log(
-    `revive.call: stage ${r.stage ?? "run"} result ${r.run?.receipt?.result} ${r.run?.reason ?? ""} tx ${st?.txHash} block #${st?.block?.number}`,
-  );
-  console.log(
-    (inc?.events ?? []).map((e) => `${e.pallet}.${e.name}(${e.args.join(", ")})`).join("\n"),
-  );
-  state.reviveCallFile = rel.split("/").pop();
-  saveState();
-  process.exit(0);
+  throw new Error(`unknown --revive-action ${action}`);
 }
 
 if (STEP === "balance") {
