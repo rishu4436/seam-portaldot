@@ -15,8 +15,9 @@ Update this file in the same commit that changes a status.
 
 **DEVELOPMENT CODE COMPLETE — V3 LIVE CAPABILITY PENDING** for everything that does not need a hosted Portaldot V3 runtime, with the open items listed below still to land.
 
-Not `READY FOR FUNDED V3 TESTING`: no V3 runtime metadata has been read, no funded V3 write may happen, and the items under "New open items" are done only against synthetic or mock data (not V3-verified), and the chain preflight (`bot4/v3-preflight`) is pending.
-SEAM-006..011 and 023 stay Blocked on a V3 RPC URL and a funded test account.
+**First funded V3 run done (2026-10-19, `evidence/testnet-v3/`):** 15 finalized transactions on the hosted V3 testnet (spec 3002), 3.04 tPOT spent of a 10 tPOT cap. V3-verified: the SEAM signing path (incl. the unknown `AuthorizeCall`/`EthSetOrigin` extensions), signed dry run, fee estimates, `Revive.map_account` dispatch (account was already auto-mapped), `Nfts.create`/`Nfts.mint`, Assets create/mint/transfer_keep_alive, a sequential SEAM plan (`assets.transfer` + `nfts.mint`), `Utility.batch_all` rollback (gate blocked the failing batch; the test-only direct send rolled back every inner effect), and an `atomic_verified` SEAM plan (`assets.mint` + `nfts.mint`). NOT V3-verified: `Revive.call` / any contract deploy (a 6-byte EVM contract needs a 13 to 14 tPOT storage deposit, above the cap), a fresh account mapping, ink!/PolkaVM, and browser-extension signing.
+
+Two V3 findings block a clean live path and are open for `@seam/chain`: the raw metadata bytes drift between blocks without a runtime upgrade (the state-dependent storage fallback of `Revive.EthBlockBuilderIR`), so the pinned metadata hash goes stale every few minutes; and the node's WebSocket drops often (code 1006). The run worked around both in its script only (see the evidence README).
 
 ## Test counts on `main` (after the merges below; was `62d9688`)
 
@@ -95,14 +96,14 @@ The local-node E2E (`npm run test:e2e`) is not part of routine CI (manual/weekly
 - A **local `substrate-contracts-node`** (disposable): `npm run test:e2e` runs against it.
 - Unit and integration tests in the library packages (counts above).
 
-Neither chain is the hosted Portaldot V3 testnet, and neither is mainnet. Success on either says nothing about V3 Revive or Nfts.
+Neither local chain is the hosted Portaldot V3 testnet. Separately, the **hosted V3 testnet (spec 3002)** has a funded run: 15 finalized transactions, see `evidence/testnet-v3/README.md`.
 
 ## What is unverified
 
-- Everything about Portaldot V3: runtime metadata, call layouts, signer/account model, Revive and Nfts shapes, whether `Contracts` still exists. Nothing has been run against a hosted V3 node.
+- Portaldot V3 Revive contracts (`Revive.call`, deploys), fresh account mapping, ink!/PolkaVM, and cross-VM atomicity. The funded run in `evidence/testnet-v3/` verified signing, Nfts, Assets, sequential plans and `Utility.batch_all` rollback/atomic for assets + nfts on spec 3002.
 - The real polkadot.js browser extension.
-- Cross-VM atomicity. `Utility.batch_all` rollback was observed on a local node only; it is not a V3 proof.
-- Any funded testnet or mainnet transaction. None has been made.
+- Cross-VM atomicity. `Utility.batch_all` rollback is V3-verified only for `assets.transfer`, `assets.mint` and `nfts.mint` (not contracts).
+- Any mainnet transaction (none). Funded V3 testnet: see `evidence/testnet-v3/README.md`; `Revive.call` and contract deploys are still unverified.
 - A "Fixed" row means the audit's offline/local acceptance tests pass on `main`. It does not mean V3 behaviour is verified.
 
 - Console LiveHost install merged (PR #8): fail-closed; `loadLiveHost` needs real RuntimeFacts; `buildRequest` awaits chain export `buildSigningRequest` from `@seam/chain/browser`. Not V3-verified.
@@ -113,3 +114,4 @@ Neither chain is the hosted Portaldot V3 testnet, and neither is mainnet. Succes
 - All of the above is synthetic-fixture tested only and **NOT V3-verified**.
 - Read-only V3 discovery against wss://test-node-v3.portaldot.dev done (spec 3002, ss58 42, 14 decimals, symbol `tPOT`, Revive/Nfts/Assets/Utility pallets and calls present). Real V14 layouts for `Revive.call`, `Revive.map_account` and `Nfts.mint` are captured in `packages/chain/tests/fixtures/v3-testnet-spec3002-layouts.json`. EVM chain id 420420777 confirmed. Nothing was executed; **NOT V3-verified**.
 - Compiler (bot2/v3-weight-limit): accepts the `weight_limit` alias for the `revive.call` weight argument, handles a plain `Compact<u128>` `storage_deposit_limit` (not an Option), and the real spec 3002 layouts pass the shape check. Synthetic-metadata encoding only; **NOT V3-verified**.
+- Funded V3 run (bot6/v3-funded-run): `scripts/v3-funded-run.mjs` + `packages/chain/scripts/http-rpc-client.mjs`. 15 finalized V3 transactions (map_account, Nfts create/mint, Assets create/mint/transfer, sequential plan, failing batch_all with rollback **verified**, `atomic_verified` plan). 3.04 tPOT spent of 10. **V3-verified** for those calls only; `Revive.call` not run (deploy deposit 13 to 14 tPOT > cap). Open: metadata-hash drift (`Revive.EthBlockBuilderIR` fallback) and WS drops need a `@seam/chain` fix.

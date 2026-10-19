@@ -1,0 +1,45 @@
+{
+ "kind": "v3-tx",
+ "label": "revive.instantiate_with_code",
+ "call": "Revive.instantiate_with_code(value=0, weight_limit={ref_time:50000000000,proof_size:1000000}, storage_deposit_limit=1300000000000000 (13.0 tPOT), code=0x6006600c60003960066000f360006000a000 (EVM: runtime 60006000a000 = LOG0 on every call), data=0x, salt=None)",
+ "callHex": "0x5003000700743ba40b02093d000f004035d6579e04486006600c60003960066000f360006000a0000000",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 15,
+ "checkpoint": {
+  "number": 102698,
+  "hash": "0x64760ec7a1b6fdb64dde82366586514f34c9078fc6a3926077a64ca05aee5fc5"
+ },
+ "signedDryRun": {
+  "result": "failed",
+  "detail": [
+   {
+    "txHash": "0x3491af5b34da7323478e58e0e08eaee65a058aac49086e6739aad22c4e3c3138",
+    "outcome": "failed",
+    "detail": "dispatch failed: revive.StorageDepositLimitExhausted: More storage was created than allowed by the storage deposit limit.",
+    "raw": "0x0001035018000000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 51415367660,
+   "proof_size": 1019007
+  },
+  "class": "normal",
+  "partialFee": "1529881100726"
+ },
+ "estimatedFee": "1529881100726",
+ "estimatedFeeTpot": "0.01529881100726",
+ "expectedDeposit": "1300000000000000",
+ "budgetBefore": {
+  "spent": "304034302112647",
+  "spentTpot": "3.04034302112647",
+  "leftTpot": "6.95965697887353"
+ },
+ "balanceBefore": {
+  "free": "99695965697887353",
+  "reserved": "240000000000000"
+ },
+ "outcome": "not sent: signed dry run said failed",
+ "evmRuntimeCode": "0x60006000a000"
+}

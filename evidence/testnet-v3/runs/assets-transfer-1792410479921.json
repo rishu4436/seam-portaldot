@@ -1,0 +1,155 @@
+{
+ "kind": "v3-tx",
+ "label": "assets.transfer_keep_alive",
+ "call": "Assets.transfer_keep_alive(id=806707, target=5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB, amount=1000)",
+ "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172a10f",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 7,
+ "checkpoint": {
+  "number": 102525,
+  "hash": "0x378f2648804aea95598e1c007c1b97fdc9de2259521c98b98b610675b0c87016"
+ },
+ "signedDryRun": {
+  "result": "ok",
+  "detail": [
+   {
+    "txHash": "0x5a3fcfe808b02e5dbeb704bddcdb4092526d015856fffb151230e06b9f440ea4",
+    "outcome": "ok",
+    "detail": "dispatch ok",
+    "raw": "0x0000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 1037211000,
+   "proof_size": 18392
+  },
+  "class": "normal",
+  "partialFee": "1480910852424"
+ },
+ "estimatedFee": "1480910852424",
+ "estimatedFeeTpot": "0.01480910852424",
+ "expectedDeposit": "0",
+ "budgetBefore": {
+  "spent": "260335545663873",
+  "spentTpot": "2.60335545663873",
+  "leftTpot": "7.39664454336127"
+ },
+ "balanceBefore": {
+  "free": "99739664454336127",
+  "reserved": "210000000000000"
+ },
+ "txHashLocal": "0x5a3fcfe808b02e5dbeb704bddcdb4092526d015856fffb151230e06b9f440ea4",
+ "outcome": "success",
+ "recoveredBy": "lookupExtrinsic; readInclusion refused (RUNTIME_CHANGED: block 0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e has metadata 0x921a41c37e3685ed4fa1926e5879e663e30afe3c6346d933fe99766); decoded with the block's own metadata after checking it differs only in storage fallbacks",
+ "txHash": "0x5a3fcfe808b02e5dbeb704bddcdb4092526d015856fffb151230e06b9f440ea4",
+ "status": "finalized",
+ "finalized": true,
+ "statuses": [
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:48:00.830Z"
+  },
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:48:00.830Z"
+  },
+  {
+   "status": "in_block",
+   "blockHash": "0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e",
+   "at": "2026-10-19T11:48:06.115Z"
+  },
+  {
+   "status": "finalized",
+   "blockHash": "0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e",
+   "at": "2026-10-19T11:48:20.007Z"
+  }
+ ],
+ "block": {
+  "number": 102529,
+  "hash": "0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e",
+ "success": true,
+ "dispatchError": null,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1480910850417"
+   ]
+  },
+  {
+   "pallet": "Assets",
+   "name": "Transferred",
+   "args": [
+    "806707",
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+    "1000"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+    "1480910850417"
+   ]
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1480910850417",
+    "0"
+   ]
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+   ]
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1480910850417)",
+  "Assets.Transferred(806707, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB, 1000)",
+  "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1480910850417)",
+  "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1480910850417, 0)",
+  "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+ ],
+ "actualFee": "1480910850417",
+ "balanceAfter": {
+  "free": "99738183543485710",
+  "reserved": "210000000000000"
+ },
+ "freeDrop": "1480910850417",
+ "freeDropTpot": "0.01480910850417",
+ "reservedIncreaseTpot": "0.0",
+ "error": "included in 0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e but its events could not be read: RUNTIME_CHANGED: block 0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e has metadata 0x921a41c37e3685ed4fa1926e5879e663e30afe3c6346d933fe99766b86c769c4, not the pinned 0x76317f9ed2d37d69a326e27b086a67569845d6183188e5d537d302b0715f7de9; its events cannot be decoded safely",
+ "assetBalancesAfter": {
+  "signer": {
+   "balance": 999999000,
+   "status": "Liquid",
+   "reason": {
+    "consumer": null
+   },
+   "extra": null
+  },
+  "recipient": {
+   "balance": 1000,
+   "status": "Liquid",
+   "reason": {
+    "consumer": null
+   },
+   "extra": null
+  }
+ }
+}

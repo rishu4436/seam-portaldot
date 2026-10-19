@@ -1,0 +1,176 @@
+{
+ "kind": "v3-tx",
+ "label": "assets.create",
+ "call": "Assets.create(id=806707, admin=5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, min_balance=1)",
+ "callHex": "0x2700ce3c31000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846701000000000000000000000000000000",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 3,
+ "checkpoint": {
+  "number": 102407,
+  "hash": "0x480e7e9ab6c0d4b8bac2247a410e08a29b83fd8e898e7436cc3f32eb7f6e4edd"
+ },
+ "signedDryRun": {
+  "result": "ok",
+  "detail": [
+   {
+    "txHash": "0xbc93ca2f4f3f2067f0ba35772d6a50dbf9372db98888ea4d84581278e6ff7194",
+    "outcome": "ok",
+    "detail": "dispatch ok",
+    "raw": "0x0000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 1133133000,
+   "proof_size": 15859
+  },
+  "class": "normal",
+  "partialFee": "1620985342781"
+ },
+ "estimatedFee": "1620985342781",
+ "estimatedFeeTpot": "0.01620985342781",
+ "expectedDeposit": "200000000000000",
+ "budgetBefore": {
+  "spent": "114232623731828",
+  "spentTpot": "1.14232623731828",
+  "leftTpot": "8.85767376268172"
+ },
+ "balanceBefore": {
+  "free": "99885767376268172",
+  "reserved": "110000000000000"
+ },
+ "txHashLocal": "0xbc93ca2f4f3f2067f0ba35772d6a50dbf9372db98888ea4d84581278e6ff7194",
+ "outcome": "success",
+ "recoveredBy": "lookupExtrinsic + readInclusion after the watch ended early",
+ "txHash": "0xbc93ca2f4f3f2067f0ba35772d6a50dbf9372db98888ea4d84581278e6ff7194",
+ "status": "finalized",
+ "finalized": true,
+ "statuses": [
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:36:16.377Z"
+  },
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:36:16.377Z"
+  }
+ ],
+ "block": {
+  "number": 102411,
+  "hash": "0x76a8504af171fcebc1b82fe5516cfb92ccd89b3133a30a6d8d9eaee6e8cde858"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x76a8504af171fcebc1b82fe5516cfb92ccd89b3133a30a6d8d9eaee6e8cde858",
+ "success": true,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1620985342781"
+   ],
+   "eventIndex": 1,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Reserved",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "100000000000000"
+   ],
+   "eventIndex": 2,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Assets",
+   "name": "Created",
+   "args": [
+    "806707",
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467"
+   ],
+   "eventIndex": 3,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "u32",
+    "AccountId32",
+    "AccountId32"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+    "1620985342781"
+   ],
+   "eventIndex": 4,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1620985342781",
+    "0"
+   ],
+   "eventIndex": 5,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":15859,\"refTime\":1241290000}}"
+   ],
+   "eventIndex": 6,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "{\"weight\":\"SpWeightsWeightV2Weight\",\"class\":\"FrameSupportDispatchDispatchClass\",\"paysFee\":\"FrameSupportDispatchPays\"}"
+   ],
+   "topics": []
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1620985342781)",
+  "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 100000000000000)",
+  "Assets.Created(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+  "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1620985342781)",
+  "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1620985342781, 0)",
+  "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":15859,\"refTime\":1241290000}})"
+ ],
+ "actualFee": "1620985342781",
+ "balanceAfter": {
+  "free": "99784146390925391",
+  "reserved": "210000000000000"
+ },
+ "freeDrop": "101620985342781",
+ "freeDropTpot": "1.01620985342781",
+ "reservedIncreaseTpot": "1.0"
+}

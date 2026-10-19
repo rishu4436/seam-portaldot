@@ -1,0 +1,143 @@
+{
+ "kind": "v3-tx",
+ "label": "nfts.create",
+ "call": "Nfts.create(admin=5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, config={\"settings\":0,\"maxSupply\":null,\"mintSettings\":{\"mintType\":{\"Issuer\":null},\"price\":null,\"startBlock\":null,\"endBlock\":null,\"defaultItemSettings\":0}})",
+ "callHex": "0x2f000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467000000000000000000000000000000000000000000",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 1,
+ "checkpoint": {
+  "number": 102237,
+  "hash": "0x1d2e18a8db0dbcf6c7dba1be9ef53766fc32c0d201238014d6ee75e3b0e080a3"
+ },
+ "signedDryRun": {
+  "result": "ok",
+  "detail": [
+   {
+    "txHash": "0x390bc57994d562383ae3ffd3b7a0bfdcc07130d98c15751666ccfa38a92623af",
+    "outcome": "ok",
+    "detail": "dispatch ok",
+    "raw": "0x0000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 1072985000,
+   "proof_size": 15733
+  },
+  "class": "normal",
+  "partialFee": "1630939133833"
+ },
+ "estimatedFee": "1630939133833",
+ "estimatedFeeTpot": "0.01630939133833",
+ "expectedDeposit": "200000000000000",
+ "budgetBefore": {
+  "spent": "1090750465056",
+  "spentTpot": "0.01090750465056",
+  "leftTpot": "9.98909249534944"
+ },
+ "balanceBefore": {
+  "free": "99998909249534944",
+  "reserved": "0"
+ },
+ "txHash": "0x390bc57994d562383ae3ffd3b7a0bfdcc07130d98c15751666ccfa38a92623af",
+ "txHashLocal": "0x390bc57994d562383ae3ffd3b7a0bfdcc07130d98c15751666ccfa38a92623af",
+ "status": "finalized",
+ "finalized": true,
+ "statuses": [
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:19:15.767Z"
+  },
+  {
+   "status": "submitted",
+   "at": "2026-10-19T11:19:15.768Z"
+  }
+ ],
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1630939133833"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Reserved",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "100000000000000"
+   ]
+  },
+  {
+   "pallet": "Nfts",
+   "name": "Created",
+   "args": [
+    "0",
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+   ]
+  },
+  {
+   "pallet": "Nfts",
+   "name": "NextCollectionIdIncremented",
+   "args": [
+    "1"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+    "1630939133833"
+   ]
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1630939133833",
+    "0"
+   ]
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"weight\":{\"refTime\":1181142000,\"proofSize\":15733},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+   ]
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1630939133833)",
+  "Balances.Reserved(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 100000000000000)",
+  "Nfts.Created(0, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1)",
+  "Nfts.NextCollectionIdIncremented(1)",
+  "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1630939133833)",
+  "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1630939133833, 0)",
+  "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1181142000,\"proofSize\":15733},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+ ],
+ "balanceAfter": {
+  "free": "99897278310401111",
+  "reserved": "100000000000000"
+ },
+ "freeDrop": "101630939133833",
+ "freeDropTpot": "1.01630939133833",
+ "reservedIncreaseTpot": "1.0",
+ "outcome": "success",
+ "recoveredBy": "lookupExtrinsic; readInclusion refused (RUNTIME_CHANGED: block 0x89bbc8a4968c71aa9ca7cedd68672f04ced6d9e8f08ece873c71a7174a6b8a7b has metadata 0x91e5fdf7b86359987e6f00b47e0107056daec70b903492c3727d187); decoded with the block's own metadata after checking it differs only in storage fallbacks",
+ "block": {
+  "number": 102241,
+  "hash": "0x89bbc8a4968c71aa9ca7cedd68672f04ced6d9e8f08ece873c71a7174a6b8a7b"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x89bbc8a4968c71aa9ca7cedd68672f04ced6d9e8f08ece873c71a7174a6b8a7b",
+ "success": true,
+ "dispatchError": null,
+ "actualFee": "1630939133833",
+ "collection": 0
+}
