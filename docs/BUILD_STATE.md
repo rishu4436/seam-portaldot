@@ -17,17 +17,17 @@ Update this file in the same commit that changes a status.
 
 **First funded V3 run done (2026-10-19, `evidence/testnet-v3/`):** 15 finalized transactions on the hosted V3 testnet (spec 3002), 3.04 tPOT spent of a 10 tPOT cap. V3-verified: the SEAM signing path (incl. the unknown `AuthorizeCall`/`EthSetOrigin` extensions), signed dry run, fee estimates, `Revive.map_account` dispatch (account was already auto-mapped), `Nfts.create`/`Nfts.mint`, Assets create/mint/transfer_keep_alive, a sequential SEAM plan (`assets.transfer` + `nfts.mint`), `Utility.batch_all` rollback (gate blocked the failing batch; the test-only direct send rolled back every inner effect), and an `atomic_verified` SEAM plan (`assets.mint` + `nfts.mint`). Phase 2 (20 tPOT added): a 13-byte EVM contract deployed with `Revive.instantiate_with_code` (deposits 4.98 code + 9.144 contract, held and **not refundable** on this runtime: SELFDESTRUCT after creation does not delete under EIP-6780, `remove_code` says `CodeInUse`), and two SEAM-compiled `revive.call` plans through policy and gate, finalized, with `Revive.ContractEmitted` from the contract. Total spent 17.21 tPOT. NOT V3-verified: a SEAM receipt verdict for `revive.call` (`verifyReviveCallOutcome` expects a `(dest, data, value)` event; V3 only has `ContractEmitted(contract, data, topics)`), a fresh account mapping, ink!/PolkaVM, and browser-extension signing.
 
-Two V3 findings block a clean live path and are open for `@seam/chain`: the raw metadata bytes drift between blocks without a runtime upgrade (the state-dependent storage fallback of `Revive.EthBlockBuilderIR`), so the pinned metadata hash goes stale every few minutes; and the node's WebSocket drops often (code 1006). The run worked around both in its script only (see the evidence README).
+Two V3 findings that blocked a clean live path are addressed in `@seam/chain` (`bot4/v3-metadata-stability`): a metadata layout hash ignores storage-default drift (V3 `Revive.EthBlockBuilderIR`) and stays fail-closed on layout changes; an HTTPS RPC transport sends submits exactly once (no resend on a lost response). Limits remain: no WebSocket reconnect (HTTPS polling is used instead), a dropped pool tx shows as uncertain, and runtime-upgrade fail-closed is shown only on edited blobs. See `evidence/v3-metadata-stability/`.
 
 ## Test counts on `main` (after the merges below; was `62d9688`)
 
 | Package  | Passing | Skipped |
 | -------- | ------- | ------- |
-| compiler | 168     | 0       |
+| compiler | 181     | 0       |
 | policy   | 187     | 0       |
-| sdk      | 171     | 0       |
-| chain    | 140     | 12      |
-| console  | 62      | 0       |
+| sdk      | 176     | 0       |
+| chain    | 188     | 12      |
+| console  | 67      | 0       |
 
 At the audit baseline (`a3bc52b`, CI run 39106951312): compiler 111, policy 68, SDK 63, chain 59, 12 skipped. Console tests were not in the baseline count.
 The local-node E2E (`npm run test:e2e`) is not part of routine CI (manual/weekly `e2e.yml`).
@@ -114,6 +114,7 @@ Neither local chain is the hosted Portaldot V3 testnet. Separately, the **hosted
 - All of the above is synthetic-fixture tested only and **NOT V3-verified**.
 - Read-only V3 discovery against wss://test-node-v3.portaldot.dev done (spec 3002, ss58 42, 14 decimals, symbol `tPOT`, Revive/Nfts/Assets/Utility pallets and calls present). Real V14 layouts for `Revive.call`, `Revive.map_account` and `Nfts.mint` are captured in `packages/chain/tests/fixtures/v3-testnet-spec3002-layouts.json`. EVM chain id 420420777 confirmed. Nothing was executed; **NOT V3-verified**.
 - Compiler (bot2/v3-weight-limit): accepts the `weight_limit` alias for the `revive.call` weight argument, handles a plain `Compact<u128>` `storage_deposit_limit` (not an Option), and the real spec 3002 layouts pass the shape check. Synthetic-metadata encoding only; **NOT V3-verified**.
-- Funded V3 run (bot6/v3-funded-run): `scripts/v3-funded-run.mjs` + `packages/chain/scripts/http-rpc-client.mjs`. 15 finalized V3 transactions (map_account, Nfts create/mint, Assets create/mint/transfer, sequential plan, failing batch_all with rollback **verified**, `atomic_verified` plan). 3.04 tPOT spent of 10. **V3-verified** for those calls only; `Revive.call` not run (deploy deposit 13 to 14 tPOT > cap). Open: metadata-hash drift (`Revive.EthBlockBuilderIR` fallback) and WS drops need a `@seam/chain` fix.
+- Funded V3 run (bot6/v3-funded-run): `scripts/v3-funded-run.mjs` + `packages/chain/scripts/http-rpc-client.mjs`. 15 finalized V3 transactions (map_account, Nfts create/mint, Assets create/mint/transfer, sequential plan, failing batch_all with rollback **verified**, `atomic_verified` plan). 3.04 tPOT spent of 10. **V3-verified** for those calls only; `Revive.call` not run (deploy deposit 13 to 14 tPOT > cap). Addressed in `bot4/v3-metadata-stability` (layout hash + HTTPS transport); see the bullet below.
 - Chainsmith (bot4/seam-run-effects, includes bot4/devnode-e2e-fix cf337d8): seam_demo `Settled` effect committed in the dev-node and testnet-run flows (SEAM-004) and `contracts.call` covered in the batch_all rollback proof (SEAM-012); genesis BadProof dry runs explained. Chain tests 161 passed, 12 skipped. Local dev node only; **NOT V3-verified**.
 - Revive phase (bot6/v3-revive-call): EVM test contract `0x86b9cc2d456eed16a6872e1d5646f606a59cd95b` deployed (tx `0xad39bce1…acb2`, #102843), SEAM `revive.call` (tx `0xec917338…7482`, #102853, `Revive.ContractEmitted`) and SELFDESTRUCT call (tx `0xc0ad1497…338f`, #102862, contract not deleted). The 14.124 tPOT deposit was not refunded (EIP-6780; `remove_code` refused with `CodeInUse`). **V3-verified:** Revive EVM deploy and SEAM `revive.call` execution. **Open (Quill):** `verifyReviveCallOutcome` has to use `ContractEmitted(contract, data, topics)`; there is no per-call event on V3.
+- Chainsmith (`bot4/v3-metadata-stability`): metadata layout hash ignores storage-default drift (V3 `Revive.EthBlockBuilderIR`) and stays fail-closed on layout changes; HTTPS RPC transport sends submits exactly once. Limits: no WebSocket reconnect, a dropped pool tx shows as uncertain, runtime-upgrade fail-closed shown only on edited blobs. Chain tests 188 passed, 12 skipped. Evidence in `evidence/v3-metadata-stability/`. Read-only V3 checks only; **NOT a funded V3 re-run**.
