@@ -1,4 +1,10 @@
-import type { Hex, Plan } from "@seam/compiler";
+import {
+  computeFingerprintDigest,
+  type Hex,
+  type Plan,
+  type RuntimeFingerprint,
+} from "@seam/compiler";
+import type { NftsRuntime } from "./outcomes.js";
 import {
   checkReceipt,
   verifyStep,
@@ -43,11 +49,20 @@ const lc = (s?: string) => (s ?? "").toLowerCase();
  * `chain_verified` needs ALL of: a `plan`; the on-chain call bytes equal to the planned call (each step's call, or for atomic
  * plans the outer batch call); no planned step missing or not run; and every step re-derived as `effect_proven` from the chain's own
  * events (for contract calls this needs the `effects` assertion). No plan, an uncomparable call or a missing assertion gives `unknown`; a mismatch gives `failed`.
+ *
+ * `runtime` is the RuntimeFingerprint the plan ran on. It turns on the same default nfts.mint / revive.call checks `buildReceipt`
+ * uses, so execute and verify-live agree. It is used only if its digest equals the receipt's `fingerprintDigest`; a different
+ * fingerprint is a problem (`failed`). Without it those default checks stay capped, and a step whose receipt says more than the
+ * capped re-check gives `unknown`, never `chain_verified`.
  */
 export async function verifyReceiptLive(
   receipt: Receipt,
   reader: ReceiptChainReader,
-  opts: { plan?: Plan; effects?: Record<string, ContractEffect> } = {},
+  opts: {
+    plan?: Plan;
+    effects?: Record<string, ContractEffect>;
+    runtime?: RuntimeFingerprint;
+  } = {},
 ): Promise<LiveVerification> {
   const problems: string[] = [];
   const notes: string[] = [];
@@ -63,6 +78,21 @@ export async function verifyReceiptLive(
   if (plan && plan.planDigest !== receipt.planDigest)
     problems.push("The plan given is not the plan this receipt is for (plan digest differs).");
   const atomic = receipt.mode === "atomic_verified" || receipt.mode === "atomic_unverified";
+  // The runtime for the default checks, bound to the receipt by fingerprint digest. Anything else is not used.
+  let runtime: NftsRuntime | undefined;
+  if (opts.runtime) {
+    let d: Hex | undefined;
+    try {
+      d = computeFingerprintDigest(opts.runtime);
+    } catch {
+      d = undefined;
+    }
+    if (d && lc(d) === lc(receipt.fingerprintDigest)) runtime = opts.runtime;
+    else
+      problems.push(
+        "The runtime given is not the runtime this receipt is for (fingerprint digest differs).",
+      );
+  }
   // Fail closed: chain_verified is only reachable with a plan, a planned-vs-on-chain call comparison and proven effects.
   let unknown = false;
   if (!plan) {
@@ -189,14 +219,25 @@ export async function verifyReceiptLive(
           txHash: s.txHash,
           block: s.block,
           events: tx.events,
+          ...(tx.callHex !== undefined ? { callHex: tx.callHex } : {}),
         };
         const again = verifyStep(
           planStep,
           plan.signer.publicKey,
           outcome,
           opts.effects?.[s.actionId],
+          undefined,
+          runtime,
         );
-        if (again.verification !== s.verification)
+        const needsRuntime = planStep.kind === "nfts.mint" || planStep.kind === "revive.call";
+        if (again.verification !== s.verification && !runtime && needsRuntime) {
+          notes.push(
+            `${s.actionId}: the receipt says ${s.verification}, but without the runtime fingerprint the ${planStep.kind} check is capped at ${again.verification}, so it is not chain_verified.`,
+          );
+          flag();
+          mark("unknown");
+          continue;
+        } else if (again.verification !== s.verification)
           problems.push(
             `${s.actionId}: the receipt says ${s.verification}, the chain's events give ${again.verification}.`,
           );
