@@ -1,5 +1,6 @@
 import { WsProvider } from "@polkadot/rpc-provider";
 import { SeamChainError } from "./errors.js";
+import { httpRpcClient } from "./http-transport.js";
 
 /**
  * The JSON-RPC surface SEAM needs. @polkadot/rpc-provider's WsProvider satisfies it, and tests use a
@@ -17,7 +18,10 @@ export interface RpcClient {
   unsubscribe(type: string, method: string, id: number | string): Promise<boolean>;
 }
 
-/** A WebSocket URL (SEAM opens and closes the connection) or an already-open client (left open). */
+/**
+ * A ws(s):// URL (SEAM opens and closes a WebSocket), an http(s):// URL (JSON-RPC over HTTP, see httpRpcClient:
+ * idempotent reads retried, submissions sent once), or an already-open client (left open).
+ */
 export type Endpoint = string | RpcClient;
 
 export interface ConnectOptions {
@@ -67,6 +71,14 @@ export async function withClient<T>(
   opts: ConnectOptions = {},
 ): Promise<T> {
   if (typeof endpoint !== "string") return fn(endpoint);
+  if (/^https?:\/\//.test(endpoint)) {
+    const http = httpRpcClient(endpoint, { requestTimeoutMs: opts.requestTimeoutMs ?? 60_000 });
+    try {
+      return await fn(http);
+    } finally {
+      http.close();
+    }
+  }
   const provider = await connect(endpoint, opts);
   try {
     return await fn(provider as unknown as RpcClient);
