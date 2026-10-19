@@ -1,4 +1,6 @@
-// batch_all rollback on the local dev node: step 2 of 3 fails inside Utility.batch_all.
+// batch_all rollback on the local dev node: transfer, seam_demo settle and mint succeed inside Utility.batch_all,
+// then step 4 (an overdrawing transfer) fails it. The batch covers every kind of the atomic demo plan, so the
+// rollback proof's composition does too (compiler SEAM-012 rejects a proof that misses a kind).
 // 1) SEAM's own path, fully recorded (compile, preflight, signing envelope, policy rule by rule, approval, signing
 //    requests, gate check): the signed batch_all's dry run fails, so the submit gate blocks it (nothing sent).
 // 2) To see what the chain itself does, the SAME signed extrinsic is then submitted directly (test-only bypass,
@@ -6,11 +8,13 @@
 //    The signed extrinsic is held in memory only; it is never written to evidence.
 import { hexToU8a } from "@polkadot/util";
 import { decodeRuntime, storageKey, submitAndWatch, withClient } from "../../dist/index.js";
-import { ENDPOINT, ASSET_ID, devFacts, devKeys, saveEvidence, brief } from "./lib.mjs";
-import { devManifest, devPolicy, runFlow } from "./flow.mjs";
+import { ENDPOINT, ASSET_ID, devFacts, devKeys, loadState, saveEvidence, brief } from "./lib.mjs";
+import { devManifest, devPolicy, rollbackActions, runFlow } from "./flow.mjs";
 
 const facts = await devFacts(); // batchAllRollback: 'unknown' (not verified yet)
 const k = await devKeys();
+const st = loadState();
+if (!st.contract) throw new Error("run setup.mjs first");
 const dec = decodeRuntime(facts);
 const q = dec.decorated().query;
 
@@ -42,34 +46,18 @@ const manifest = devManifest({
   alice: k.alice.address,
   bob: k.bob.address,
   charlie: k.charlie.address,
-  contract: "",
+  contract: st.contract,
   genesis: facts.fingerprint.genesisHash,
-  actions: [
-    {
-      id: "pay",
-      kind: "assets.transfer",
-      args: { assetId: String(ASSET_ID), amount: "5", recipient: k.bob.address },
-      preferredMode: "atomic",
-    },
-    {
-      id: "overdraw",
-      kind: "assets.transfer",
-      args: { assetId: String(ASSET_ID), amount: "900000000000000", recipient: k.bob.address },
-      preferredMode: "atomic",
-    },
-    {
-      id: "mint",
-      kind: "assets.mint",
-      args: { assetId: String(ASSET_ID), amount: "3", recipient: k.charlie.address },
-      preferredMode: "atomic",
-    },
-  ],
+  actions: rollbackActions({
+    bob: k.bob.address,
+    charlie: k.charlie.address,
+    contract: st.contract,
+  }),
 });
 const policy = devPolicy({
   bob: k.bob.address,
   charlie: k.charlie.address,
-  contract: k.bob.address,
-  demo: false,
+  contract: st.contract,
   overrides: {
     allowedModes: ["sequential", "atomic_verified", "atomic_unverified"],
     maxAmountPerAsset: { [String(ASSET_ID)]: "1000000000000000" },
@@ -113,6 +101,7 @@ const ev = direct.inclusion?.events ?? [];
 const innerEffects = ev.filter(
   (e) =>
     (e.pallet === "Assets" && ["Transferred", "Issued"].includes(e.name)) ||
+    (e.pallet === "Contracts" && ["ContractEmitted", "Called"].includes(e.name)) ||
     (e.pallet === "Utility" && e.name !== "BatchInterrupted"),
 );
 const rolledBack =
@@ -151,7 +140,7 @@ const result = {
   state: { before, afterGate, after },
   innerEffects: innerEffects.map((e) => `${e.pallet}.${e.name}`),
   conclusion: rolledBack
-    ? "ROLLED BACK: batch_all failed as a whole (ExtrinsicFailed, the inner error from step 2); step 1's transfer and step 3's mint left no events and no balance change. Only the fee was charged (nonce advanced)."
+    ? "ROLLED BACK: batch_all failed as a whole (ExtrinsicFailed, the inner error from step 4); steps 1-3 (transfer, contract settle, mint) left no events and no balance change. Only the fee was charged (nonce advanced)."
     : "NOT ROLLED BACK (or inconclusive): see state and events",
   batchAllRollback: rolledBack ? "verified" : "unknown",
 };

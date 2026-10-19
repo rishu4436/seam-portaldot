@@ -124,11 +124,18 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
     expect(BigInt(call.proofSize.value)).toBeGreaterThan(BigInt(needed));
   }, 240_000);
 
-  it("batch_all rollback: the gate blocks the failing batch; sent directly, nothing from steps 1 and 3 sticks", () => {
+  it("batch_all rollback: the gate blocks the failing batch; sent directly, nothing from the transfer, contract call or mint sticks", () => {
     const { file, json } = evidenceOf(run("run-rollback.mjs"));
     expect(json.seamGate).toMatchObject({ ok: false, stage: "submit_gate", nothingSent: true });
     expect(json.recordingVersion).toBe(2);
-    expect(json.preflight.steps).toHaveLength(3);
+    // the batch covers every kind of the atomic plan (SEAM-012): transfer, contract call, mint, then a failing transfer
+    expect(json.preflight.steps).toHaveLength(4);
+    expect(json.plan.steps.map((s: { kind: string }) => s.kind)).toEqual([
+      "assets.transfer",
+      "contracts.call",
+      "assets.mint",
+      "assets.transfer",
+    ]);
     expect(json.envelope.checkpoint.hash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(json.gateChecks).toHaveLength(1);
     expect(json.gateChecks[0]).toMatchObject({ phase: "blocked", check: { ok: false } });
@@ -149,6 +156,9 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
 
     const atomic = evidenceOf(run("run-atomic.mjs", file)).json;
     expect(atomic.plan.mode).toBe("atomic_verified");
+    expect(atomic.facts.behaviour.batchAllRollbackProof.composition).toEqual(
+      expect.arrayContaining(["assets.transfer", "contracts.call", "assets.mint"]),
+    );
     expect(atomic.run.receipt.result).toBe("verified");
     expect(new Set(atomic.run.receipt.steps.map((s: any) => s.txHash)).size).toBe(1);
   }, 480_000);
