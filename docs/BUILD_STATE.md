@@ -25,7 +25,7 @@ Two V3 findings that blocked a clean live path are addressed in `@seam/chain` (`
 | -------- | ------- | ------- |
 | compiler | 181     | 0       |
 | policy   | 187     | 0       |
-| sdk      | 176     | 0       |
+| sdk      | 199     | 0       |
 | chain    | 188     | 12      |
 | console  | 67      | 0       |
 
@@ -118,3 +118,4 @@ Neither local chain is the hosted Portaldot V3 testnet. Separately, the **hosted
 - Chainsmith (bot4/seam-run-effects, includes bot4/devnode-e2e-fix cf337d8): seam_demo `Settled` effect committed in the dev-node and testnet-run flows (SEAM-004) and `contracts.call` covered in the batch_all rollback proof (SEAM-012); genesis BadProof dry runs explained. Chain tests 161 passed, 12 skipped. Local dev node only; **NOT V3-verified**.
 - Revive phase (bot6/v3-revive-call): EVM test contract `0x86b9cc2d456eed16a6872e1d5646f606a59cd95b` deployed (tx `0xad39bce1…acb2`, #102843), SEAM `revive.call` (tx `0xec917338…7482`, #102853, `Revive.ContractEmitted`) and SELFDESTRUCT call (tx `0xc0ad1497…338f`, #102862, contract not deleted). The 14.124 tPOT deposit was not refunded (EIP-6780; `remove_code` refused with `CodeInUse`). **V3-verified:** Revive EVM deploy and SEAM `revive.call` execution. **Open (Quill):** `verifyReviveCallOutcome` has to use `ContractEmitted(contract, data, topics)`; there is no per-call event on V3.
 - Chainsmith (`bot4/v3-metadata-stability`): metadata layout hash ignores storage-default drift (V3 `Revive.EthBlockBuilderIR`) and stays fail-closed on layout changes; HTTPS RPC transport sends submits exactly once. Limits: no WebSocket reconnect, a dropped pool tx shows as uncertain, runtime-upgrade fail-closed shown only on edited blobs. Chain tests 188 passed, 12 skipped. Evidence in `evidence/v3-metadata-stability/`. Read-only V3 checks only; **NOT a funded V3 re-run**.
+- Quill (`bot5/nft-receipt-default`): V3 receipt defaults — `nfts.mint` verified on spec 3002 (`Nfts.Issued`); `revive.call` is `unknown` unless an expected `ContractEmitted` matches (weaker than a call-data event; full proof only when the expected event matched). Not yet wired into `flow.ts` or `verify-live`. SDK tests 199. Honest V3 status docs updated. **NOT** a funded V3 re-run.

@@ -12,7 +12,7 @@ Status is **done** or **pending**, based on what is in the repo at the commit yo
 - [x] Repo is public (`rishu4436/seam-portaldot`). Owner: Rishu. Done.
 - [ ] At least 3 real commits inside Oct 14 to Nov 6. Owner: all. **Pending, only partly met.** `git log` has 135 commits: 116 dated Oct 11 (before the window) and 19 dated Oct 18. Inside the window there are 19 commits (14 non-merge, 5 merges), all on one day, Oct 18. Keep committing across the period; don't land everything in the last 24 hours.
 - [ ] Keep the screenshot of the Portaldot team allowing early coding, in case judges ask about the Oct 11 commit dates. Owner: Rishu. Pending.
-- [ ] Deployed on the Portaldot testnet with real on-chain activity. Owner: Bot 4 and Rishu. Pending (needs the V3 RPC and faucet).
+- [x] Deployed on the Portaldot testnet with real on-chain activity. Owner: Bot 4 and Rishu. Done: funded V3 run (spec 3002), hashes in [`evidence/testnet-v3`](../evidence/testnet-v3/README.md).
 
 ## Submission items
 - [x] README. Owner: Bot 5, branch `bot5/readme-judges`. Done (merged).
@@ -20,9 +20,9 @@ Status is **done** or **pending**, based on what is in the repo at the commit yo
 - [x] Runnable code. Owner: all. Done: `npm install && npm run build && npm test` (see `docs/quickstart.md`).
 - [x] `npm run test:e2e`: starts a fresh local dev chain and runs the sequential, atomic and rollback flows. Owner: Bot 6. Done (PR #2). It is not in CI because the test chain download is about 100 MB.
 - [x] One-command quickstart in the root README. Owner: Bot 5. Done.
-- [ ] Testnet info (V3 RPC, faucet). Owner: Rishu. Pending.
-- [x] `scripts/testnet-run.mjs`. Owner: Bot 4, branch `bot4/testnet-ready`. Done (merged). Tested on the local dev node only; not yet run on Portaldot V3. Docs: `packages/chain/docs/testnet-run.md`.
-- [ ] Addresses and tx hashes file under `evidence/` (testnet). Owner: Bot 4. Pending. Today `evidence/devnode/` holds local-chain recordings only.
+- [x] Testnet info (V3 RPC, faucet). Owner: Rishu. Done: `wss://test-node-v3.portaldot.dev` / `https://test-node-v3.portaldot.dev` (spec 3002); faucet funding received for the funded run.
+- [x] `scripts/testnet-run.mjs`. Owner: Bot 4, branch `bot4/testnet-ready`. Done (merged). Local-node tested; funded V3 run used `scripts/v3-funded-run.mjs` (see `evidence/testnet-v3/`). Docs: `packages/chain/docs/testnet-run.md`.
+- [x] Addresses and tx hashes file under `evidence/` (testnet). Owner: Bot 4. Done: [`evidence/testnet-v3/README.md`](../evidence/testnet-v3/README.md) (local-chain recordings remain under `evidence/devnode/`).
 - [x] Architecture diagram (required at check-in). Owner: Bot 1. Done (`docs/architecture.md`).
 - [ ] Demo video of 3 minutes or less, showing the real product and how it uses Portaldot. Owner: Bot 1. Storyboard drafted in `docs/pitch/video-storyboard.md`; recording pending (needs the real testnet run).
 - [ ] Pitch deck: problem, why Portaldot, proof it works. Owner: Bot 1. Outline drafted in `docs/pitch/deck-outline.md`; slides pending.
@@ -37,7 +37,7 @@ Status is **done** or **pending**, based on what is in the repo at the commit yo
 - [ ] Nov 6, 9:30 AM: final deadline.
 
 ## Rishu only
-- [ ] Send the V3 RPC URL and faucet to the team.
+- [x] Send the V3 RPC URL and faucet to the team. Done: `wss://` / `https://test-node-v3.portaldot.dev`; funding received.
 - [ ] Keep the screenshot proving the Portaldot team allowed early coding.
 - [ ] Revoke the old Binance Web3 API key from the previous project.
 

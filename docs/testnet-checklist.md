@@ -27,13 +27,13 @@ This is a **local Portaldot dev node, spec 1002**: the organizers' own `portaldo
 - The contract deploy remains an **unchecked setup step**: it goes through the dry-run and gate path, but policy does not evaluate it and the compiler has no instantiate action.
 - A mainnet-built plan is blocked at the gate on this node (fingerprint differs, see above).
 - The old pallet needed an endowment above the subsistence threshold (`--endowment 2e15`); recipients were funded with 2x the existential deposit (1e14).
-- Still **PENDING**: the hosted V3 testnet (no RPC or faucet yet) and a run signed in a real polkadot.js wallet.
+- Hosted V3 testnet RPC and faucet funding are done (see below). Still **PENDING**: a run signed in a real polkadot.js wallet.
 
-Everything below is still **PENDING** for the hosted V3 testnet; the local node run above ticks no box below.
+The local node run above ticks no V3 box. Hosted V3 boxes that the funded run covered are ticked below; the rest stay open.
 
 ## Needed from Portaldot (blockers)
-- [ ] V3 testnet WebSocket RPC URL (`wss://...`).
-- [ ] Faucet (to fund the signer and pay fees).
+- [x] V3 testnet WebSocket RPC URL: `wss://test-node-v3.portaldot.dev` (also `https://test-node-v3.portaldot.dev`).
+- [x] Faucet (to fund the signer and pay fees). Funding received; spent ~17.21 tPOT across the funded run (see `evidence/testnet-v3/`).
 - [ ] Token symbol and decimals, if the node does not report them in `system_properties`.
 - [ ] Whether Revive and Nfts are live on V3 (the compiler also supports `revive.call` and `nfts.mint`).
 - [ ] Whether V3 still uses the old `Contracts` pallet (unverified; mainnet spec 1002 does) or Revive.
@@ -62,7 +62,7 @@ npx seam compile docs/examples/demo-manifest.json --endpoint <WS_RPC_URL> --toke
 - [ ] Decide plan mode: atomic (`Utility.batch_all`) is only used when rollback is verified on that runtime. The dev chain's rollback proof does not carry over; run a rollback test on V3 first.
 
 ## 4. Fund and set up
-- [ ] Fund the signer from the faucet.
+- [x] Fund the signer from the faucet. Done for the funded V3 run.
 - [ ] Create/mint the demo asset(s) and deploy the demo contract (`contracts/seam-demo`), recording the deploy tx.
 - Setup on the dev chain was done by `packages/chain/scripts/devnode/setup.mjs` (refuses non-localhost endpoints).
 - **Merged:** `scripts/testnet-run.mjs` is on main. Run it from the repo root after `npm run build`. Full docs: `packages/chain/docs/testnet-run.md`.
@@ -72,7 +72,7 @@ npx seam compile docs/examples/demo-manifest.json --endpoint <WS_RPC_URL> --toke
   - Output goes to `evidence/testnet-v3/`. It refuses mainnet by URL and genesis hash, and a signer without `--yes` sends nothing.
   - It does **not** run `seam snapshot` or `seam verify`, so steps 1 and 5 (snapshot, verify) stay manual.
   - The contract deploy is an **unchecked setup step**: it is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action.
-- **PENDING:** the script has only been tested on the local dev node. Nothing has run on Portaldot V3. The real polkadot.js extension has not been exercised, only a stand-in wallet.
+- Funded V3 activity used `scripts/v3-funded-run.mjs` (see `evidence/testnet-v3/`). `testnet-run.mjs` itself remains local-node-tested. The real polkadot.js extension has not been exercised, only a stand-in wallet.
 
 ## 5. Run the flows
 - [ ] Sequential: transfer, contract call, mint, one transaction per step, each gated.
@@ -82,9 +82,9 @@ npx seam compile docs/examples/demo-manifest.json --endpoint <WS_RPC_URL> --toke
 
 ## 6. Record (the Oct 24 check-in needs these)
 For each run, save under `evidence/testnet-v3/` (no signatures, seeds or keys):
-- [ ] RPC endpoint (no secrets), genesis hash, spec version, block numbers.
-- [ ] Signer address, contract address, asset ids.
-- [ ] Every transaction hash and block hash, with the receipt JSON and its `seam verify` output.
+- [x] RPC endpoint (no secrets), genesis hash, spec version, block numbers. In [`evidence/testnet-v3/README.md`](../evidence/testnet-v3/README.md).
+- [x] Signer address, contract address, asset ids. In [`evidence/testnet-v3/README.md`](../evidence/testnet-v3/README.md).
+- [x] Every transaction hash and block hash (receipt JSON under `evidence/testnet-v3/runs/`). In [`evidence/testnet-v3/README.md`](../evidence/testnet-v3/README.md). `seam verify` on each receipt is still optional follow-up.
 - [ ] Gate check results per step (`passed` list) and the policy result.
 - [ ] A short note stating exactly which network each file came from.
 
