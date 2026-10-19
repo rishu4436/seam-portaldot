@@ -87,6 +87,8 @@ export interface PortaldotAdapterOptions extends ConnectOptions {
   batchAllRollback?: BatchAllRollback;
   /** Rollback test evidence for 'verified' (see DiscoverOptions.batchAllRollbackProof). */
   batchAllRollbackProof?: AtomicRollbackProof;
+  /** Metadata to compare re-reads against by layout (see DiscoverOptions.pinnedMetadataHex). Default: facts.source.metadataHex. */
+  pinnedMetadataHex?: Hex;
   /** Token symbol/decimals for a node whose system_properties omit them (see DiscoverOptions.declaredToken). */
   declaredToken?: { tokenSymbol: string; tokenDecimals: number };
   /** Use these facts instead of the ones discover() returns (e.g. facts from an approved snapshot). */
@@ -202,6 +204,12 @@ export function createPortaldotAdapter(
   };
   const discoverOpts = { ...options };
   delete discoverOpts.facts;
+  // Re-reads compare against the pinned facts' metadata by layout: a drift in storage defaults only (V3's
+  // Revive.EthBlockBuilderIR) keeps the pinned fingerprint; any other change still changes it.
+  const pinnedOpts = () => {
+    const pinned = options.pinnedMetadataHex ?? facts?.source.metadataHex;
+    return pinned ? { ...discoverOpts, pinnedMetadataHex: pinned } : discoverOpts;
+  };
 
   const adapter: PortaldotAdapter = {
     endpoint,
@@ -219,7 +227,7 @@ export function createPortaldotAdapter(
     },
 
     async discover() {
-      const found = await discover(endpoint, discoverOpts);
+      const found = await discover(endpoint, pinnedOpts());
       if (!facts) facts = found;
       else if (found.fingerprintDigest !== facts.fingerprintDigest) {
         throw new SeamChainError(
@@ -231,7 +239,7 @@ export function createPortaldotAdapter(
     },
 
     readFingerprint() {
-      return refetchFingerprint(endpoint, discoverOpts);
+      return refetchFingerprint(endpoint, pinnedOpts());
     },
 
     async preflight(plan: Plan) {

@@ -4,6 +4,14 @@ export * from "./errors.js";
 export { quietly } from "./quiet.js";
 export { connect, withClient, type RpcClient, type Endpoint, type ConnectOptions } from "./rpc.js";
 export {
+  httpRpcClient,
+  isIdempotentRead,
+  READ_METHODS,
+  READ_PREFIXES,
+  type HttpRpcClient,
+  type HttpRpcOptions,
+} from "./http-transport.js";
+export {
   discover,
   readChainInputs,
   factsFromChainInputs,
@@ -18,11 +26,20 @@ export {
   snapshotFromChainInputs,
   chainInputsFromSnapshot,
   tokenInfo,
+  pinnedInputs,
   type DiscoverOptions,
   type FactsOptions,
   type SnapshotExtra,
   type SnapshotFiles,
 } from "./discover.js";
+export {
+  metadataLayoutHash,
+  sameMetadataLayout,
+  blankStorageFallbacks,
+  pinMetadata,
+  METADATA_LAYOUT_DOMAIN,
+  type MetadataDrift,
+} from "./metadata-layout.js";
 export {
   buildSigningRequests,
   buildSigningRequest,
