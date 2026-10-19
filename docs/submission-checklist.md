@@ -2,7 +2,7 @@
 
 Status is **done** or **pending**, based on what is in the repo at the commit you are reading (check `git log`; no commit is pinned here). All times IST. Source for the rules: the DoraHacks page, read Oct 11, 2026. Re-check it before each deadline.
 
-**There are no testnet results yet.** Every on-chain run in `evidence/` is from one of two local chains (a `substrate-contracts-node` dev chain and a local Portaldot dev node, spec 1002). Neither is the Portaldot V3 hosted testnet or mainnet, and neither shows V3 or Revive support.
+**One Portaldot V3 testnet run exists.** Besides two local chains (a `substrate-contracts-node` dev chain and a local Portaldot dev node, spec 1002, neither showing V3 or Revive support), the hosted Portaldot V3 testnet (spec 3002) was used in one funded run (two phases, 18 finalized transactions, [`evidence/testnet-v3`](../evidence/testnet-v3/README.md)): Assets, Nfts, SEAM sequential and `atomic_verified` plans, `Utility.batch_all` rollback, an EVM contract deploy and a SEAM `revive.call` are verified there; a per-call Revive effect (V3 has no such event), a fresh account mapping, ink!/PolkaVM, cross-VM and browser-extension signing are not. Some items below predate that run.
 
 ## Rules and key dates
 - Track: Modular Cloud & Middleware. Judging: feasibility 30, innovation 30, ecosystem 20, business 20.
