@@ -7,7 +7,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 const LIVE = process.env.SEAM_DEVNODE === "1";
 const NODE_URL = process.env.SEAM_DEVNODE_URL ?? "ws://127.0.0.1:9944";
@@ -69,6 +69,16 @@ describe("testnet-run: refusals (offline: any socket or DNS attempt fails the ch
 });
 
 describe.skipIf(!LIVE)("testnet-run against the local dev node (SEAM_DEVNODE=1)", () => {
+  // A fresh dev node is at its genesis block, where every signed dry run reports BadProof (see past-genesis.mjs).
+  // testnet-run dry-runs its setup calls, so build block 1 first. Real networks are never at genesis.
+  beforeAll(() => {
+    const head = execFileSync("node", [here("../scripts/devnode/past-genesis.mjs")], {
+      encoding: "utf8",
+      env: { ...process.env, SEAM_DEVNODE_URL: NODE_URL },
+      timeout: 120_000,
+    });
+    expect(Number(head.trim())).toBeGreaterThan(0);
+  }, 120_000);
   it("read-only: writes a plain runtime report and signs nothing", () => {
     const out = tmp();
     const r = run([NODE_URL, ...DEV, "--out", out]);
