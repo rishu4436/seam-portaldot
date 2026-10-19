@@ -1,0 +1,303 @@
+{
+ "kind": "v3-tx",
+ "label": "revive.instantiate_with_code",
+ "call": "Revive.instantiate_with_code(value=0, weight_limit={ref_time:50000000000,proof_size:1000000}, storage_deposit_limit=1500000000000000 (15.0 tPOT), code=0x600d600c600039600d6000f336600a5760006000a0005b33ff, data=0x, salt=None)",
+ "callHex": "0x5003000700743ba40b02093d000f00c029f73d540564600d600c600039600d6000f336600a5760006000a0005b33ff0000",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 15,
+ "checkpoint": {
+  "number": 102840,
+  "hash": "0x1e98f344dee16718308057172b4e6aef28fbbcac53a74de2e13bd43b4c7add47"
+ },
+ "signedDryRun": {
+  "result": "ok",
+  "detail": [
+   {
+    "txHash": "0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2",
+    "outcome": "ok",
+    "detail": "dispatch ok",
+    "raw": "0x0000"
+   }
+  ]
+ },
+ "queryInfo": {
+  "weight": {
+   "ref_time": 51415510334,
+   "proof_size": 1019007
+  },
+  "class": "normal",
+  "partialFee": "1599867195209"
+ },
+ "estimatedFee": "1599867195209",
+ "estimatedFeeTpot": "0.01599867195209",
+ "expectedDeposit": "1500000000000000",
+ "budgetBefore": {
+  "spent": "304034302112647",
+  "spentTpot": "3.04034302112647",
+  "leftTpot": "20.0"
+ },
+ "balanceBefore": {
+  "free": "99695965697887353",
+  "reserved": "240000000000000"
+ },
+ "txHashLocal": "0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2",
+ "outcome": "success",
+ "txHash": "0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2",
+ "status": "finalized",
+ "finalized": true,
+ "statuses": [
+  {
+   "status": "submitted",
+   "at": "2026-10-19T12:19:29.492Z"
+  },
+  {
+   "status": "in_block",
+   "blockHash": "0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1",
+   "at": "2026-10-19T12:19:33.609Z"
+  },
+  {
+   "status": "finalized",
+   "blockHash": "0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1",
+   "at": "2026-10-19T12:19:44.298Z"
+  }
+ ],
+ "block": {
+  "number": 102843,
+  "hash": "0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1",
+ "success": true,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1599867195209"
+   ],
+   "eventIndex": 1,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "System",
+   "name": "NewAccount",
+   "args": [
+    "0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee"
+   ],
+   "eventIndex": 2,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Endowed",
+   "args": [
+    "0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee",
+    "10000000000000"
+   ],
+   "eventIndex": 3,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Minted",
+   "args": [
+    "0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee",
+    "10000000000000"
+   ],
+   "eventIndex": 4,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "TransferAndHold",
+   "args": [
+    "{\"revive\":\"CodeUploadDepositReserve\"}",
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "0x6d6f646c70792f72657669760000000000000000000000000000000000000000",
+    "498000000000000"
+   ],
+   "eventIndex": 5,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "{\"_enum\":{\"__Unused0\":\"Null\",\"__Unused1\":\"Null\",\"__Unused2\":\"Null\",\"__Unused3\":\"Null\",\"__Unused4\":\"Null\",\"__Unused5\":\"Null\",\"__Unused6\":\"Null\",\"__Unused7\":\"Null\",\"__Unused8\":\"Null\",\"__Unused9\":\"Null\",\"__Unused10\":\"Null\",\"Staking\":\"PalletStakingPalletHoldReason\",\"Session\":\"PalletSessionHoldReason\",\"__Unused13\":\"Null\",\"__Unused14\":\"Null\",\"TechnicalCommittee\":\"PalletCollectiveHoldReason\",\"__Unused16\":\"Null\",\"__Unused17\":\"Null\",\"__Unused18\":\"Null\",\"__Unused19\":\"Null\",\"__Unused20\":\"Null\",\"Contracts\":\"PalletContractsHoldReason\",\"__Unused22\":\"Null\",\"__Unused23\":\"Null\",\"__Unused24\":\"Null\",\"__Unused25\":\"Null\",\"__Unused26\":\"Null\",\"__Unused27\":\"Null\",\"__Unused28\":\"Null\",\"__Unused29\":\"Null\",\"Recovery\":\"PalletRecoveryHoldReason\",\"__Unused31\":\"Null\",\"__Unused32\":\"Null\",\"__Unused33\":\"Null\",\"Preimage\":\"PalletPreimageHoldReason\",\"__Unused35\":\"Null\",\"__Unused36\":\"Null\",\"__Unused37\":\"Null\",\"__Unused38\":\"Null\",\"__Unused39\":\"Null\",\"__Unused40\":\"Null\",\"__Unused41\":\"Null\",\"__Unused42\":\"Null\",\"__Unused43\":\"Null\",\"__Unused44\":\"Null\",\"__Unused45\":\"Null\",\"__Unused46\":\"Null\",\"__Unused47\":\"Null\",\"NftFractionalization\":\"PalletNftFractionalizationHoldReason\",\"__Unused49\":\"Null\",\"__Unused50\":\"Null\",\"TransactionStorage\":\"PalletTransactionStorageHoldReason\",\"__Unused52\":\"Null\",\"__Unused53\":\"Null\",\"__Unused54\":\"Null\",\"__Unused55\":\"Null\",\"__Unused56\":\"Null\",\"__Unused57\":\"Null\",\"__Unused58\":\"Null\",\"__Unused59\":\"Null\",\"__Unused60\":\"Null\",\"__Unused61\":\"Null\",\"__Unused62\":\"Null\",\"__Unused63\":\"Null\",\"__Unused64\":\"Null\",\"__Unused65\":\"Null\",\"__Unused66\":\"Null\",\"__Unused67\":\"Null\",\"__Unused68\":\"Null\",\"__Unused69\":\"Null\",\"SafeMode\":\"PalletSafeModeHoldReason\",\"__Unused71\":\"Null\",\"__Unused72\":\"Null\",\"__Unused73\":\"Null\",\"__Unused74\":\"Null\",\"__Unused75\":\"Null\",\"__Unused76\":\"Null\",\"__Unused77\":\"Null\",\"__Unused78\":\"Null\",\"__Unused79\":\"Null\",\"Revive\":\"PalletReviveHoldReason\",\"__Unused81\":\"Null\",\"DelegatedStaking\":\"PalletDelegatedStakingHoldReason\",\"__Unused83\":\"Null\",\"__Unused84\":\"Null\",\"__Unused85\":\"Null\",\"__Unused86\":\"Null\",\"__Unused87\":\"Null\",\"__Unused88\":\"Null\",\"__Unused89\":\"Null\",\"MultiAssetBounties\":\"PalletMultiAssetBountiesHoldReason\",\"__Unused91\":\"Null\",\"__Unused92\":\"Null\",\"__Unused93\":\"Null\",\"__Unused94\":\"Null\",\"RegistrarPara\":\"PalletRegistrarParaHoldReason\"}}",
+    "AccountId32",
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Revive",
+   "name": "Instantiated",
+   "args": [
+    "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+    "0x86b9cc2d456eed16a6872e1d5646f606a59cd95b"
+   ],
+   "eventIndex": 6,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "H160",
+    "H160"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "TransferAndHold",
+   "args": [
+    "{\"revive\":\"StorageDepositReserve\"}",
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee",
+    "914400000000000"
+   ],
+   "eventIndex": 7,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "{\"_enum\":{\"__Unused0\":\"Null\",\"__Unused1\":\"Null\",\"__Unused2\":\"Null\",\"__Unused3\":\"Null\",\"__Unused4\":\"Null\",\"__Unused5\":\"Null\",\"__Unused6\":\"Null\",\"__Unused7\":\"Null\",\"__Unused8\":\"Null\",\"__Unused9\":\"Null\",\"__Unused10\":\"Null\",\"Staking\":\"PalletStakingPalletHoldReason\",\"Session\":\"PalletSessionHoldReason\",\"__Unused13\":\"Null\",\"__Unused14\":\"Null\",\"TechnicalCommittee\":\"PalletCollectiveHoldReason\",\"__Unused16\":\"Null\",\"__Unused17\":\"Null\",\"__Unused18\":\"Null\",\"__Unused19\":\"Null\",\"__Unused20\":\"Null\",\"Contracts\":\"PalletContractsHoldReason\",\"__Unused22\":\"Null\",\"__Unused23\":\"Null\",\"__Unused24\":\"Null\",\"__Unused25\":\"Null\",\"__Unused26\":\"Null\",\"__Unused27\":\"Null\",\"__Unused28\":\"Null\",\"__Unused29\":\"Null\",\"Recovery\":\"PalletRecoveryHoldReason\",\"__Unused31\":\"Null\",\"__Unused32\":\"Null\",\"__Unused33\":\"Null\",\"Preimage\":\"PalletPreimageHoldReason\",\"__Unused35\":\"Null\",\"__Unused36\":\"Null\",\"__Unused37\":\"Null\",\"__Unused38\":\"Null\",\"__Unused39\":\"Null\",\"__Unused40\":\"Null\",\"__Unused41\":\"Null\",\"__Unused42\":\"Null\",\"__Unused43\":\"Null\",\"__Unused44\":\"Null\",\"__Unused45\":\"Null\",\"__Unused46\":\"Null\",\"__Unused47\":\"Null\",\"NftFractionalization\":\"PalletNftFractionalizationHoldReason\",\"__Unused49\":\"Null\",\"__Unused50\":\"Null\",\"TransactionStorage\":\"PalletTransactionStorageHoldReason\",\"__Unused52\":\"Null\",\"__Unused53\":\"Null\",\"__Unused54\":\"Null\",\"__Unused55\":\"Null\",\"__Unused56\":\"Null\",\"__Unused57\":\"Null\",\"__Unused58\":\"Null\",\"__Unused59\":\"Null\",\"__Unused60\":\"Null\",\"__Unused61\":\"Null\",\"__Unused62\":\"Null\",\"__Unused63\":\"Null\",\"__Unused64\":\"Null\",\"__Unused65\":\"Null\",\"__Unused66\":\"Null\",\"__Unused67\":\"Null\",\"__Unused68\":\"Null\",\"__Unused69\":\"Null\",\"SafeMode\":\"PalletSafeModeHoldReason\",\"__Unused71\":\"Null\",\"__Unused72\":\"Null\",\"__Unused73\":\"Null\",\"__Unused74\":\"Null\",\"__Unused75\":\"Null\",\"__Unused76\":\"Null\",\"__Unused77\":\"Null\",\"__Unused78\":\"Null\",\"__Unused79\":\"Null\",\"Revive\":\"PalletReviveHoldReason\",\"__Unused81\":\"Null\",\"DelegatedStaking\":\"PalletDelegatedStakingHoldReason\",\"__Unused83\":\"Null\",\"__Unused84\":\"Null\",\"__Unused85\":\"Null\",\"__Unused86\":\"Null\",\"__Unused87\":\"Null\",\"__Unused88\":\"Null\",\"__Unused89\":\"Null\",\"MultiAssetBounties\":\"PalletMultiAssetBountiesHoldReason\",\"__Unused91\":\"Null\",\"__Unused92\":\"Null\",\"__Unused93\":\"Null\",\"__Unused94\":\"Null\",\"RegistrarPara\":\"PalletRegistrarParaHoldReason\"}}",
+    "AccountId32",
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "38663924674"
+   ],
+   "eventIndex": 8,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+    "1561203270535"
+   ],
+   "eventIndex": 9,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "1561203270535",
+    "0"
+   ],
+   "eventIndex": 10,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "AccountId32",
+    "u128",
+    "u128"
+   ],
+   "topics": []
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19007,\"refTime\":1524333644}}"
+   ],
+   "eventIndex": 11,
+   "extrinsicIndex": 1,
+   "argTypes": [
+    "{\"weight\":\"SpWeightsWeightV2Weight\",\"class\":\"FrameSupportDispatchDispatchClass\",\"paysFee\":\"FrameSupportDispatchPays\"}"
+   ],
+   "topics": []
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1599867195209)",
+  "System.NewAccount(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee)",
+  "Balances.Endowed(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 10000000000000)",
+  "Balances.Minted(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 10000000000000)",
+  "Balances.TransferAndHold({\"revive\":\"CodeUploadDepositReserve\"}, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x6d6f646c70792f72657669760000000000000000000000000000000000000000, 498000000000000)",
+  "Revive.Instantiated(0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95b)",
+  "Balances.TransferAndHold({\"revive\":\"StorageDepositReserve\"}, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 914400000000000)",
+  "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 38663924674)",
+  "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1561203270535)",
+  "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1561203270535, 0)",
+  "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19007,\"refTime\":1524333644}})"
+ ],
+ "actualFee": "1561203270535",
+ "balanceAfter": {
+  "free": "98282004494616818",
+  "reserved": "240000000000000"
+ },
+ "freeDrop": "1413961203270535",
+ "freeDropTpot": "14.13961203270535",
+ "reservedIncreaseTpot": "0.0",
+ "contract": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95b",
+ "evmInitCode": "0x600d600c600039600d6000f336600a5760006000a0005b33ff",
+ "evmRuntimeCode": "0x36600a5760006000a0005b33ff",
+ "stateBefore": {
+  "block": 102842,
+  "signer": {
+   "free": "99695965697887353",
+   "reserved": "240000000000000"
+  }
+ },
+ "stateAfter": {
+  "block": 102845,
+  "signer": {
+   "free": "98282004494616818",
+   "reserved": "240000000000000"
+  },
+  "contract": {
+   "info": {
+    "accountType": {
+     "contract": {
+      "trieId": "0x41daeea164ccec7f6f4e644b559c7ecd79066be60f7e2f370584acd9f82f2dd3",
+      "codeHash": "0x6a81ea8307e3415bf79a339455e3767ec3ac15c9b76393f786ee78327929a0e4",
+      "storageBytes": 0,
+      "storageItems": 0,
+      "storageByteDeposit": 0,
+      "storageItemDeposit": 0,
+      "storageBaseDeposit": 914400000000000,
+      "immutableDataLen": 0
+     }
+    },
+    "dust": 0
+   },
+   "accountId": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee",
+   "free": "10000000000000",
+   "reserved": "914400000000000"
+  }
+ },
+ "depositFromEvents": []
+}
