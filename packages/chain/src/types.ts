@@ -87,6 +87,11 @@ export interface ChainInputs {
   properties: ChainPropertiesJson;
   /** Best block the reads were pinned to. */
   head: BlockRef;
+  /**
+   * Set when the node's metadata differed from the caller's pinned metadata only in storage default values:
+   * `metadataHex` then holds the pinned bytes, and this records the live hash (see metadata-layout.ts).
+   */
+  metadataDrift?: import("./metadata-layout.js").MetadataDrift;
 }
 
 /** Same format as /workspace/seam-evidence/portaldot-mainnet-snapshot.json, plus a few extra fields. */
@@ -113,4 +118,8 @@ export interface FreshFingerprint {
   fingerprintDigest: Hex;
   /** Block the fingerprint was read at. */
   atBlock: BlockRef;
+  /** Layout hash of the metadata behind the fingerprint (storage defaults blanked; see metadataLayoutHash). */
+  metadataLayoutHash?: Hex;
+  /** Present when the live metadata differed from the pinned one only in storage defaults. */
+  metadataDrift?: import("./metadata-layout.js").MetadataDrift;
 }

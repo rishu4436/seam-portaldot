@@ -1,6 +1,7 @@
 import type { Hex, RuntimeFacts } from "@seam/compiler";
 import { hexToU8a } from "@polkadot/util";
 import { blake2AsHex } from "@polkadot/util-crypto";
+import { sameMetadataLayout } from "./metadata-layout.js";
 import { SeamChainError } from "./errors.js";
 import { outcomeForExtrinsic, type DecodedEvent } from "./events.js";
 import {
@@ -111,8 +112,13 @@ async function eventsAt(
       `no metadata at block ${blockHash}; its events cannot be decoded safely`,
     );
   }
+  // Same bytes, or bytes that differ only in storage default values (V3's state-dependent Revive.EthBlockBuilderIR
+  // fallback), which no event, error or type depends on. Anything else is a real layout change.
   const blockMetadataHash = blake2AsHex(hexToU8a(metadataHex), 256).toLowerCase();
-  if (blockMetadataHash !== facts.fingerprint.metadataHash.toLowerCase()) {
+  if (
+    blockMetadataHash !== facts.fingerprint.metadataHash.toLowerCase() &&
+    !sameMetadataLayout(metadataHex, facts.source.metadataHex)
+  ) {
     throw new SeamChainError(
       "RUNTIME_CHANGED",
       `block ${blockHash} has metadata ${blockMetadataHash}, not the pinned ${facts.fingerprint.metadataHash}; its events cannot be decoded safely`,
