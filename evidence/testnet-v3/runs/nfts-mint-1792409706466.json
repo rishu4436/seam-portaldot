@@ -1,0 +1,90 @@
+{
+ "kind": "v3-tx",
+ "label": "nfts.mint",
+ "call": "Nfts.mint(collection=0, item=0, mint_to=5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, witness_data=None)",
+ "callFromChain": "nfts.mint([0,0,{\"id\":\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\"},null])",
+ "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+ "nonce": 2,
+ "recordNote": "the sending process lost its WebSocket after submission and died before writing this record; rebuilt from the chain by signer + nonce",
+ "recoveredBy": "lookupExtrinsic; readInclusion refused (RUNTIME_CHANGED: block 0x01ad8cc29f5b80a9c165e1fe84b589ebf4f1e3a491c54fece3e4602358143af6 has metadata 0xbacbc67e76c2fbb59755229cccd2536caa06734470133d064768b94); decoded with the block's own metadata after checking it differs only in storage fallbacks",
+ "txHash": "0x9ea5ff6bfa593ae803a800b6806c80a7c068057f176e9355f098933917de8f75",
+ "status": "finalized",
+ "finalized": true,
+ "block": {
+  "number": 102327,
+  "hash": "0x01ad8cc29f5b80a9c165e1fe84b589ebf4f1e3a491c54fece3e4602358143af6"
+ },
+ "extrinsicIndex": 1,
+ "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x01ad8cc29f5b80a9c165e1fe84b589ebf4f1e3a491c54fece3e4602358143af6",
+ "success": true,
+ "dispatchError": null,
+ "events": [
+  {
+   "pallet": "Balances",
+   "name": "Withdraw",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1510934132939"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Reserved",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "10000000000000"
+   ]
+  },
+  {
+   "pallet": "Nfts",
+   "name": "Issued",
+   "args": [
+    "0",
+    "0",
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+   ]
+  },
+  {
+   "pallet": "Balances",
+   "name": "Deposit",
+   "args": [
+    "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+    "1510934132939"
+   ]
+  },
+  {
+   "pallet": "TransactionPayment",
+   "name": "TransactionFeePaid",
+   "args": [
+    "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "1510934132939",
+    "0"
+   ]
+  },
+  {
+   "pallet": "System",
+   "name": "ExtrinsicSuccess",
+   "args": [
+    "{\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+   ]
+  }
+ ],
+ "eventsBrief": [
+  "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1510934132939)",
+  "Balances.Reserved(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 10000000000000)",
+  "Nfts.Issued(0, 0, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1)",
+  "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1510934132939)",
+  "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1510934132939, 0)",
+  "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+ ],
+ "actualFee": "1510934132939",
+ "outcome": "success",
+ "itemOwnerAfter": {
+  "owner": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "approvals": {},
+  "deposit": {
+   "account": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+   "amount": 10000000000000
+  }
+ }
+}

@@ -1,0 +1,31 @@
+{
+ "kind": "v3-run-state",
+ "h160": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+ "mapTx": "0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812",
+ "collection": 0,
+ "nftItems": [
+  0,
+  1,
+  2,
+  3
+ ],
+ "assetId": 806707,
+ "recipients": [
+  "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+  "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v"
+ ],
+ "recipientsFunded": [
+  "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+  "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v"
+ ],
+ "assetMinted": true,
+ "assetTransferred": true,
+ "reservedItems": [
+  2,
+  3
+ ],
+ "sequentialFile": "plan-sequential-1792411270138.json",
+ "rollbackFile": "plan-rollback-1792411297498.json",
+ "rollback": "verified",
+ "atomicFile": "plan-atomic-1792411355057.json"
+}
