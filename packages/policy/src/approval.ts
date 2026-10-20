@@ -10,7 +10,7 @@ import type {
   SigningEnvelope,
 } from "./types.js";
 import { digest } from "./digest.js";
-import { checkRuntimeLock, fingerprintDigest } from "./runtimeLock.js";
+import { checkRuntimeLock, fingerprintDigest, type LockResult } from "./runtimeLock.js";
 import { type Policy, policyDigest, planDigest } from "./policy.js";
 import { normalizeAccount } from "./address.js";
 
@@ -367,14 +367,21 @@ export interface SubmitCheck {
   reasons: { code: string; message: string }[];
   /** Checks that passed, in the order they ran, so recordings can show what was verified. Stable codes. */
   passed: { code: string; detail: string }[];
+  /**
+   * The exact runtime lock result the gate used (basis, code, raw and layout hashes when the layout path ran).
+   * Always set by checkBeforeSubmit (see SubmitCheckResult); optional here so other code can still build blocked results.
+   */
+  runtimeLock?: LockResult;
 }
+/** What checkBeforeSubmit returns: runtimeLock is always present. */
+export type SubmitCheckResult = SubmitCheck & { runtimeLock: LockResult };
 
 /**
  * The last gate before broadcasting. Recomputes the binding from what is about to be sent and blocks on any
  * mismatch, an expired or reused approval, a runtime change, or signed bytes that differ from the approved calls.
  * Call store.markUsed(usageKey(approval.hash, sendIndex)) once the transaction is submitted.
  */
-export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
+export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
   const reasons: SubmitCheck["reasons"] = [];
   const passed: SubmitCheck["passed"] = [];
   const ok = (code: string, detail: string) => passed.push({ code, detail });
@@ -653,7 +660,7 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
     );
   }
 
-  return { ok: reasons.length === 0, reasons, passed };
+  return { ok: reasons.length === 0, reasons, passed, runtimeLock: lock };
 }
 
 export type NextStepCode =

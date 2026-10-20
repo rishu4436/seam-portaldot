@@ -300,4 +300,51 @@ describe("checkBeforeSubmit with metadata blobs", () => {
     const r = submit({ currentFingerprint: PREP, preparedMetadataHex: V3, currentMetadataHex: V3 });
     expect(r.passed.map((p) => p.code)).toContain("runtime_unchanged");
   });
+  it("result carries the layout_hash runtimeLock with both hashes", () => {
+    const r = submit({ preparedMetadataHex: V3, currentMetadataHex: DRIFT });
+    expect(r.runtimeLock).toMatchObject({
+      ok: true,
+      lockBasis: "layout_hash",
+      code: "runtime_layout_unchanged",
+      preparedMetadataHash: PREP.metadataHash,
+      currentMetadataHash: CUR.metadataHash,
+      preparedLayoutHash: LAYOUT,
+      currentLayoutHash: LAYOUT,
+    });
+    expect(r.runtimeLock).toEqual(
+      checkRuntimeLock(PREP, CUR, {
+        preparedMetadataHex: V3,
+        currentMetadataHex: DRIFT,
+        metadataHashModeOff: true,
+      }),
+    );
+  });
+  it("strict block carries runtimeLock ok:false runtime_changed, equal to a direct call", () => {
+    const r = submit();
+    expect(r.runtimeLock).toMatchObject({
+      ok: false,
+      code: "runtime_changed",
+      changed: ["metadataHash"],
+    });
+    expect(r.runtimeLock).toEqual(checkRuntimeLock(PREP, CUR, { metadataHashModeOff: true }));
+    const m1 = submit({
+      preparedMetadataHex: V3,
+      currentMetadataHex: DRIFT,
+      decodeSignedExtrinsic: dec(1),
+    });
+    expect(m1.runtimeLock).toEqual(
+      checkRuntimeLock(PREP, CUR, {
+        preparedMetadataHex: V3,
+        currentMetadataHex: DRIFT,
+        metadataHashModeOff: false,
+      }),
+    );
+  });
+  it("unchanged runtime carries a raw runtimeLock", () => {
+    expect(submit({ currentFingerprint: PREP }).runtimeLock).toMatchObject({
+      ok: true,
+      lockBasis: "raw",
+      code: "runtime_unchanged",
+    });
+  });
 });
