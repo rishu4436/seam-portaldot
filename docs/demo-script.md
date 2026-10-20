@@ -171,16 +171,23 @@ Output (test lines; timings removed):
 ```
 Say: "This replays the real V3 records (no network) through `Seam.execute` and through the live re-verifier. Both reach the same verdict. The EVM contract call (tx `0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482`, #102853) is `verified` only when we name the event the contract must emit; without one it stays `unknown`, because V3 has no per-call Revive event. SEAM never upgrades that to verified on its own."
 
-Live form, for a judge with network (not run in the demo; read-only):
-`npm run -s seam -- verify --endpoint <V3 wss> --plan plan.json receipt.json`. It re-reads block, signer, call bytes and events. A step whose receipt or re-check says `not_verified` comes back **`failed`** with a problem listed; atomic steps are re-checked against their own slice of the batch call. From the CLI, `nfts.mint` and `revive.call` steps stay `unknown`, because the CLI does not yet pass the runtime fingerprint (the SDK's `verifyReceiptLive(..., { runtime })` does).
+Live form, for a judge with network (not run in the demo; read-only, nothing is signed or sent). After the setup step, also write the recorded plan: `node -e 'require("fs").writeFileSync("/tmp/v3-seq-plan.json",JSON.stringify(require("./evidence/testnet-v3/runs/plan-sequential-1792411270138.json").plan))'`, then:
+
+```bash
+npm run -s seam -- verify --endpoint wss://test-node-v3.portaldot.dev --plan /tmp/v3-seq-plan.json --runtime evidence/testnet-v3/runs/plan-sequential-1792411270138.json /tmp/v3-seq-nft-receipt.json
+```
+
+It re-reads block, signer, call bytes and events. `--runtime` takes the run record's `fingerprint`: it must have the receipt's `fingerprintDigest`, and genesis, spec, transaction version and ss58 must match the node; only the metadata hash may differ. Without `--runtime`, `nfts.mint` and `revive.call` steps stay `unknown`. A step whose receipt or re-check says `not_verified` comes back **`failed`** with a problem listed; atomic steps are re-checked against their own slice of the batch call. This live command has not been run against V3 for this script, so no output is shown.
 
 ## 7. Console, LIVE V3 view (0:40)
 
-Open http://localhost:5173.
-- **Mode switch -> LIVE V3.** Show the "V3 RPC URL" field and "Check live". Say: "LIVE uses a real V3 RPC and your own wallet. With no endpoint it stays blocked before signing; it never falls back to a simulation."
-- Switch to the recorded mode and click through Manifest -> Plan -> Checks -> Approve -> Receipt. Say what the badge says: the recorded run is a **local Portaldot dev node, spec 1002**, not V3.
+**Depends on Pixel's console commit `3149897` (`bot1/live-v3-console`) being merged to `main`.** Without it, LIVE V3 has no default endpoint and stays blocked; show that instead and skip the evidence view.
 
-Only say the console shows real V3 transactions if Pixel's LIVE V3 wiring has landed and you have checked it before the demo. Otherwise show the blocked state as above.
+Open http://localhost:5173 and pick **LIVE V3** in the mode switch.
+- **Facts step.** LIVE defaults to `https://test-node-v3.portaldot.dev` and only reads. Say exactly what is live: "The runtime fingerprint comes from a labelled, recorded V3 snapshot. Only the metadata is read live. If the node's genesis, spec or transaction version differs from the recorded one, it fails closed. Only the metadata hash is allowed to drift, because V3's raw metadata bytes change between blocks." Pixel's run read spec 3002 at block #115817; what you see will be a later block.
+- **Signing stays blocked.** The console does not sign or send anything on V3 in this demo, and nothing here uses a wallet.
+- **"V3 testnet transactions (recorded)".** This lists the 18 finalized V3 transactions from `evidence/testnet-v3`. The SEAM plan rows 12, 13 (sequential) and 15 (atomic) show as **verified**, from the run's `nftVerdictReceipt`. `revive.call` shows as **unknown** when no event is expected. Say: "These are recorded results, not a live re-check."
+- Optional: switch to **RECORDED LOCAL EVIDENCE**. The badge says it is a local Portaldot dev node, spec 1002, not V3.
 
 ## 8. Honest status and close (0:40)
 
