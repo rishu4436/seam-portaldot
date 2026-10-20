@@ -284,3 +284,43 @@ It writes `<name>-snapshot.json` and `<name>-metadata.hex` (same format as the m
 `import { verifySignedAgainstRequest, verifySignedBatch, assembleSignedExtrinsic } from '@seam/chain/browser'` gives the offline signature checks and the extrinsic assembler without any node builtin, WebSocket client or `@seam/compiler` runtime import (the compiler reads its types file with `node:fs` at load time, so the chain's signing code builds its registry with `src/runtime-core.ts`, a browser-safe copy of the compiler's `loadRuntime`; a test keeps the two in step). The functions are the same objects the node entry exports. It also exports `buildSigningRequest(callHex, facts, input)` and `buildSigningRequests(plan, facts, envelope)` (pure; the plan is a type-only import here), so a browser can build the payloads a wallet signs. It does not connect, discover, sign or submit.
 
 **Facts in the browser.** `factsFromChainInputs(inputs, opts?)` and `fingerprintFromChainInputs(inputs, opts?)` are exported from `@seam/chain/browser` too. They are the same pure code the node discovery path runs (`src/facts-core.ts`), so identical inputs give identical `RuntimeFacts`, `fingerprintDigest` and `metadataLayoutHash` (tested on the committed spec 1002 and V3 spec 3002 metadata). The only difference: the node entry defaults `typesBundle` to the compiler's pinned spec 1002 file, read from disk. The browser entry has no default. Metadata V14+ (V3) needs none; V13 and older must be given `typesBundle` (the exact text of `@seam/compiler/types/portaldot-spec1002.json`), or it fails with `NODE_MISSING_VALUE`. From the compiler it imports only `@seam/compiler/facts`, the node-free facts path.
+
+**Live capabilities (`liveCapabilities`, `readLiveCapabilities`).** For each SEAM action, these report whether the connected runtime supports it, read from the runtime's own metadata. They are exported from both `@seam/chain` and `@seam/chain/browser`. They are read-only: they never sign or submit.
+
+```ts
+import { liveCapabilities, readLiveCapabilities } from "@seam/chain/browser";
+// Pure, from inputs you already read (same ChainInputs and options as factsFromChainInputs):
+const caps = liveCapabilities(inputs, { typesBundle }); // typesBundle only for metadata V13 and older
+// Or read live through any JSON-RPC sender (a fetch wrapper, or httpRpcClient(url).send):
+const caps2 = await readLiveCapabilities((method, params) => rpc.send(method, params), {
+  endpoint,
+});
+```
+
+`readLiveCapabilities` reads only `chain_getBlockHash(0)`, `chain_getFinalizedHead`, `chain_getHeader`, `state_getRuntimeVersion` and `state_getMetadata` at the finalized head, and `system_properties`.
+
+The result (`LiveCapabilities`):
+
+| field                                                                                | contents                                                                                                                                                              |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`                                                                            | `1`                                                                                                                                                                   |
+| `fingerprint`                                                                        | The compiler's `RuntimeFingerprint`: genesisHash, specName, specVersion, transactionVersion, metadataHash, ss58Prefix, tokenSymbol, tokenDecimals, typesBundleHash    |
+| `fingerprintDigest`, `metadataLayoutHash`, `metadataVersion`, `atBlock`, `endpoint?` | Same values as the discovery path                                                                                                                                     |
+| `actions`                                                                            | One `ActionCapability` per kind: `assets.transfer`, `assets.mint`, `nfts.mint`, `contracts.call`, `revive.call`, `revive.instantiate_with_code`, `revive.map_account` |
+
+`ActionCapability` is `{ kind, capability: "Pallet.call_name", presence, supported, reasonCode?, reason, palletIndex, callIndex, args: [{ name, type, rawType }] }`. The result also carries `facts` (the `RuntimeFacts` it was derived from), so a consumer can hand them straight to the compiler.
+
+- Indices, names and types come only from the metadata. `palletIndex` and `callIndex` are `null` when the call is not there.
+- `name` is the camelCased metadata name. `rawType` is the type resolved through the metadata's registry, with named V13 aliases such as `AssetId` and `BalanceOf` resolved too.
+- `presence` is what the metadata shows: `observed`, `pallet_missing`, `call_missing` or `unreadable`.
+- `reasonCode` uses the compiler's own codes, set the same way `compile()` and `supportedKinds` set them:
+  - `NO_OBSERVED_V3_METADATA`: a V3 kind (`nfts.mint`, `revive.*`) whose call is not in the metadata.
+  - `V3_ARG_SHAPE_MISMATCH`: a V3 kind whose arguments do not match the shape contract.
+
+  The `assets.*` and `contracts.call` kinds carry no code, as in the compiler; `reason` explains them.
+
+The compiler is the source of truth for whether SEAM supports a kind. `tests/live-capabilities.test.ts` checks that `supported` and `reasonCode` equal what `compile()` gives on the same `facts`, for the spec 3002 fixture and for mutated versions of it.
+
+The expected argument shapes (`ACTION_SHAPES`) mirror the compiler: `V3_SHAPES` for the revive kinds and `nfts.mint`, and the `ARG_BINDINGS` names for `assets.*` and `contracts.call`. For `contracts.call`, `storageDepositLimit` is optional, because spec 1002 has none. `tests/live-capabilities.test.ts` keeps the tables identical to the compiler's. It also checks every verdict against `compile()` on the real spec 3002 and spec 1002 metadata.
+
+`scripts/v3-live-capabilities.mjs` runs it read-only against the V3 test node. It writes `evidence/testnet-v3/capabilities-<ts>.json`.

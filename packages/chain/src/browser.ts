@@ -47,3 +47,23 @@ export type {
   BlockRef,
   FreshFingerprint,
 } from "./types.js";
+// Live capabilities: per SEAM action, whether the connected runtime supports it (read-only, from its own metadata).
+export {
+  liveCapabilities,
+  readLiveCapabilities,
+  shapeMismatch,
+  argMatchesClass,
+  isWeightV2RawType,
+  SEAM_ACTION_KINDS,
+  ACTION_CAPABILITY,
+  ACTION_SHAPES,
+  type SeamActionKind,
+  type ArgClass,
+  type CapabilityReasonCode,
+  type CapabilityPresence,
+  V3_ACTION_KINDS,
+  type ActionArg,
+  type ActionCapability,
+  type LiveCapabilities,
+  type RpcSend,
+} from "./live-capabilities.js";
