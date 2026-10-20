@@ -37,7 +37,7 @@ describe("dev-node demo flow", () => {
     }).actions.map((a: { kind: string }) => a.kind);
     const rollback = rollbackActions({ bob: BOB, charlie: CHARLIE, contract: CONTRACT });
     // the failing step is last, so every kind before it actually ran inside the batch before the rollback
-    expect(rollback.at(-1).kind).toBe("assets.transfer");
+    expect(rollback.at(-1).kind).toBe("assets.mint");
     const facts = (composition: string[]) =>
       ({
         fingerprint: { genesisHash: H("e"), metadataHash: H("d"), specVersion: 100 },

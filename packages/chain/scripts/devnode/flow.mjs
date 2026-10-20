@@ -66,6 +66,9 @@ export function settleEffect(caller, { orderId = SETTLE.orderId, amount = SETTLE
  * seam_demo settle, mint) all succeed inside the batch, then a last transfer overdraws and fails it. The rollback
  * proof's composition is these kinds, so it covers every kind of the atomic demo plan (SEAM-012).
  */
+/** Largest u128: minting it on top of any non-zero supply overflows. */
+export const U128_MAX = ((1n << 128n) - 1n).toString();
+
 export function rollbackActions({
   bob,
   charlie,
@@ -90,9 +93,13 @@ export function rollbackActions({
       ...atomic,
     },
     {
-      id: "overdraw",
-      kind: "assets.transfer",
-      args: { assetId: String(assetId), amount: "900000000000000", recipient: bob },
+      // Fails on chain inside batch_all on a state check preflight cannot see: Assets.mint adds to the asset's
+      // supply with checked_add, and u128::MAX on top of the supply (which step 3 just raised) overflows
+      // (Arithmetic(Overflow)). Preflight only checks that the asset exists for mints and the signer's own running
+      // balance for transfers, so the plan passes preflight and policy and only the signed dry run sees it.
+      id: "overflow",
+      kind: "assets.mint",
+      args: { assetId: String(assetId), amount: U128_MAX, recipient: charlie },
       ...atomic,
     },
   ];

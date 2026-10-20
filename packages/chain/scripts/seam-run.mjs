@@ -37,6 +37,7 @@ import {
   rollbackActions,
   settleEffect,
   ABIS,
+  U128_MAX,
 } from "./devnode/flow.mjs";
 import { encodeCall, brief, rollbackProofFromEvidence } from "./devnode/lib.mjs";
 
@@ -579,7 +580,7 @@ export async function runAllFlows({
     });
     const policy = policyFor({
       allowedModes: ["sequential", "atomic_verified", "atomic_unverified"],
-      maxAmountPerAsset: { [String(assetId)]: "1000000000000000" },
+      maxAmountPerAsset: { [String(assetId)]: U128_MAX }, // step 4 mints u128::MAX (on-chain supply overflow)
     });
     const before = await stateOf(endpoint, facts, assetId, accounts);
     let signed;
