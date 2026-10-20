@@ -135,6 +135,9 @@ function mockExtension(signature: string, accounts = [SIGNER]) {
   return signPayload;
 }
 
+// Test-only stand-in for the policy gate so the later steps can be exercised. The real gate is tested below and in policygate.test.ts.
+const allowAll = () => ({ ok: true as const, explanations: [] });
+
 const renderPanel = (approved = true) =>
   render(
     <LivePanel
@@ -143,6 +146,7 @@ const renderPanel = (approved = true) =>
       approval={approved ? approveWalletDemo(plan) : undefined}
       hostLoader={async () => fakeHost()}
       factsStep={factsOk}
+      policyGate={allowAll}
     />,
   );
 const press = () => fireEvent.click(screen.getByRole("button", { name: /check live|retry/i }));
@@ -227,6 +231,7 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
         approval={approveWalletDemo(plan)}
         hostLoader={async () => h}
         factsStep={factsOk}
+        policyGate={allowAll}
       />,
     );
     press();
@@ -281,6 +286,67 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     renderPanel();
     press();
     await waitFor(() => expect(screen.getByText(/No wallet extension found/)).toBeTruthy());
+    expect(submitted).toHaveLength(0);
+  });
+
+  it("policy gate: no policy means blocked before the wallet is asked", async () => {
+    const sign = mockExtension(GOOD_SIG);
+    render(
+      <LivePanel
+        plan={plan}
+        facts={facts}
+        approval={approveWalletDemo(plan)}
+        hostLoader={async () => fakeHost()}
+        factsStep={factsOk}
+      />,
+    );
+    press();
+    await waitFor(() =>
+      expect(screen.getByTestId("policy-codes").textContent).toBe("POLICY_MISSING"),
+    );
+    expect(sign).not.toHaveBeenCalled();
+    expect(submitted).toHaveLength(0);
+  });
+
+  it("policy gate: a violation is shown per rule and never reaches the signer", async () => {
+    const sign = mockExtension(GOOD_SIG);
+    const gate = vi.fn(() => ({
+      ok: false as const,
+      codes: ["PREFLIGHT_UNKNOWN"],
+      message: "blocked",
+      explanations: [
+        {
+          rule: "capability",
+          status: "pass" as const,
+          code: "OK",
+          message: "Capability allowed: Pass.",
+        },
+        {
+          rule: "preflight",
+          status: "unknown" as const,
+          code: "PREFLIGHT_UNKNOWN",
+          message: "Preflight ran: Unknown, so blocked.",
+        },
+      ],
+    }));
+    render(
+      <LivePanel
+        plan={plan}
+        facts={facts}
+        approval={approveWalletDemo(plan)}
+        hostLoader={async () => fakeHost()}
+        factsStep={factsOk}
+        policyInput={{ policy: {}, plan: walletDemo.plan, manifest: walletDemo.manifest }}
+        policyGate={gate}
+      />,
+    );
+    press();
+    const box = await screen.findByRole("group", { name: "Policy gate" });
+    expect(within(box).getByText("blocked")).toBeTruthy();
+    expect(within(box).getByText(/Preflight ran: Unknown, so blocked/)).toBeTruthy();
+    expect(within(box).getByText(/Capability allowed: Pass/)).toBeTruthy();
+    expect(gate).toHaveBeenCalledTimes(1);
+    expect(sign).not.toHaveBeenCalled();
     expect(submitted).toHaveLength(0);
   });
 });

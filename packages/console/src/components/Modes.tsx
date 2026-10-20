@@ -1,3 +1,4 @@
+import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "../lib/policygate";
 import { useEffect, useRef, useState } from "react";
 import {
   checkAssetsTransferEffect,
@@ -531,6 +532,30 @@ export function LiveReceipt({
   );
 }
 
+/** One line per policy rule from the authoritative gate: pass, fail or unknown (unknown blocks). */
+export function PolicyGatePanel({ gate }: { gate: GateOutcome }) {
+  return (
+    <div className="small" role="group" aria-label="Policy gate">
+      <div className="row between">
+        <strong>Policy gate</strong>
+        <Tag tone={gate.ok ? "ok" : "bad"}>{gate.ok ? "allowed" : "blocked"}</Tag>
+      </div>
+      {!gate.ok && <p data-testid="policy-codes">{gate.codes.join(", ")}</p>}
+      {!gate.ok && !gate.explanations.length && <p>{gate.message}</p>}
+      <ul>
+        {gate.explanations.map((x, i) => (
+          <li key={`${x.rule}-${x.actionId ?? ""}-${i}`} data-status={x.status}>
+            <Tag tone={x.status === "pass" ? "ok" : x.status === "fail" ? "bad" : "warn"}>
+              {x.status}
+            </Tag>{" "}
+            {x.message}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function LivePanel({
   plan,
   facts,
@@ -538,10 +563,18 @@ export function LivePanel({
   hostLoader = loadLiveHost,
   factsStep = liveFactsStep,
   now = () => Date.now(),
+  policyInput,
+  acknowledgedDowngrade,
+  policyGate = runPolicyGate,
 }: {
   plan?: Plan;
   facts?: RuntimeFacts;
   approval?: Approval;
+  /** What the authoritative policy gate checks right before the wallet signer. Missing means signing is blocked. */
+  policyInput?: PolicyGateInput;
+  acknowledgedDowngrade?: boolean;
+  /** Injectable only so tests can reach later steps; the app always uses the real gate. */
+  policyGate?: typeof runPolicyGate;
   hostLoader?: (facts?: unknown) => Promise<LiveHost | undefined>;
   factsStep?: (rpc: RpcTransport) => Promise<V3FactsResult>;
   now?: () => number;
@@ -556,11 +589,13 @@ export function LivePanel({
   const [spent, setSpent] = useState<string[]>([]);
   const ok = !!v3RpcUrl(url);
   const [receiptRpc, setReceiptRpc] = useState<RpcTransport>();
+  const [gate, setGate] = useState<GateOutcome>();
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
   const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
   useEffect(() => {
     setOut(undefined);
     setV3(undefined);
+    setGate(undefined);
     setDismissed(false);
   }, [planKey]);
   const ready = !!plan && !!approval && !approval.used;
@@ -569,6 +604,7 @@ export function LivePanel({
   const run = async () => {
     setBusy(true);
     setDismissed(false);
+    setGate(undefined);
     try {
       const u = v3RpcUrl(url);
       let deps: LiveDeps = {};
@@ -627,12 +663,30 @@ export function LivePanel({
           if (!m.ok) return m;
           const ctx = await b.readSigningContext(rpc, call.value.signer);
           if (!ctx.ok) return ctx;
-          return host.buildRequest({
+          const req = await host.buildRequest({
             signer: call.value.signer,
             callHex: call.value.callHex,
             actionIds: call.value.actionIds,
             context: ctx.value,
           });
+          if (!req.ok) return req;
+          // Authoritative policy gate, immediately before the wallet signer. A block never reaches the signer.
+          const g = policyGate(
+            policyInput && { ...policyInput, facts: policyInput.facts ?? hostFacts },
+            {
+              request: req.value,
+              acknowledgedDowngrade,
+              now: new Date(now()),
+            },
+          );
+          setGate(g);
+          if (!g.ok)
+            return {
+              ok: false,
+              reason: "unavailable",
+              message: `Blocked by policy before signing (${g.codes.join(", ")}). Nothing was signed.`,
+            };
+          return req;
         };
       }
       const res = await runLive(url, undefined, deps);
@@ -702,6 +756,7 @@ export function LivePanel({
           </p>
         )}
         <ApprovalSummary plan={plan} approval={approval} />
+        {gate && <PolicyGatePanel gate={gate} />}
         {v3 && <V3FactsNotice r={v3} />}
         {out?.status === "rejected" && !dismissed && (
           <RejectionNotice onRetry={run} onDismiss={() => setDismissed(true)} />
