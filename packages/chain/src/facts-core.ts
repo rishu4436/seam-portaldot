@@ -34,7 +34,7 @@ export interface FactsOptions {
   declaredToken?: { tokenSymbol: string; tokenDecimals: number };
   /**
    * The metadata a plan/approval was prepared with (facts.source.metadataHex). When the node's metadata differs from
-   * it ONLY in storage default values (see metadataLayoutHash), discovery keeps these pinned bytes, so the
+   * it ONLY in allow-listed storage default values (BLANKED_STORAGE_DEFAULTS, today only Revive.EthBlockBuilderIR; see metadataLayoutHash), discovery keeps these pinned bytes, so the
    * fingerprint and its digest stay the same and the runtime lock does not trip on V3's state-dependent
    * Revive.EthBlockBuilderIR fallback. Any other difference keeps the live bytes, so the lock blocks as before.
    */
@@ -117,7 +117,7 @@ export function tokenProvenanceOf(properties: ChainPropertiesJson): {
   };
 }
 
-/** Inputs with the pinned metadata bytes when the live ones differ only in storage defaults (see pinMetadata). */
+/** Inputs with the pinned metadata bytes when the live ones differ only in allow-listed storage defaults (see pinMetadata). */
 export function pinnedInputs(inputs: ChainInputs, pinnedMetadataHex?: Hex): ChainInputs {
   if (!pinnedMetadataHex || inputs.metadataDrift) return inputs;
   const { metadataHex, drift } = pinMetadata(inputs.metadataHex, pinnedMetadataHex);

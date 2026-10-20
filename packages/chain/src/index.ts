@@ -38,6 +38,7 @@ export {
   blankStorageFallbacks,
   pinMetadata,
   METADATA_LAYOUT_DOMAIN,
+  BLANKED_STORAGE_DEFAULTS,
   type MetadataDrift,
 } from "./metadata-layout.js";
 export {

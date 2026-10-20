@@ -204,7 +204,7 @@ export function createPortaldotAdapter(
   };
   const discoverOpts = { ...options };
   delete discoverOpts.facts;
-  // Re-reads compare against the pinned facts' metadata by layout: a drift in storage defaults only (V3's
+  // Re-reads compare against the pinned facts' metadata by layout: a drift in allow-listed storage defaults only (BLANKED_STORAGE_DEFAULTS) (V3's
   // Revive.EthBlockBuilderIR) keeps the pinned fingerprint; any other change still changes it.
   const pinnedOpts = () => {
     const pinned = options.pinnedMetadataHex ?? facts?.source.metadataHex;

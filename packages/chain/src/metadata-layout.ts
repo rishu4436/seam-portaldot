@@ -5,13 +5,22 @@ import type { Hex } from "@seam/compiler";
 import { quietly } from "./quiet.js";
 
 /**
- * Metadata layout fingerprint: blake2b-256 over the metadata with every storage entry's default value blanked.
+ * Storage defaults (pallet, entry) that the layout hash ignores. Only entries observed to drift without a runtime
+ * upgrade belong here. Any other storage default is part of the layout: a change there changes the hash (fail closed).
+ */
+export const BLANKED_STORAGE_DEFAULTS: readonly (readonly [pallet: string, entry: string])[] =
+  Object.freeze([Object.freeze(["Revive", "EthBlockBuilderIR"] as const)]);
+const isBlanked = (pallet: string, entry: string) =>
+  BLANKED_STORAGE_DEFAULTS.some(([p, e]) => p === pallet && e === entry);
+
+/**
+ * Metadata layout fingerprint: blake2b-256 over the metadata with the allow-listed storage defaults
+ * (BLANKED_STORAGE_DEFAULTS, today only Revive.EthBlockBuilderIR) blanked.
  *
  * Why: a storage entry's `fallback` (the SCALE default returned for an absent key) is computed by the runtime when
  * metadata is built. On Portaldot V3 spec 3002 `Revive.EthBlockBuilderIR`'s fallback is state-dependent, so the raw
- * `state_getMetadata` bytes (and their hash) change block to block without a runtime upgrade. Nothing SEAM encodes or
- * decodes uses a fallback (calls, events, errors, constants and storage keys/types don't), so two blobs that differ
- * only there describe the same runtime layout.
+ * `state_getMetadata` bytes (and their hash) change block to block without a runtime upgrade. That one default is
+ * ignored; every other storage default still counts, so an unexplained default change is treated as a layout change.
  *
  * Definition (deterministic):
  *   1. Decode the metadata (magic + version byte + versioned body; V13, V14 and V15 are supported).
@@ -19,14 +28,14 @@ import { quietly } from "./quiet.js";
  *      exactly. If they don't (unknown version, trailing bytes, a codec that does not round-trip), there is no safe
  *      normalization: the layout hash is taken over the raw bytes under a separate domain, so it only matches an
  *      identical blob (fail closed).
- *   3. Rebuild again with every storage entry's `fallback` set to empty bytes (0x00, a zero-length Vec<u8>); every
- *      other byte (pallet names and indices, calls, arguments, the type registry, events, errors, constants, storage
+ *   3. Rebuild again with the `fallback` of each allow-listed (pallet, entry) set to empty bytes (0x00, a zero-length
+ *      Vec<u8>); every other byte, including every other storage default (pallet names and indices, calls, arguments, the type registry, events, errors, constants, storage
  *      names, prefixes, modifiers, hashers, key and value types, docs, extrinsic and signed extensions) is kept.
- *   4. layoutHash = blake2b-256( utf8("seam/metadata-layout/v1") ++ magic ++ version ++ rebuilt body ).
- * Any change outside storage fallbacks changes the hash.
+ *   4. layoutHash = blake2b-256( utf8("seam/metadata-layout/v2") ++ magic ++ version ++ rebuilt body ).
+ * Any change outside the allow-listed defaults changes the hash. (v1 blanked every storage default; its values differ.)
  */
-export const METADATA_LAYOUT_DOMAIN = "seam/metadata-layout/v1";
-const RAW_DOMAIN = "seam/metadata-layout/v1/raw";
+export const METADATA_LAYOUT_DOMAIN = "seam/metadata-layout/v2";
+const RAW_DOMAIN = "seam/metadata-layout/v2/raw";
 
 type AnyCodec = {
   registry: TypeRegistry;
@@ -53,13 +62,14 @@ function rebuiltBody(inner: StructLike, version: number, blank: boolean): Uint8A
   const reg = inner.registry;
   const out = pallets.map((p) => {
     const ps = p as StructLike;
+    const pname = ps.get("name")!.toString();
     const st = ps.get("storage") as OptionLike | undefined;
     if (!st || st.isNone) return rebuild(ps, {});
     const s = st.unwrap() as StructLike;
     const items = s.get("items") as VecLike;
     const newItems = items.map((e) => {
       const es = e as StructLike;
-      if (!blank) return rebuild(es, {});
+      if (!blank || !isBlanked(pname, es.get("name")!.toString())) return rebuild(es, {});
       const fb = es.get("fallback")!;
       return rebuild(es, { fallback: new fb.constructor(reg, "0x") });
     });
@@ -70,7 +80,7 @@ function rebuiltBody(inner: StructLike, version: number, blank: boolean): Uint8A
   return rebuild(inner, { [key]: new pallets.constructor(reg, out) }).toU8a();
 }
 
-/** Metadata bytes with every storage default blanked, or undefined when they cannot be normalized safely. */
+/** Metadata bytes with the allow-listed storage defaults blanked, or undefined when they cannot be normalized safely. */
 export function blankStorageFallbacks(metadataHex: string): Uint8Array | undefined {
   const bytes = hexToU8a(metadataHex.trim().toLowerCase());
   try {
@@ -110,7 +120,7 @@ export function metadataLayoutHash(metadataHex: string): Hex {
   return h;
 }
 
-/** True when the two blobs are identical, or differ only in storage default values. */
+/** True when the two blobs are identical, or differ only in allow-listed storage defaults. */
 export function sameMetadataLayout(a: string, b: string): boolean {
   if (a.trim().toLowerCase() === b.trim().toLowerCase()) return true;
   return metadataLayoutHash(a) === metadataLayoutHash(b);
@@ -127,7 +137,7 @@ export interface MetadataDrift {
 }
 
 /**
- * When the live metadata differs from the pinned one only in storage defaults, returns the pinned bytes and a
+ * When the live metadata differs from the pinned one only in allow-listed storage defaults, returns the pinned bytes and a
  * drift record, so the fingerprint (raw hash of the bytes SEAM decodes with) stays the pinned one. Any other
  * difference returns the live bytes unchanged, so the runtime lock sees the change and blocks.
  */
