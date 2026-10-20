@@ -1,3 +1,4 @@
+import type { ActionKind } from "@seam/compiler";
 import {
   computeFingerprintDigest,
   type Hex,
@@ -309,7 +310,7 @@ export async function verifyReceiptLive(
         // value leaves the step unknown.
         let effect = opts.effects?.[s.actionId];
         let mapReadMissing: string | undefined;
-        if ((planStep.kind as string) === "revive.map_account") {
+        if (planStep.kind === "revive.map_account") {
           if (effect?.originalAccount) {
             const { originalAccount: _ignored, ...rest } = effect;
             effect = rest;
@@ -350,7 +351,7 @@ export async function verifyReceiptLive(
           continue;
         }
         if (
-          (planStep.kind as string) === "revive.map_account" &&
+          planStep.kind === "revive.map_account" &&
           again.verification === "verified" &&
           s.verification !== "verified"
         ) {
@@ -361,12 +362,14 @@ export async function verifyReceiptLive(
           mark("unknown");
           continue;
         }
-        const needsRuntime = [
-          "nfts.mint",
-          "revive.call",
-          "revive.instantiate_with_code",
-          "revive.map_account",
-        ].includes(planStep.kind as string);
+        const needsRuntime = (
+          [
+            "nfts.mint",
+            "revive.call",
+            "revive.instantiate_with_code",
+            "revive.map_account",
+          ] as readonly ActionKind[]
+        ).includes(planStep.kind);
         if (again.verification === "not_verified")
           problems.push(
             `${s.actionId}: the receipt says ${s.verification}, the chain's events give not_verified${again.code ? ` (${again.code})` : ""}.`,
