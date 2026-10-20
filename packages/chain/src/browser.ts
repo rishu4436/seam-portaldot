@@ -18,6 +18,7 @@ export {
   toMultiSignature,
   checkSignedExtrinsic,
   signedExtrinsicDecoder,
+  type SignatureContext,
   type SigningRequest,
   type SigningCheckpoint,
   type SingleSigningInput,

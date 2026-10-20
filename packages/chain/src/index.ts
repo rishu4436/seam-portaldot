@@ -65,6 +65,7 @@ export {
   verifySignedAgainstRequest,
   verifySignedBatch,
   signedExtrinsicDecoder,
+  type SignatureContext,
   type DecodedSignedExtrinsic,
   type SignedVerification,
   type SignedBatchVerification,

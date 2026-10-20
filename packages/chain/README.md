@@ -346,3 +346,12 @@ const report = await preflightReport(send, plan, facts); // PreflightReport (cov
 - Anything the node does not answer is `{ unknown: true }`, or `dryRun: "unknown"`. An RPC error on `payment_queryInfo` leaves that step's fee and weight unknown and `totalFee` unknown, and the gate blocks. `storageDeposit` is always unknown (the runtime does not report it). If the node cannot be reached at all, `preflight` throws.
 
 `scripts/v3-live-preflight.mjs` runs it read-only against the V3 test node for the demo plan (`packages/console/src/demo/v3-demo-transfer.json`) and records Sentinel's gate verdict with the sequential demo policy. It writes `evidence/testnet-v3/preflight-<ts>.json`.
+
+## Verifying signed extrinsics (`signedExtrinsicDecoder`)
+
+`signedExtrinsicDecoder(facts, context)` is the trusted decoder for `@seam/policy` `checkBeforeSubmit({ decodeSignedExtrinsic })`. A signature commits to the genesis hash, spec and transaction version and the era's checkpoint block hash, none of which are in the extrinsic. So `context` must be one of:
+
+- the approved signing requests (`SigningRequest[]`); or
+- the approved envelope, or anything with `{ checkpoint: { hash } }` (`SignatureContext`). Genesis, spec and transaction version then come from `facts`.
+
+Called with no context, nothing can be verified and `signatureValid` is always `false`, so the gate blocks with `signed_signature_invalid`. `tests/v3-signature-verify.test.ts` checks the decoder against 19 real finalized V3 extrinsics (including the extension-signed demo transfer in #118310) and against polkadot.js's own `signPayload` and `Extrinsic.sign` with a dev key.
