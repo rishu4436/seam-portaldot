@@ -41,6 +41,8 @@ export interface PolicyRuleResult {
   actionId?: string;
   /** Set (true) only when an unknown was explicitly allowed by the policy: the rule passed on weaker proof. */
   weak?: boolean;
+  /** Stable machine-readable code, set by rules that have one (e.g. deploy rules). */
+  code?: string;
 }
 export interface PolicyResult {
   allowed: boolean;
