@@ -73,6 +73,11 @@ describe("@seam/policy/browser entry", () => {
     expect(pkg.exports["./browser"].import).toBe("./dist/browser.js");
     expect(pkg.exports["."].import).toBe("./dist/index.js");
   });
+  it("exports the LockResult and SubmitCheck types", () => {
+    const l: Browser.LockResult = { ok: true, changed: [], reason: "", lockBasis: "raw" };
+    const c: Pick<Browser.SubmitCheckResult, "runtimeLock"> = { runtimeLock: l };
+    expect(c.runtimeLock.lockBasis).toBe("raw");
+  });
   it("re-exports the same evaluatePolicy as node", () => {
     expect(evaluateBrowser).toBe(evaluatePolicy);
     expect(typeof Browser.createApproval).toBe("function");
