@@ -728,13 +728,14 @@ export function LivePanel({
           if (pre.gate) setGate(pre.gate);
           if (!pre.res.ok) return pre.res;
           const preSigned = pre.res.value;
-          deps.beforeSubmit = async (signedTx) =>
+          deps.beforeSubmit = async (signedTx, request) =>
             gates.preSubmit({
               chain: chainFns,
               send: rpc,
               pre: preSigned,
               facts: hostFacts,
               signedTx,
+              requests: [request],
               now: new Date(now()),
               store: store.current,
               freshFingerprint: async () => {
@@ -853,7 +854,10 @@ export function LivePanel({
                 )}
               </dd>
               <dt>Signing</dt>
-              <dd>{SIGNING_LABEL[out.signing]}</dd>
+              <dd>
+                {SIGNING_LABEL[out.signing]}
+                {out.signingCode ? ` (${out.signingCode})` : ""}
+              </dd>
               <dt>Fee estimate</dt>
               <dd>{out.fee ? `${out.fee} base units (payment_queryInfo)` : "not estimated"}</dd>
               <dt>Simulation</dt>
@@ -1029,7 +1033,7 @@ async function runMultiStepLive(a: {
       if (!s.ok) return { ok: false, message: s.message };
       const v = await host.verifyBinding(s.value.signedTx, req.value);
       if (!v.ok) return { ok: false, message: `Signed bytes differ (${v.reasons.join(", ")}).` };
-      return { ok: true, value: s.value.signedTx };
+      return { ok: true, value: { signedTx: s.value.signedTx, request: req.value } };
     },
     submitAndWait: async (i, signedTx) => {
       const step = (

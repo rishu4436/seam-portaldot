@@ -86,6 +86,8 @@ export interface LiveOutcome {
   /** Preflight simulation basis. */
   simulation: SimulationBasis;
   signing: SigningStatus;
+  /** The submit gate's reason code(s) when signing is "submit_blocked" (e.g. signed_signature_invalid). */
+  signingCode?: string;
   txState: TxState;
   provenance: Provenance;
   /** payment_queryInfo partialFee (base units) read before signing; undefined if not estimated. */
@@ -204,13 +206,20 @@ export async function runLive(
       `Signed bytes differ from the approved request (${b.reasons.join(", ") || "no reason given"}). Nothing was sent.`,
       { signing: "binding_mismatch" },
     );
-  o.signing = "binding_ok";
+  // Matching the request is not the approval check: "Signed bytes match the approval" is shown only once the submit
+  // gate (checkBeforeSubmit) has passed.
+  o.signing = "request_match";
 
   if (deps.requireSubmitGate && !deps.beforeSubmit)
     return done("blocked", "The submit gate is not wired, so the signed transaction was not sent.");
   if (deps.beforeSubmit) {
     const g = await deps.beforeSubmit(s.value.signedTx, request);
-    if (!g.ok) return done("blocked", g.message);
+    if (!g.ok)
+      return done("blocked", g.message, {
+        signing: "submit_blocked",
+        signingCode: /^Blocked at submit \(([^)]+)\)/.exec(g.message)?.[1] ?? "submit_gate_blocked",
+      });
+    o.signing = "binding_ok";
   }
 
   const sub = await chain.submit(s.value);

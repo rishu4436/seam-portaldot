@@ -398,7 +398,10 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
       />,
     );
     press();
-    await waitFor(() => expect(screen.getByText(/signed_dry_run_missing/)).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText(/signed_dry_run_missing/).length).toBeTruthy());
+    // The panel must not claim the bytes match the approval when the submit gate blocked; it shows the real code.
+    expect(screen.queryByText("Signed bytes match the approval")).toBeNull();
+    expect(screen.getByText("Blocked at submit (signed_dry_run_missing)")).toBeTruthy();
     expect(sign).toHaveBeenCalledTimes(1);
     expect(gates.preSubmit).toHaveBeenCalledTimes(1);
     expect(submitted).toHaveLength(0);

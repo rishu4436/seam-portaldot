@@ -97,7 +97,9 @@ export type SigningStatus =
   | "rejected"
   | "unavailable"
   | "binding_unchecked"
+  | "request_match"
   | "binding_ok"
+  | "submit_blocked"
   | "binding_mismatch";
 export const SIGNING_LABEL: Record<SigningStatus, string> = {
   not_started: "Not started",
@@ -106,7 +108,10 @@ export const SIGNING_LABEL: Record<SigningStatus, string> = {
   rejected: "Wallet rejected",
   unavailable: "No wallet available",
   binding_unchecked: "Signed bytes not checked against the approval",
+  request_match: "Signed bytes match the signing request; submit check not passed yet",
+  // Only after checkBeforeSubmit (the authoritative submit gate) passed.
   binding_ok: "Signed bytes match the approval",
+  submit_blocked: "Blocked at submit",
   binding_mismatch: "Signed bytes differ from the approval",
 };
 
