@@ -2,23 +2,34 @@
 // Regression for the LIVE run on fc91363: a real wallet signature was blocked at submit with signed_signature_invalid
 // while the panel said "Signed bytes match the approval".
 //
-// Root cause (console side): preSubmit called Chainsmith's signedExtrinsicDecoder(facts) WITHOUT the signing requests.
-// The era's block hash is not inside a signed extrinsic, so the decoder can only check a signature against a request it
-// is given; with none it always reports signatureValid=false. preSubmit now passes the request(s) the wallet signed.
+// Root cause (console side): preSubmit called Chainsmith's signedExtrinsicDecoder(facts) with no context. The era's
+// block hash is not inside a signed extrinsic, so with no context every signature reads as invalid. preSubmit now passes
+// the approved envelope (its checkpoint), which the decoder accepts since Chainsmith's 239974f.
 //
-// The real-signature case uses the public, finalized V3 transfer 0x8a2c8b92…a4ad (block #118310) and the committed
-// V3 spec 3002 metadata. Its signed bytes are not committed (signed bytes stay out of the repo unless they are already in
-// evidence), so that case runs only when SEAM_REAL_TX_FILE points to a local {tx, request} JSON; the wiring case always runs.
-import { existsSync, readFileSync } from "node:fs";
+// Runs preSubmit end to end with the REAL @seam/policy engine and the REAL @seam/chain/browser decoder over:
+//  - a //Alice dev-key signed extrinsic (public dev key, test only; never a wallet or keystore), and
+//  - the real extension-signed V3 transfer 0x8a2c8b92…a4ad (#118310) from Chainsmith's committed fixture.
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { u8aToHex } from "@polkadot/util";
+import { Keyring } from "@polkadot/keyring";
+import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { describe, expect, it, vi } from "vitest";
-import { factsFromMetadata } from "@seam/compiler/browser";
-import { signedExtrinsicDecoder } from "@seam/chain/browser";
-import { preSubmit, type ChainFns } from "../signflow";
+import {
+  computeManifestDigest,
+  computePlanDigest,
+  factsFromMetadata,
+} from "@seam/compiler/browser";
+import * as chainBrowser from "@seam/chain/browser";
+import { newApprovalStore, preSign, preSubmit, type ChainFns } from "../signflow";
 
 const root = (p: string) => resolve(process.cwd(), "../..", p);
-const demo = JSON.parse(
-  readFileSync(root("packages/console/src/demo/v3-demo-transfer.json"), "utf8"),
+const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
+const demo = json("packages/console/src/demo/v3-demo-transfer.json");
+const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");
+const recorded = json("evidence/testnet-v3/preflight-1792509095721.json").result;
+const realTx = json("packages/chain/tests/fixtures/v3-signed-extrinsics.json").transactions.find(
+  (t: { block: number }) => t.block === 118310,
 );
 const facts = factsFromMetadata({
   metadataHex: readFileSync(
@@ -29,38 +40,114 @@ const facts = factsFromMetadata({
   tokenSymbol: "tPOT",
   tokenDecimals: 14,
 });
-const file = process.env.SEAM_REAL_TX_FILE;
-const real = file && existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined;
+const callHex = demo.plan.steps[0].encodedCall as `0x${string}`;
+const demoInput = { policy: seq.policy, plan: demo.plan, manifest: demo.manifest };
 
-describe("submit gate gets the signing requests", () => {
-  it("preSubmit passes the request(s) to signedExtrinsicDecoder", async () => {
-    const decoder = vi.fn(() => () => null);
-    const chain: ChainFns = {
-      preflight: vi.fn(async () => ({ steps: [] })),
-      signedExtrinsicDecoder: decoder,
-    };
-    const request = { nonce: 1, payload: { blockHash: "0x" + "22".repeat(32) } };
-    await preSubmit({
-      chain,
-      send: async () => null,
-      pre: { approvalInput: { plan: demo.plan }, approval: {} } as never,
-      facts,
-      signedTx: "0x00",
-      requests: [request],
-      now: new Date(),
-      store: { markUsed() {}, isUsed: () => false } as never,
-      freshFingerprint: async () => facts.fingerprint,
+/** The same demo plan re-signed-for //Alice: signer swapped, digests recomputed with the compiler's own functions. */
+function aliceInput(alice: { address: string; publicKey: Uint8Array }) {
+  const manifest = { ...demo.manifest, signer: { type: "ss58", value: alice.address } };
+  const plan = {
+    ...demo.plan,
+    manifestDigest: computeManifestDigest(manifest as never),
+    signer: { type: "ss58", value: alice.address, publicKey: u8aToHex(alice.publicKey) },
+  };
+  plan.planDigest = computePlanDigest(plan as never);
+  return { policy: seq.policy, plan, manifest };
+}
+
+/** Real decoder, optionally stripped of its context (the fc91363 call shape). */
+const chainFns = (withContext: boolean): ChainFns => ({
+  preflight: vi.fn(async (_s, _p, _f, o?: { signedExtrinsics?: string[] }) =>
+    o?.signedExtrinsics
+      ? { ...recorded, steps: recorded.steps.map((s: object) => ({ ...s, dryRun: "ok" })) }
+      : recorded,
+  ),
+  signedExtrinsicDecoder: (f: unknown, ctx?: unknown) =>
+    chainBrowser.signedExtrinsicDecoder(
+      f as never,
+      (withContext ? ctx : undefined) as never,
+    ) as never,
+  blockTimeFromFacts: chainBrowser.blockTimeFromFacts as never,
+  buildSigningEnvelope: chainBrowser.buildSigningEnvelope as never,
+});
+
+async function gate(
+  input: object,
+  signer: string,
+  nonce: number,
+  checkpoint: { number: number; hash: string },
+  tx: string,
+  withContext: boolean,
+) {
+  const now = new Date();
+  const c = chainFns(withContext);
+  const pre = await preSign({
+    chain: c,
+    send: async () => null,
+    input: input as never,
+    facts,
+    signer,
+    ctx: {
+      nonce,
+      mortalityBlocks: 64,
+      checkpointNumber: checkpoint.number,
+      checkpointHash: checkpoint.hash,
+    },
+    now,
+  });
+  if (!pre.res.ok) throw new Error(pre.res.message);
+  return preSubmit({
+    chain: c,
+    send: async () => null,
+    pre: pre.res.value,
+    facts,
+    signedTx: tx,
+    now,
+    store: newApprovalStore(),
+    freshFingerprint: async () => facts.fingerprint,
+  });
+}
+
+describe("submit gate verifies real signatures (needs chain 239974f)", () => {
+  it("//Alice dev-key signed extrinsic passes preSubmit; a (facts)-only decoder gives signed_signature_invalid", async () => {
+    await cryptoWaitReady();
+    const alice = new Keyring({ type: "sr25519", ss58Format: 42 }).addFromUri("//Alice");
+    const checkpoint = { number: realTx.birth, hash: realTx.birthHash };
+    const req = chainBrowser.buildSigningRequest(callHex, facts as never, {
+      signer: alice.address,
+      nonce: 1,
+      mortalityBlocks: 64,
+      checkpoint,
     });
-    expect(decoder).toHaveBeenCalledWith(facts, [request]);
+    const sig = u8aToHex(alice.sign(req.signBytesHex));
+    const tx = chainBrowser.assembleSignedExtrinsic(req.payload, sig, facts as never, {
+      scheme: "sr25519",
+    });
+    const ok = await gate(aliceInput(alice), alice.address, 1, checkpoint, tx, true);
+    expect(ok.ok ? "passed" : ok.message).toBe("passed");
+    const bad = await gate(aliceInput(alice), alice.address, 1, checkpoint, tx, false);
+    expect(!bad.ok && bad.message).toMatch(/signed_signature_invalid/);
   });
 
-  it.runIf(!!real)("a real V3 wallet signature verifies only when the request is passed", () => {
-    expect(facts.fingerprint.specVersion).toBe(3002);
-    // As fc91363 called it: no requests, so a real signature reads as invalid.
-    expect(signedExtrinsicDecoder(facts as never)(real.tx)?.signatureValid).toBe(false);
-    // As it is called now.
-    const d = signedExtrinsicDecoder(facts as never, [real.request])(real.tx)!;
-    expect(d.signatureValid).toBe(true);
-    expect(d.call).toBe(demo.plan.steps[0].encodedCall);
+  it("the real extension-signed V3 transfer (#118310) passes preSubmit with the envelope as context", async () => {
+    const checkpoint = { number: realTx.birth, hash: realTx.birthHash };
+    const ok = await gate(
+      demoInput,
+      realTx.signer,
+      realTx.nonce,
+      checkpoint,
+      realTx.extrinsic,
+      true,
+    );
+    expect(ok.ok ? "passed" : ok.message).toBe("passed");
+    const bad = await gate(
+      demoInput,
+      realTx.signer,
+      realTx.nonce,
+      checkpoint,
+      realTx.extrinsic,
+      false,
+    );
+    expect(!bad.ok && bad.message).toMatch(/signed_signature_invalid/);
   });
 });

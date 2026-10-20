@@ -86,7 +86,7 @@ export async function runPlanSteps(args: {
     i: number,
     call: { actionIds: string[]; callHex: string },
     nonce: number,
-  ) => Promise<Res<{ signedTx: string; request: unknown }>>;
+  ) => Promise<Res<string>>;
   /** Submits signed bytes and waits for inclusion/finality; returns the receipt step. */
   submitAndWait: (i: number, signedTx: string) => Promise<Res<ReceiptStepLike>>;
   acknowledgedDowngrade?: boolean;
@@ -160,16 +160,13 @@ export async function runPlanSteps(args: {
   const expiredMsg =
     "SIGNING_WINDOW_EXPIRED: the signing window of this plan's envelope has passed, so nothing more is sent. Approve again.";
 
-  // The unsigned signing requests (payload + era, no signature): the submit gate needs them to verify each signature.
-  const requests: unknown[] = [];
   // Sign every call in order (nonce n + i). One request for an atomic plan.
   for (const [i, c] of calls.value.entries()) {
     if (cancelled()) return stop(i, "Cancelled. Nothing more was signed or sent.");
     signRequests++;
     const s = await args.sign(i, c, args.ctx.nonce + i);
     if (!s.ok) return stop(i, `Signing failed: ${s.message} Nothing was sent.`, pre.gate);
-    holder.put(i, s.value.signedTx);
-    requests[i] = s.value.request;
+    holder.put(i, s.value);
   }
 
   const n = calls.value.length;
@@ -207,7 +204,6 @@ export async function runPlanSteps(args: {
       pre: preSigned,
       facts: args.facts,
       signedTx: all[i],
-      requests,
       now: args.now(),
       store: args.store,
       freshFingerprint: args.freshFingerprint,

@@ -69,7 +69,7 @@ function setup(
   };
   const sign = vi.fn(async (i: number, _c: unknown, nonce: number) => {
     order.push(`sign${i}@${nonce}`);
-    return { ok: true as const, value: { signedTx: SIGNED(i), request: { i } } };
+    return { ok: true as const, value: SIGNED(i) };
   });
   const submitAndWait = vi.fn(async (i: number) => {
     order.push(`send${i}`);
@@ -222,7 +222,7 @@ describe("multi-step LIVE", () => {
     const t = setup(seqPlan);
     t.sign.mockImplementation(async (i: number) => {
       if (i === 1) ac.abort();
-      return { ok: true as const, value: { signedTx: SIGNED(i), request: { i } } };
+      return { ok: true as const, value: SIGNED(i) };
     });
     const r = await runPlanSteps({
       chain: { preflight: async () => ({ steps: [] }) } as never,
