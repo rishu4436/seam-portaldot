@@ -3,7 +3,17 @@ import { describe, expect, it } from "vitest";
 import { callsToSign } from "@seam/policy";
 import type { Hex } from "@seam/compiler";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
-import { createPortaldotAdapter, encodeRuntime, readEvents, signBytesOf } from "../src/index.js";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import {
+  chainInputsFromSnapshot,
+  createPortaldotAdapter,
+  encodeRuntime,
+  factsFromChainInputs,
+  readEvents,
+  signBytesOf,
+  type SnapshotJson,
+} from "../src/index.js";
 import { FakeNode } from "./fakeNode.js";
 import { demoPlan, devKeys, snapshotFacts, snapshotInputs } from "./helpers.js";
 import { checkRuntimeLock } from "@seam/policy";
@@ -67,30 +77,30 @@ describe("SEAM-015: metadata hash at the inclusion block", () => {
   });
 });
 
-describe("V3 finding: metadata that differs only in a storage default value", () => {
+describe("metadata that differs only in a NON-allow-listed storage default (System.Number) is refused", () => {
   const pinned = snapshotInputs().metadataHex;
   const drifted = withFallback(pinned, "System", "Number", "0x2a000000");
   const renamed = patchStorageEntry(pinned, "System", "Number", (e, reg) => ({
     name: new (e.get("name").constructor)(reg, "Numbr"),
   }));
 
-  it("at the inclusion block: events still decode and the step is finalized", async () => {
+  it("at the inclusion block: events are NOT decoded (only Revive.EthBlockBuilderIR drift is tolerated)", async () => {
     const { outcome } = await run(drifted);
-    expect(outcome.status).toBe("finalized");
-    expect(outcome.events.length).toBeGreaterThan(0);
+    expect(outcome.status).not.toBe("finalized");
+    expect(outcome.events).toEqual([]);
   });
   it("a real layout change at the inclusion block is still refused", async () => {
     const { outcome } = await run(renamed);
     expect(outcome.status).not.toBe("finalized");
     expect(outcome.events).toEqual([]);
   });
-  it("at the head: the adapter's re-discovery and re-read fingerprint keep the pinned fingerprint", async () => {
+  it("at the head: re-discovery trips RUNTIME_CHANGED and the runtime lock blocks", async () => {
     const facts = snapshotFacts();
     const node = new FakeNode({ inputs: { ...snapshotInputs(), metadataHex: drifted }, facts });
     const adapter = createPortaldotAdapter(node, { allowMainnet: true, now: () => NOW, facts });
-    await expect(adapter.discover()).resolves.toBe(facts);
+    await expect(adapter.discover()).rejects.toThrow(/RUNTIME_CHANGED/);
     const current = await adapter.readFingerprint();
-    expect(checkRuntimeLock(facts.fingerprint, current)).toMatchObject({ ok: true });
+    expect(checkRuntimeLock(facts.fingerprint, current).ok).toBe(false);
   });
   it("at the head: a real layout change still trips re-discovery and the runtime lock", async () => {
     const facts = snapshotFacts();
@@ -102,5 +112,25 @@ describe("V3 finding: metadata that differs only in a storage default value", ()
       ok: false,
       changed: ["metadataHash"],
     });
+  });
+});
+
+describe("V3 finding: metadata that differs only in Revive.EthBlockBuilderIR's default (allow-listed)", () => {
+  const ev = (n: string) =>
+    fileURLToPath(new URL(`../../../evidence/v3-discovery/${n}`, import.meta.url));
+  const snap = JSON.parse(
+    readFileSync(ev("portaldot-v3-spec3002-snapshot.json"), "utf8"),
+  ) as SnapshotJson;
+  const hex = readFileSync(ev("portaldot-v3-spec3002-metadata.hex"), "utf8").trim() as Hex;
+  const inputs = chainInputsFromSnapshot(snap, hex);
+  const facts = factsFromChainInputs(inputs);
+  const drifted = withFallback(hex, "Revive", "EthBlockBuilderIR", "0x2a000000");
+
+  it("at the head: the adapter's re-discovery and re-read fingerprint keep the pinned fingerprint", async () => {
+    const node = new FakeNode({ inputs: { ...inputs, metadataHex: drifted }, facts });
+    const adapter = createPortaldotAdapter(node, { allowMainnet: true, now: () => NOW, facts });
+    await expect(adapter.discover()).resolves.toBe(facts);
+    const current = await adapter.readFingerprint();
+    expect(checkRuntimeLock(facts.fingerprint, current)).toMatchObject({ ok: true });
   });
 });

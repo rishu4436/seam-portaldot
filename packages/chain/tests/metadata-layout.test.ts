@@ -10,6 +10,8 @@ import { hexToU8a } from "@polkadot/util";
 import type { Hex } from "@seam/compiler";
 import { checkRuntimeLock } from "@seam/policy";
 import {
+  chainInputsFromSnapshot,
+  type SnapshotJson,
   blankStorageFallbacks,
   fingerprintFromChainInputs,
   metadataLayoutHash,
@@ -17,7 +19,7 @@ import {
   sameMetadataLayout,
 } from "../src/index.js";
 import { readFileSync } from "node:fs";
-import { snapshotInputs } from "./helpers.js";
+
 import {
   callTypeId,
   devnodeV14,
@@ -42,17 +44,19 @@ describe("metadataLayoutHash: storage defaults blanked, everything else counts",
     }
   });
 
-  it("same layout, different storage default -> raw hash differs, layout hash equal", () => {
-    const cases: [Hex, string, string][] = [
-      [dev, "System", "Number"],
-      [mainnetV13(), "System", "Number"],
-      [v3Spec3002(), "Revive", "EthBlockBuilderIR"],
-    ];
-    for (const [h, pallet, entry] of cases) {
-      const drifted = withFallback(h, pallet, entry, "0x0102030405060708");
-      expect(raw(drifted)).not.toBe(raw(h));
-      expect(metadataLayoutHash(drifted)).toBe(metadataLayoutHash(h));
-      expect(sameMetadataLayout(drifted, h)).toBe(true);
+  it("allow-listed default (Revive.EthBlockBuilderIR) changed -> raw hash differs, layout hash equal", () => {
+    const h = v3Spec3002();
+    const drifted = withFallback(h, "Revive", "EthBlockBuilderIR", "0x0102030405060708");
+    expect(raw(drifted)).not.toBe(raw(h));
+    expect(metadataLayoutHash(drifted)).toBe(metadataLayoutHash(h));
+    expect(sameMetadataLayout(drifted, h)).toBe(true);
+  });
+
+  it("any other storage default changed -> layout hash differs (fail closed)", () => {
+    for (const h of [dev, mainnetV13(), v3Spec3002()]) {
+      const drifted = withFallback(h, "System", "Number", "0x0102030405060708");
+      expect(metadataLayoutHash(drifted)).not.toBe(metadataLayoutHash(h));
+      expect(sameMetadataLayout(drifted, h)).toBe(false);
     }
   });
 
@@ -166,8 +170,16 @@ describe("real V3 drift (spec 3002, read-only reads of 2026-10-19)", () => {
 });
 
 describe("the runtime lock and fingerprints use the layout comparison", () => {
-  const pinned = snapshotInputs();
+  const v3ev = (n: string) => new URL(`../../../evidence/v3-discovery/${n}`, import.meta.url);
+  const pinned = chainInputsFromSnapshot(
+    JSON.parse(readFileSync(v3ev("portaldot-v3-spec3002-snapshot.json"), "utf8")) as SnapshotJson,
+    v3Spec3002(),
+  );
   const drifted = {
+    ...pinned,
+    metadataHex: withFallback(pinned.metadataHex, "Revive", "EthBlockBuilderIR", "0x2a000000"),
+  };
+  const otherDefault = {
     ...pinned,
     metadataHex: withFallback(pinned.metadataHex, "System", "Number", "0x2a000000"),
   };
@@ -207,6 +219,14 @@ describe("the runtime lock and fingerprints use the layout comparison", () => {
       ok: false,
       changed: ["metadataHash"],
     });
+  });
+
+  it("with the pinned metadata, a NON-allow-listed default change changes the fingerprint and the lock blocks", () => {
+    const a = fingerprintFromChainInputs(pinned);
+    const b = fingerprintFromChainInputs(otherDefault, { pinnedMetadataHex: pinned.metadataHex });
+    expect(b.fingerprintDigest).not.toBe(a.fingerprintDigest);
+    expect(b.metadataDrift).toBeUndefined();
+    expect(checkRuntimeLock(a.fingerprint, b.fingerprint).ok).toBe(false);
   });
 
   it("pinMetadata returns the live bytes for any real change and for no pin", () => {
