@@ -187,3 +187,35 @@ export function classify(obs, exp = {}) {
   if (bad) return { outcome: "mismatch", reasons };
   return { outcome: "verified", reasons };
 }
+
+/**
+ * Compare an on-chain call with a SEAM plan: a single-step plan must equal the call bytes; a multi-step plan must be a
+ * Utility.batch_all whose inner calls equal the steps' encodedCalls in order. Returns { match, reason }.
+ */
+export function planCallMatch(plan, onChain) {
+  const steps = plan?.steps ?? [];
+  if (!steps.length || steps.some((s) => typeof s.encodedCall !== "string"))
+    return { match: null, reason: "plan has no encoded calls" };
+  const lc = (h) => String(h).toLowerCase();
+  if (steps.length === 1) {
+    const ok = lc(onChain.callHex) === lc(steps[0].encodedCall);
+    return {
+      match: ok,
+      reason: ok ? "call bytes equal the plan step" : "call bytes differ from the plan step",
+    };
+  }
+  const inner = onChain.innerCallHexes ?? [];
+  const ok =
+    inner.length === steps.length && inner.every((h, i) => lc(h) === lc(steps[i].encodedCall));
+  return {
+    match: ok,
+    reason: ok
+      ? "batch inner calls equal the plan steps"
+      : "batch inner calls differ from the plan steps",
+  };
+}
+
+/** Balance delta check: after - before must equal expected (all BigInt-able). */
+export function deltaMatches(before, after, expected) {
+  return BigInt(after) - BigInt(before) === BigInt(expected);
+}

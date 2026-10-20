@@ -1,0 +1,119 @@
+{
+  "kind": "seam-v3-tx-verification",
+  "generatedAt": "2026-10-20T14:17:07.993Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "finalizedHead": {
+    "number": 118348,
+    "hash": "0xdb5e86f061546558de961603fe5272101b333c38a22ea86c19cf4a0efbd683da"
+  },
+  "hash": "0x8a2c8b92560b8238c3ecdcda10f822b3c995926452f4c51c43fb3bca131ea4ad",
+  "block": {
+    "number": 118310,
+    "hash": "0xaa549f11e1533e570d2178abefc64cc9630bc036213ad011d66ccd0975c31ff1"
+  },
+  "canonical": true,
+  "finalized": true,
+  "extrinsicIndex": 1,
+  "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+  "signerMatch": true,
+  "call": "assets.transferKeepAlive",
+  "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+  "calls": [
+    {
+      "call": "assets.transferKeepAlive",
+      "args": {
+        "id": 806707,
+        "target": {
+          "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "amount": 1
+      }
+    }
+  ],
+  "plan": {
+    "file": "packages/console/src/demo/v3-demo-transfer.json",
+    "planDigest": "0x5eda2d74a9e793025e1ad8dcb6c3ada83571fd2fb0217b62a335696d765246eb",
+    "recomputedPlanDigest": "0x5eda2d74a9e793025e1ad8dcb6c3ada83571fd2fb0217b62a335696d765246eb",
+    "planDigestMatches": true,
+    "signerMatches": true,
+    "callMatch": true,
+    "callReason": "call bytes equal the plan step",
+    "planCalls": [
+      "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204"
+    ]
+  },
+  "balances": {
+    "asset": "806707",
+    "before": 118309,
+    "after": 118310,
+    "accounts": {
+      "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE": {
+        "assetBefore": "5",
+        "assetAfter": "4",
+        "assetDelta": "-1"
+      },
+      "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB": {
+        "assetBefore": "2500",
+        "assetAfter": "2501",
+        "assetDelta": "1"
+      }
+    },
+    "signerFree": {
+      "before": "100000000000000",
+      "after": "98529120200481",
+      "drop": "1470879799519",
+      "dropEqualsFee": true
+    }
+  },
+  "dispatch": {
+    "ok": true
+  },
+  "fee": "1470879799519",
+  "events": [
+    {
+      "pallet": "Balances",
+      "name": "Withdraw",
+      "args": [
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "1470879799519"
+      ]
+    },
+    {
+      "pallet": "Assets",
+      "name": "Transferred",
+      "args": [
+        "806707",
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+        "1"
+      ]
+    },
+    {
+      "pallet": "Balances",
+      "name": "Deposit",
+      "args": [
+        "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+        "1470879799519"
+      ]
+    },
+    {
+      "pallet": "TransactionPayment",
+      "name": "TransactionFeePaid",
+      "args": [
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "1470879799519",
+        "0"
+      ]
+    },
+    {
+      "pallet": "System",
+      "name": "ExtrinsicSuccess",
+      "args": [
+        "{\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+      ]
+    }
+  ],
+  "outcome": "verified",
+  "reasons": []
+}
