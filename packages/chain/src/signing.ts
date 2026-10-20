@@ -323,6 +323,24 @@ export interface SignedCall {
   signatureScheme: SignatureScheme;
   /** blake2b-256 of the extrinsic: the hash the node reports. */
   txHash: Hex;
+  /** CheckMetadataHash mode as signed (0 Disabled, 1 Enabled); absent if the runtime has no such extension or it cannot be read. */
+  metadataHashMode?: 0 | 1;
+}
+
+/** The CheckMetadataHash mode decoded from the extrinsic's own extension bytes, or undefined (fail closed). */
+export function metadataHashModeOf(
+  ext: unknown,
+  signedExtensions: readonly string[],
+): 0 | 1 | undefined {
+  if (!signedExtensions.includes("CheckMetadataHash")) return undefined;
+  try {
+    const m = (ext as { inner: { signature: { mode?: { toNumber(): number } } } }).inner.signature
+      .mode;
+    const n = m?.toNumber();
+    return n === 0 || n === 1 ? n : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The typed MultiSignature (scheme byte + signature) of a signed polkadot.js extrinsic. */
@@ -376,6 +394,10 @@ export function extractSignedCall(extrinsicHex: string, facts: RuntimeFacts): Si
     signature: multi.toHex() as Hex,
     signatureScheme: multi.type.toLowerCase() as SignatureScheme,
     txHash: extrinsicHash(extrinsicHex),
+    ...(() => {
+      const mode = metadataHashModeOf(ext, registry.signedExtensions);
+      return mode === undefined ? {} : { metadataHashMode: mode };
+    })(),
   };
 }
 
@@ -605,6 +627,8 @@ export interface DecodedSignedExtrinsic {
   signatureValid: boolean;
   /** Extra reporting for evidence: the era as signed. */
   era?: EraInfo;
+  /** CheckMetadataHash mode from the extension bytes (0 Disabled, 1 Enabled); absent when it cannot be decoded. */
+  metadataHashMode?: 0 | 1;
 }
 
 /**
@@ -666,7 +690,8 @@ export function signedExtrinsicDecoder(
     const requests: Pick<SigningRequest, "nonce" | "payload">[] = Array.isArray(context)
       ? context
       : envelopeContext(context, facts, s);
-    for (const r of requests) {
+    // Mode 1 commits to a metadata digest SEAM never signs with and cannot rebuild here: never call it valid.
+    for (const r of s.metadataHashMode === 1 ? [] : requests) {
       const p = r.payload;
       try {
         if (accountIdOf(p.address) !== s.signer.accountId.toLowerCase() || r.nonce !== s.nonce)
@@ -705,6 +730,7 @@ export function signedExtrinsicDecoder(
       era: s.era,
       signatureValid,
       ...(genesisHash ? { genesisHash } : {}),
+      ...(s.metadataHashMode === undefined ? {} : { metadataHashMode: s.metadataHashMode }),
     };
   };
 }
