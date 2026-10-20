@@ -136,7 +136,23 @@ function mockExtension(signature: string, accounts = [SIGNER]) {
 }
 
 // Test-only stand-in for the policy gate so the later steps can be exercised. The real gate is tested below and in policygate.test.ts.
-const allowAll = () => ({ ok: true as const, explanations: [] });
+const passGates = {
+  preSign: async () => ({
+    gate: { ok: true as const, explanations: [] },
+    res: { ok: true as const, value: {} as never },
+  }),
+  preSubmit: vi.fn(async () => ({ ok: true as const, value: { passed: [] } })),
+};
+const fakeChain = async () =>
+  ({
+    preflight: vi.fn(async () => ({
+      steps: [{ actionId: "pay", dryRun: "unknown" }],
+      totalFee: "1",
+    })),
+    signedExtrinsicDecoder: () => () => null,
+    blockTimeFromFacts: () => 6000,
+  }) as never;
+const noChain = async () => ({}) as never;
 
 const renderPanel = (approved = true) =>
   render(
@@ -146,7 +162,8 @@ const renderPanel = (approved = true) =>
       approval={approved ? approveWalletDemo(plan) : undefined}
       hostLoader={async () => fakeHost()}
       factsStep={factsOk}
-      policyGate={allowAll}
+      gates={passGates}
+      chainLoader={noChain}
     />,
   );
 const press = () => fireEvent.click(screen.getByRole("button", { name: /check live|retry/i }));
@@ -231,7 +248,8 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
         approval={approveWalletDemo(plan)}
         hostLoader={async () => h}
         factsStep={factsOk}
-        policyGate={allowAll}
+        gates={passGates}
+        chainLoader={noChain}
       />,
     );
     press();
@@ -338,6 +356,7 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
         factsStep={factsOk}
         policyInput={{ policy: {}, plan: walletDemo.plan, manifest: walletDemo.manifest }}
         policyGate={gate}
+        chainLoader={fakeChain}
       />,
     );
     press();
@@ -346,7 +365,37 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     expect(within(box).getByText(/Preflight ran: Unknown, so blocked/)).toBeTruthy();
     expect(within(box).getByText(/Capability allowed: Pass/)).toBeTruthy();
     expect(gate).toHaveBeenCalledTimes(1);
+    expect((gate.mock.calls[0] as unknown[])[0]).toMatchObject({ preflight: { totalFee: "1" } });
     expect(sign).not.toHaveBeenCalled();
     expect(submitted).toHaveLength(0);
+  });
+
+  it("submit gate: a blocked signed transaction is never sent", async () => {
+    const sign = mockExtension(GOOD_SIG);
+    const gates = {
+      preSign: passGates.preSign,
+      preSubmit: vi.fn(async () => ({
+        ok: false as const,
+        reason: "unavailable" as const,
+        message: "Blocked at submit (signed_dry_run_missing). Nothing was sent.",
+      })),
+    };
+    render(
+      <LivePanel
+        plan={plan}
+        facts={facts}
+        approval={approveWalletDemo(plan)}
+        hostLoader={async () => fakeHost()}
+        factsStep={factsOk}
+        gates={gates}
+        chainLoader={noChain}
+      />,
+    );
+    press();
+    await waitFor(() => expect(screen.getByText(/signed_dry_run_missing/)).toBeTruthy());
+    expect(sign).toHaveBeenCalledTimes(1);
+    expect(gates.preSubmit).toHaveBeenCalledTimes(1);
+    expect(submitted).toHaveLength(0);
+    expect(calls).not.toContain("author_submitExtrinsic");
   });
 });

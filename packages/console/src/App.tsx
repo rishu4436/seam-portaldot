@@ -1,3 +1,6 @@
+import { V3_HTTPS_RPC } from "./lib/v3facts";
+import { engineApprovalCheck, loadChainFns } from "./lib/signflow";
+import type { GateOutcome } from "./lib/policygate";
 import demoSequentialPolicy from "./demo/v3-demo-transfer-policy-sequential.json";
 import { useMemo, useState } from "react";
 import * as api from "./lib/mock";
@@ -25,6 +28,7 @@ import {
   ProvenanceBadge,
   DowngradeWarning,
   JsonActions,
+  liveFactsStep,
 } from "./components/Modes";
 import type { PolicyLike } from "./lib/limits";
 import {
@@ -312,6 +316,8 @@ export default function App() {
   const [progress, setProgress] = useState<StepStatus[]>([]);
   const [walletDemoOn, setWalletDemoOn] = useState(false);
   const [demoApproval, setDemoApproval] = useState<Approval>();
+  const [demoEngine, setDemoEngine] = useState<GateOutcome>();
+  const [demoChecking, setDemoChecking] = useState(false);
   const demoPlan = useMemo(() => walletDemoPlan(), []);
   // The authoritative gate checks the demo's raw compiled plan against the sequential demo policy; facts are read live.
   const demoPolicyInput = useMemo(
@@ -551,7 +557,29 @@ export default function App() {
               <WalletDemoCard
                 plan={demoPlan}
                 approval={demoApproval}
-                onApprove={() => setDemoApproval(approveWalletDemo(demoPlan))}
+                engine={demoEngine}
+                checking={demoChecking}
+                onApprove={async () => {
+                  setDemoChecking(true);
+                  try {
+                    const b = await import("./lib/browserChain");
+                    const rpc = b.transportFor(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
+                    const g = await engineApprovalCheck({
+                      chain: await loadChainFns(),
+                      send: rpc,
+                      readFacts: async () => {
+                        const r = await liveFactsStep(rpc);
+                        return r.ok ? r.facts : undefined;
+                      },
+                      input: demoPolicyInput,
+                      now: new Date(),
+                    });
+                    setDemoEngine(g);
+                    setDemoApproval(g.ok ? approveWalletDemo(demoPlan) : undefined);
+                  } finally {
+                    setDemoChecking(false);
+                  }
+                }}
               />
             )}
             {!walletDemoOn && <ManifestBuilder />}
