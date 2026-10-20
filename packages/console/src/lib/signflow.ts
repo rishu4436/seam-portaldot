@@ -23,7 +23,12 @@ export interface ChainFns {
     facts: unknown,
     opts?: { signedExtrinsics?: string[] },
   ): Promise<PreflightRes>;
-  signedExtrinsicDecoder(facts: unknown): (x: `0x${string}`) => unknown;
+  /**
+   * Chainsmith's decoder (needs 239974f). The context (the approved envelope's checkpoint, or the signing requests) is
+   * required to check a signature: the era block hash is not inside the extrinsic, so with no context every signature
+   * reads as invalid (the LIVE fc91363 signed_signature_invalid bug).
+   */
+  signedExtrinsicDecoder(facts: unknown, context?: unknown): (x: `0x${string}`) => unknown;
   /** Block time from the runtime's own metadata (Chainsmith, @seam/chain/browser). */
   blockTimeFromFacts?: (facts: unknown) => number | undefined;
   /**
@@ -181,7 +186,7 @@ export async function preSubmit(args: {
       currentFingerprint: current,
       signedCalls: [],
       signedExtrinsics: all,
-      decodeSignedExtrinsic: chain.signedExtrinsicDecoder(facts),
+      decodeSignedExtrinsic: chain.signedExtrinsicDecoder(facts, pre.approvalInput.envelope),
       requireTrustedDecoder: true,
       signedDryRun: pf.steps.map((s) => s.dryRun),
       ...(plan.mode === "sequential"

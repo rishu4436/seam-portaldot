@@ -15,6 +15,8 @@ export type EffectVerdict =
   | {
       verdict: "effect_proven";
       extrinsicIndex: number;
+      /** Set by the verifyStep-based check (any step kind): its plain-language reason. */
+      reason?: string;
       event: Record<string, string>;
       checkedAt: string;
     }
