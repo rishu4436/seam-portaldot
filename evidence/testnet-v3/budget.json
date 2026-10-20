@@ -1,23 +1,57 @@
 {
- "kind": "spending-budget",
- "account": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
- "capPlanck": "2304034302112647",
- "cap": "23.04034302112647 tPOT (phase 1 10 tPOT, of which 3.04 spent, + phase 2 20 tPOT)",
- "baselineFree": "100000000000000000",
- "baselineReserved": "0",
- "baselineAt": "2026-10-19T11:17:48.613Z",
- "baselineBlock": 102226,
- "note": "spend = baselineFree - free now (fees + held deposits + transfers out). Hard stop before a tx would pass the cap.",
- "phases": [
-  {
-   "phase": "1: setup, Nfts, Assets, SEAM plans",
-   "cap": "10 tPOT",
-   "spentAtEnd": "3.04034302112647 tPOT"
-  },
-  {
-   "phase": "2: Revive contract (deploy, SEAM revive.call, terminate)",
-   "cap": "20 tPOT on top of phase 1 (spend decision delegated by the repo owner)",
-   "totalCap": "23.04034302112647 tPOT"
+  "kind": "spending-budget",
+  "account": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "capPlanck": "2304034302112647",
+  "cap": "23.04034302112647 tPOT (phase 1 10 tPOT, of which 3.04 spent, + phase 2 20 tPOT)",
+  "baselineFree": "100000000000000000",
+  "baselineReserved": "0",
+  "baselineAt": "2026-10-19T11:17:48.613Z",
+  "baselineBlock": 102226,
+  "note": "spend = baselineFree - free now (fees + held deposits + transfers out). Hard stop before a tx would pass the cap.",
+  "phases": [
+    {
+      "phase": "1: setup, Nfts, Assets, SEAM plans",
+      "cap": "10 tPOT",
+      "spentAtEnd": "3.04034302112647 tPOT"
+    },
+    {
+      "phase": "2: Revive contract (deploy, SEAM revive.call, terminate)",
+      "cap": "20 tPOT on top of phase 1 (spend decision delegated by the repo owner)",
+      "totalCap": "23.04034302112647 tPOT"
+    },
+    {
+      "phase": "3: wallet-demo funding (Anchor, one Utility.batch_all)",
+      "cap": "within the 23.04034302112647 tPOT total cap",
+      "spent": "1.01921050270352 tPOT (1 tPOT transferred out + 0.01921050270352 fee)"
+    }
+  ],
+  "transactions": [
+    {
+      "purpose": "wallet-demo funding",
+      "account": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "hash": "0x2269c4b7a54bbb5d5e217a89034f4b56c719ba7b825dfa549f1faa65d50ad605",
+      "block": {
+        "number": 118070,
+        "hash": "0xdefa1e3048b8245490d6665e2e5a1df52bcf118cf4e95a2387317da2e75bd721"
+      },
+      "status": "finalized (independently verified: canonical, ExtrinsicSuccess)",
+      "fee": "1921050270352",
+      "deposit": "0",
+      "amount": {
+        "tPOT": "100000000000000",
+        "asset806707": "5"
+      },
+      "time": "2026-10-20T13:48:48.000Z",
+      "runFile": "demo-funding-118070-verification.json"
+    }
+  ],
+  "spent": {
+    "planck": "1822889373695123",
+    "tPOT": "18.22889373695123",
+    "freeNow": "98177110626304877",
+    "reservedNow": "240000000000000",
+    "measuredAtBlock": 118070,
+    "note": "baselineFree - free at #118070. Free before the funding (#118069) was 98279031676575229 (= end of phase 2); the drop at #118070 is exactly 100000000000000 + 1921050270352 fee.",
+    "leftUnderCapPlanck": "481144928417524"
   }
- ]
 }
