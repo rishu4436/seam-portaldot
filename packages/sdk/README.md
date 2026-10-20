@@ -51,7 +51,7 @@ Offline commands use the bundled Portaldot mainnet snapshot (spec 1002, block 2,
 
 ## Browser receipt verifiers (`@seam/sdk/browser`)
 
-`import { verifyStep, ... } from "@seam/sdk/browser"` gives the console the same receipt checks the CLI uses, with no node builtins (tests/browser-entry.test.ts bundles it with esbuild `platform: "browser"` and checks every export is `===` the node export). It re-exports `receipt.ts`, `outcomes.ts` and `deploy-outcomes.ts`; nothing is copied.
+`import { verifyStep, ... } from "@seam/sdk/browser"` gives the console the same receipt checks the CLI uses, with no node builtins (tests/browser-entry.test.ts bundles it with esbuild `platform: "browser"` and checks every export is `===` the node export). It re-exports `receipt.ts`, `outcomes.ts` and `deploy-outcomes.ts` and `batch-steps.ts`; nothing is copied. `perStepOfBatch(plan, outcomes, signedBatchCall)` (moved from `flow.ts`, which re-exports it) splits an atomic plan's one `batch` outcome into per-step outcomes. A step gets its call bytes only when the batch call is exactly the planned `batch_all` of the plan's calls, so `buildReceipt` can check an atomic receipt in the browser.
 
 `verifyStep(step, signerAccountId, outcome, effect?, verdict?, runtime?)` is the one dispatcher. Pass `runtime` (the V3 fingerprint) and `outcome.callHex` (the signed call bytes), or the V3 checks stay `unknown`:
 
