@@ -1,5 +1,5 @@
-import { digestJson } from "@seam/compiler";
-import type { Hex, Plan, PlanStep } from "@seam/compiler";
+import { digestJson } from "@seam/compiler/browser";
+import type { Hex, Plan, PlanStep } from "@seam/compiler/browser";
 import {
   isObservedV3,
   nftsShapeFor,
@@ -20,7 +20,7 @@ const VERDICT_KINDS = [
   "revive.instantiate_with_code",
   "revive.map_account",
 ];
-import { overallResult, type ReceiptStep, type StepStatus } from "@seam/policy";
+import { overallResult, type ReceiptStep, type StepStatus } from "@seam/policy/browser";
 
 /**
  * Step status as the SDK reports it. `uncertain` means a broadcast may or may not have happened (RPC timeout after the

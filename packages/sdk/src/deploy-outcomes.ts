@@ -1,5 +1,5 @@
 import { keccakAsHex } from "@polkadot/util-crypto";
-import type { Hex } from "@seam/compiler";
+import type { Hex } from "@seam/compiler/browser";
 import type { ChainEvent, StepCode } from "./receipt.js";
 import { isObservedV3, type OutcomeVerdict, type V3Runtime } from "./outcomes.js";
 

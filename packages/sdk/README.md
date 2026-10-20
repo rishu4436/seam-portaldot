@@ -49,6 +49,23 @@ seam explain plan.json | policy-result.json | receipt.json
 
 Offline commands use the bundled Portaldot mainnet snapshot (spec 1002, block 2,721,455) by default. `--snapshot <dir|file> [--name n]` picks any snapshot saved by `seam snapshot` or `@seam/chain`'s `snapshotFromNode`, and `--endpoint <ws-url>` reads a live node. `seam check` validates the policy file with `parsePolicy` first.
 
+## Browser receipt verifiers (`@seam/sdk/browser`)
+
+`import { verifyStep, ... } from "@seam/sdk/browser"` gives the console the same receipt checks the CLI uses, with no node builtins (tests/browser-entry.test.ts bundles it with esbuild `platform: "browser"` and checks every export is `===` the node export). It re-exports `receipt.ts`, `outcomes.ts` and `deploy-outcomes.ts`; nothing is copied.
+
+`verifyStep(step, signerAccountId, outcome, effect?, verdict?, runtime?)` is the one dispatcher. Pass `runtime` (the V3 fingerprint) and `outcome.callHex` (the signed call bytes), or the V3 checks stay `unknown`:
+
+| kind                             | verified when                                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `assets.transfer`, `assets.mint` | the exact `Assets.Transferred` / `Assets.Issued` is in a finalized block                                                 |
+| `nfts.mint`                      | spec 3002, `Nfts.Issued` matches the planned collection, item and owner                                                  |
+| `revive.call`                    | spec 3002, call bytes match, and `effect.emittedData` / `emittedTopics` match. With no expected event it stays `unknown` |
+| `revive.instantiate_with_code`   | spec 3002, call bytes match and `Revive.Instantiated` from the signer's H160                                             |
+| `revive.map_account`             | only with `effect.originalAccount` (a `Revive.OriginalAccount` read). Events alone stay `unknown`                        |
+| `contracts.call`                 | exact `Contracts.ContractEmitted` data or a state read-back                                                              |
+
+`perStepOfBatch` (atomic receipts) lives in `flow.ts`, which uses the file store, so it is not in the browser entry.
+
 ## Tests
 
 `npm test` runs 29 offline tests against the real snapshot metadata. They cover Manifest validation, receipt verification (attack cases 9 and 11), explanations, and the full flow with a fake chain and wallet (approval reuse, runtime change, a tampered signature, a failed or unknown signed dry run, stopping after a failure).
