@@ -5,13 +5,13 @@ import { fileURLToPath } from "node:url";
 import { compile, SeamCompileError, type RuntimeFacts } from "@seam/compiler";
 import { evaluatePolicy, parsePolicy } from "@seam/policy";
 import { parseManifest } from "./manifest.js";
-import { receiptIntegrity, type Receipt } from "./receipt.js";
+import { receiptIntegrity, receiptShapeProblem, type Receipt } from "./receipt.js";
 import { classifyError, classifyReceipt, EXIT, SeamCode } from "./codes.js";
 import { diffRuntimes, explainDrift } from "./drift.js";
 import { createChainReader, verifyReceiptLive } from "./verify-live.js";
 import { explainManifestIssues, explainPlan, explainPolicy, explainReceipt } from "./explain.js";
 import { factsFromSnapshot } from "./offline.js";
-import { parseAbiFlags, parseRuntimeFlag, parseTokenFlag } from "./cliargs.js";
+import { parseAbiFlags, parseRuntimeFlag, parseTokenFlag, pickReceipt } from "./cliargs.js";
 
 const HELP = `seam <command> [file] [options]
 
@@ -211,12 +211,19 @@ async function main() {
         "--runtime",
       ])[1];
       if (!rf) throw new Error("missing receipt file");
-      const r = read(rf) as Receipt;
+      const picked = pickReceipt(read(rf), rf);
+      const r = picked.receipt as Receipt;
+      const source = picked.field
+        ? `- note: ${rf} is a run record; checking its "${picked.field}".`
+        : "";
+      if (source && !json) console.log(source);
       const integrity = receiptIntegrity(r);
       if (integrity.status === "failed") {
         out(
-          `WARNING: ${integrity.note}\n${explainReceipt(r)}`,
-          { status: "failed", integrity, receipt: r },
+          receiptShapeProblem(r)
+            ? `WARNING: ${rf}${picked.field ? ` (${picked.field})` : ""}: ${integrity.note}`
+            : `WARNING: ${integrity.note}\n${explainReceipt(r)}`,
+          { status: "failed", integrity, receiptSource: picked.field ?? null, receipt: r },
           SeamCode.IntegrityFailed,
         );
         bail(SeamCode.IntegrityFailed);
@@ -228,12 +235,17 @@ async function main() {
           status: "integrity_checked",
           note: integrity.note,
           outcome: oc,
+          receiptSource: picked.field ?? null,
           receipt: r,
         });
         // Integrity is fine, but a receipt whose run was partial/uncertain/not verified must not look like success.
         process.exit(oc.exitCode);
       }
       const planFile = flag("--plan");
+      // A run record carries its own plan; it is used only when --plan is not given, and the plan digest is still checked.
+      const plan = planFile ? read(planFile) : picked.plan;
+      if (!planFile && picked.plan && !json)
+        console.log(`- note: using the plan in ${rf} ("plan").`);
       // Parsed before any network call, so a bad --runtime file fails fast with a usage error.
       const runtime = parseRuntimeFlag(
         argv.includes("--runtime") ? (flag("--runtime") ?? "") : undefined,
@@ -242,7 +254,7 @@ async function main() {
       const facts = await loadFacts();
       const reader = await createChainReader(endpoint, facts);
       const live = await verifyReceiptLive(r, reader, {
-        plan: planFile ? read(planFile) : undefined,
+        plan,
         runtime,
       });
       const lines = [
@@ -260,7 +272,11 @@ async function main() {
           : live.status === "failed"
             ? SeamCode.ChainVerifyFailed
             : SeamCode.ChainVerifyUnknown;
-      out(lines.join("\n"), { status: live.status, live, outcome: oc, receipt: r }, lc);
+      out(
+        lines.join("\n"),
+        { status: live.status, live, outcome: oc, receiptSource: picked.field ?? null, receipt: r },
+        lc,
+      );
       // Chain checks passed only says the receipt matches the chain; the run's own outcome still decides the exit code.
       process.exit(lc === SeamCode.ChainVerified ? oc.exitCode : EXIT[lc]);
     }

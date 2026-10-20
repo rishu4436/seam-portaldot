@@ -494,8 +494,28 @@ export function receiptDigest(r: Omit<Receipt, "receiptDigest"> | Receipt): Hex 
   return digestJson("seam/receipt/v1", rest);
 }
 
-/** True when nobody edited the receipt after SEAM produced it. */
+/**
+ * Why a value is not a SEAM receipt that can be checked, or `undefined` when it has the receipt's shape. Every receipt
+ * check runs this first, so a file that is not a receipt (for example a whole run record) is a clear failure, never a crash.
+ */
+export function receiptShapeProblem(r: unknown): string | undefined {
+  if (!r || typeof r !== "object" || Array.isArray(r)) return "it is not a JSON object";
+  const o = r as Record<string, unknown>;
+  if (o.receiptVersion !== 1) return 'it has no "receiptVersion": 1';
+  if (!Array.isArray(o.steps)) return 'it has no "steps" list';
+  const i = o.steps.findIndex(
+    (s) =>
+      !s || typeof s !== "object" || typeof (s as { actionId?: unknown }).actionId !== "string",
+  );
+  if (i >= 0) return `step ${i} has no "actionId"`;
+  if (!o.coverage || typeof o.coverage !== "object") return 'it has no "coverage"';
+  if (typeof o.receiptDigest !== "string") return 'it has no "receiptDigest"';
+  return undefined;
+}
+
+/** True when nobody edited the receipt after SEAM produced it. False for anything that is not a receipt. */
 export function checkReceipt(r: Receipt): boolean {
+  if (receiptShapeProblem(r)) return false;
   return receiptDigest(r) === r.receiptDigest;
 }
 
@@ -512,6 +532,8 @@ export function receiptIntegrity(r: Receipt): {
   status: "integrity_checked" | "failed";
   note: string;
 } {
+  const shape = receiptShapeProblem(r);
+  if (shape) return { status: "failed", note: `This is not a SEAM receipt (${shape}).` };
   const bad = r.steps.find((x) => x.status === "finalized" && (!x.txHash || !x.block));
   if (bad)
     return {
