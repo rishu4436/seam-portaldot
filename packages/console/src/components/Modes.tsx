@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  checkAssetsTransferEffect,
+  type EffectVerdict,
+  type TransferExpectation,
+} from "../lib/effectcheck";
+import {
   MODES,
   COVERAGE_LABEL,
   SIMULATION_LABEL,
@@ -415,19 +420,86 @@ export function ApprovalSummary({ plan, approval }: { plan?: Plan; approval?: Ap
 }
 
 /** Receipt of a LIVE run: only what was observed. Coverage stays at what the chain re-read showed. */
+/** What the receipt can check on chain: a single assets.transfer step. Anything else has no effect check here. */
+export function transferExpectation(plan?: Plan): TransferExpectation | undefined {
+  const st = plan?.steps.length === 1 ? plan.steps[0] : undefined;
+  const d = st?.decoded;
+  if (
+    !plan?.signer ||
+    !st ||
+    !/^Assets\.transfer/.test(st.capability) ||
+    !d?.assetId ||
+    !d.recipient ||
+    !d.amount
+  )
+    return undefined;
+  return { assetId: d.assetId, from: plan.signer, to: d.recipient, amount: d.amount };
+}
+
 export function LiveReceipt({
   out,
   plan,
   approval,
+  rpc,
+  effectCheck = checkAssetsTransferEffect,
 }: {
   out: LiveOutcome;
   plan?: Plan;
   approval?: Approval;
+  rpc?: RpcTransport;
+  effectCheck?: typeof checkAssetsTransferEffect;
 }) {
+  const [effect, setEffect] = useState<EffectVerdict>();
+  const want = transferExpectation(plan);
+  const blockHash = out.block?.hash;
+  useEffect(() => {
+    setEffect(undefined);
+    if (!rpc || !want || !out.txHash || !blockHash || out.txState !== "finalized") return;
+    let live = true;
+    effectCheck(rpc, out.txHash, blockHash, want).then((v) => live && setEffect(v));
+    return () => {
+      live = false;
+    };
+  }, [rpc, out.txHash, blockHash, out.txState, plan?.digest]);
   if (!out.submitted || !out.txHash) return null;
+  const effectLabel = !want
+    ? "not checked (no effect check for this plan)"
+    : !effect
+      ? out.txState === "finalized"
+        ? "checking…"
+        : "not checked (not finalized)"
+      : effect.verdict === "effect_proven"
+        ? `effect proven: Assets.Transferred asset ${effect.event.assetId}, amount ${effect.event.amount}, to the planned recipient (extrinsic #${effect.extrinsicIndex})`
+        : `not verified: ${effect.reason}`;
+  const receipt = {
+    receiptKind: "seam/console-live-receipt/v1",
+    result: out.status,
+    txHash: out.txHash,
+    block: out.block ?? null,
+    planDigest: plan?.digest ?? null,
+    manifestDigest: plan?.manifestDigest ?? null,
+    fingerprintDigest: plan?.fingerprintDigest ?? null,
+    approvalHash: approval?.hash ?? null,
+    signer: plan?.signer ?? null,
+    fee: out.fee ?? null,
+    coverage: out.coverage,
+    effect: effect ?? {
+      verdict: "not_verified",
+      reason: want ? "not checked yet" : "no effect check for this plan",
+    },
+    verification: effect?.verdict === "effect_proven" ? "effect_proven" : "unverified",
+  };
   return (
     <div className="receipt small" role="group" aria-label="Receipt">
-      <b>Receipt</b>
+      <div className="row between">
+        <b>Receipt</b>
+        <button
+          className="ghost xs"
+          onClick={() => downloadJson(`seam-receipt-${out.txHash!.slice(0, 10)}.json`, receipt)}
+        >
+          Download receipt
+        </button>
+      </div>
       <dl className="kv small">
         <dt>Result</dt>
         <dd>{out.status}</dd>
@@ -447,6 +519,13 @@ export function LiveReceipt({
         </dd>
         <dt>Coverage</dt>
         <dd>{COVERAGE_LABEL[out.coverage]}</dd>
+        <dt>Effect</dt>
+        <dd data-testid="receipt-effect">
+          <Tag tone={effect?.verdict === "effect_proven" ? "ok" : "warn"}>
+            {effect?.verdict === "effect_proven" ? "effect proven" : "effect unverified"}
+          </Tag>{" "}
+          {effectLabel}
+        </dd>
       </dl>
     </div>
   );
@@ -476,6 +555,7 @@ export function LivePanel({
   // Approval hashes already sent with. An approval is single use, so a second send with it is blocked here too.
   const [spent, setSpent] = useState<string[]>([]);
   const ok = !!v3RpcUrl(url);
+  const [receiptRpc, setReceiptRpc] = useState<RpcTransport>();
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
   const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
   useEffect(() => {
@@ -495,6 +575,7 @@ export function LivePanel({
       if (u) {
         const b = await import("../lib/browserChain");
         const rpc = b.transportFor(u);
+        setReceiptRpc(() => rpc);
         // The host needs chain-shaped RuntimeFacts. If the plan's facts are not that shape, run the read-only V3 facts step.
         let hostFacts: unknown = facts;
         if (!hasChainFacts(facts)) {
@@ -641,7 +722,7 @@ export function LivePanel({
           <>
             <p>{out.message}</p>
             <FinalityPanel out={out} />
-            <LiveReceipt out={out} plan={plan} approval={approval} />
+            <LiveReceipt out={out} plan={plan} approval={approval} rpc={receiptRpc} />
             <dl className="kv">
               <dt>Network</dt>
               <dd>
