@@ -50,3 +50,4 @@ export {
   type MetadataLayout,
   BLANKED_STORAGE_DEFAULTS,
 } from "./layout.js";
+export { rebindPlan, type RebindResult } from "./rebind.js";
