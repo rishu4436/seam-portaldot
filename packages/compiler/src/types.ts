@@ -46,7 +46,20 @@ export interface AtomicRollbackProof {
   /** Must equal facts.fingerprint.metadataHash (the runtime fingerprint the test ran against). */
   metadataHash: Hex;
   specVersion: number;
-  /** Optional extra binding: must equal facts.fingerprintDigest when present. */
+  /** Runtime spec name. Required (and must equal the facts') when the proof is accepted on metadataLayoutHash. */
+  specName?: string;
+  /**
+   * Optional: layout hash (storage defaults blanked, see metadataLayoutHash) of the metadata the test ran against.
+   * When present and the raw metadataHash differs, the proof is still accepted if this equals the layout hash of
+   * the facts' own metadata bytes. Absent: metadataHash must match exactly (strict).
+   */
+  metadataLayoutHash?: Hex;
+  /** Required on the layout-hash path; must equal the facts' fingerprint values. */
+  transactionVersion?: number;
+  ss58Prefix?: number;
+  /** Required on the layout-hash path: Utility.batch_all's indices on the tested runtime; must equal the facts'. */
+  batchAll?: { palletIndex: number; callIndex: number };
+  /** Optional extra binding: must equal facts.fingerprintDigest when present (raw-hash match only). */
   fingerprintDigest?: Hex;
   /** Hash of the extrinsic/block where the failing batch was observed. At least one is required. */
   txHash?: Hex;
@@ -84,6 +97,11 @@ export interface RuntimeFacts {
   /** Byte length of the account that signs extrinsics on this runtime: 32 (AccountId32, default) or 20 (H160). */
   signingAccountBytes?: 20 | 32;
   blockNumber?: number;
+  /**
+   * Optional layout hash of source.metadataHex (see metadataLayoutHash). Not part of the fingerprint or any digest.
+   * When present it must equal the hash the compiler computes from the bytes.
+   */
+  metadataLayoutHash?: Hex;
   /**
    * Raw material the compiler needs to encode calls. Not part of the fingerprint,
    * but checked against it: blake2b-256(metadata) must equal fingerprint.metadataHash
@@ -198,6 +216,11 @@ export interface Plan {
   modeReason: string;
   /** Present only when an atomic preference fell back to sequential. A person must approve it. */
   modeDowngrade?: ModeDowngrade;
+  /**
+   * Basis of the rollback proof behind atomic_verified. Present (and covered by planDigest) only as "layout_hash";
+   * absent means the strict raw-metadata-hash basis ("raw_hash"), so older plans' digests are unchanged.
+   */
+  rollbackProofBasis?: "layout_hash";
   steps: PlanStep[];
   /** Utility.batch_all wrapping every step, present only when mode is atomic_*. */
   outerCall?: { capability: string; palletIndex: number; callIndex: number; encodedCall: Hex };
