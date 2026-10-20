@@ -21,7 +21,9 @@ import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
 import {
   V3_HTTPS_RPC,
   discoverV3Facts,
+  discoverV3LiveFacts,
   loadFactsSnapshot,
+  type FactsBuilder,
   type V3FactsResult,
 } from "../lib/v3facts";
 import type { RpcTransport } from "../lib/chainclient";
@@ -30,6 +32,21 @@ import type { RpcTransport } from "../lib/chainclient";
 export async function defaultV3Facts(rpc: RpcTransport): Promise<V3FactsResult> {
   const [snap, crypto] = await Promise.all([loadFactsSnapshot(), import("@polkadot/util-crypto")]);
   return discoverV3Facts(rpc, snap, (h) => crypto.blake2AsHex(h, 256));
+}
+
+/**
+ * LIVE facts step: real RuntimeFacts built in the browser by @seam/chain/browser's factsFromChainInputs from this node's own
+ * reads. The recorded snapshot is loaded only for comparison in the notice. A builder error fails closed (no facts, no host).
+ * The snapshot-based defaultV3Facts above is kept as a labelled fallback for display/tests, not used by default.
+ */
+export async function liveFactsStep(rpc: RpcTransport): Promise<V3FactsResult> {
+  const [snap, mod] = await Promise.all([
+    loadFactsSnapshot().catch(() => undefined),
+    import("@seam/chain/browser"),
+  ]);
+  return discoverV3LiveFacts(rpc, mod.factsFromChainInputs as unknown as FactsBuilder, {
+    snapshot: snap,
+  });
 }
 import type { Approval, Plan, RuntimeFacts } from "../lib/types";
 import { finalityView } from "../lib/finality";
@@ -292,9 +309,38 @@ export function V3FactsNotice({ r }: { r: V3FactsResult }) {
       </div>
     );
   const p = r.report;
+  if (p.provenance === "live_chain_inputs")
+    return (
+      <div className="v3facts small" role="status">
+        <Tag tone="ok">V3 facts: built live from this node</Tag>
+        <dl className="kv small">
+          <dt>Node</dt>
+          <dd>
+            {p.specName} spec {p.specVersion}, tx v{p.transactionVersion}, finalized #
+            {p.finalizedBlock ?? "?"}
+          </dd>
+          <dt>Metadata (live)</dt>
+          <dd>
+            {p.metadataBytes} bytes, <code className="wrap">{p.liveMetadataHash}</code>
+          </dd>
+          <dt>Fingerprint (live)</dt>
+          <dd>
+            <code className="wrap">{p.liveFingerprintDigest}</code>
+          </dd>
+          <dt>Recorded snapshot</dt>
+          <dd>
+            {p.snapshotFrom === "none"
+              ? "not loaded (comparison only)"
+              : p.digestMatchesSnapshot
+                ? `matches ${p.snapshotFrom}`
+                : `differs from ${p.snapshotFrom} (comparison only; expected when V3 metadata drifts)`}
+          </dd>
+        </dl>
+      </div>
+    );
   return (
     <div className="v3facts small" role="status">
-      <Tag tone="warn">V3 facts: snapshot + live metadata</Tag>
+      <Tag tone="warn">V3 facts: snapshot + live metadata (fallback)</Tag>
       <dl className="kv small">
         <dt>Node</dt>
         <dd>
@@ -318,18 +364,108 @@ export function V3FactsNotice({ r }: { r: V3FactsResult }) {
   );
 }
 
+/** What the wallet will be asked to sign, and the approval bound to it. Shown before anything is contacted. */
+export function ApprovalSummary({ plan, approval }: { plan?: Plan; approval?: Approval }) {
+  const call = planCall(plan);
+  return (
+    <div className="approval small" role="group" aria-label="Approval request">
+      <div className="row between">
+        <b>Approval request</b>
+        <Tag tone={!approval ? "warn" : approval.used ? "bad" : "ok"}>
+          {!approval ? "not approved" : approval.used ? "approval used" : "approved"}
+        </Tag>
+      </div>
+      {!call.ok ? (
+        <p className="muted">{call.message}</p>
+      ) : (
+        <dl className="kv small">
+          <dt>Signer</dt>
+          <dd>
+            <code className="wrap">{call.value.signer}</code>
+          </dd>
+          <dt>Actions</dt>
+          <dd>
+            {plan!.steps
+              .map(
+                (s) =>
+                  `${s.actionId}: ${s.capability}${s.decoded.amount ? ` ${s.decoded.amount}` : ""}${s.decoded.assetId ? ` of asset ${s.decoded.assetId}` : ""}${s.decoded.recipient ? ` to ${s.decoded.recipient}` : ""}`,
+              )
+              .join("; ")}
+          </dd>
+          <dt>Call</dt>
+          <dd>
+            <code className="wrap">{call.value.callHex}</code>
+          </dd>
+          <dt>Plan digest</dt>
+          <dd>
+            <code className="wrap">{call.value.planDigest}</code>
+          </dd>
+          {approval && (
+            <>
+              <dt>Approval</dt>
+              <dd>
+                <code className="wrap">{approval.hash}</code> until {approval.expiresAt}
+              </dd>
+            </>
+          )}
+        </dl>
+      )}
+    </div>
+  );
+}
+
+/** Receipt of a LIVE run: only what was observed. Coverage stays at what the chain re-read showed. */
+export function LiveReceipt({
+  out,
+  plan,
+  approval,
+}: {
+  out: LiveOutcome;
+  plan?: Plan;
+  approval?: Approval;
+}) {
+  if (!out.submitted || !out.txHash) return null;
+  return (
+    <div className="receipt small" role="group" aria-label="Receipt">
+      <b>Receipt</b>
+      <dl className="kv small">
+        <dt>Result</dt>
+        <dd>{out.status}</dd>
+        <dt>Tx hash</dt>
+        <dd>
+          <code className="wrap">{out.txHash}</code>
+        </dd>
+        <dt>Finalized block</dt>
+        <dd>{out.block ? `#${out.block.number}` : "not observed"}</dd>
+        <dt>Plan digest</dt>
+        <dd>
+          <code className="wrap">{plan?.digest ?? "unknown"}</code>
+        </dd>
+        <dt>Approval</dt>
+        <dd>
+          <code className="wrap">{approval?.hash ?? "unknown"}</code>
+        </dd>
+        <dt>Coverage</dt>
+        <dd>{COVERAGE_LABEL[out.coverage]}</dd>
+      </dl>
+    </div>
+  );
+}
+
 export function LivePanel({
   plan,
   facts,
   approval,
   hostLoader = loadLiveHost,
-  factsStep = defaultV3Facts,
+  factsStep = liveFactsStep,
+  now = () => Date.now(),
 }: {
   plan?: Plan;
   facts?: RuntimeFacts;
   approval?: Approval;
   hostLoader?: (facts?: unknown) => Promise<LiveHost | undefined>;
   factsStep?: (rpc: RpcTransport) => Promise<V3FactsResult>;
+  now?: () => number;
 } = {}) {
   const [url, setUrl] = useState<string>(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
   const [v3, setV3] = useState<V3FactsResult>();
@@ -337,6 +473,8 @@ export function LivePanel({
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [attempts, setAttempts] = useState(3);
+  // Approval hashes already sent with. An approval is single use, so a second send with it is blocked here too.
+  const [spent, setSpent] = useState<string[]>([]);
   const ok = !!v3RpcUrl(url);
   // The request comes from the compiled plan already in the console. Signature checks and extrinsic assembly come from the
   // injected LiveHost (planned: @seam/chain/browser); the console has no local copy, so without a host LIVE blocks before signing.
@@ -366,9 +504,11 @@ export function LivePanel({
           ? call.message
           : !approval
             ? "The plan is not approved yet."
-            : approval.used
+            : approval.used || spent.includes(approval.hash)
               ? "This approval was already used."
-              : undefined;
+              : Date.parse(approval.expiresAt) <= now()
+                ? "This approval has expired. Approve the plan again."
+                : undefined;
         deps = {
           chain: b.createBrowserChainClient(rpc, {
             extrinsicHash: host?.extrinsicHash,
@@ -404,7 +544,9 @@ export function LivePanel({
           });
         };
       }
-      setOut(await runLive(url, undefined, deps));
+      const res = await runLive(url, undefined, deps);
+      if (res.submitted && approval) setSpent((x) => [...x, approval.hash]);
+      setOut(res);
     } finally {
       setBusy(false);
     }
@@ -456,6 +598,7 @@ export function LivePanel({
               ? "Not a valid ws(s):// or http(s):// URL."
               : `Valid URL. Nothing is contacted until you press the button.${url === V3_HTTPS_RPC ? " This is the default V3 testnet endpoint (HTTPS)." : ""}`}
         </p>
+        <ApprovalSummary plan={plan} approval={approval} />
         {v3 && <V3FactsNotice r={v3} />}
         {out?.status === "rejected" && !dismissed && (
           <RejectionNotice onRetry={run} onDismiss={() => setDismissed(true)} />
@@ -476,6 +619,7 @@ export function LivePanel({
           <>
             <p>{out.message}</p>
             <FinalityPanel out={out} />
+            <LiveReceipt out={out} plan={plan} approval={approval} />
             <dl className="kv">
               <dt>Network</dt>
               <dd>

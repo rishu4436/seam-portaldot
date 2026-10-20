@@ -1,0 +1,96 @@
+{
+  "label": "V3 wallet demo",
+  "note": "One assets.transfer of 1 base unit of V3 test asset 806707. Compiled offline against the committed spec-3002 metadata; recompile with the wallet's own account and live facts before signing.",
+  "sources": {
+    "asset": "evidence/testnet-v3/runs/assets-create-1792409775476.json",
+    "transfer": "evidence/testnet-v3/runs/assets-transfer-1792410479921.json",
+    "metadata": "evidence/v3-discovery/portaldot-v3-spec3002-metadata.hex"
+  },
+  "manifest": {
+    "version": 1,
+    "chain": {
+      "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "specVersion": 3002
+    },
+    "signer": {
+      "type": "ss58",
+      "value": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+    },
+    "actions": [
+      {
+        "id": "pay",
+        "kind": "assets.transfer",
+        "args": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "preferredMode": "atomic"
+      }
+    ]
+  },
+  "policy": {
+    "version": "seam/policy/v1",
+    "allowedCapabilities": ["Assets.transfer_keep_alive"],
+    "allowedAssets": ["806707"],
+    "allowedContracts": [],
+    "allowedRecipients": ["5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"],
+    "maxAmountPerAsset": {
+      "806707": "10",
+      "*": "0"
+    },
+    "maxNativeValue": "0",
+    "maxFee": "5000000000000",
+    "maxSteps": 1,
+    "allowedModes": ["atomic_verified"],
+    "requireHumanApproval": true,
+    "maxApprovalSeconds": 300,
+    "requireSignedDryRun": true,
+    "allowUnknown": {
+      "storageDeposit": true,
+      "dryRun": true
+    }
+  },
+  "fingerprint": {
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "metadataHash": "0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9",
+    "ss58Prefix": 42,
+    "tokenSymbol": "tPOT",
+    "tokenDecimals": 14,
+    "typesBundleHash": null
+  },
+  "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+  "plan": {
+    "planVersion": 1,
+    "manifestDigest": "0xeac5e133f9ffc91faead6c21ff747ce0d15105bc0587b440c23ebf8326caa5fc",
+    "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+    "signer": {
+      "type": "ss58",
+      "value": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "publicKey": "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467"
+    },
+    "mode": "sequential",
+    "modeReason": "Atomic execution was requested but is not available: Utility.batch_all rollback is claimed verified but the rollback proof is rejected: metadataHash 0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 is not this runtime's (0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9) (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+    "steps": [
+      {
+        "actionId": "pay",
+        "kind": "assets.transfer",
+        "capability": "Assets.transfer_keep_alive",
+        "palletIndex": 39,
+        "callIndex": 9,
+        "decodedArgs": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+          "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+        },
+        "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "status": "ok"
+      }
+    ],
+    "planDigest": "0x2a07e0057cd38bb5e2174a65711182b980f6e727dbfa6ecb0604325672c3f6d8"
+  }
+}
