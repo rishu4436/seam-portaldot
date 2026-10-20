@@ -41,7 +41,7 @@ export const KIND_TO_CAPABILITY: Record<ActionKind, string> = {
 export const BATCH_CAPABILITY = "Utility.batch_all";
 
 /** Manifest arg names accepted per kind (anything else is rejected to catch typos). */
-const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }> = {
+export const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }> = {
   "assets.transfer": { required: ["assetId", "amount", "recipient"], optional: [] },
   "assets.mint": { required: ["assetId", "amount", "recipient"], optional: [] },
   // contracts.call: exactly one of `data` (raw hex) or `message` (+ `abi` or `abiRef`, optional `args`, `abiHash`).
@@ -635,16 +635,15 @@ function weightV2(rt: LoadedRuntime, metaArgs: { name: string; type: string }[])
   return !!g && isWeightV2(rt.registry.createType(g.type as any).toRawType());
 }
 
-function encodeStep(
+/** Checks that depend only on the runtime, not on the manifest values: encoder exists, V3 shape, no unknown args. */
+function staticCallCheck(
   rt: LoadedRuntime,
   kind: ActionKind,
   cap: Capability,
-  v: ValidatedAction,
-  index: number,
-): EncodeResult {
+): { reason: string; reasonCode?: StepReasonCode } | undefined {
   const bindings = ARG_BINDINGS[kind];
   const capability = KIND_TO_CAPABILITY[kind];
-  if (!bindings) return { ok: false, reason: `SEAM has no encoder for ${capability} yet` };
+  if (!bindings) return { reason: `SEAM has no encoder for ${capability} yet` };
   const fn = rt.registry.findMetaCall(new Uint8Array([cap.palletIndex!, cap.callIndex!]));
   const metaArgs = fn.meta.args.map((a) => ({
     name: stringCamelCase(a.name.toString()),
@@ -665,7 +664,6 @@ function encodeStep(
     );
     if (mismatch) {
       return {
-        ok: false,
         reasonCode: "V3_ARG_SHAPE_MISMATCH",
         reason: `${capability} is on this runtime but its argument shape is not one SEAM can verify: ${mismatch}`,
       };
@@ -674,10 +672,28 @@ function encodeStep(
   const unknownArgs = metaArgs.filter((a) => !(a.name in bindings)).map((a) => a.name);
   if (unknownArgs.length) {
     return {
-      ok: false,
       reason: `${capability} on this runtime takes argument(s) SEAM cannot fill: ${unknownArgs.join(", ")}`,
     };
   }
+  return undefined;
+}
+
+function encodeStep(
+  rt: LoadedRuntime,
+  kind: ActionKind,
+  cap: Capability,
+  v: ValidatedAction,
+  index: number,
+): EncodeResult {
+  const pre = staticCallCheck(rt, kind, cap);
+  if (pre) return { ok: false, ...pre };
+  const bindings = ARG_BINDINGS[kind]!;
+  const capability = KIND_TO_CAPABILITY[kind];
+  const fn = rt.registry.findMetaCall(new Uint8Array([cap.palletIndex!, cap.callIndex!]));
+  const metaArgs = fn.meta.args.map((a) => ({
+    name: stringCamelCase(a.name.toString()),
+    type: a.type.toString(),
+  }));
   // Arguments the runtime takes but the manifest did not give: unavailable, never guessed.
   const missing = metaArgs
     .filter(
@@ -1269,4 +1285,61 @@ export function computePlanDigest(plan: Plan): Hex {
 /** Digest of a manifest exactly as compile() computes it. */
 export function computeManifestDigest(manifest: Manifest): Hex {
   return digestJson(DOMAIN.manifest, manifest);
+}
+
+export type KindAvailability =
+  | {
+      kind: ActionKind;
+      capability: string;
+      supported: true;
+      palletIndex: number;
+      callIndex: number;
+    }
+  | {
+      kind: ActionKind;
+      capability: string;
+      supported: false;
+      reason: string;
+      reasonCode?: StepReasonCode;
+    };
+
+/**
+ * For a live action picker: which SEAM kinds this runtime can compile, from its own metadata only.
+ * The same checks compile() runs before it looks at argument values. Facts that fail validation throw.
+ */
+export function supportedKinds(facts: RuntimeFacts): KindAvailability[] {
+  const issues: CompileIssue[] = [];
+  const rt = validateFacts(facts, issues);
+  if (!rt || issues.length) throw new SeamCompileError(issues);
+  const spec = facts.fingerprint.specVersion;
+  return (Object.keys(KIND_TO_CAPABILITY) as ActionKind[]).map((kind) => {
+    const capability = KIND_TO_CAPABILITY[kind];
+    const cap = facts.capabilities[capability];
+    const no = (reason: string, reasonCode?: StepReasonCode): KindAvailability =>
+      reasonCode
+        ? { kind, capability, supported: false, reason, reasonCode }
+        : { kind, capability, supported: false, reason };
+    if (NO_V3_METADATA_KINDS.has(kind) && !v3Observed(rt, capability, cap))
+      return no(
+        `this runtime's metadata has no ${capability} call (runtime spec ${spec}), so SEAM does not guess the call layout`,
+        "NO_OBSERVED_V3_METADATA",
+      );
+    if (!cap || cap.status === "not_observed")
+      return no(`${capability} is not on this runtime (spec ${spec})`);
+    if (cap.status === "unknown")
+      return no(`${capability} could not be confirmed on this runtime (spec ${spec})`);
+    if (!Number.isInteger(cap.palletIndex) || !Number.isInteger(cap.callIndex))
+      return no(`${capability} is observed but has no pallet/call index`);
+    const mismatch = capabilityOrigin(rt, capability, cap);
+    if (mismatch) return no(mismatch);
+    const pre = staticCallCheck(rt, kind, cap);
+    if (pre) return no(pre.reason, pre.reasonCode);
+    return {
+      kind,
+      capability,
+      supported: true,
+      palletIndex: cap.palletIndex!,
+      callIndex: cap.callIndex!,
+    };
+  });
 }

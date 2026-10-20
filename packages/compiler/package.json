@@ -33,6 +33,10 @@
       "types": "./dist/facts-entry.d.ts",
       "import": "./dist/facts-entry.js"
     },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
     "./types/portaldot-spec1002.json": "./types/portaldot-spec1002.json"
   },
   "files": [

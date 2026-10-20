@@ -6,7 +6,16 @@ export {
   KIND_TO_CAPABILITY,
   BATCH_CAPABILITY,
   evaluateRollbackProof,
+  supportedKinds,
+  type KindAvailability,
 } from "./compile.js";
+export {
+  argFields,
+  checkManifest,
+  type ArgField,
+  type ArgFieldType,
+  type ManifestCheck,
+} from "./builder.js";
 export {
   factsFromMetadata,
   computeFingerprintDigest,
