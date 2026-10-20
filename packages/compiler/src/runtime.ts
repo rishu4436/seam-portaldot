@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+// Pure: no node builtins. The node-only pinned-file reader lives in pinned-file.ts, so `@seam/compiler/facts` stays browser-safe.
 import { Metadata, TypeRegistry } from "@polkadot/types";
 import { blake2_256, hexBytes, utf8Bytes } from "./canonical.js";
 import type { Hex } from "./types.js";
@@ -15,15 +14,6 @@ export interface PinnedTypes {
   verified?: Record<string, string>;
   /** Type names that are assumptions (name -> why). */
   assumed?: Record<string, string>;
-}
-
-export const PORTALDOT_SPEC1002_TYPES_PATH = fileURLToPath(
-  new URL("../types/portaldot-spec1002.json", import.meta.url),
-);
-
-/** Reads a pinned types file as exact text (its bytes are hashed into the fingerprint). */
-export function readPinnedTypes(path: string = PORTALDOT_SPEC1002_TYPES_PATH): string {
-  return readFileSync(path, "utf8");
 }
 
 export function parsePinnedTypes(text: string): PinnedTypes {
