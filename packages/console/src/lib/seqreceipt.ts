@@ -1,9 +1,11 @@
 // The console LIVE receipt for a sequential multi-step run: ONE object, shown in the panel and downloaded as is.
 // approvalHash is the single engine createApproval hash that bound the whole plan (preSign), never the plan digest;
 // approvalInputs (same shape as the single-transaction receipt, with `now`) let anyone rerun createApproval.
-// result is "verified" only when every plan step was sent, finalized and verified by verifyStep; anything else
-// (a failed check, an unknown verdict, or a run stopped at step k) is "not_verified". Never chain_verified.
+// result is overallResult(steps) from @seam/policy/browser (the SDK's own rule, so console and SDK can't drift):
+// "verified" only when every step is finalized and verified; "partial" when any step did not run (a stopped run);
+// otherwise "not_verified". Never chain_verified. A step that was never sent has the SDK's status "not_run".
 // No signed bytes: only read-back outcomes (txHash, block, decoded events) are used.
+import { overallResult } from "@seam/policy/browser";
 import type { MultiStepResult } from "./multistep";
 import { feePaidOf, matchedEvent } from "./stepverify";
 
@@ -21,15 +23,15 @@ export interface SequentialReceiptStep {
   fee: string | null;
   /** The plan's expected effect event as found in this extrinsic's events; {} when none matched. */
   event: Record<string, string>;
-  /** verifyStep verdict; "not_sent" when the step never ran. */
-  verification: "verified" | "not_verified" | "unknown" | "not_sent";
+  /** verifyStep verdict; "unknown" when the step never ran (status "not_run", as in the SDK ReceiptStep). */
+  verification: "verified" | "not_verified" | "unknown";
   reason: string;
 }
 
 export interface SequentialReceipt {
   receiptKind: "seam/console-live-receipt/v1";
   mode: "sequential";
-  result: "verified" | "not_verified";
+  result: "verified" | "partial" | "not_verified";
   resultBasis: string;
   approvalHash: string | null;
   approvalInputs: (Record<string, unknown> & { now: string }) | null;
@@ -66,30 +68,33 @@ export function buildSequentialReceipt(r: MultiStepResult): SequentialReceipt {
       actionId: s.actionId,
       sent,
       sendIndex: sent ? s.sendIndex! : null,
-      status: s.receipt?.status ?? (sent ? s.status : "not_run"),
+      status: sent ? (s.receipt?.status ?? "uncertain") : "not_run",
       txHash: o?.txHash ?? s.receipt?.txHash ?? null,
       block: o?.block ?? s.receipt?.block ?? null,
       extrinsicIndex: typeof o?.extrinsicIndex === "number" ? o.extrinsicIndex : null,
       fee: o ? (feePaidOf(o) ?? null) : null,
       event,
-      verification: s.receipt?.verification ?? (sent ? "unknown" : "not_sent"),
+      verification: (sent && s.receipt?.verification) || "unknown",
       reason: s.message,
     };
   });
-  const allVerified =
-    steps.length > 0 &&
-    steps.every((s) => s.sent && s.status === "finalized" && s.verification === "verified");
+  const result = overallResult(
+    steps.map((s) => ({
+      actionId: s.actionId,
+      status: s.status as never,
+      events: [],
+      verification: s.verification,
+      reason: s.reason,
+    })),
+  );
   const partialRun = steps.some((s) => !s.sent);
   const stopped = r.stoppedAt !== undefined ? r.stoppedAt : null;
   return {
     receiptKind: "seam/console-live-receipt/v1",
     mode: "sequential",
-    result: allVerified ? "verified" : "not_verified",
-    resultBasis: allVerified
-      ? "every step sent, finalized and verified by verifyStep (@seam/sdk/browser); not chain_verified"
-      : partialRun
-        ? "not every step was sent, so the plan is not verified"
-        : "at least one step is not finalized and verified",
+    result,
+    resultBasis:
+      "overallResult (@seam/policy/browser) over the per-step verifyStep verdicts: verified only if every step is finalized and verified, partial if any step did not run; not chain_verified",
     approvalHash: r.approval?.hash ?? null,
     approvalInputs: r.approval?.inputs ?? null,
     planDigest: plan?.planDigest ?? null,

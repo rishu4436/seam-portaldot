@@ -258,7 +258,7 @@ describe("MultiStepPanel Result line is the sequential receipt's result", () => 
     ["verified", { ok: true, steps: [sentStep(0, "verified"), sentStep(1, "verified")] }],
     ["not_verified", { ok: true, steps: [sentStep(0, "verified"), sentStep(1, "not_verified")] }],
     [
-      "not_verified",
+      "partial",
       {
         ok: false,
         stoppedAt: 1,
