@@ -182,6 +182,23 @@ The same Manifest compiles against each runtime using that runtime's own call in
 
 Every command takes `--json` for raw output. Exit code 1 means a usage error.
 
+## Facts in the browser (`@seam/chain/browser`)
+
+```ts
+factsFromChainInputs(inputs: ChainInputs, opts?: FactsOptions): RuntimeFacts
+fingerprintFromChainInputs(inputs: ChainInputs, opts?: string | FactsOptions): FreshFingerprint
+// ChainInputs: { metadataHex, genesisHash, runtimeVersion: { specName, specVersion, transactionVersion, stateVersion?, ... },
+//   properties: { ss58Format?, tokenSymbol?, tokenDecimals? }, head: { number, hash }, endpoint?, metadataDrift? }
+// FactsOptions: { typesBundle?, declaredToken?, pinnedMetadataHex?, batchAllRollback?, batchAllRollbackProof? }
+// FreshFingerprint: { fingerprint, fingerprintDigest, atBlock, metadataLayoutHash?, metadataDrift? }
+```
+
+These are the same pure functions the node discovery path uses, so identical inputs give identical facts, `fingerprintDigest` and `metadataLayoutHash`. They read nothing and connect nowhere: the caller supplies `state_getMetadata`, `chain_getBlockHash(0)`, `state_getRuntimeVersion`, `system_properties` and the head block. They fail closed with a `SeamChainError`:
+- `NODE_MISSING_VALUE` when the token symbol or decimals are missing and none are declared, or when metadata V13 or older comes without `typesBundle` (the browser entry has no default; V14+, including V3 spec 3002, needs none);
+- `FACTS_MISMATCH` when the runtime version disagrees with the metadata, or the metadata is not metadata.
+
+`@seam/compiler/facts` is the compiler's node-free facts path (`factsFromMetadata`, `computeFingerprintDigest`, `metadataLayoutHash`, ...). The compiler's main entry still reads its pinned types file with `node:fs`.
+
 ## Outcome verifiers for `revive.call` and `nfts.mint`
 
 The compiler encodes these two actions only when the target runtime's metadata really has the call with the expected argument shape; otherwise the step is unavailable with `NO_OBSERVED_V3_METADATA` or `V3_ARG_SHAPE_MISMATCH` (the bundled mainnet snapshot, spec 1002, has neither). On the hosted Portaldot V3 testnet (`portaldot-v3` spec 3002), both were compiled, sent and finalized as SEAM plan steps (`revive.call` against a 13-byte EVM test contract) ([evidence](../evidence/testnet-v3/README.md)). The verifiers fail closed:
