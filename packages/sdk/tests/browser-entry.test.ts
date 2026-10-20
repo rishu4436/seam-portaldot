@@ -114,6 +114,7 @@ describe("browser entry exports the very same functions as the node entry", () =
       "instantiateCodeHash",
       "reviveAddressOf",
       "isObservedV3",
+      "perStepOfBatch",
     ])
       expect(typeof (browser as any)[n], n).toBe("function");
   });
@@ -241,5 +242,36 @@ describe("browser verifyStep on REAL V3 records, every kind", () => {
         RUNTIME,
       ).verification,
     ).not.toBe("verified");
+  });
+});
+
+describe("browser perStepOfBatch on the REAL V3 atomic run (batch_all mint + nft, #102671)", () => {
+  const { perStepOfBatch, buildReceipt } = browser;
+  it("is the node export and bundles without flow.ts", () => {
+    expect(browser.perStepOfBatch).toBe(node.perStepOfBatch);
+  });
+  const s = ATOMIC.run.receipt.steps[0];
+  const callHex = ATOMIC.signingRequests[0].payload.method as Hex;
+  const batch = (c?: Hex): StepOutcome => ({
+    ...used(ATOMIC, "batch"),
+    ...(c ? { callHex: c } : {}),
+  });
+  it("splits the real batch per step and every step verifies", () => {
+    expect(s.block.number).toBe(102671);
+    const outcomes = perStepOfBatch(ATOMIC.plan, [batch()], callHex);
+    expect(outcomes.filter((o) => o.actionId !== "batch").every((o) => !!o.callHex)).toBe(true);
+    const r = buildReceipt({ plan: ATOMIC.plan, outcomes, runtime: RUNTIME });
+    expect(r.steps.map((x) => x.verification)).toEqual(["verified", "verified"]);
+  });
+  it("a tampered batch call gives no step any call bytes", () => {
+    const bad = (callHex.slice(0, -2) + (callHex.endsWith("00") ? "01" : "00")) as Hex;
+    const outcomes = perStepOfBatch(ATOMIC.plan, [batch(bad)], undefined);
+    expect(outcomes.filter((o) => o.actionId !== "batch").some((o) => o.callHex)).toBe(false);
+  });
+  it("tampered batch events: the affected steps are not_verified", () => {
+    const bad = tamper(tamper(batch(), "Assets", "Issued", 2), "Nfts", "Issued", 1);
+    const outcomes = perStepOfBatch(ATOMIC.plan, [bad], callHex);
+    const r = buildReceipt({ plan: ATOMIC.plan, outcomes, runtime: RUNTIME });
+    expect(r.steps.map((x) => x.verification)).toEqual(["not_verified", "not_verified"]);
   });
 });

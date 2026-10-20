@@ -8,3 +8,4 @@
 export * from "./receipt.js";
 export * from "./outcomes.js";
 export * from "./deploy-outcomes.js";
+export * from "./batch-steps.js";

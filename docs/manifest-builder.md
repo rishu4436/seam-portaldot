@@ -85,7 +85,7 @@ Also exported: `shapeMismatch`, `argMatchesClass`, `isWeightV2RawType`, `SEAM_AC
 
 ## `@seam/sdk/browser` step verifiers
 
-After a step is sent, the console can check it with `verifyStep` from `@seam/sdk/browser`, which is the same function as in `@seam/sdk` and covers every kind the builder offers. Pass the V3 runtime fingerprint and the signed call bytes. `revive.call` stays `unknown` unless the manifest gives the expected contract event, and `revive.map_account` stays `unknown` without a `Revive.OriginalAccount` read. See `packages/sdk/README.md`.
+After a step is sent, the console can check it with `verifyStep` from `@seam/sdk/browser`, which is the same function as in `@seam/sdk` and covers every kind the builder offers. Pass the V3 runtime fingerprint and the signed call bytes. `revive.call` stays `unknown` unless the manifest gives the expected contract event, and `revive.map_account` stays `unknown` without a `Revive.OriginalAccount` read. For an atomic plan, first split the one batch outcome with `perStepOfBatch(plan, outcomes, signedBatchCall)` from the same entry, then check each step. See `packages/sdk/README.md`.
 
 ## SDK / Node example
 
