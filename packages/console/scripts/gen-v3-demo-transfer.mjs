@@ -6,7 +6,6 @@ import { compile, factsFromMetadata } from "@seam/compiler";
 
 const root = new URL("../../../", import.meta.url);
 const read = (p) => fs.readFileSync(new URL(p, root), "utf8");
-const snap = JSON.parse(read("evidence/v3-discovery/portaldot-v3-spec3002-snapshot.json"));
 const recorded = JSON.parse(read("evidence/testnet-v3/runs/assets-transfer-1792410479921.json"));
 const atomicRun = JSON.parse(read("evidence/testnet-v3/runs/plan-atomic-1792411355057.json"));
 const fp = atomicRun.facts.fingerprint;
@@ -69,5 +68,8 @@ const out = {
   fingerprintDigest: facts.fingerprintDigest,
   plan,
 };
-fs.writeFileSync(new URL("src/demo/v3-demo-transfer.json", new URL("../", import.meta.url)), JSON.stringify(out, null, 2) + "\n");
+fs.writeFileSync(
+  new URL("src/demo/v3-demo-transfer.json", new URL("../", import.meta.url)),
+  JSON.stringify(out, null, 2) + "\n",
+);
 console.log(plan.mode, plan.outerCall?.encodedCall, facts.fingerprint.metadataHash);
