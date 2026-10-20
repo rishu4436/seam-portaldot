@@ -4,6 +4,13 @@ import * as tc from "./lib/testchain";
 import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
 import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
 import { V3Evidence } from "./components/V3Evidence";
+import { WalletDemoCard } from "./components/WalletDemo";
+import {
+  approveWalletDemo,
+  walletDemoFacts,
+  walletDemoPlan,
+  WALLET_DEMO_LABEL,
+} from "./lib/walletdemo";
 import {
   RiskLimits,
   LivePanel,
@@ -300,6 +307,10 @@ export default function App() {
   const [receipt, setReceipt] = useState<Receipt>();
   const [lockBlock, setLockBlock] = useState<RuntimeFacts>();
   const [progress, setProgress] = useState<StepStatus[]>([]);
+  const [walletDemoOn, setWalletDemoOn] = useState(false);
+  const [demoApproval, setDemoApproval] = useState<Approval>();
+  const demoPlan = useMemo(() => walletDemoPlan(), []);
+  const demoFacts = useMemo(() => walletDemoFacts(), []);
   const real = source === "testchain";
   const manifest = useMemo(
     () => (real ? tc.demoManifest() : api.demoManifest(scenario === "nft")),
@@ -474,31 +485,46 @@ export default function App() {
           {mode !== "live" && (
             <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>
           )}
-          {mode === "live"
-            ? null
-            : real
-              ? TC_SCENARIOS.map((s) => (
-                  <button
-                    key={s.id}
-                    aria-pressed={scenario === s.id}
-                    className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                    onClick={() => reset(s.id)}
-                  >
-                    <b>{s.label}</b>
-                    <span>{s.hint}</span>
-                  </button>
-                ))
-              : SCENARIOS.map((s) => (
-                  <button
-                    key={s.id}
-                    aria-pressed={scenario === s.id}
-                    className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                    onClick={() => reset(s.id)}
-                  >
-                    <b>{s.label}</b>
-                    <span>{s.hint}</span>
-                  </button>
-                ))}
+          {mode === "live" ? (
+            <>
+              <small style={{ marginTop: 10 }}>Live manifest</small>
+              <button
+                aria-pressed={walletDemoOn}
+                className={`scenbtn ${walletDemoOn ? "on" : ""}`}
+                onClick={() => {
+                  setWalletDemoOn(!walletDemoOn);
+                  setDemoApproval(undefined);
+                }}
+              >
+                <b>{WALLET_DEMO_LABEL}</b>
+                <span>1 unit of test asset 806707, strict policy</span>
+              </button>
+            </>
+          ) : real ? (
+            TC_SCENARIOS.map((s) => (
+              <button
+                key={s.id}
+                aria-pressed={scenario === s.id}
+                className={`scenbtn ${scenario === s.id ? "on" : ""}`}
+                onClick={() => reset(s.id)}
+              >
+                <b>{s.label}</b>
+                <span>{s.hint}</span>
+              </button>
+            ))
+          ) : (
+            SCENARIOS.map((s) => (
+              <button
+                key={s.id}
+                aria-pressed={scenario === s.id}
+                className={`scenbtn ${scenario === s.id ? "on" : ""}`}
+                onClick={() => reset(s.id)}
+              >
+                <b>{s.label}</b>
+                <span>{s.hint}</span>
+              </button>
+            ))
+          )}
         </div>
       </aside>
 
@@ -509,7 +535,18 @@ export default function App() {
         <ModeBadge mode={mode} />
         {mode === "live" ? (
           <>
-            <LivePanel plan={plan} facts={facts} approval={approval} />
+            {walletDemoOn && (
+              <WalletDemoCard
+                plan={demoPlan}
+                approval={demoApproval}
+                onApprove={() => setDemoApproval(approveWalletDemo(demoPlan))}
+              />
+            )}
+            <LivePanel
+              plan={walletDemoOn ? demoPlan : plan}
+              facts={walletDemoOn ? demoFacts : facts}
+              approval={walletDemoOn ? demoApproval : approval}
+            />
             <V3Evidence />
           </>
         ) : (
