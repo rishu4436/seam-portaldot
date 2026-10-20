@@ -65,7 +65,7 @@ export function rebindPlan(
   if (next.mode !== plan.mode) changed(`execution mode changed: ${plan.mode} -> ${next.mode}`);
   // Everything except the facts binding must be identical: steps, calls, decoded args, signer, mode, outer call.
   const body = (p: Plan) => {
-    const { fingerprintDigest: _f, planDigest: _d, ...rest } = p; // eslint-disable-line @typescript-eslint/no-unused-vars
+    const { fingerprintDigest: _f, planDigest: _d, ...rest } = p;
     return JSON.stringify(rest);
   };
   if (body(next) !== body(plan))
