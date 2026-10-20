@@ -7,6 +7,7 @@ import { Metadata, TypeRegistry } from "@polkadot/types";
 import { hexToU8a, u8aToHex, stringToU8a } from "@polkadot/util";
 import type { Hex } from "@seam/compiler";
 import {
+  BLANKED_STORAGE_DEFAULTS,
   blankStorageFallbacks,
   httpRpcClient,
   metadataLayoutHash,
@@ -34,25 +35,39 @@ function indexOf(hay: Uint8Array, needle: Uint8Array, from = 0): number {
 describe("metadataLayoutHash on real V3 spec 3002: what is blanked", () => {
   const base = v3Spec3002();
 
-  it("blanks EVERY storage entry's fallback (all pallets), and nothing else", () => {
-    const before = fallbacks(base);
-    const blanked = u8aToHex(blankStorageFallbacks(base)!);
-    const after = fallbacks(blanked);
-    expect([...after.keys()]).toEqual([...before.keys()]);
-    for (const v of after.values()) expect(v).toBe("0x");
-    const nonEmpty = [...before.entries()].filter(([, v]) => v !== "0x").map(([k]) => k);
-    expect(nonEmpty).toContain("Revive.EthBlockBuilderIR");
-    expect(nonEmpty.length).toBeGreaterThan(1); // more than the one entry that actually drifts on V3
+  it("pins the v2 layout hash of the real spec 3002 blob (v1 was 0x8baafefc…c1a6)", () => {
+    expect(metadataLayoutHash(base)).toBe(
+      "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+    );
   });
 
-  it("a one-byte change in a storage fallback keeps the layout hash", () => {
+  it("blanks ONLY the allow-listed default (Revive.EthBlockBuilderIR); every other default is kept", () => {
+    expect(BLANKED_STORAGE_DEFAULTS).toEqual([["Revive", "EthBlockBuilderIR"]]);
+    const before = fallbacks(base);
+    const after = fallbacks(u8aToHex(blankStorageFallbacks(base)!));
+    expect([...after.keys()]).toEqual([...before.keys()]);
+    for (const [k, v] of after)
+      expect(v).toBe(k === "Revive.EthBlockBuilderIR" ? "0x" : before.get(k));
+  });
+
+  it("a one-byte change inside ANOTHER pallet's storage default changes the layout hash (fails closed)", () => {
     const fb = fallbacks(base).get("System.Number")!;
     const bumped = ("0x" +
       ((parseInt(fb.slice(2, 4), 16) + 1) & 0xff).toString(16).padStart(2, "0") +
       fb.slice(4)) as Hex;
-    expect(metadataLayoutHash(withFallback(base, "System", "Number", bumped))).toBe(
-      metadataLayoutHash(base),
-    );
+    const m = withFallback(base, "System", "Number", bumped);
+    expect(metadataLayoutHash(m)).not.toBe(metadataLayoutHash(base));
+    expect(pinMetadata(m, base as Hex).drift).toBeUndefined();
+  });
+
+  it("a change in Revive.EthBlockBuilderIR's default still keeps the layout hash", () => {
+    const fb = fallbacks(base).get("Revive.EthBlockBuilderIR")!;
+    const bumped = ("0x" +
+      ((parseInt(fb.slice(2, 4), 16) + 1) & 0xff).toString(16).padStart(2, "0") +
+      fb.slice(4)) as Hex;
+    const m = withFallback(base, "Revive", "EthBlockBuilderIR", bumped);
+    expect(metadataLayoutHash(m)).toBe(metadataLayoutHash(base));
+    expect(pinMetadata(m, base as Hex).drift).toBeDefined();
   });
 
   it("a one-byte change in a call name (same length) changes the layout hash; pinMetadata keeps the live bytes (no drift pass)", () => {

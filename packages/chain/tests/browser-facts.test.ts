@@ -34,7 +34,10 @@ describe("browser factsFromChainInputs == node discovery path (REAL metadata)", 
     const nf = node.fingerprintFromChainInputs(inputs);
     const bf = browser.fingerprintFromChainInputs(inputs);
     expect(bf).toEqual(nf);
-    expect(bf.metadataLayoutHash).toMatch(/^0x[0-9a-f]{64}$/);
+    // layout v2: only Revive.EthBlockBuilderIR's storage default is blanked (v1, every default blanked, was 0x8baafefc…c1a6)
+    expect(bf.metadataLayoutHash).toBe(
+      "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+    );
     // The digest recorded when the snapshot was taken.
     expect(bf.fingerprintDigest).toBe(v3Snapshot.fingerprintDigest);
   });

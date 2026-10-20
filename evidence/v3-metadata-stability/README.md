@@ -21,3 +21,14 @@
 ## Not verified
 
 - A layout change on V3 itself, because none happened. Fail-closed behaviour for call, argument, type, storage and event changes is shown on real blobs edited offline (unit tests), not on a V3 runtime upgrade.
+
+## Update 2026-10-20: layout hash narrowed to an allow-list (layout v2)
+
+The earlier runs above used layout hash **v1**, which blanked **every** storage entry's default value in every pallet. That was broader than needed: only `Revive.EthBlockBuilderIR` was ever seen to drift.
+
+`@seam/chain` now uses **v2** (`seam/metadata-layout/v2`). It blanks only the defaults listed in the exported `BLANKED_STORAGE_DEFAULTS`, which today holds just `Revive.EthBlockBuilderIR`. Any other storage default change, for example a one-byte change in `System.Number`'s default, now changes the layout hash, so the runtime lock fails closed.
+
+- The v1 value `0x8baafefc…2c1a6` in the files above is historical.
+- The spec 3002 v2 value is `0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304`.
+- Run `stability-1792500177396.json` (2026-10-20, read-only, 3 blocks) shows the same v2 layout hash at every block. `Revive.EthBlockBuilderIR` was the only default that differed.
+- `@seam/compiler`'s own copy (`packages/compiler/src/layout.ts`) still implements v1 until it is mirrored.
