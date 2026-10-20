@@ -43,7 +43,9 @@ export interface BindingCheck {
 
 export interface ChainClient {
   discover(): Promise<Res<LiveFingerprint>>;
-  preflight(request: unknown): Promise<Res<{ simulation: SimulationBasis }>>;
+  preflight(
+    request: unknown,
+  ): Promise<Res<{ simulation: SimulationBasis; partialFee?: string; weight?: unknown }>>;
   submit(signed: SignedPayload): Promise<Res<SubmitResult>>;
   verify(txHash: string): Promise<Res<VerifyResult>>;
 }
@@ -86,6 +88,8 @@ export interface LiveOutcome {
   signing: SigningStatus;
   txState: TxState;
   provenance: Provenance;
+  /** payment_queryInfo partialFee (base units) read before signing; undefined if not estimated. */
+  fee?: string;
   txHash?: string;
   block?: { number: number; hash: string };
   rpcAttempts: number;
@@ -99,6 +103,8 @@ export interface LiveDeps {
   signer?: WalletSigner;
   verifyBinding?: SignedBindingVerifier;
   maxRpcAttempts?: number;
+  /** Fail closed: block before the wallet is asked when the fee estimate fails or has no fee. */
+  requireFeeEstimate?: boolean;
 }
 
 export function v3RpcUrl(raw?: string): string | undefined {
@@ -158,7 +164,16 @@ export async function runLive(
     request = p.value;
   }
   const pf = await chain.preflight(request);
-  if (pf.ok) o.simulation = pf.value.simulation; // otherwise stays "none"
+  if (pf.ok) {
+    o.simulation = pf.value.simulation; // otherwise stays "none"
+    o.fee = pf.value.partialFee;
+  }
+  if (deps.requireFeeEstimate && (!pf.ok || !o.fee || !/^\d+$/.test(o.fee)))
+    return done(
+      "blocked",
+      `Fee estimate failed, so nothing will be signed: ${pf.ok ? "the node returned no fee" : pf.message}`,
+      { signing: "not_started" },
+    );
 
   if (!deps.verifyBinding)
     return done("blocked", "Signed-bytes check is not wired, so nothing will be signed or sent.", {

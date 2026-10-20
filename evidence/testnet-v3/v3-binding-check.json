@@ -1,0 +1,218 @@
+{
+ "kind": "v3-binding-check",
+ "readOnly": true,
+ "endpoint": "https://test-node-v3.portaldot.dev",
+ "ranAt": "2026-10-20T12:51:55.447Z",
+ "liveFacts": {
+  "provenance": "live_chain_inputs",
+  "snapshotFrom": "none",
+  "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "specName": "portaldot-v3",
+  "specVersion": 3002,
+  "transactionVersion": 2,
+  "finalizedBlock": 117499,
+  "metadataBytes": 561916,
+  "liveMetadataHash": "0xb02d6182bc748e48c6076f462b8f89c73c3786a9e6b194c5c96b868b01589939",
+  "snapshotMetadataHash": "none",
+  "metadataHashMatchesSnapshot": false,
+  "liveFingerprintDigest": "0x06fd934d4d0125ef8296746c19d7ebfb7941eb945c8420073f6c0f2cadcab201",
+  "digestMatchesSnapshot": false,
+  "hasChainFacts": true
+ },
+ "rebuiltRequestSignBytesMatchRecorded": true,
+ "recordedExtrinsic": {
+  "source": "evidence/testnet-v3/runs/plan-atomic-1792411355057.json",
+  "block": {
+   "number": 102671,
+   "hash": "0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b",
+   "extrinsicIndex": 1,
+   "events": [
+    {
+     "pallet": "Balances",
+     "name": "Withdraw",
+     "args": [
+      "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+      "1941197884278"
+     ],
+     "eventIndex": 1,
+     "extrinsicIndex": 1,
+     "argTypes": [
+      "AccountId32",
+      "u128"
+     ],
+     "topics": []
+    },
+    {
+     "pallet": "Assets",
+     "name": "Issued",
+     "args": [
+      "806707",
+      "0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a",
+      "7"
+     ],
+     "eventIndex": 2,
+     "extrinsicIndex": 1,
+     "argTypes": [
+      "u32",
+      "AccountId32",
+      "u128"
+     ],
+     "topics": []
+    },
+    {
+     "pallet": "Utility",
+     "name": "ItemCompleted",
+     "args": [],
+     "eventIndex": 3,
+     "extrinsicIndex": 1,
+     "argTypes": [],
+     "topics": []
+    },
+    {
+     "pallet": "Balances",
+     "name": "Reserved",
+     "args": [
+      "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+      "10000000000000"
+     ],
+     "eventIndex": 4,
+     "extrinsicIndex": 1,
+     "argTypes": [
+      "AccountId32",
+      "u128"
+     ],
+     "topics": []
+    },
+    {
+     "pallet": "Nfts",
+     "name": "Issued",
+     "args": [
+      "0",
+      "3",
+      "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467"
+     ],
+     "eventIndex": 5,
+     "extrinsicIndex": 1,
+     "argTypes": [
+      "u32",
+      "u32",
+      "AccountId32"
+     ],
+     "topics": []
+    },
+    {
+     "pallet": "Utility",
+     "name": "ItemCompleted",
+     "args": [],
+     "eventIndex": 6,
+     "extrinsicIndex": 1,
+     "argTypes": [],
+     "topics": []
+    },
+    {
+     "pallet": "Utility",
+     "name": "BatchCompleted",
+     "args": [],
+     "eventIndex": 7,
+     "extrinsicIndex": 1,
+     "argTypes": [],
+     "topics": []
+    },
+    {
+     "pallet": "Balances",
+     "name": "Deposit",
+     "args": [
+      "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+      "1941197884278"
+     ],
+     "eventIndex": 8,
+     "extrinsicIndex": 1,
+     "argTypes": [
+      "AccountId32",
+      "u128"
+     ],
+     "topics": []
+    },
+    {
+     "pallet": "TransactionPayment",
+     "name": "TransactionFeePaid",
+     "args": [
+      "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+      "1941197884278",
+      "0"
+     ],
+     "eventIndex": 9,
+     "extrinsicIndex": 1,
+     "argTypes": [
+      "AccountId32",
+      "u128",
+      "u128"
+     ],
+     "topics": []
+    },
+    {
+     "pallet": "System",
+     "name": "ExtrinsicSuccess",
+     "args": [
+      "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":24182,\"refTime\":1516762526}}"
+     ],
+     "eventIndex": 10,
+     "extrinsicIndex": 1,
+     "argTypes": [
+      "{\"weight\":\"SpWeightsWeightV2Weight\",\"class\":\"FrameSupportDispatchDispatchClass\",\"paysFee\":\"FrameSupportDispatchPays\"}"
+     ],
+     "topics": []
+    }
+   ],
+   "success": true
+  },
+  "txHash": "0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355",
+  "rehashMatches": true,
+  "verifyBinding": {
+   "ok": true,
+   "reasons": []
+  }
+ },
+ "tamperedSignature": {
+  "ok": false,
+  "reasons": [
+   "signature_invalid"
+  ]
+ },
+ "wrongRequest": {
+  "ok": false,
+  "reasons": [
+   "call_mismatch"
+  ]
+ },
+ "demoFeeEstimate": {
+  "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "nonce": 19,
+  "checkpoint": 117499,
+  "result": {
+   "ok": true,
+   "value": {
+    "simulation": "fee_estimate_only",
+    "partialFee": "1470881359769",
+    "weight": {
+     "ref_time": 1037211000,
+     "proof_size": 18392
+    }
+   }
+  }
+ },
+ "fillerSignedFeeExtrinsic": {
+  "ok": false,
+  "reasons": [
+   "signature_invalid"
+  ]
+ },
+ "verdict": {
+  "recordedPasses": true,
+  "rebuiltSignBytesMatch": true,
+  "tamperedBlocked": true,
+  "wrongRequestBlocked": true,
+  "fillerBlocked": true,
+  "feeEstimated": true
+ }
+}

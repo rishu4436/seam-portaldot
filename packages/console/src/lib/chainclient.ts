@@ -264,11 +264,26 @@ export function createBrowserChainClient(rpc: RpcTransport, opts: ClientOptions 
             "No fee-estimate encoder is wired. A signed dry run needs signed bytes, which exist only after the wallet signs.",
         };
       try {
-        const info = await rpc("payment_queryInfo", [await opts.feeExtrinsic(request)]);
+        const info = (await rpc("payment_queryInfo", [await opts.feeExtrinsic(request)])) as {
+          partialFee?: unknown;
+          weight?: unknown;
+        } | null;
         if (!info || typeof info !== "object")
           return { ok: false, reason: "rpc_error", message: "Node returned no fee info." };
+        const pf = info.partialFee;
+        const fee =
+          typeof pf === "number" || typeof pf === "bigint"
+            ? BigInt(pf).toString()
+            : typeof pf === "string" && /^(0x[0-9a-fA-F]+|\d+)$/.test(pf)
+              ? BigInt(pf).toString()
+              : undefined;
+        if (fee === undefined)
+          return { ok: false, reason: "rpc_error", message: "Node fee info has no partialFee." };
         // payment_queryInfo is a fee/weight estimate only, never a dry run of the signed transaction.
-        return { ok: true, value: { simulation: "fee_estimate_only" } };
+        return {
+          ok: true,
+          value: { simulation: "fee_estimate_only", partialFee: fee, weight: info.weight },
+        };
       } catch (e) {
         return rpcFail(e);
       }
