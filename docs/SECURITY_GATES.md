@@ -72,6 +72,25 @@ The wallet demo's Approve button is still enabled by the console's own `checkWal
 (`console/src/lib/walletdemo.ts`), which is not the policy engine and does not check the plan mode. The console does not
 call `checkBeforeSubmit` either. Browser preflight is not exported yet, so once wired the gate will block with `PREFLIGHT_UNKNOWN`.
 
+## LIVE multi-step signing (console, Pixel `fc91363` on `bot1/live-multistep`)
+
+What `packages/console/src/lib/multistep.ts` does:
+
+- **One approval binds the whole plan.** The pre-sign gate runs once and binds the approval. Every step is then signed up front, in order, with nonce `n + i`. All steps share the one short-mortality envelope from `buildSigningEnvelope`, so only the nonce differs. An atomic plan is a single `batch_all` request.
+- **Expiry is checked twice per step.** The envelope's `expiresAt` is checked before each step's gates and again right before broadcast. An unreadable or past `expiresAt` stops the run with `SIGNING_WINDOW_EXPIRED`.
+- **Per-step gates (sequential).** For every step after the first, the policy gate runs again on a fresh preflight. Each step then gets a re-preflight with the signed bytes, and `checkBeforeSubmit` runs with that step's `sendIndex` and the earlier receipts.
+- **Signed bytes stay in memory.** A `SignedHolder` keeps them in memory only. They are never written to logs, storage, exports or receipts, and `redact()` removes them from any message. The holder is cleared on a block, a failure, a cancel, an unmount (an `AbortController` in `Modes.tsx`) and at the end of the run.
+- **A block or failure stops the run.** A blocked or failed step stops all remaining steps.
+- **Unverifiable steps stop the run.** The next step is sent only if the previous one is finalized and `verified`. Any step kind the console can't verify stops the run after that step.
+
+Accepted limits:
+
+- (a) The signed bytes for every step are kept until the run ends, because `checkBeforeSubmit` needs the full set.
+- (b) JavaScript can't securely wipe strings. `clear()` overwrites the slots and drops the references, but copies may stay in memory until garbage collection.
+- (c) If step 1 dispatches but fails, it has still used nonce `n`. Step 2's signed bytes stay valid on chain until their mortality runs out, and anyone holding them could submit them. The short mortality is what limits this.
+
+No multi-step plan has been run on V3 with this code.
+
 ## Known limits, stated plainly
 
 - **Receipt hash is integrity only.** `seam verify` recomputes an unkeyed digest of the receipt JSON. Anyone who edits a receipt
