@@ -1,0 +1,64 @@
+{
+  "kind": "seam-receipt-v2",
+  "generatedAt": "2026-10-20T12:32:08.296Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "source": "runs/plan-revive-terminate-1792412498767.json",
+  "how": "events, signer and call bytes re-read live from V3 (not copied from the record); receipt built by the current @seam/sdk buildReceipt with runtime = the record's fingerprint; then verifyReceiptLive with the record's plan and runtime",
+  "originalReceiptDigest": "0x3f974ae260398e6c3cabc6f85f866c3eb9fca61c022d4fe13013855238a75f45",
+  "integrity": {
+    "status": "integrity_checked",
+    "note": "integrity only, not on-chain proof: this checks that the receipt was not edited after it was written. Anyone can recompute that digest, so it does not show that any transaction exists. Use live verification (seam verify --endpoint) for that."
+  },
+  "live": {
+    "status": "unknown",
+    "problems": [],
+    "notes": [
+      "The node's metadata hash differs from the pinned one (0xead4d72cf3ac54c52f6b7776504fc3dba6456164deac64fb7d37454819e68f4f vs 0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec); genesis, spec, transaction version and ss58 match, so the pinned runtime is used.",
+      "terminate: the chain's events give coverage extrinsic_finalized, not effect_proven (no complete state assertion), so it is not chain_verified."
+    ],
+    "steps": [
+      {
+        "actionId": "terminate",
+        "status": "unknown"
+      }
+    ]
+  },
+  "receipt": {
+    "receiptVersion": 1,
+    "manifestDigest": "0xb558d228624df6af40755b7329e7905a7bbb32065ae5a9edb0557154b30e2f7a",
+    "planDigest": "0x8b52370a38843ff860d9d91301dc534e44790ab5147da2ebf570f4d080f81cbf",
+    "fingerprintDigest": "0xba7b767eca99b786960c40fbeef84f94a9dece14f38d4f1b20dae2029e3bf8e5",
+    "policyDigest": "0x846ea4aab0955df8dc298b2280bc6ad84cf2a352cb77c91b2cb3b2b7617e28f0",
+    "approvalHash": "0x2792d0c9d3c1952d6e00a71de8f7ddbf44ef98fd4e23044dbd2d327bd1184e22",
+    "mode": "sequential",
+    "steps": [
+      {
+        "actionId": "terminate",
+        "status": "finalized",
+        "txHash": "0xc0ad1497f394767ccd74b1f7adfd8e37977761396070dcf55b3bb455eaa6338f",
+        "block": {
+          "number": 102862,
+          "hash": "0xb4c7334ed7adec3d5c665adc81e5c601b8473d163fb925f3f32992811dca8a7d"
+        },
+        "events": [
+          "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1494746909440)",
+          "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 2813800351)",
+          "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1491933109089)",
+          "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1491933109089, 0)",
+          "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":32907,\"refTime\":2468256779}})"
+        ],
+        "verification": "unknown",
+        "coverage": "extrinsic_finalized",
+        "reason": "The on-chain call matches the plan exactly (dest, value, weight, deposit limit, data) and succeeded. V3 has no per-call event and no expected contract event was given, so what the contract did is not proven.",
+        "code": "effect_unproven",
+        "basis": "call_args_and_success"
+      }
+    ],
+    "result": "not_verified",
+    "coverage": {
+      "verified": 0,
+      "expected": 1
+    },
+    "receiptDigest": "0x4dc921a67ba3cd4d1859a0624e623a5044c67237f5a5f0d3933ef4b222a52d31"
+  }
+}

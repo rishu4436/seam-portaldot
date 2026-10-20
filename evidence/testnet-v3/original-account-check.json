@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-10-20T12:34:04.919Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "specVersion": 3002,
+  "atBlock": {
+    "number": 117321,
+    "hash": "0xcd4d7e2b0701365da709815e10e4f8957271526f6bc54b4469dd8c5a4d65a908"
+  },
+  "layout": {
+    "prefix": "Revive",
+    "modifier": "Optional",
+    "hashers": [
+      "Identity"
+    ],
+    "keyType": "H160",
+    "valueType": "AccountId32"
+  },
+  "h160": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+  "handBuiltKey": "0x735f040a5d490f1107ad9c56f5ca00d2c56ab6c1f203b345fe5879f81962772381ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+  "decoratedKey": "0x735f040a5d490f1107ad9c56f5ca00d2c56ab6c1f203b345fe5879f81962772381ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+  "keysEqual": true,
+  "rawValue": "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+  "mapsTo": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "mapsToExpectedSigner": true
+}

@@ -1,0 +1,929 @@
+{
+  "kind": "seam-v3-independent-verification",
+  "version": 1,
+  "generatedAt": "2026-10-20T12:30:11.445Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "transport": "@seam/chain httpRpcClient (HTTPS JSON-RPC, read methods only)",
+  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "spec": {
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "transactionVersion": 2
+  },
+  "finalizedHead": {
+    "number": 117279,
+    "hash": "0x24c3606ee0e4b0361572469fc4b65633eb7ecee63b74d0a7121bdfe9e866f5e8"
+  },
+  "method": "For each tx: chain_getBlockHash(recorded number) vs recorded hash; number <= finalized head; chain_getBlock and blake2-256 of every full extrinsic to find the tx; decode call and signer with state_getMetadata(at block); System.Events at the block filtered by ApplyExtrinsic(index); dispatch result from ExtrinsicSuccess/ExtrinsicFailed (module error decoded); then compare with the committed evidence.",
+  "rpcRequests": {
+    "chain_getBlockHash": 19,
+    "state_getRuntimeVersion": 1,
+    "chain_getFinalizedHead": 1,
+    "chain_getHeader": 1,
+    "chain_getBlock": 18,
+    "state_getMetadata": 18,
+    "state_getStorage": 18
+  },
+  "counts": {
+    "verified": 17,
+    "expected_dispatch_failure": 1
+  },
+  "transactions": [
+    {
+      "row": "1",
+      "label": "revive.map_account",
+      "record": "runs/map-account-1792408724499.json",
+      "txHash": "0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812",
+      "blockNumber": 102233,
+      "recordedBlockHash": "0xd76f83f9390cd788e7e12778c81fee6bafe02c8d776e02ea1124dfd7f7859b4a",
+      "canonicalHash": "0xd76f83f9390cd788e7e12778c81fee6bafe02c8d776e02ea1124dfd7f7859b4a",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x91e5fdf7b86359987e6f00b47e0107056daec70b903492c3727d1872a759ddf4",
+      "extrinsicIndex": 1,
+      "call": "revive.mapAccount",
+      "callHex": "0x5007",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {},
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1090750465056)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1090750465056)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1090750465056, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16272,\"refTime\":937510000}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1090750465056)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1090750465056)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1090750465056, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":937510000,\"proofSize\":16272},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "2",
+      "label": "nfts.create",
+      "record": "runs/nfts-create-1792408936565.json",
+      "txHash": "0x390bc57994d562383ae3ffd3b7a0bfdcc07130d98c15751666ccfa38a92623af",
+      "blockNumber": 102241,
+      "recordedBlockHash": "0x89bbc8a4968c71aa9ca7cedd68672f04ced6d9e8f08ece873c71a7174a6b8a7b",
+      "canonicalHash": "0x89bbc8a4968c71aa9ca7cedd68672f04ced6d9e8f08ece873c71a7174a6b8a7b",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x91e5fdf7b86359987e6f00b47e0107056daec70b903492c3727d1872a759ddf4",
+      "extrinsicIndex": 1,
+      "call": "nfts.create",
+      "callHex": "0x2f000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467000000000000000000000000000000000000000000",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "admin": {
+          "id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+        },
+        "config": {
+          "settings": 0,
+          "maxSupply": null,
+          "mintSettings": {
+            "mintType": {
+              "issuer": null
+            },
+            "price": null,
+            "startBlock": null,
+            "endBlock": null,
+            "defaultItemSettings": 0
+          }
+        }
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1630939133833)",
+        "Balances.Reserved(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 100000000000000)",
+        "Nfts.Created(0, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1)",
+        "Nfts.NextCollectionIdIncremented(1)",
+        "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1630939133833)",
+        "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1630939133833, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1181142000,\"proofSize\":15733},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1630939133833)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 100000000000000)",
+        "Nfts.Created(0, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Nfts.NextCollectionIdIncremented(1)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1630939133833)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1630939133833, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1181142000,\"proofSize\":15733},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "3",
+      "label": "nfts.mint",
+      "record": "runs/nfts-mint-1792409706466.json",
+      "txHash": "0x9ea5ff6bfa593ae803a800b6806c80a7c068057f176e9355f098933917de8f75",
+      "blockNumber": 102327,
+      "recordedBlockHash": "0x01ad8cc29f5b80a9c165e1fe84b589ebf4f1e3a491c54fece3e4602358143af6",
+      "canonicalHash": "0x01ad8cc29f5b80a9c165e1fe84b589ebf4f1e3a491c54fece3e4602358143af6",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xbacbc67e76c2fbb59755229cccd2536caa06734470133d064768b94376ec4919",
+      "extrinsicIndex": 1,
+      "call": "nfts.mint",
+      "callHex": "0x2f0300000000000000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "collection": 0,
+        "item": 0,
+        "mintTo": {
+          "id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+        },
+        "witnessData": null
+      },
+      "callComparedWith": "no call bytes recorded; record has call text \"nfts.mint([0,0,{\"id\":\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\"},null])\"",
+      "expectedEvents": [
+        "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1510934132939)",
+        "Balances.Reserved(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 10000000000000)",
+        "Nfts.Issued(0, 0, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1)",
+        "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1510934132939)",
+        "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1510934132939, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510934132939)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+        "Nfts.Issued(0, 0, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1510934132939)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510934132939, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": null,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": [
+        "call bytes not compared: no call bytes recorded; record has call text \"nfts.mint([0,0,{\"id\":\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\"},null])\"; the record was itself rebuilt from chain, so only signer, events and dispatch are independent checks"
+      ]
+    },
+    {
+      "row": "4",
+      "label": "assets.create",
+      "record": "runs/assets-create-1792409775476.json",
+      "txHash": "0xbc93ca2f4f3f2067f0ba35772d6a50dbf9372db98888ea4d84581278e6ff7194",
+      "blockNumber": 102411,
+      "recordedBlockHash": "0x76a8504af171fcebc1b82fe5516cfb92ccd89b3133a30a6d8d9eaee6e8cde858",
+      "canonicalHash": "0x76a8504af171fcebc1b82fe5516cfb92ccd89b3133a30a6d8d9eaee6e8cde858",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x76317f9ed2d37d69a326e27b086a67569845d6183188e5d537d302b0715f7de9",
+      "extrinsicIndex": 1,
+      "call": "assets.create",
+      "callHex": "0x2700ce3c31000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846701000000000000000000000000000000",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "id": 806707,
+        "admin": {
+          "id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+        },
+        "minBalance": 1
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1620985342781)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 100000000000000)",
+        "Assets.Created(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1620985342781)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1620985342781, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":15859,\"refTime\":1241290000}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1620985342781)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 100000000000000)",
+        "Assets.Created(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1620985342781)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1620985342781, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1241290000,\"proofSize\":15859},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "5",
+      "label": "balances.transfer_keep_alive",
+      "record": "runs/fund-recipient-1792410012136.json",
+      "txHash": "0xcb5c06f8d0847099ecfcc1343f2b5872b1bc72c32ddabbc2981c10989a224ff6",
+      "blockNumber": 102451,
+      "recordedBlockHash": "0x234c2e17574d5c9444b654dfbc2f22a43b6fec45cc459205ae50f0f1a48d10a5",
+      "canonicalHash": "0x234c2e17574d5c9444b654dfbc2f22a43b6fec45cc459205ae50f0f1a48d10a5",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xd78809974d106e01f576d483076380b468a423d66b1256a0aef718980d70782f",
+      "extrinsicIndex": 1,
+      "call": "balances.transferKeepAlive",
+      "callHex": "0x06030076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb1720b0040e59c3012",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "dest": {
+          "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "value": 20000000000000
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1490616276209)",
+        "System.NewAccount(5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB)",
+        "Balances.Endowed(5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB, 20000000000000)",
+        "Balances.Transfer(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB, 20000000000000)",
+        "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1490616276209)",
+        "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1490616276209, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1490616276209)",
+        "System.NewAccount(0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172)",
+        "Balances.Endowed(0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 20000000000000)",
+        "Balances.Transfer(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 20000000000000)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1490616276209)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1490616276209, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "6",
+      "label": "balances.transfer_keep_alive",
+      "record": "runs/fund-recipient-1792410042910.json",
+      "txHash": "0x18f8a01153581e611a3753bf3c54160b99b97cff82dac5437d191a33e97dda70",
+      "blockNumber": 102456,
+      "recordedBlockHash": "0x732604870d73fe39738a84ec396f1bbc31276bea8cc8dc90d13101bc76375890",
+      "canonicalHash": "0x732604870d73fe39738a84ec396f1bbc31276bea8cc8dc90d13101bc76375890",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xd78809974d106e01f576d483076380b468a423d66b1256a0aef718980d70782f",
+      "extrinsicIndex": 1,
+      "call": "balances.transferKeepAlive",
+      "callHex": "0x06030034d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a0b0040e59c3012",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "dest": {
+          "id": "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v"
+        },
+        "value": 20000000000000
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1490616269860)",
+        "System.NewAccount(5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v)",
+        "Balances.Endowed(5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v, 20000000000000)",
+        "Balances.Transfer(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v, 20000000000000)",
+        "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1490616269860)",
+        "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1490616269860, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1490616269860)",
+        "System.NewAccount(0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a)",
+        "Balances.Endowed(0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a, 20000000000000)",
+        "Balances.Transfer(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a, 20000000000000)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1490616269860)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1490616269860, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":764602000,\"proofSize\":15777},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "7",
+      "label": "assets.mint",
+      "record": "runs/assets-mint-1792410268239.json",
+      "txHash": "0x8b84f63e44abd99a7c9561f4e80e087a32e013ec965e8bb70160c6fad73182be",
+      "blockNumber": 102493,
+      "recordedBlockHash": "0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec",
+      "canonicalHash": "0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xb4cc12ba483dd1cfcca713bf8b4421a822a40df18e866bd66196ee1838cf2982",
+      "extrinsicIndex": 1,
+      "call": "assets.mint",
+      "callHex": "0x2706ce3c31000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846702286bee",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "id": 806707,
+        "beneficiary": {
+          "id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+        },
+        "amount": 1000000000
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1500704043195)",
+        "Assets.Issued(806707, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1000000000)",
+        "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1500704043195)",
+        "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1500704043195, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":878070000,\"proofSize\":15859},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1500704043195)",
+        "Assets.Issued(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1000000000)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1500704043195)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1500704043195, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":878070000,\"proofSize\":15859},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "8",
+      "label": "assets.transfer_keep_alive",
+      "record": "runs/assets-transfer-1792410479921.json",
+      "txHash": "0x5a3fcfe808b02e5dbeb704bddcdb4092526d015856fffb151230e06b9f440ea4",
+      "blockNumber": 102529,
+      "recordedBlockHash": "0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e",
+      "canonicalHash": "0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x921a41c37e3685ed4fa1926e5879e663e30afe3c6346d933fe99766b86c769c4",
+      "extrinsicIndex": 1,
+      "call": "assets.transferKeepAlive",
+      "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172a10f",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "id": 806707,
+        "target": {
+          "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "amount": 1000
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1480910850417)",
+        "Assets.Transferred(806707, 5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB, 1000)",
+        "Balances.Deposit(5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z, 1480910850417)",
+        "TransactionPayment.TransactionFeePaid(5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1, 1480910850417, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910850417)",
+        "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 1000)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910850417)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910850417, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "9",
+      "label": "seam-plan-sequential attempt 1 (nonce 8)",
+      "record": "runs/plan-sequential-attempt1-1792411101481.json",
+      "txHash": "0x86daea7ed7f5346e248376d78f4756adf16f6988f67b1a1cad8bd1d775c446b6",
+      "blockNumber": 102612,
+      "recordedBlockHash": "0xaa123631c32a5b319d694338118570eaebc7dcaf18ea93e46619544d37f25ded",
+      "canonicalHash": "0xaa123631c32a5b319d694338118570eaebc7dcaf18ea93e46619544d37f25ded",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xd1d106312f5d840cda8a4f6e568bf77065e8bf7e155841a235871f2562760a31",
+      "extrinsicIndex": 1,
+      "call": "assets.transferKeepAlive",
+      "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172d107",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "id": 806707,
+        "target": {
+          "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "amount": 500
+      },
+      "callComparedWith": "no call bytes recorded; record has call text \"assets.transferKeepAlive([806707,{\"id\":\"5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB\"},500])\"",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910683880)",
+        "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 500)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910683880)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910683880, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":18392,\"refTime\":1145368000}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910683880)",
+        "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 500)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910683880)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910683880, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": null,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": [
+        "call bytes not compared: no call bytes recorded; record has call text \"assets.transferKeepAlive([806707,{\"id\":\"5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB\"},500])\"; the record was itself rebuilt from chain, so only signer, events and dispatch are independent checks"
+      ]
+    },
+    {
+      "row": "10",
+      "label": "seam-plan-sequential attempt 1 (nonce 9)",
+      "record": "runs/plan-sequential-attempt1-1792411122983.json",
+      "txHash": "0xdcdb39b5302d0d4296ea731ed4ed8761ee57f81734697d0baedbb34d603005cf",
+      "blockNumber": 102616,
+      "recordedBlockHash": "0x24f4a1f92d1c93426eab972396dda10c564bf8082e06fc8c90ad8f7404b8db61",
+      "canonicalHash": "0x24f4a1f92d1c93426eab972396dda10c564bf8082e06fc8c90ad8f7404b8db61",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xd1d106312f5d840cda8a4f6e568bf77065e8bf7e155841a235871f2562760a31",
+      "extrinsicIndex": 1,
+      "call": "nfts.mint",
+      "callHex": "0x2f0300000000010000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "collection": 0,
+        "item": 1,
+        "mintTo": {
+          "id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+        },
+        "witnessData": null
+      },
+      "callComparedWith": "no call bytes recorded; record has call text \"nfts.mint([0,1,{\"id\":\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\"},null])\"",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933536418)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+        "Nfts.Issued(0, 1, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1510933536418)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933536418, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933536418)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+        "Nfts.Issued(0, 1, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1510933536418)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933536418, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": null,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": [
+        "call bytes not compared: no call bytes recorded; record has call text \"nfts.mint([0,1,{\"id\":\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\"},null])\"; the record was itself rebuilt from chain, so only signer, events and dispatch are independent checks"
+      ]
+    },
+    {
+      "row": "11",
+      "label": "seam-plan-sequential attempt 2, step pay (SEAM marked it uncertain: HTTP retry got 1013 Already Imported)",
+      "record": "runs/plan-sequential-attempt2-pay-1792411204466.json",
+      "txHash": "0x5c6f24c920fb94dbe80a912f349bba2bec3277e25873c81b1ec700cb191c71be",
+      "blockNumber": 102639,
+      "recordedBlockHash": "0x0c58416c2a5fa36a77812fd77fccc3a52bf542d7ef4888576dce7d6fc22e4b26",
+      "canonicalHash": "0x0c58416c2a5fa36a77812fd77fccc3a52bf542d7ef4888576dce7d6fc22e4b26",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340",
+      "extrinsicIndex": 1,
+      "call": "assets.transferKeepAlive",
+      "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172d107",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "id": 806707,
+        "target": {
+          "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "amount": 500
+      },
+      "callComparedWith": "no call bytes recorded; record has call text \"assets.transferKeepAlive([806707,{\"id\":\"5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB\"},500])\"",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910629721)",
+        "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 500)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910629721)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910629721, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":18392,\"refTime\":1145368000}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910629721)",
+        "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 500)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910629721)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910629721, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": null,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": [
+        "call bytes not compared: no call bytes recorded; record has call text \"assets.transferKeepAlive([806707,{\"id\":\"5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB\"},500])\"; the record was itself rebuilt from chain, so only signer, events and dispatch are independent checks"
+      ]
+    },
+    {
+      "row": "12-13/pay",
+      "label": "SEAM plan sequential [pay] assets.transfer",
+      "record": "runs/plan-sequential-1792411270138.json",
+      "txHash": "0x67015f593a98a1ef1da9d07062a305d0b19c68371870edb864da3cb87a72971a",
+      "blockNumber": 102653,
+      "recordedBlockHash": "0x152847f0eb2d96d186b8c036c741c2c5dc1adb521546762e1a83400ecdd60873",
+      "canonicalHash": "0x152847f0eb2d96d186b8c036c741c2c5dc1adb521546762e1a83400ecdd60873",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340",
+      "extrinsicIndex": 1,
+      "call": "assets.transferKeepAlive",
+      "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172d107",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "id": 806707,
+        "target": {
+          "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "amount": 500
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910601640)",
+        "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 500)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910601640)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910601640, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":18392,\"refTime\":1145368000}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910601640)",
+        "Assets.Transferred(806707, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 500)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480910601640)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480910601640, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "12-13/nft",
+      "label": "SEAM plan sequential [nft] nfts.mint",
+      "record": "runs/plan-sequential-1792411270138.json",
+      "txHash": "0x5adae6e98e2b3d823680a5c35bd0ee5ebb3e0bc924516c185c299c2a571744da",
+      "blockNumber": 102657,
+      "recordedBlockHash": "0xb1e0903fdbee1930c0f09f0999d1eacf0649dcb45e13a18ee57874ee0838b3a0",
+      "canonicalHash": "0xb1e0903fdbee1930c0f09f0999d1eacf0649dcb45e13a18ee57874ee0838b3a0",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340",
+      "extrinsicIndex": 1,
+      "call": "nfts.mint",
+      "callHex": "0x2f0300000000020000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "collection": 0,
+        "item": 2,
+        "mintTo": {
+          "id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+        },
+        "witnessData": null
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933451836)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+        "Nfts.Issued(0, 2, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1510933451836)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933451836, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":16510,\"refTime\":1174914000}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933451836)",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+        "Nfts.Issued(0, 2, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1510933451836)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1510933451836, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1174914000,\"proofSize\":16510},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "14",
+      "label": "rollback probe Utility.batch_all (test-only direct send)",
+      "record": "runs/plan-rollback-1792411297498.json",
+      "txHash": "0xd16622312a942d519e3d246ef46d2c677050c09e787883f7c7c1ffc6595bda80",
+      "blockNumber": 102665,
+      "recordedBlockHash": "0xd1aab7bba1eabe4822b7af169a62ba7e364eb4ccbdb587d6f8dfed68c3cdb753",
+      "canonicalHash": "0xd1aab7bba1eabe4822b7af169a62ba7e364eb4ccbdb587d6f8dfed68c3cdb753",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340",
+      "extrinsicIndex": 1,
+      "call": "utility.batchAll",
+      "callHex": "0x0102102709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172142706ce3c31000034d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a0c2f0300000000030000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467002709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb1720f00404c948b3203",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {},
+      "innerCalls": [
+        "assets.transferKeepAlive",
+        "assets.mint",
+        "nfts.mint",
+        "assets.transferKeepAlive"
+      ],
+      "callComparedWith": "plan step encodedCalls inside Utility.batch_all",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 2812048810584)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 2812048810584)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 2812048810584, 0)",
+        "System.ExtrinsicFailed({\"module\":{\"error\":\"0x00000000\",\"index\":39}}, {\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":36598,\"refTime\":2616651052}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 2812048810584)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 2812048810584)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 2812048810584, 0)",
+        "System.ExtrinsicFailed({\"module\":{\"index\":39,\"error\":\"0x00000000\"}}, {\"weight\":{\"refTime\":2616651052,\"proofSize\":36598},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": false,
+        "error": "assets.BalanceLow",
+        "docs": "Account balance must be greater than or equal to the transfer amount."
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "expected_dispatch_failure",
+      "reasons": [
+        "ExtrinsicFailed assets.BalanceLow, as recorded and intended"
+      ]
+    },
+    {
+      "row": "15",
+      "label": "SEAM plan atomic_verified [mint,nft] Utility.batch_all",
+      "record": "runs/plan-atomic-1792411355057.json",
+      "txHash": "0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355",
+      "blockNumber": 102671,
+      "recordedBlockHash": "0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b",
+      "canonicalHash": "0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340",
+      "extrinsicIndex": 1,
+      "call": "utility.batchAll",
+      "callHex": "0x0102082706ce3c31000034d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a1c2f0300000000030000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {},
+      "innerCalls": [
+        "assets.mint",
+        "nfts.mint"
+      ],
+      "callComparedWith": "plan step encodedCalls inside Utility.batch_all",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278)",
+        "Assets.Issued(806707, 0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a, 7)",
+        "Utility.ItemCompleted()",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+        "Nfts.Issued(0, 3, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Utility.ItemCompleted()",
+        "Utility.BatchCompleted()",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1941197884278)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":24182,\"refTime\":1516762526}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278)",
+        "Assets.Issued(806707, 0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a, 7)",
+        "Utility.ItemCompleted()",
+        "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+        "Nfts.Issued(0, 3, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+        "Utility.ItemCompleted()",
+        "Utility.BatchCompleted()",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1941197884278)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1516762526,\"proofSize\":24182},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "R1",
+      "label": "revive.instantiate_with_code",
+      "record": "runs/revive-deploy-1792412368928.json",
+      "txHash": "0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2",
+      "blockNumber": 102843,
+      "recordedBlockHash": "0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1",
+      "canonicalHash": "0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xead4d72cf3ac54c52f6b7776504fc3dba6456164deac64fb7d37454819e68f4f",
+      "extrinsicIndex": 1,
+      "call": "revive.instantiateWithCode",
+      "callHex": "0x5003000700743ba40b02093d000f00c029f73d540564600d600c600039600d6000f336600a5760006000a0005b33ff0000",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "value": 0,
+        "weightLimit": {
+          "refTime": 50000000000,
+          "proofSize": 1000000
+        },
+        "storageDepositLimit": 1500000000000000,
+        "code": "0x600d600c600039600d6000f336600a5760006000a0005b33ff",
+        "data": "0x",
+        "salt": null
+      },
+      "callComparedWith": "recorded call bytes",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1599867195209)",
+        "System.NewAccount(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee)",
+        "Balances.Endowed(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 10000000000000)",
+        "Balances.Minted(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 10000000000000)",
+        "Balances.TransferAndHold({\"revive\":\"CodeUploadDepositReserve\"}, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x6d6f646c70792f72657669760000000000000000000000000000000000000000, 498000000000000)",
+        "Revive.Instantiated(0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95b)",
+        "Balances.TransferAndHold({\"revive\":\"StorageDepositReserve\"}, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 914400000000000)",
+        "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 38663924674)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1561203270535)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1561203270535, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19007,\"refTime\":1524333644}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1599867195209)",
+        "System.NewAccount(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee)",
+        "Balances.Endowed(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 10000000000000)",
+        "Balances.Minted(0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 10000000000000)",
+        "Balances.TransferAndHold({\"revive\":\"CodeUploadDepositReserve\"}, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x6d6f646c70792f72657669760000000000000000000000000000000000000000, 498000000000000)",
+        "Revive.Instantiated(0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95b)",
+        "Balances.TransferAndHold({\"revive\":\"StorageDepositReserve\"}, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95beeeeeeeeeeeeeeeeeeeeeeee, 914400000000000)",
+        "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 38663924674)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1561203270535)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1561203270535, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1524333644,\"proofSize\":19007},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "R2",
+      "label": "SEAM plan sequential [call] revive.call",
+      "record": "runs/plan-revive-call-1792412445848.json",
+      "txHash": "0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482",
+      "blockNumber": 102853,
+      "recordedBlockHash": "0x65ffd82b0ce6f7d211d58daf11b904ee8a5002bf39dc88a09647a9875098e4bd",
+      "canonicalHash": "0x65ffd82b0ce6f7d211d58daf11b904ee8a5002bf39dc88a09647a9875098e4bd",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xead4d72cf3ac54c52f6b7776504fc3dba6456164deac64fb7d37454819e68f4f",
+      "extrinsicIndex": 1,
+      "call": "revive.call",
+      "callHex": "0x500186b9cc2d456eed16a6872e1d5646f606a59cd95b000700f2052a0102350c000b00a0724e180900",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "dest": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95b",
+        "value": 0,
+        "weightLimit": {
+          "refTime": 5000000000,
+          "proofSize": 200000
+        },
+        "storageDepositLimit": 10000000000000,
+        "data": "0x"
+      },
+      "callComparedWith": "recorded call bytes",
+      "dest": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95b",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1484747013712)",
+        "Revive.ContractEmitted(0x86b9cc2d456eed16a6872e1d5646f606a59cd95b, 0x, [])",
+        "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 3862081212)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480884932500)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480884932500, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19922,\"refTime\":1112691031}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1484747013712)",
+        "Revive.ContractEmitted(0x86b9cc2d456eed16a6872e1d5646f606a59cd95b, 0x, [])",
+        "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 3862081212)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480884932500)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480884932500, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1112691031,\"proofSize\":19922},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    },
+    {
+      "row": "R3",
+      "label": "SEAM plan sequential [terminate] revive.call",
+      "record": "runs/plan-revive-terminate-1792412498767.json",
+      "txHash": "0xc0ad1497f394767ccd74b1f7adfd8e37977761396070dcf55b3bb455eaa6338f",
+      "blockNumber": 102862,
+      "recordedBlockHash": "0xb4c7334ed7adec3d5c665adc81e5c601b8473d163fb925f3f32992811dca8a7d",
+      "canonicalHash": "0xb4c7334ed7adec3d5c665adc81e5c601b8473d163fb925f3f32992811dca8a7d",
+      "canonical": true,
+      "finalized": true,
+      "metadataHashAtBlock": "0xead4d72cf3ac54c52f6b7776504fc3dba6456164deac64fb7d37454819e68f4f",
+      "extrinsicIndex": 2,
+      "call": "revive.call",
+      "callHex": "0x500186b9cc2d456eed16a6872e1d5646f606a59cd95b000700f2052a0102350c000b00a0724e18090401",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "args": {
+        "dest": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95b",
+        "value": 0,
+        "weightLimit": {
+          "refTime": 5000000000,
+          "proofSize": 200000
+        },
+        "storageDepositLimit": 10000000000000,
+        "data": "0x01"
+      },
+      "callComparedWith": "recorded call bytes",
+      "dest": "0x86b9cc2d456eed16a6872e1d5646f606a59cd95b",
+      "expectedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1494746909440)",
+        "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 2813800351)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1491933109089)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1491933109089, 0)",
+        "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":32907,\"refTime\":2468256779}})"
+      ],
+      "observedEvents": [
+        "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1494746909440)",
+        "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 2813800351)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1491933109089)",
+        "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1491933109089, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":2468256779,\"proofSize\":32907},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "dispatch": {
+        "ok": true
+      },
+      "callMatch": true,
+      "signerMatch": true,
+      "eventsMatch": true,
+      "outcome": "verified",
+      "reasons": []
+    }
+  ]
+}
