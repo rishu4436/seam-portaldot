@@ -1,5 +1,6 @@
 import { expandMetadata } from "@polkadot/types";
 import { DOMAIN, digestJson } from "./canonical.js";
+import { metadataLayoutHash } from "./layout.js";
 import {
   NO_PINNED_TYPES,
   loadRuntime,
@@ -70,6 +71,8 @@ export interface FactsFromMetadataInput {
   batchAllRollbackProof?: AtomicRollbackProof;
   /** state_version from RuntimeVersion. Recorded in facts only; not part of the fingerprint. */
   stateVersion?: number;
+  /** Opt-in: record facts.metadataLayoutHash (not part of the fingerprint or any digest). Default false. */
+  withLayoutHash?: boolean;
   /** Optional; must equal the metadata version read from the bytes. */
   metadataVersion?: number;
   /** Whether tokenSymbol/tokenDecimals were 'declared' by the caller (default) or 'observed' on chain. */
@@ -242,6 +245,7 @@ export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
     },
   };
   if (input.stateVersion !== undefined) facts.stateVersion = input.stateVersion;
+  if (input.withLayoutHash) facts.metadataLayoutHash = metadataLayoutHash(input.metadataHex);
   if (input.signingAccountBytes !== undefined)
     facts.signingAccountBytes = input.signingAccountBytes;
   if (input.endpoint !== undefined) facts.endpoint = input.endpoint;

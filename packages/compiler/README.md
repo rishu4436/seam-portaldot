@@ -286,6 +286,16 @@ It runs `factsFromMetadata`, compiles a built-in sample (assets transfer + mint 
 pallet/call indices found, the `Contracts.call` shape (V13 single `gas_limit` vs V14 `Weight` + `storage_deposit_limit`), and every
 step that is unavailable with its reason. It never signs or submits. (Submitting is `scripts/testnet-run.mjs`, a separate tool.)
 
+## Metadata layout hash (`metadataLayoutHash`, `metadataLayout`, `blankStorageFallbacks`)
+
+blake2b-256 over `utf8("seam/metadata-layout/v1") ++ metadata` with every storage entry's `fallback` blanked; the same
+definition and value as `@seam/chain`'s `metadataLayoutHash`. Fail closed: if the metadata (V13-V15) does not
+decode and rebuild unchanged byte for byte, the hash is taken over the raw bytes under
+`seam/metadata-layout/v1/raw` (`normalized: false`), so it only ever matches identical bytes, and the compiler never
+accepts a rollback proof on it. `factsFromMetadata({ ..., withLayoutHash: true })` records it as
+`facts.metadataLayoutHash`; that field is outside the fingerprint and every digest, and if present must match the bytes
+(`FACTS_INVALID` otherwise). Fingerprints and plan digests are unchanged: the runtime lock still binds the raw hash.
+
 ## Known limits
 
 - The ink! ABI form supports the argument types listed above; `Result`, maps and sets as message _arguments_ are refused
@@ -296,7 +306,20 @@ step that is unavailable with its reason. It never signs or submits. (Submitting
 ## Audit notes (SEAM-006/007/009/011/012/013)
 
 - `Manifest.atomicRequired` (boolean, optional; in the manifest digest only when present). Required atomic that cannot be met -> plan `mode: 'unavailable'`, every step `encodedCall: null`, `reasonCode: 'ATOMIC_REQUIRED_UNAVAILABLE'`. `preferredMode: 'atomic'` that falls back sets `Plan.modeDowngrade` (`requiresApproval: true`).
-- `atomic_verified` needs `facts.behaviour.batchAllRollbackProof` matching genesis + metadataHash + specVersion and covering the plan's action kinds. A bare `'verified'` string is the deprecated path: at best `atomic_unverified` (with `allowAtomicUnverified`), never `atomic_verified`.
+- `atomic_verified` needs `facts.behaviour.batchAllRollbackProof` matching genesis + metadataHash + specVersion and covering the plan's action kinds.
+  - **Layout-hash match (opt-in, proof side).** A proof may also carry `metadataLayoutHash` and `specName`. When its raw
+    `metadataHash` differs from the facts', it is accepted only if `specName`, `transactionVersion`, `ss58Prefix` and
+    `batchAll { palletIndex, callIndex }` (Utility.batch_all on the tested runtime) are all present and equal to the
+    facts' (a missing one rejects), `metadataLayoutHash`
+    equals `metadataLayoutHash(facts.source.metadataHex)` (computed by the compiler from the bytes, never taken from the
+    facts), and that metadata normalized (decode + rebuild round-trips byte for byte). Genesis, `specVersion` and
+    composition are checked exactly as before; the proof's `fingerprintDigest` is only checked on a raw-hash match. The
+    plan's `modeReason` then says "accepted on layout hash; raw metadata differs only in storage defaults". The plan also
+    carries `rollbackProofBasis: "layout_hash"`, covered by `planDigest`; on the strict basis the field is absent, so
+    raw-hash plans keep their exact digests. Anything that cannot be read or decoded rejects the proof (never atomic). A proof
+    without `metadataLayoutHash` keeps the strict raw-hash rule.
+  - Why: Portaldot V3 spec 3002 changes its raw metadata between blocks (the state-dependent default of
+    `Revive.EthBlockBuilderIR`), so a proof bound to raw bytes goes stale within minutes. A bare `'verified'` string is the deprecated path: at best `atomic_unverified` (with `allowAtomicUnverified`), never `atomic_verified`.
 - `SIGNER_DOMAIN_MISMATCH`: 20-byte H160 signer vs 32-byte AccountId32 signing account (`facts.signingAccountBytes`, default 32). No conversion.
 - Facts now also carry `metadataVersion`, optional `stateVersion` and `tokenProvenance` (declared/observed). None of them feed the fingerprint; fingerprint schema is unchanged (V1), so `fingerprintDigest` is byte-identical.
 - SEAM-006/007 (`revive.call`, `nfts.mint`): without facts that observe the capability, and metadata that really has that pallet/call at the stated indices, the step stays unavailable with `reasonCode: 'NO_OBSERVED_V3_METADATA'` (unchanged). When a supplied snapshot (`factsFromMetadata` output) does contain the call, SEAM reads its argument list from the metadata and compiles only if it matches the shape contract in `src/v3-bindings.ts` exactly (names, order, and type classes: `revive.call` = dest H160, value balance, gas_limit Weight/u64, storage_deposit_limit (Option) balance, data Bytes; `nfts.mint` = collection id, item id, mint_to account, witness_data Option, always encoded as None). Any other shape is unavailable with `reasonCode: 'V3_ARG_SHAPE_MISMATCH'` and a reason listing the observed arguments. No indices or layouts are hardcoded. The tests use **synthetic** metadata (`tests/synthetic-v3.ts`, hand-edited from the dev-node capture); no real Portaldot V3 metadata has been observed, so nothing here is V3-verified. The real dev-node `Revive.call` (older upstream layout, `dest: MultiAddress`) is refused by this check.

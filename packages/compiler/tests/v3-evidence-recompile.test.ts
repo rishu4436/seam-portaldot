@@ -52,12 +52,11 @@ describe("real V3 run manifests recompile byte for byte on spec 3002 metadata", 
     });
   });
 
-  // Documents a live-demo limit, not desired behaviour: the rollback proof is bound to the raw metadata hash,
-  // which V3 changes between blocks (storage default drift). The atomic run's proof is therefore rejected
-  // against any other blob of the same layout, and the plan falls back to sequential (fail-closed).
-  it("atomic: a rollback proof from another raw metadata blob is rejected, so the plan is sequential", () => {
+  // Without a layout hash the proof keeps the strict raw-hash binding, so it is rejected against any other blob.
+  it("atomic: a proof without metadataLayoutHash from another raw metadata blob is rejected (strict)", () => {
     const { d } = runs.find(({ f }) => f.startsWith("plan-atomic"))!;
     const proof = d.facts.behaviour.batchAllRollbackProof;
+    expect(proof.metadataLayoutHash).toBeUndefined();
     const plan = compile(
       d.manifest as Manifest,
       factsFor(d, { batchAllRollback: "verified", batchAllRollbackProof: proof }),
