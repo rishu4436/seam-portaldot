@@ -1,0 +1,69 @@
+{
+  "kind": "metadata-drift-log",
+  "network": "Portaldot V3 testnet",
+  "rpc": "https://test-node-v3.portaldot.dev",
+  "readOnly": true,
+  "recordedAt": "2026-10-20T18:01:11+0000",
+  "summary": "Four raw metadata hashes seen on spec 3002 / tx version 2 on Oct 20 2026; v2 layout hash constant at 0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304. Between #120497 and #120498 exactly one byte differs (offset 549822, 0x83 -> 0x7e), inside the default value of Revive.EthBlockBuilderIR.",
+  "observedFingerprintDigests": {
+    "0x44e51bb5 raw (#119958..#119996)": "fingerprintDigest 0x837a6a0d, builder-transfer-119996-verification",
+    "0x92ffde2f raw (..#120443)": "fingerprintDigest not recorded",
+    "0x523cc072 raw (#120444..#120497)": "fingerprintDigest 0x150bdfe0, plan of blocked run seam-receipt-seq-0x5e3d63e9",
+    "0xec8e7fb6 raw (#120498..#120531+)": "fingerprintDigest 0x93e4d5ff"
+  },
+  "checkMetadataHashMode": {
+    "value": "Disabled (0)",
+    "basis": "decoded from on-chain extrinsics #119634 and #119996 plus the 19 fixture extrinsics"
+  },
+  "samples": [
+    {
+      "block": 119996,
+      "blockHash": "0x43326f29394dfad70747ff790d31e07ca068695279552c7083c42c02065f0edb",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataBytes": 561916,
+      "metadataBlobBlake2b256": "0x44e51bb5133a67f5c71c40e8070ed8f7fadd4055001cb22832e17511f984c82b"
+    },
+    {
+      "block": 120443,
+      "blockHash": "0x1fa25be0e1402a7423f86c99ff6769fb4ac5c9b30a4bf24ab07ce31f4143e053",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataBytes": 561916,
+      "metadataBlobBlake2b256": "0x92ffde2f090f47351653dbf919598be9880095a4b809678587fd9e216a889902"
+    },
+    {
+      "block": 120444,
+      "blockHash": "0xa02c4faeff39d0b0dc6db864f730294fc1a3721d38852b747c350ad4da1a8ce0",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataBytes": 561916,
+      "metadataBlobBlake2b256": "0x523cc0725200d9cc1dac5432429fa4471dda19d6f281c0783bebad7ecb072de2"
+    },
+    {
+      "block": 120497,
+      "blockHash": "0x3553f32b51f9e9ac6e28281df25063f5b5e01ea9a85800d51faeba742f98b8d2",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataBytes": 561916,
+      "metadataBlobBlake2b256": "0x523cc0725200d9cc1dac5432429fa4471dda19d6f281c0783bebad7ecb072de2"
+    },
+    {
+      "block": 120498,
+      "blockHash": "0x9aaff48765ddc7dac4ac8e74f266097b909a3751b687b0fbe63eb125867847fa",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataBytes": 561916,
+      "metadataBlobBlake2b256": "0xec8e7fb6de25b89a077dc153367df4c60efbc121fd001c07772c55dce5d25c36"
+    },
+    {
+      "block": 120531,
+      "blockHash": "0x70e9edd685c20d8b7b2d7b73f312ee7e4b8cc2842dc2db2753c03034581c9e7e",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataBytes": 561916,
+      "metadataBlobBlake2b256": "0xec8e7fb6de25b89a077dc153367df4c60efbc121fd001c07772c55dce5d25c36"
+    }
+  ],
+  "note": "Change boundaries outside #120440..#120531 were not scanned; ranges are as observed, not exhaustive."
+}
