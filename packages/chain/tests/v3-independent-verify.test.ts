@@ -4,6 +4,8 @@ import {
   canon,
   classify,
   compareEvents,
+  deltaMatches,
+  planCallMatch,
   parseEventString,
   splitArgs,
 } from "../scripts/v3-independent-lib.mjs";
@@ -109,5 +111,31 @@ describe("v3 independent verification: event comparison", () => {
     expect(compareEvents([a], [a, b]).differences[0]).toMatch(/unexpected/);
     expect(compareEvents([a, b], [b, a]).match).toBe(false);
     expect(compareEvents([a], [{ ...a, args: ["1", "3"] }]).differences[0]).toMatch(/args differ/);
+  });
+});
+
+describe("v3 independent verification: plan call bytes and balance deltas", () => {
+  const step = (h: string) => ({ encodedCall: h });
+  it("single-step plan: call bytes must equal the step (case-insensitive)", () => {
+    expect(planCallMatch({ steps: [step("0xAB01")] }, { callHex: "0xab01" }).match).toBe(true);
+    expect(planCallMatch({ steps: [step("0xab01")] }, { callHex: "0xab02" }).match).toBe(false);
+  });
+  it("multi-step plan: batch inner calls must equal the steps in order", () => {
+    const plan = { steps: [step("0x01"), step("0x02")] };
+    expect(planCallMatch(plan, { callHex: "0xff", innerCallHexes: ["0x01", "0x02"] }).match).toBe(
+      true,
+    );
+    expect(planCallMatch(plan, { callHex: "0xff", innerCallHexes: ["0x02", "0x01"] }).match).toBe(
+      false,
+    );
+    expect(planCallMatch(plan, { callHex: "0xff" }).match).toBe(false);
+  });
+  it("a plan without encoded calls is not comparable (null), never a match", () => {
+    expect(planCallMatch({ steps: [] }, { callHex: "0x01" }).match).toBeNull();
+  });
+  it("deltaMatches is exact", () => {
+    expect(deltaMatches("5", "4", "-1")).toBe(true);
+    expect(deltaMatches("100000000000000", "98529120200481", "-1470879799519")).toBe(true);
+    expect(deltaMatches("5", "3", "-1")).toBe(false);
   });
 });
