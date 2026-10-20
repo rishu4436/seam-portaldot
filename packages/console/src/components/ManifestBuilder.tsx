@@ -24,6 +24,8 @@ import {
 import { V3_HTTPS_RPC, type V3FactsResult } from "../lib/v3facts";
 import type { RpcTransport } from "../lib/chainclient";
 import { liveFactsStep, downloadJson } from "./Modes";
+import { BuilderPolicy, type BuilderSelection } from "./BuilderPolicy";
+import type { Plan as PolicyPlan } from "@seam/policy/browser";
 
 type Facts = Extract<V3FactsResult, { ok: true }>["facts"];
 export type CompileFn = (
@@ -122,12 +124,15 @@ export function ManifestBuilder({
   factsStep = liveFactsStep,
   compile = browserCompile,
   onCompiled,
+  onUsePolicy,
 }: {
   getInjected?: Parameters<typeof listWalletAccounts>[0];
   transportFor?: (url: string) => RpcTransport;
   factsStep?: (rpc: RpcTransport) => Promise<V3FactsResult>;
   compile?: CompileFn;
   onCompiled?: (plan: unknown, manifest: DraftManifest, facts: Facts) => void;
+  /** Builder plan + compiler manifest + the tightened derived policy, for the real gate, approval and signing. */
+  onUsePolicy?: (sel: BuilderSelection & { facts: Facts }) => void;
 }) {
   const [accounts, setAccounts] = useState<WalletAccount[]>();
   const [walletMsg, setWalletMsg] = useState<string>();
@@ -426,6 +431,16 @@ export function ManifestBuilder({
           <summary>Compiled plan</summary>
           <pre className="small">{JSON.stringify(plan, null, 2)}</pre>
         </details>
+      )}
+      {plan != null && manifest && live && (
+        <>
+          <h4>6. Policy</h4>
+          <BuilderPolicy
+            plan={plan as PolicyPlan}
+            manifest={toCompilerManifest(manifest)}
+            onUse={onUsePolicy && ((sel) => onUsePolicy({ ...sel, facts: live }))}
+          />
+        </>
       )}
     </section>
   );
