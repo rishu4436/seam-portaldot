@@ -1,3 +1,4 @@
+import { loadChainFns, newApprovalStore, preSign, preSubmit, type ChainFns } from "../lib/signflow";
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "../lib/policygate";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -566,6 +567,8 @@ export function LivePanel({
   policyInput,
   acknowledgedDowngrade,
   policyGate = runPolicyGate,
+  chainLoader = loadChainFns,
+  gates = { preSign, preSubmit },
 }: {
   plan?: Plan;
   facts?: RuntimeFacts;
@@ -575,6 +578,9 @@ export function LivePanel({
   acknowledgedDowngrade?: boolean;
   /** Injectable only so tests can reach later steps; the app always uses the real gate. */
   policyGate?: typeof runPolicyGate;
+  chainLoader?: () => Promise<ChainFns>;
+  /** Injectable only for tests of the later steps; the app always uses the real gates. */
+  gates?: { preSign: typeof preSign; preSubmit: typeof preSubmit };
   hostLoader?: (facts?: unknown) => Promise<LiveHost | undefined>;
   factsStep?: (rpc: RpcTransport) => Promise<V3FactsResult>;
   now?: () => number;
@@ -590,6 +596,8 @@ export function LivePanel({
   const ok = !!v3RpcUrl(url);
   const [receiptRpc, setReceiptRpc] = useState<RpcTransport>();
   const [gate, setGate] = useState<GateOutcome>();
+  // Single-use approvals, as the policy engine tracks them. Lives as long as the panel.
+  const store = useRef(newApprovalStore());
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
   const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
   useEffect(() => {
@@ -642,6 +650,7 @@ export function LivePanel({
           maxRpcAttempts: attempts,
           // With a host, a fee estimate is required before the wallet is asked (fail closed).
           requireFeeEstimate: !!host,
+          requireSubmitGate: true,
         };
         if (host) {
           deps.verifyBinding = host.verifyBinding;
@@ -670,22 +679,37 @@ export function LivePanel({
             context: ctx.value,
           });
           if (!req.ok) return req;
-          // Authoritative policy gate, immediately before the wallet signer. A block never reaches the signer.
-          const g = policyGate(
-            policyInput && { ...policyInput, facts: policyInput.facts ?? hostFacts },
-            {
-              request: req.value,
-              acknowledgedDowngrade,
+          // Real preflight, then the authoritative policy gate and the engine's bound approval, immediately before
+          // the wallet signer. A block never reaches the signer.
+          const chainFns = await chainLoader();
+          const pre = await gates.preSign({
+            chain: chainFns,
+            send: rpc,
+            input: policyInput,
+            facts: hostFacts,
+            signer: call.value.signer,
+            ctx: ctx.value,
+            now: new Date(now()),
+            acknowledgedDowngrade,
+            gate: policyGate,
+          });
+          if (pre.gate) setGate(pre.gate);
+          if (!pre.res.ok) return pre.res;
+          const preSigned = pre.res.value;
+          deps.beforeSubmit = async (signedTx) =>
+            gates.preSubmit({
+              chain: chainFns,
+              send: rpc,
+              pre: preSigned,
+              facts: hostFacts,
+              signedTx,
               now: new Date(now()),
-            },
-          );
-          setGate(g);
-          if (!g.ok)
-            return {
-              ok: false,
-              reason: "unavailable",
-              message: `Blocked by policy before signing (${g.codes.join(", ")}). Nothing was signed.`,
-            };
+              store: store.current,
+              freshFingerprint: async () => {
+                const r = await factsStep(rpc);
+                return r.ok ? (r.facts as { fingerprint?: unknown }).fingerprint : undefined;
+              },
+            });
           return req;
         };
       }

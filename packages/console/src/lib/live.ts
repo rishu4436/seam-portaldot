@@ -105,6 +105,10 @@ export interface LiveDeps {
   maxRpcAttempts?: number;
   /** Fail closed: block before the wallet is asked when the fee estimate fails or has no fee. */
   requireFeeEstimate?: boolean;
+  /** Submit gate on the signed bytes (real dry run, checkBeforeSubmit). Runs after the binding check, before submit. */
+  beforeSubmit?: (signedTx: string, request: unknown) => Promise<Res<unknown>>;
+  /** Fail closed: block before submit when no submit gate is wired. */
+  requireSubmitGate?: boolean;
 }
 
 export function v3RpcUrl(raw?: string): string | undefined {
@@ -201,6 +205,13 @@ export async function runLive(
       { signing: "binding_mismatch" },
     );
   o.signing = "binding_ok";
+
+  if (deps.requireSubmitGate && !deps.beforeSubmit)
+    return done("blocked", "The submit gate is not wired, so the signed transaction was not sent.");
+  if (deps.beforeSubmit) {
+    const g = await deps.beforeSubmit(s.value.signedTx, request);
+    if (!g.ok) return done("blocked", g.message);
+  }
 
   const sub = await chain.submit(s.value);
   o.submitted = true;

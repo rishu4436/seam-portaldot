@@ -19,7 +19,7 @@ export interface PolicyGateInput {
   preflight?: unknown;
 }
 export type GateOutcome =
-  | { ok: true; explanations: RuleExplanation[] }
+  | { ok: true; explanations: RuleExplanation[]; result?: GateResult["result"] }
   | { ok: false; codes: string[]; explanations: RuleExplanation[]; message: string };
 
 /** Envelope expiry only when the signing request really carries one; never invented from the approval window. */
@@ -47,7 +47,7 @@ export function runPolicyGate(
       ...(opts.acknowledgedDowngrade ? { acknowledgedDowngrade: true } : {}),
       ...(opts.now ? { now: opts.now } : {}),
     });
-    return { ok: true, explanations: g.explanations };
+    return { ok: true, explanations: g.explanations, result: g.result };
   } catch (e) {
     if (e instanceof PolicyBlockedError)
       return { ok: false, codes: e.codes, explanations: e.gate.explanations, message: e.message };
