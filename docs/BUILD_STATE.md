@@ -2,6 +2,7 @@
 
 Factual completion matrix for SEAM-001..028, tracked against the audit of `main` at `a3bc52b`.
 Each status was checked against the code and tests on `main` at `62d9688` (plus the release-hygiene branch), not taken from branch reports.
+Refreshed 2026-10-20 against `main` at `9172f05` (after the `96265a3` audit baseline): test counts re-run locally, every SHA/tx/path below checked against `git log` and `evidence/testnet-v3/`.
 
 Statuses:
 
@@ -19,15 +20,30 @@ Update this file in the same commit that changes a status.
 
 Two V3 findings that blocked a clean live path are addressed in `@seam/chain` (`bot4/v3-metadata-stability`): a metadata layout hash ignores storage-default drift (V3 `Revive.EthBlockBuilderIR`) and stays fail-closed on layout changes; an HTTPS RPC transport sends submits exactly once (no resend on a lost response). Limits remain: no WebSocket reconnect (HTTPS polling is used instead), a dropped pool tx shows as uncertain, and runtime-upgrade fail-closed is shown only on edited blobs. See `evidence/v3-metadata-stability/`.
 
-## Test counts on `main` (after the merges below; was `62d9688`)
+## October 20 audit (Tasks 1 to 4): done on `main` at `9172f05`
+
+- **Independent on-chain verification of the 18 sent V3 txs** (`93382dc`): `packages/chain/scripts/v3-independent-verify.mjs`, read-only over HTTPS. Result: 17 `verified`, 1 `expected_dispatch_failure` (#102665, the deliberately failing `utility.batchAll`, `ExtrinsicFailed assets.BalanceLow`). See `evidence/testnet-v3/independent-verification.{json,md}`.
+- **receipts-v2 from live reads** (`evidence/testnet-v3/receipts-v2/summary.json`): sequential and atomic plans `chain_verified`; `revive.call` and the revive terminate call `unknown` (`effect_unproven`), not verified.
+- **Metadata layout hash v2**: chain `e919935` and compiler `7b3c369` blank only `BLANKED_STORAGE_DEFAULTS` = `Revive.EthBlockBuilderIR`; any other storage-default change fails closed. V3 value `0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304`, pinned in `packages/chain/tests/browser-facts.test.ts` and `packages/compiler/tests/layout-v2.test.ts` (cross-package equality test).
+- **HTTPS / uncertain tx handling**: metadata-layout and HTTPS uncertain-path tests (`93382dc`); submits are sent once, a lost response is `uncertain`, not resent.
+- **Console LIVE**: live facts from `factsFromChainInputs` (`c7a935e`), fail-closed `payment_queryInfo` fee estimate before signing plus read-only live binding check (`826a961`, `evidence/testnet-v3/v3-binding-check.json`), stale result cleared on plan/approval change (`cf54a39`), receipt effect check of `Assets.Transferred` (read-only) and receipt download (`d1a5fef`).
+- **Browser-wallet transfer (Task 3)**: `seam-demo` account `5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE`, funded by tx `0x2269c4b7…d605` (#118070, `evidence/testnet-v3/demo-funding-118070-verification.json`, `8204dbb`). Demo plan recompiled for that signer (`c5cd4bd`, plan digest `0x5eda2d74a9e793025e1ad8dcb6c3ada83571fd2fb0217b62a335696d765246eb`). Tx `0x8a2c8b92560b8238c3ecdcda10f822b3c995926452f4c51c43fb3bca131ea4ad`, finalized canonical block #118310 (`0xaa549f11e1533e570d2178abefc64cc9630bc036213ad011d66ccd0975c31ff1`), signed through the polkadot.js extension by the SEAM team. **Independently verified** in `evidence/testnet-v3/demo-transfer-118310-verification.json` (`bf63afb`): call bytes equal the plan, digest recomputed, 1 unit of asset 806707 to `5EkVZo…VHXB`, asset balances 5→4 and 2500→2501, signer tPOT drop equals the fee (0.01470879799519 tPOT). The evidence proves what the chain recorded, not how the tx was signed. The plan is `sequential`.
+
+## In progress, NOT yet on `main`
+
+- **P0-01 dynamic Manifest Builder**: Pixel (console UI: wallet/account/network pick, actions, atomicity, compile, review, JSON import/export, no hardcoded signer), Chainsmith (browser-safe live capabilities in `@seam/chain/browser`), Forge (browser-usable compiler and argument validation). No SHAs merged yet.
+- **P0-02 authoritative policy in the browser**: Sentinel (real policy engine in the console flow, per-rule explanation, tests that a violation never reaches signing, and the wallet-demo mismatch: policy `allowedModes: ["atomic_verified"]` vs the `sequential` demo plan). Not merged; the mismatch is still on `main`.
+- Quill: docs for both once merged.
+
+## Test counts on `main` at `9172f05` (re-run 2026-10-20)
 
 | Package  | Passing | Skipped |
 | -------- | ------- | ------- |
-| compiler | 181     | 0       |
-| policy   | 187     | 0       |
-| sdk      | 220     | 0       |
-| chain    | 188     | 12      |
-| console  | 67      | 0       |
+| compiler | 230     | 0       |
+| policy   | 216     | 0       |
+| sdk      | 267     | 0       |
+| chain    | 226     | 13      |
+| console  | 105     | 0       |
 
 At the audit baseline (`a3bc52b`, CI run 39106951312): compiler 111, policy 68, SDK 63, chain 59, 12 skipped. Console tests were not in the baseline count.
 The local-node E2E (`npm run test:e2e`) is not part of routine CI (manual/weekly `e2e.yml`).
@@ -87,7 +103,7 @@ The local-node E2E (`npm run test:e2e`) is not part of routine CI (manual/weekly
 
 - **Portaldot V3 RPC URL** (hosted testnet): needed to read metadata and runtime APIs (Revive, Nfts, Assets, Utility, signed extensions, account mapping) and unblock SEAM-006..011 and 023.
 - **Funded testnet account** (faucet) and explicit test-only sign-off with spending caps: needed for the funded phase, not for build.
-- **A polkadot.js browser extension signed run:** only a stand-in wallet has been used; needed for wallet proof and the real Console LIVE path (SEAM-019).
+- ~~A polkadot.js browser extension signed run~~: done, tx #118310 (see above).
 - A V3 contract deployment permission for the Solidity settlement contract (SEAM-023).
 
 ## What has been observed
@@ -101,7 +117,7 @@ Neither local chain is the hosted Portaldot V3 testnet. Separately, the **hosted
 ## What is unverified
 
 - Portaldot V3 Revive contracts (`Revive.call`, deploys), fresh account mapping, ink!/PolkaVM, and cross-VM atomicity. The funded run in `evidence/testnet-v3/` verified signing, Nfts, Assets, sequential plans and `Utility.batch_all` rollback/atomic for assets + nfts on spec 3002.
-- The real polkadot.js browser extension.
+- The real polkadot.js extension beyond the single `assets.transfer` at #118310.
 - Cross-VM atomicity. `Utility.batch_all` rollback is V3-verified only for `assets.transfer`, `assets.mint` and `nfts.mint` (not contracts).
 - Any mainnet transaction (none). Funded V3 testnet: see `evidence/testnet-v3/README.md`; `Revive.call` executes on V3, but its SEAM receipt verdict is still unverified.
 - A "Fixed" row means the audit's offline/local acceptance tests pass on `main`. It does not mean V3 behaviour is verified.
