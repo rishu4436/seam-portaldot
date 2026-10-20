@@ -23,3 +23,4 @@ export {
 } from "./builder.js";
 export { canonicalJson, digestJson, domainHash, DOMAIN } from "./canonical.js";
 export { parseNativeAddress, parseH160, type NativeAddress } from "./address.js";
+export { rebindPlan, type RebindResult } from "./rebind.js";
