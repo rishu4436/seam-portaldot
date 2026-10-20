@@ -30,6 +30,9 @@ export interface SequentialReceiptStep {
   runtimeLock?: import("./signflow").RuntimeLockInfo;
   /** Why the submit gate blocked this step (signed dry run), as reported; omitted when none. */
   blockDetail?: import("./signflow").BlockDetail;
+  /** Nonce this step was actually signed with (receipt metadata; not in approvalInputs). Omitted when unknown. */
+  nonce?: number;
+  nonceSource?: "decoded" | "signing_request";
 }
 
 export interface SequentialReceipt {
@@ -82,6 +85,7 @@ export function buildSequentialReceipt(r: MultiStepResult): SequentialReceipt {
       reason: s.message,
       ...(s.runtimeLock ? { runtimeLock: { ...s.runtimeLock } } : {}),
       ...(s.blockDetail ? { blockDetail: structuredClone(s.blockDetail) } : {}),
+      ...(typeof s.nonce === "number" ? { nonce: s.nonce, nonceSource: s.nonceSource } : {}),
     };
   });
   const result = overallResult(

@@ -1123,7 +1123,8 @@ export function MultiStepPanel({ r }: { r: MultiStepResult }) {
       <ol>
         {r.steps.map((s) => (
           <li key={s.index} data-status={s.status}>
-            <code>{s.actionId}</code> {s.status}: {s.message}
+            <code>{s.actionId}</code> {s.status}
+            {typeof s.nonce === "number" ? ` (nonce ${s.nonce})` : ""}: {s.message}
             {s.blockDetail && (
               <div className="muted" data-testid={`seq-block-detail-${s.index}`}>
                 {blockDetailText(s.blockDetail)}
