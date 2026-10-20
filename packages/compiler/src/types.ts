@@ -264,7 +264,8 @@ export type CompileErrorCode =
   | "ABI_HASH_MISMATCH"
   | "ABI_MESSAGE_UNKNOWN"
   | "ABI_ARGS_INVALID"
-  | "SIGNER_DOMAIN_MISMATCH";
+  | "SIGNER_DOMAIN_MISMATCH"
+  | "RUNTIME_CHANGED";
 
 export class SeamCompileError extends Error {
   readonly issues: CompileIssue[];
