@@ -515,6 +515,8 @@ export function LivePanel({
             feeExtrinsic: host?.feeEstimateExtrinsic,
           }),
           maxRpcAttempts: attempts,
+          // With a host, a fee estimate is required before the wallet is asked (fail closed).
+          requireFeeEstimate: !!host,
         };
         if (host) {
           deps.verifyBinding = host.verifyBinding;
@@ -639,6 +641,8 @@ export function LivePanel({
               </dd>
               <dt>Signing</dt>
               <dd>{SIGNING_LABEL[out.signing]}</dd>
+              <dt>Fee estimate</dt>
+              <dd>{out.fee ? `${out.fee} base units (payment_queryInfo)` : "not estimated"}</dd>
               <dt>Simulation</dt>
               <dd>
                 <SimulationBadge b={out.simulation} />
