@@ -39,3 +39,9 @@ Notes:
 ## Revive.OriginalAccount (read 2026-10-20T12:34:04.919Z UTC, block #117321)
 
 From live spec 3002 metadata: modifier `Optional`, hasher `Identity`, key `H160`, value `AccountId32`. A key built by hand (`xxh128("Revive") ++ xxh128("OriginalAccount") ++ h160`) equals the decorated-metadata key for `0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec`: True. The read returns `5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1` (the run's signer). Script: `packages/chain/scripts/v3-original-account-check.mjs`.
+
+## What the metadata layout hash ignores (updated 2026-10-20)
+
+When the audit was first written, `@seam/chain`'s `metadataLayoutHash` blanked **every** storage default, not only the known drift. It now (layout v2) blanks only the defaults in `BLANKED_STORAGE_DEFAULTS`, which is just `Revive.EthBlockBuilderIR`. A change to any other storage default changes the hash and fails closed.
+
+The live V3 sample over 3 blocks still gives one stable hash, `0x221ba8f7…b304`. The independent verification above does not depend on the layout hash: it decodes every block with that block's own metadata.

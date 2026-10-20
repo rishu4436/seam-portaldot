@@ -112,7 +112,7 @@ async function eventsAt(
       `no metadata at block ${blockHash}; its events cannot be decoded safely`,
     );
   }
-  // Same bytes, or bytes that differ only in storage default values (V3's state-dependent Revive.EthBlockBuilderIR
+  // Same bytes, or bytes that differ only in allow-listed storage default values (BLANKED_STORAGE_DEFAULTS: V3's state-dependent Revive.EthBlockBuilderIR
   // fallback), which no event, error or type depends on. Anything else is a real layout change.
   const blockMetadataHash = blake2AsHex(hexToU8a(metadataHex), 256).toLowerCase();
   if (
