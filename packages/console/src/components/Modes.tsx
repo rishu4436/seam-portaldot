@@ -598,6 +598,9 @@ export function LivePanel({
   const [receiptRpc, setReceiptRpc] = useState<RpcTransport>();
   const [gate, setGate] = useState<GateOutcome>();
   const [multi, setMulti] = useState<MultiStepResult>();
+  // Cancels a multi-step run when the panel unmounts or the plan changes; the run then drops its signed bytes.
+  const abort = useRef<AbortController | undefined>(undefined);
+  useEffect(() => () => abort.current?.abort(), []);
   // Single-use approvals, as the policy engine tracks them. Lives as long as the panel.
   const store = useRef(newApprovalStore());
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
@@ -607,6 +610,7 @@ export function LivePanel({
     setV3(undefined);
     setGate(undefined);
     setMulti(undefined);
+    abort.current?.abort();
     setDismissed(false);
   }, [planKey]);
   const ready = !!plan && !!approval && !approval.used;
@@ -639,8 +643,11 @@ export function LivePanel({
         // time behind its own gate and checkBeforeSubmit (see lib/multistep.ts). Any block stops the remaining steps.
         const multiCalls = policyInput ? callsToSignOf(policyInput.plan as never) : undefined;
         if (multiCalls?.ok && multiCalls.value.length > 1 && policyInput) {
+          abort.current?.abort();
+          abort.current = new AbortController();
           setMulti(
             await runMultiStepLive({
+              signal: abort.current.signal,
               rpc,
               b,
               host,
@@ -975,6 +982,7 @@ async function runMultiStepLive(a: {
   now: () => number;
   factsStep: (rpc: RpcTransport) => Promise<V3FactsResult>;
   acknowledgedDowngrade?: boolean;
+  signal: AbortSignal;
 }): Promise<MultiStepResult> {
   const blocked = (message: string): MultiStepResult => ({
     ok: false,
@@ -1004,6 +1012,7 @@ async function runMultiStepLive(a: {
     now: () => new Date(a.now()),
     store: a.store,
     acknowledgedDowngrade: a.acknowledgedDowngrade,
+    signal: a.signal,
     freshFingerprint: async () => {
       const r = await a.factsStep(a.rpc);
       return r.ok ? (r.facts as { fingerprint?: unknown }).fingerprint : undefined;
