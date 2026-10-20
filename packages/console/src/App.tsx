@@ -5,6 +5,7 @@ import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gat
 import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
 import { V3Evidence } from "./components/V3Evidence";
 import { WalletDemoCard } from "./components/WalletDemo";
+import { ManifestBuilder } from "./components/ManifestBuilder";
 import {
   approveWalletDemo,
   walletDemoFacts,
@@ -542,6 +543,7 @@ export default function App() {
                 onApprove={() => setDemoApproval(approveWalletDemo(demoPlan))}
               />
             )}
+            {!walletDemoOn && <ManifestBuilder />}
             <LivePanel
               plan={walletDemoOn ? demoPlan : plan}
               facts={walletDemoOn ? demoFacts : facts}
