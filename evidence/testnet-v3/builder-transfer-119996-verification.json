@@ -1,0 +1,289 @@
+{
+  "kind": "seam-v3-tx-verification",
+  "title": "Builder-plan assets.transfer, block #119996: independent verification",
+  "readOnly": "read-only RPC; no wallet, no signer, nothing sent",
+  "reproduce": [
+    "node packages/chain/scripts/v3-find-tx.mjs --hash 0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402 --signer 5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE --asset 806707 --plan /workspace/demo-shots/seam-receipt-0xf883200e.json",
+    "node packages/chain/scripts/v3-verify-signature.mjs --block 119996 --hash 0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402",
+    "node packages/chain/scripts/v3-plan-fingerprint.mjs --digest 0x837a6a0daf2988cd65a9bdc62d468b35b699816efeb23cf7e4d7a404267dfc86 --from 119930 --to 119996"
+  ],
+  "chain": {
+    "kind": "seam-v3-tx-verification",
+    "generatedAt": "2026-10-20T17:04:01.799Z",
+    "endpoint": "https://test-node-v3.portaldot.dev",
+    "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "finalizedHead": {
+      "number": 120008,
+      "hash": "0x1b656cfb131f48d9dd60737bbf3172511f0b8012ac5d2d131f40b57ebee299b2"
+    },
+    "hash": "0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402",
+    "block": {
+      "number": 119996,
+      "hash": "0x43326f29394dfad70747ff790d31e07ca068695279552c7083c42c02065f0edb"
+    },
+    "canonical": true,
+    "finalized": true,
+    "extrinsicIndex": 1,
+    "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+    "signerMatch": true,
+    "call": "assets.transferKeepAlive",
+    "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+    "calls": [
+      {
+        "call": "assets.transferKeepAlive",
+        "args": {
+          "id": 806707,
+          "target": {
+            "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+          },
+          "amount": 1
+        }
+      }
+    ],
+    "plan": {
+      "file": "receipt.plan (/workspace/demo-shots/seam-receipt-0xf883200e.json, not committed)",
+      "planDigest": "0x11b3a4cc1141136fbed62bd7a64e37ee3a2fea90bdfb7461e9fe490a68eca71a",
+      "recomputedPlanDigest": "0x11b3a4cc1141136fbed62bd7a64e37ee3a2fea90bdfb7461e9fe490a68eca71a",
+      "planDigestMatches": true,
+      "signerMatches": true,
+      "callMatch": true,
+      "callReason": "call bytes equal the plan step",
+      "planCalls": [
+        "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204"
+      ]
+    },
+    "balances": {
+      "asset": "806707",
+      "before": 119995,
+      "after": 119996,
+      "accounts": {
+        "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE": {
+          "assetBefore": "3",
+          "assetAfter": "2",
+          "assetDelta": "-1"
+        },
+        "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB": {
+          "assetBefore": "2502",
+          "assetAfter": "2503",
+          "assetDelta": "1"
+        }
+      },
+      "signerFree": {
+        "before": "97058242950829",
+        "after": "95587366396859",
+        "drop": "1470876553970",
+        "dropEqualsFee": true
+      }
+    },
+    "dispatch": {
+      "ok": true
+    },
+    "fee": "1470876553970",
+    "events": [
+      {
+        "pallet": "Balances",
+        "name": "Withdraw",
+        "args": [
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "1470876553970"
+        ]
+      },
+      {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "args": [
+          "806707",
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+          "1"
+        ]
+      },
+      {
+        "pallet": "Balances",
+        "name": "Deposit",
+        "args": [
+          "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+          "1470876553970"
+        ]
+      },
+      {
+        "pallet": "TransactionPayment",
+        "name": "TransactionFeePaid",
+        "args": [
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "1470876553970",
+          "0"
+        ]
+      },
+      {
+        "pallet": "System",
+        "name": "ExtrinsicSuccess",
+        "args": [
+          "{\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+        ]
+      }
+    ],
+    "outcome": "verified",
+    "reasons": []
+  },
+  "signature": {
+    "block": {
+      "number": 119996,
+      "hash": "0x43326f29394dfad70747ff790d31e07ca068695279552c7083c42c02065f0edb"
+    },
+    "txHash": "0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+    "nonce": 2,
+    "tip": "0",
+    "era": {
+      "mortal": true,
+      "period": 64,
+      "phase": 36,
+      "hex": "0x4502"
+    },
+    "eraBirth": {
+      "number": 119972,
+      "hash": "0xc4cc2708d8a95a8d2f111c0597bde6cb8691d4a162ee04b1b7705d4ba8279688"
+    },
+    "signatureValid": true,
+    "controlNoContext": false,
+    "controlWrongCheckpoint": false
+  },
+  "nonce": {
+    "observed": 2,
+    "expected": 2,
+    "previous": {
+      "tx": "0x74a76dcbe62d1c8bf1cf5bf2701938ab65df5cbb0b30c6303d2b96dfc36ded6d",
+      "block": 119634,
+      "nonce": 1
+    },
+    "gap": false,
+    "continuity": {
+      "assetAfter119634": "3",
+      "assetBefore119996": "3",
+      "freeAfter119634": "97058242950829",
+      "freeBefore119996": "97058242950829"
+    }
+  },
+  "planFingerprint": {
+    "planFingerprintDigest": "0x837a6a0daf2988cd65a9bdc62d468b35b699816efeb23cf7e4d7a404267dfc86",
+    "receiptFingerprintDigest": "0x837a6a0daf2988cd65a9bdc62d468b35b699816efeb23cf7e4d7a404267dfc86",
+    "note": "receipt.plan carries only fingerprintDigest, not the fingerprint object. Recomputed from live metadata (raw bytes, no pinning) at each block #119930..#119996.",
+    "matchingBlocks": {
+      "from": 119958,
+      "to": 119996,
+      "count": 39
+    },
+    "nonMatchingBlocks": [
+      119957,
+      119956,
+      119955,
+      119954,
+      119953,
+      119952,
+      119951,
+      119950,
+      119949,
+      119948,
+      119947,
+      119946,
+      119945,
+      119944,
+      119943,
+      119942,
+      119941,
+      119940,
+      119939,
+      119938,
+      119937,
+      119936,
+      119935,
+      119934,
+      119933,
+      119932,
+      119931,
+      119930
+    ],
+    "fingerprint": {
+      "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "specName": "portaldot-v3",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataHash": "0x44e51bb5133a67f5c71c40e8070ed8f7fadd4055001cb22832e17511f984c82b",
+      "ss58Prefix": 42,
+      "tokenSymbol": "tPOT",
+      "tokenDecimals": 14,
+      "typesBundleHash": null
+    },
+    "v3Identity": {
+      "genesis": true,
+      "specName": "portaldot-v3",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "ss58": 42,
+      "token": "tPOT/14"
+    },
+    "layoutHash": {
+      "atBlock119996": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+      "expectedV2": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+      "allBlocksInWindowEqual": true,
+      "note": "the plan does not carry a layout hash; this is the v2 layout hash of the live metadata the plan fingerprint was computed from"
+    }
+  },
+  "approvalHash": {
+    "receipt": "0x1402610bbaf050bfa1a6340665ea8649328a3a1383eaa13a4da6ff14d6519ef2",
+    "status": "unverifiable",
+    "reason": "the receipt carries no approval input (no envelope, preflight, policy or policyResult), so the hash cannot be recomputed with @seam/policy createApproval"
+  },
+  "receiptClaims": {
+    "txHash": true,
+    "block": true,
+    "signer": true,
+    "planDigest": {
+      "receipt": "0x11b3a4cc1141136fbed62bd7a64e37ee3a2fea90bdfb7461e9fe490a68eca71a",
+      "plan": "0x11b3a4cc1141136fbed62bd7a64e37ee3a2fea90bdfb7461e9fe490a68eca71a",
+      "recomputed": "0x11b3a4cc1141136fbed62bd7a64e37ee3a2fea90bdfb7461e9fe490a68eca71a",
+      "equal": true
+    },
+    "fee": {
+      "receipt": "1470876553970",
+      "chain": "1470876553970",
+      "equal": true,
+      "estimate": "1470876594312"
+    },
+    "extrinsicIndex": {
+      "receipt": 1,
+      "chain": 1,
+      "equal": true
+    },
+    "event": {
+      "receipt": {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "assetId": "806707",
+        "from": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "to": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+        "amount": "1"
+      },
+      "chain": {
+        "assetId": "806707",
+        "from": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "to": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+        "amount": "1"
+      },
+      "equal": true
+    },
+    "result": "verified",
+    "liveStatus": "unverified",
+    "verification": "effect_proven",
+    "effectVerdict": "effect_proven"
+  },
+  "mismatches": [],
+  "notes": [
+    "receipt liveStatus is \"unverified\" while result is \"verified\" and verification/effect.verdict are effect_proven"
+  ],
+  "verdict": "verified"
+}
