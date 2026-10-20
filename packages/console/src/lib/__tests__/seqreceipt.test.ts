@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { createApproval } from "@seam/policy/browser";
+import { createApproval, overallResult } from "@seam/policy/browser";
 import { compile, factsFromMetadata } from "@seam/compiler/browser";
 import * as chainBrowser from "@seam/chain/browser";
 import { newApprovalStore, preSign, type ChainFns } from "../signflow";
@@ -74,11 +74,13 @@ const outcome = (i: number) => ({
   ],
 });
 
-async function run(opts: { stopAfterFirst?: boolean } = {}) {
-  const submitAndWait = vi.fn(async (i: number) => ({
-    ok: true as const,
-    value: outcome(i) as never,
-  }));
+async function run(opts: { stopAfterFirst?: boolean; badFirst?: boolean } = {}) {
+  const submitAndWait = vi.fn(async (i: number) => {
+    const o = outcome(i);
+    // A tampered inclusion: the chain moved 2, the plan approved 1.
+    if (opts.badFirst && i === 0) o.events[0]!.args[3] = "2";
+    return { ok: true as const, value: o as never };
+  });
   const r = await runPlanSteps({
     chain,
     send: async () => null,
@@ -187,10 +189,11 @@ describe("sequential multi-step receipt", () => {
       expect(rerun(i)).not.toBe(receipt.approvalHash);
     }
   });
-  it("stopped after step 1: not verified, step 2 listed as not sent with the reason", async () => {
+  it("stopped after step 1: partial (overallResult), step 2 not_run with the reason", async () => {
     const { submitAndWait, receipt } = await run({ stopAfterFirst: true });
     expect(submitAndWait).toHaveBeenCalledTimes(1);
-    expect(receipt.result).toBe("not_verified");
+    expect(receipt.result).toBe("partial");
+    expect(receipt.result).toBe(overallResult(receipt.steps));
     expect(receipt.partialRun).toBe(true);
     expect(receipt.stoppedAt).toBe(1);
     expect(receipt.stopReason).toMatch(/Stopped at step 2.*Blocked at submit/);
@@ -199,10 +202,34 @@ describe("sequential multi-step receipt", () => {
       sent: false,
       sendIndex: null,
       txHash: null,
-      verification: "not_sent",
+      status: "not_run",
+      verification: "unknown",
     });
     expect(receipt.approvalHash).not.toBeNull();
     expect(rerun(receipt.approvalInputs)).toBe(receipt.approvalHash);
+  });
+  it("failed step 1 (wrong amount on chain) with step 2 not run: partial, step 1 not_verified, stopReason says why", async () => {
+    const { submitAndWait, receipt } = await run({ badFirst: true });
+    expect(submitAndWait).toHaveBeenCalledTimes(1);
+    expect(receipt.result).toBe("partial");
+    expect(receipt.result).toBe(overallResult(receipt.steps));
+    expect(receipt.steps[0]).toMatchObject({
+      sent: true,
+      status: "finalized",
+      verification: "not_verified",
+    });
+    expect(receipt.steps[1]).toMatchObject({
+      sent: false,
+      status: "not_run",
+      verification: "unknown",
+    });
+    expect(receipt.stoppedAt).toBe(1);
+    expect(receipt.stopReason).toMatch(/Step 1 is finalized \/ not_verified/);
+  });
+  it("full verified run equals overallResult", async () => {
+    const { receipt } = await run();
+    expect(receipt.result).toBe(overallResult(receipt.steps));
+    expect(receipt.result).toBe("verified");
   });
   it("no signed bytes in the receipt", async () => {
     for (const stopAfterFirst of [false, true]) {
