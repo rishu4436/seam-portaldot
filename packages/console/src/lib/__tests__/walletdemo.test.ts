@@ -30,12 +30,17 @@ describe("V3 wallet demo", () => {
   it("passes the strict policy and blocks anything wider", () => {
     expect(checkWalletDemoPolicy(plan).allowed).toBe(true);
     const tweak = (d: Partial<(typeof plan.steps)[0]["decoded"]>) =>
-      checkWalletDemoPolicy({ ...plan, steps: [{ ...plan.steps[0], decoded: { ...plan.steps[0].decoded, ...d } }] });
+      checkWalletDemoPolicy({
+        ...plan,
+        steps: [{ ...plan.steps[0], decoded: { ...plan.steps[0].decoded, ...d } }],
+      });
     expect(tweak({ amount: "11" }).allowed).toBe(false);
     expect(tweak({ amount: "0" }).allowed).toBe(false);
     expect(tweak({ assetId: "1" }).allowed).toBe(false);
     expect(tweak({ recipient: "5Other" }).allowed).toBe(false);
-    expect(checkWalletDemoPolicy({ ...plan, steps: [plan.steps[0], plan.steps[0]] }).allowed).toBe(false);
+    expect(checkWalletDemoPolicy({ ...plan, steps: [plan.steps[0], plan.steps[0]] }).allowed).toBe(
+      false,
+    );
   });
   it("approval binds the plan digest for the policy window", () => {
     const a = approveWalletDemo(plan, 0);

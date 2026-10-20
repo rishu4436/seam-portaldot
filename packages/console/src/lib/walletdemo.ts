@@ -105,18 +105,23 @@ export function checkWalletDemoPolicy(
   const rules: PolicyRuleResult[] = [];
   const add = (rule: string, ok: boolean, reason: string, actionId?: string) =>
     rules.push({ rule, outcome: ok ? "pass" : "block", reason, actionId });
-  add("maxSteps", plan.steps.length <= p.maxSteps, `${plan.steps.length} of max ${p.maxSteps} step(s)`);
   add(
-    "singleSignature",
-    plan.steps.length === 1,
-    "The LIVE wallet flow signs exactly one call",
+    "maxSteps",
+    plan.steps.length <= p.maxSteps,
+    `${plan.steps.length} of max ${p.maxSteps} step(s)`,
   );
+  add("singleSignature", plan.steps.length === 1, "The LIVE wallet flow signs exactly one call");
   for (const s of plan.steps) {
     const a = s.decoded;
     const cap = big(p.maxAmountPerAsset[a.assetId ?? ""] ?? p.maxAmountPerAsset["*"]);
     const amt = big(a.amount);
     add("capability", p.allowedCapabilities.includes(s.capability), s.capability, s.actionId);
-    add("asset", !!a.assetId && p.allowedAssets.includes(a.assetId), `asset ${a.assetId ?? "?"}`, s.actionId);
+    add(
+      "asset",
+      !!a.assetId && p.allowedAssets.includes(a.assetId),
+      `asset ${a.assetId ?? "?"}`,
+      s.actionId,
+    );
     add(
       "recipient",
       !!a.recipient && p.allowedRecipients.includes(a.recipient),
@@ -135,7 +140,8 @@ export function checkWalletDemoPolicy(
     allowed: rules.every((r) => r.outcome === "pass"),
     rules,
     policyDigest: "0x" as Hex,
-    explain: "Console pre-check of the strict demo policy. The submit gate re-checks before sending.",
+    explain:
+      "Console pre-check of the strict demo policy. The submit gate re-checks before sending.",
   };
 }
 
