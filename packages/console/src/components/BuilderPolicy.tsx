@@ -23,21 +23,42 @@ export function BuilderPolicy({
   plan,
   manifest,
   onUse,
+  readPreflight,
 }: {
   plan: Plan;
   manifest: unknown;
   onUse?: (sel: BuilderSelection) => void;
+  /** Real read-only preflight of this plan (@seam/chain/browser preflight). Its totalFee sets the fee cap. */
+  readPreflight?: () => Promise<unknown>;
 }) {
-  const derived = useMemo(() => derivePolicy(plan), [plan]);
+  const [preflight, setPreflight] = useState<unknown>();
+  const [pfMsg, setPfMsg] = useState<string>();
+  const derived = useMemo(() => derivePolicy(plan, { preflight }), [plan, preflight]);
+  const fetchFee = async () => {
+    setPfMsg(undefined);
+    try {
+      if (!readPreflight) throw new Error("no preflight reader in this build");
+      setPreflight(await readPreflight());
+    } catch (e) {
+      setPreflight(undefined);
+      setPfMsg(`Preflight failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
   const [maxFee, setMaxFee] = useState<string>();
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [removeAssets, setRemoveAssets] = useState<string[]>([]);
   const [removeRecipients, setRemoveRecipients] = useState<string[]>([]);
   if (!derived.ok)
     return (
-      <p role="alert" className="small">
-        No policy: {derived.message}
-      </p>
+      <div aria-label="Builder policy" role="group">
+        <button onClick={fetchFee} disabled={!readPreflight}>
+          Read fee from preflight
+        </button>
+        {pfMsg && <p className="small">{pfMsg}</p>}
+        <p role="alert" className="small">
+          No policy{derived.code ? ` (${derived.code})` : ""}: {derived.message}
+        </p>
+      </div>
     );
   const base = derived.policy;
   const t = tightenPolicy(base, { maxFee, amounts, removeAssets, removeRecipients });
@@ -91,7 +112,7 @@ export function BuilderPolicy({
         </label>
       ))}
       <label className="small">
-        Fee cap (base units)
+        Fee cap (base units, preflight total fee + 25%)
         <input
           aria-label="Fee cap"
           value={maxFee ?? base.maxFee ?? ""}

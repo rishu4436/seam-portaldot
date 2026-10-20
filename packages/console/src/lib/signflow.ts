@@ -24,8 +24,26 @@ export interface ChainFns {
     opts?: { signedExtrinsics?: string[] },
   ): Promise<PreflightRes>;
   signedExtrinsicDecoder(facts: unknown): (x: `0x${string}`) => unknown;
-  /** Block time from the runtime's own metadata. Without it no signing envelope (expiry) can be built, so it blocks. */
+  /** Block time from the runtime's own metadata (Chainsmith, @seam/chain/browser). */
   blockTimeFromFacts?: (facts: unknown) => number | undefined;
+  /**
+   * Chainsmith's buildSigningEnvelope from @seam/chain/browser. Throws NODE_MISSING_VALUE when the block time or any
+   * input is unknown; that blocks before signing. Missing entirely also blocks.
+   */
+  buildSigningEnvelope?: (i: {
+    signer: string;
+    nonce: number;
+    checkpoint: { number: number; hash: string };
+    mortalityBlocks: number;
+    now: Date;
+    facts: unknown;
+  }) => {
+    signer: string;
+    nonce: number;
+    mortalityBlocks: number;
+    checkpoint: { number: number; hash: string };
+    expiresAt: string;
+  };
 }
 export interface SigningContext {
   nonce: number;
@@ -75,21 +93,26 @@ export async function preSign(args: {
   } catch (e) {
     return { res: no(`Preflight failed, so nothing will be signed: ${errMsg(e)}`) };
   }
-  const bt = chain.blockTimeFromFacts?.(facts);
-  if (!bt)
+  if (!chain.buildSigningEnvelope)
+    return { res: no("The signing envelope builder is not available, so nothing will be signed.") };
+  let envelope: ReturnType<NonNullable<ChainFns["buildSigningEnvelope"]>>;
+  try {
+    envelope = chain.buildSigningEnvelope({
+      signer: args.signer,
+      nonce: ctx.nonce,
+      checkpoint: { number: ctx.checkpointNumber, hash: ctx.checkpointHash },
+      mortalityBlocks: ctx.mortalityBlocks,
+      now,
+      facts,
+    });
+  } catch (e) {
+    const code = (e as { code?: string })?.code;
     return {
       res: no(
-        "The block time is not available from the runtime, so the signing window can't be set. Nothing will be signed.",
+        `The signing window can't be set (${code ?? "error"}: ${errMsg(e)}), for example because the block time is unknown. Nothing will be signed.`,
       ),
     };
-  const envelope = {
-    signer: args.signer,
-    nonce: ctx.nonce,
-    mortalityBlocks: ctx.mortalityBlocks,
-    checkpoint: { number: ctx.checkpointNumber, hash: ctx.checkpointHash },
-    // The era counts from the checkpoint; one block of margin, as the chain adapter does.
-    expiresAt: new Date(now.getTime() + (ctx.mortalityBlocks - 1) * bt).toISOString(),
-  };
+  }
   const gate = (args.gate ?? runPolicyGate)(
     { ...input, facts: input.facts ?? facts, preflight },
     { request: { envelope }, acknowledgedDowngrade: args.acknowledgedDowngrade, now },
@@ -129,13 +152,19 @@ export async function preSubmit(args: {
   signedTx: string;
   now: Date;
   store: ApprovalStore;
+  /**
+   * Sequential plans: every step's signed bytes (the engine compares all of them with the approved calls, nonce n+i),
+   * the index being sent, and the receipts of the earlier steps. Atomic / single-call plans leave these out.
+   */
+  sequential?: { signedExtrinsics: string[]; sendIndex: number; previousSteps: unknown[] };
 }): Promise<Res<{ passed: { code: string; detail: string }[] }>> {
   const { chain, send, pre, facts, signedTx } = args;
+  const all = args.sequential?.signedExtrinsics ?? [signedTx];
   let pf: PreflightRes;
   let current: unknown;
   try {
     pf = await chain.preflight(send, pre.approvalInput.plan, facts, {
-      signedExtrinsics: [signedTx],
+      signedExtrinsics: all,
     });
     current = await args.freshFingerprint();
   } catch (e) {
@@ -151,11 +180,16 @@ export async function preSubmit(args: {
       preparedFingerprint: (facts as { fingerprint: unknown }).fingerprint,
       currentFingerprint: current,
       signedCalls: [],
-      signedExtrinsics: [signedTx],
+      signedExtrinsics: all,
       decodeSignedExtrinsic: chain.signedExtrinsicDecoder(facts),
       requireTrustedDecoder: true,
       signedDryRun: pf.steps.map((s) => s.dryRun),
-      ...(plan.mode === "sequential" ? { sendIndex: 0, previousSteps: [] } : {}),
+      ...(plan.mode === "sequential"
+        ? {
+            sendIndex: args.sequential?.sendIndex ?? 0,
+            previousSteps: args.sequential?.previousSteps ?? [],
+          }
+        : {}),
       now: args.now,
       store: args.store,
     } as never);

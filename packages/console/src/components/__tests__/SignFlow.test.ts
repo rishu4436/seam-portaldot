@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { factsFromMetadata } from "@seam/compiler/browser";
+import { blockTimeFromFacts, buildSigningEnvelope, SeamChainError } from "@seam/chain/browser";
 import {
   engineApprovalCheck,
   newApprovalStore,
@@ -42,7 +43,9 @@ const chain = (dryRun = "unknown"): ChainFns => ({
       : recorded,
   ),
   signedExtrinsicDecoder: () => () => null,
-  blockTimeFromFacts: () => 6000,
+  // Chainsmith's real envelope builder; the block time comes from the V3 spec 3002 metadata itself.
+  blockTimeFromFacts: blockTimeFromFacts as never,
+  buildSigningEnvelope: buildSigningEnvelope as never,
 });
 const input = { policy: seq.policy, plan: demo.plan, manifest: demo.manifest };
 const base = {
@@ -69,9 +72,29 @@ describe("signing gates (real engine)", () => {
     const r = await preSign({ ...base, chain: c });
     expect(!r.res.ok && r.res.message).toMatch(/Preflight failed/);
   });
-  it("blocks before signing when the block time is unknown", async () => {
-    const r = await preSign({ ...base, chain: { ...chain(), blockTimeFromFacts: undefined } });
-    expect(!r.res.ok && r.res.message).toMatch(/block time/);
+  it("the real V3 metadata gives a block time, so the envelope is built and LIVE gets past the gate", async () => {
+    expect(blockTimeFromFacts(facts as never)).toBeGreaterThan(0);
+    const r = await preSign({ ...base, chain: chain() });
+    expect(
+      r.res.ok && (r.res.value.approvalInput.envelope as { expiresAt: string }).expiresAt,
+    ).toBe(new Date(now.getTime() + 63 * blockTimeFromFacts(facts as never)!).toISOString());
+  });
+  it("blocks before signing when the block time is unknown (NODE_MISSING_VALUE)", async () => {
+    const c = {
+      ...chain(),
+      buildSigningEnvelope: () => {
+        throw new SeamChainError(
+          "NODE_MISSING_VALUE",
+          "block time not in metadata; pass options.blockTimeMs",
+        );
+      },
+    };
+    const r = await preSign({ ...base, chain: c as never });
+    expect(!r.res.ok && r.res.message).toMatch(/NODE_MISSING_VALUE.*block time/);
+  });
+  it("blocks before signing when the envelope builder is missing", async () => {
+    const r = await preSign({ ...base, chain: { ...chain(), buildSigningEnvelope: undefined } });
+    expect(!r.res.ok && r.res.message).toMatch(/envelope builder/);
   });
   it("blocks the atomic-only policy on mode before signing", async () => {
     const r = await preSign({ ...base, input: { ...input, policy: demo.policy }, chain: chain() });

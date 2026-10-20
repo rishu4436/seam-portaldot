@@ -151,6 +151,12 @@ const fakeChain = async () =>
     })),
     signedExtrinsicDecoder: () => () => null,
     blockTimeFromFacts: () => 6000,
+    buildSigningEnvelope: (i: { signer: string; nonce: number; now: Date }) => ({
+      ...i,
+      mortalityBlocks: 64,
+      checkpoint: { number: 1, hash: "0x" + "11".repeat(32) },
+      expiresAt: new Date(i.now.getTime() + 63 * 6000).toISOString(),
+    }),
   }) as never;
 const noChain = async () => ({}) as never;
 

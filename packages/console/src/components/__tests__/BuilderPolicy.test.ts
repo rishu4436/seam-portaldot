@@ -6,11 +6,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { factsFromMetadata } from "@seam/compiler/browser";
+import { blockTimeFromFacts, buildSigningEnvelope } from "@seam/chain/browser";
 import { runPolicyGate } from "../../lib/policygate";
 import { preSign, type ChainFns } from "../../lib/signflow";
 import {
-  DEFAULT_BUILDER_FEE_CAP,
   derivePolicy,
+  feeCapFromPreflight,
   policyJson,
   readPolicyJson,
   tightenPolicy,
@@ -32,7 +33,7 @@ const facts = factsFromMetadata({
 const plan = demo.plan;
 const recipient = "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB";
 const derive = () => {
-  const d = derivePolicy(plan);
+  const d = derivePolicy(plan, { preflight: recorded });
   if (!d.ok) throw new Error(d.message);
   return d.policy;
 };
@@ -49,7 +50,8 @@ describe("builder policy (real engine)", () => {
     expect(p.allowedModes).toEqual(["sequential"]);
     expect(p.maxSteps).toBe(1);
     expect(p.maxNativeValue).toBe("0");
-    expect(p.maxFee).toBe(DEFAULT_BUILDER_FEE_CAP);
+    // Recorded V3 totalFee 1470878675697 + 25%, rounded up.
+    expect(p.maxFee).toBe("1838598344622");
     expect(p.allowUnknown).toEqual({ storageDeposit: true, dryRun: true });
   });
   it("allows its own plan with the recorded V3 preflight", () => {
@@ -61,7 +63,8 @@ describe("builder policy (real engine)", () => {
     const chain: ChainFns = {
       preflight: vi.fn(async () => recorded),
       signedExtrinsicDecoder: () => () => null,
-      blockTimeFromFacts: () => 6000,
+      blockTimeFromFacts: blockTimeFromFacts as never,
+      buildSigningEnvelope: buildSigningEnvelope as never,
     };
     const r = await preSign({
       chain,
@@ -105,18 +108,34 @@ describe("builder policy (real engine)", () => {
   });
   it("never loosens beyond the plan", () => {
     const t = tightenPolicy(derive(), {
-      maxFee: "9" + DEFAULT_BUILDER_FEE_CAP,
+      maxFee: "1838598344623",
       amounts: { "806707": "2", "1": "5" },
     });
     expect(t.ok).toBe(false);
     expect(!t.ok && t.issues.length).toBe(3);
+  });
+  it("fee cap is the preflight totalFee + 25%, rounded up, in bigint", () => {
+    expect(feeCapFromPreflight({ totalFee: { value: "4" } })).toBe("5");
+    expect(feeCapFromPreflight({ totalFee: { value: "5" } })).toBe("7");
+    expect(feeCapFromPreflight({ totalFee: { value: "123456789012345678901234567890" } })).toBe(
+      "154320986265432098626543209863",
+    );
+  });
+  it("no known totalFee: no fee cap, no policy, and the gate blocks", () => {
+    for (const pf of [undefined, { ...recorded, totalFee: { unknown: true } }, { steps: [] }]) {
+      const d = derivePolicy(plan, { preflight: pf });
+      expect(d.ok).toBe(false);
+      expect(!d.ok && d.code).toBe("FEE_CAP_UNKNOWN");
+      const g = runPolicyGate({ policy: d.ok ? d.policy : undefined, plan });
+      expect(!g.ok && g.codes).toEqual(["POLICY_MISSING"]);
+    }
   });
   it("has no default without a plan", () => {
     expect(derivePolicy(undefined as never).ok).toBe(false);
     expect(runPolicyGate({ policy: undefined, plan }).ok).toBe(false);
   });
   it("export JSON round-trips through the policy package's parsePolicy", () => {
-    const t = tightenPolicy(derive(), { maxFee: "4000000000000" });
+    const t = tightenPolicy(derive(), { maxFee: "1500000000000" });
     if (!t.ok) throw new Error(t.issues.join());
     const back = readPolicyJson(policyJson(t.policy));
     expect(back.ok && back.policy).toEqual(t.policy);
