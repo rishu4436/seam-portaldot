@@ -79,7 +79,7 @@ describe("seam-run setup and flow inputs (offline)", () => {
       "assets.transfer",
       "contracts.call",
       "assets.mint",
-      "assets.transfer",
+      "assets.mint",
     ]);
     expect(a[1].args).toEqual({ contract: "0x01", value: "0", gasLimit: "1", data: "0x01020304" });
   });

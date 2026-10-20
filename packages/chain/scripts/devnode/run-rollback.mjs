@@ -1,5 +1,7 @@
 // batch_all rollback on the local dev node: transfer, seam_demo settle and mint succeed inside Utility.batch_all,
-// then step 4 (an overdrawing transfer) fails it. The batch covers every kind of the atomic demo plan, so the
+// then step 4 (a mint of u128::MAX, which overflows the asset supply: Arithmetic(Overflow)) fails it. Preflight cannot
+// see that (it checks the asset exists and the signer's running balance, not supply arithmetic), so the plan passes
+// preflight and policy and is signed; the signed dry run at the submit gate is what catches it. The batch covers every kind of the atomic demo plan, so the
 // rollback proof's composition does too (compiler SEAM-012 rejects a proof that misses a kind).
 // 1) SEAM's own path, fully recorded (compile, preflight, signing envelope, policy rule by rule, approval, signing
 //    requests, gate check): the signed batch_all's dry run fails, so the submit gate blocks it (nothing sent).
@@ -9,7 +11,7 @@
 import { hexToU8a } from "@polkadot/util";
 import { decodeRuntime, storageKey, submitAndWatch, withClient } from "../../dist/index.js";
 import { ENDPOINT, ASSET_ID, devFacts, devKeys, loadState, saveEvidence, brief } from "./lib.mjs";
-import { devManifest, devPolicy, rollbackActions, runFlow } from "./flow.mjs";
+import { devManifest, devPolicy, rollbackActions, runFlow, U128_MAX } from "./flow.mjs";
 
 const facts = await devFacts(); // batchAllRollback: 'unknown' (not verified yet)
 const k = await devKeys();
@@ -60,7 +62,7 @@ const policy = devPolicy({
   contract: st.contract,
   overrides: {
     allowedModes: ["sequential", "atomic_verified", "atomic_unverified"],
-    maxAmountPerAsset: { [String(ASSET_ID)]: "1000000000000000" },
+    maxAmountPerAsset: { [String(ASSET_ID)]: U128_MAX },
   },
 });
 
@@ -140,7 +142,7 @@ const result = {
   state: { before, afterGate, after },
   innerEffects: innerEffects.map((e) => `${e.pallet}.${e.name}`),
   conclusion: rolledBack
-    ? "ROLLED BACK: batch_all failed as a whole (ExtrinsicFailed, the inner error from step 4); steps 1-3 (transfer, contract settle, mint) left no events and no balance change. Only the fee was charged (nonce advanced)."
+    ? "ROLLED BACK: batch_all failed as a whole (ExtrinsicFailed, the inner error from step 4, a supply-overflowing mint); steps 1-3 (transfer, contract settle, mint) left no events and no balance change. Only the fee was charged (nonce advanced)."
     : "NOT ROLLED BACK (or inconclusive): see state and events",
   batchAllRollback: rolledBack ? "verified" : "unknown",
 };

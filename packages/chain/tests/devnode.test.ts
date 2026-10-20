@@ -128,14 +128,16 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
     const { file, json } = evidenceOf(run("run-rollback.mjs"));
     expect(json.seamGate).toMatchObject({ ok: false, stage: "submit_gate", nothingSent: true });
     expect(json.recordingVersion).toBe(2);
-    // the batch covers every kind of the atomic plan (SEAM-012): transfer, contract call, mint, then a failing transfer
+    // the batch covers every kind of the atomic plan (SEAM-012): transfer, contract call, mint, then a mint that
+    // overflows the supply on chain. Preflight passes every step (no pre-sign balance failure), so it is signed.
     expect(json.preflight.steps).toHaveLength(4);
     expect(json.plan.steps.map((s: { kind: string }) => s.kind)).toEqual([
       "assets.transfer",
       "contracts.call",
       "assets.mint",
-      "assets.transfer",
+      "assets.mint",
     ]);
+    expect(json.preflight.steps.map((s: { dryRun: string }) => s.dryRun)).not.toContain("failed");
     expect(json.envelope.checkpoint.hash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(json.gateChecks).toHaveLength(1);
     expect(json.gateChecks[0]).toMatchObject({ phase: "blocked", check: { ok: false } });
@@ -148,7 +150,9 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
     expect(JSON.stringify(json)).not.toMatch(/"signature"|\/\/Alice/);
     expect(json.seamGate.reasons.map((r: any) => r.code)).toEqual(["signed_dry_run_failed"]);
     expect(json.directSubmit).toMatchObject({ status: "finalized", success: false });
-    expect(json.directSubmit.dispatchError).toMatch(/assets\.BalanceLow/);
+    // ArithmeticError::Overflow from Assets.mint's checked_add on the supply (step 4), not a balance overdraft
+    expect(json.directSubmit.dispatchError).toBe("Arithmetic");
+    expect(JSON.stringify(json.directSubmit.decodedEvents)).toMatch(/Overflow/);
     expect(json.innerEffects).toEqual([]);
     expect(json.state.after.asset).toEqual(json.state.before.asset);
     expect(json.state.after.aliceNonce).toBe(json.state.before.aliceNonce + 1);
