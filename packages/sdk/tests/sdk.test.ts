@@ -207,7 +207,7 @@ describe("Explanations", () => {
     const text = explainPlan(compile(m, facts));
     expect(text).toContain("cannot run on this chain");
     expect(text).toContain(
-      "nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec 1002)",
+      "nft: can't run, because Nfts.mint cannot be compiled: this runtime's metadata has no Nfts.mint call (runtime spec 1002), so SEAM does not guess the call layout. It compiles on a runtime that has it, such as Portaldot V3 (spec 3002)",
     );
   });
   it("list each policy block", () => {

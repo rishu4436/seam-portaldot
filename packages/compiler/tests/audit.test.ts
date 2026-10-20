@@ -343,7 +343,9 @@ describe("SEAM-006/007 revive.call and nfts.mint: honest capability blockers", (
         callIndex: null,
         reasonCode: "NO_OBSERVED_V3_METADATA",
       });
-      expect(p.steps[0]!.reason).toMatch(/no observed V3 Revive\/Nfts metadata exists/);
+      expect(p.steps[0]!.reason).toMatch(
+        /this runtime's metadata has no (Revive\.call|Nfts\.mint) call/,
+      );
       expect(p.outerCall).toBeUndefined();
     },
   );

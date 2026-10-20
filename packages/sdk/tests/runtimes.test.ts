@@ -52,7 +52,7 @@ describe("compiling one Manifest against different real runtimes", () => {
     expect(mainnet.capabilities["Revive.call"]!.status).toBe("not_observed");
     expect(devnode.capabilities["Revive.call"]!.status).toBe("observed");
     expect(explainPlan(compile(demo(), devnode))).toContain(
-      "nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists",
+      "nft: can't run, because Nfts.mint cannot be compiled: this runtime's metadata has no Nfts.mint call",
     );
   });
 
