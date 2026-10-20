@@ -10,6 +10,7 @@ import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
 import { V3Evidence } from "./components/V3Evidence";
 import { WalletDemoCard } from "./components/WalletDemo";
 import { ManifestBuilder } from "./components/ManifestBuilder";
+import type { BuilderSelection } from "./components/BuilderPolicy";
 import {
   approveWalletDemo,
   walletDemo,
@@ -29,6 +30,7 @@ import {
   DowngradeWarning,
   JsonActions,
   liveFactsStep,
+  PolicyGatePanel,
 } from "./components/Modes";
 import type { PolicyLike } from "./lib/limits";
 import {
@@ -329,6 +331,31 @@ export default function App() {
     [],
   );
   const demoFacts = useMemo(() => walletDemoFacts(), []);
+  // Builder plans: plan + compiler manifest + the strict policy derived from that plan go through the same real gate,
+  // engine-bound approval, re-preflight and submit gate as the demo.
+  const [builderSel, setBuilderSel] = useState<BuilderSelection & { facts: unknown }>();
+  const [builderEngine, setBuilderEngine] = useState<GateOutcome>();
+  const [builderApproval, setBuilderApproval] = useState<Approval>();
+  const [builderChecking, setBuilderChecking] = useState(false);
+  const builderPlan = useMemo(
+    () => (builderSel ? walletDemoPlan(builderSel.plan as never) : undefined),
+    [builderSel],
+  );
+  const builderFacts = useMemo(() => {
+    const f = builderSel?.facts as { fingerprint?: object } | undefined;
+    return f?.fingerprint
+      ? ({
+          fingerprint: { ...f.fingerprint, digest: builderSel!.plan.fingerprintDigest },
+          capabilities: [],
+          behaviour: [],
+          endpoint: "builder compile (live facts)",
+          discoveredAtBlock: 0,
+        } as unknown as RuntimeFacts)
+      : undefined;
+  }, [builderSel]);
+  const builderInput = builderSel
+    ? { policy: builderSel.policy, plan: builderSel.plan, manifest: builderSel.manifest }
+    : undefined;
   const real = source === "testchain";
   const manifest = useMemo(
     () => (real ? tc.demoManifest() : api.demoManifest(scenario === "nft")),
@@ -582,12 +609,60 @@ export default function App() {
                 }}
               />
             )}
-            {!walletDemoOn && <ManifestBuilder />}
+            {!walletDemoOn && (
+              <ManifestBuilder
+                onUsePolicy={(sel) => {
+                  setBuilderSel(sel);
+                  setBuilderEngine(undefined);
+                  setBuilderApproval(undefined);
+                }}
+              />
+            )}
+            {!walletDemoOn && builderSel && builderPlan && (
+              <section className="card" aria-label="Builder approval">
+                <h3>Builder plan approval</h3>
+                <p className="muted small">
+                  The policy engine checks this plan against its derived policy with a real
+                  preflight. Approve is only possible when the engine allows it.
+                </p>
+                <button
+                  disabled={builderChecking}
+                  onClick={async () => {
+                    setBuilderChecking(true);
+                    try {
+                      const b = await import("./lib/browserChain");
+                      const rpc = b.transportFor(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
+                      const g = await engineApprovalCheck({
+                        chain: await loadChainFns(),
+                        send: rpc,
+                        readFacts: async () => {
+                          const r = await liveFactsStep(rpc);
+                          return r.ok ? r.facts : undefined;
+                        },
+                        input: builderInput!,
+                        now: new Date(),
+                      });
+                      setBuilderEngine(g);
+                      setBuilderApproval(
+                        g.ok
+                          ? approveWalletDemo(builderPlan, Date.now(), builderSel.policy as never)
+                          : undefined,
+                      );
+                    } finally {
+                      setBuilderChecking(false);
+                    }
+                  }}
+                >
+                  {builderChecking ? "Checking…" : "Check policy and approve"}
+                </button>
+                {builderEngine && <PolicyGatePanel gate={builderEngine} />}
+              </section>
+            )}
             <LivePanel
-              plan={walletDemoOn ? demoPlan : plan}
-              facts={walletDemoOn ? demoFacts : facts}
-              approval={walletDemoOn ? demoApproval : approval}
-              policyInput={walletDemoOn ? demoPolicyInput : undefined}
+              plan={walletDemoOn ? demoPlan : (builderPlan ?? plan)}
+              facts={walletDemoOn ? demoFacts : builderPlan ? builderFacts : facts}
+              approval={walletDemoOn ? demoApproval : builderPlan ? builderApproval : approval}
+              policyInput={walletDemoOn ? demoPolicyInput : builderInput}
             />
             <V3Evidence />
           </>
