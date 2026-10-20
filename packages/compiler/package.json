@@ -28,7 +28,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./facts": {
+      "types": "./dist/facts-entry.d.ts",
+      "import": "./dist/facts-entry.js"
+    },
+    "./types/portaldot-spec1002.json": "./types/portaldot-spec1002.json"
   },
   "files": [
     "dist",

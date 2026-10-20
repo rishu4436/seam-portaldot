@@ -67,7 +67,7 @@ describe("browser entry has no node-only code", () => {
       logLevel: "silent",
     });
 
-  it("bundles for the browser with no node builtin, no ws client and no @seam/compiler runtime", () => {
+  it("bundles for the browser with no node builtin, no ws client and only the pure facts path of @seam/compiler", () => {
     const r = bundle("browser.ts");
     const inputs = Object.keys(r.metafile.inputs);
     expect(inputs.some((i) => /^(node:|fs$|net$|child_process$)/.test(i))).toBe(false);
@@ -78,9 +78,15 @@ describe("browser entry has no node-only code", () => {
         ),
       ),
     ).toBe(false);
-    expect(inputs.some((i) => /packages\/compiler\/|node_modules\/@seam\/compiler\//.test(i))).toBe(
-      false,
-    );
+    // Only the pure facts path of @seam/compiler (`@seam/compiler/facts`) may be bundled; never its node-only modules.
+    const compilerFiles = inputs
+      .filter((i) => /(packages|node_modules\/@seam)\/compiler\/|^\.\.\/compiler\//.test(i))
+      .map((i) => i.replace(/^.*\/(dist|src)\//, ""));
+    expect(
+      compilerFiles.filter(
+        (f) => !/^(facts-entry|facts|runtime|layout|canonical|types)\.(js|ts)$/.test(f),
+      ),
+    ).toEqual([]);
     const text = r.outputFiles[0]!.text;
     expect(text).not.toMatch(/node:(fs|net|path|url|child_process|os|crypto)/);
     expect(text).not.toMatch(/require\(["'](fs|net|child_process|ws|node:[a-z_]+)["']\)/);

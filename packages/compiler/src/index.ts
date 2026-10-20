@@ -20,12 +20,11 @@ export {
   metadataVersionOf,
   needsPinnedTypes,
   NO_PINNED_TYPES,
-  readPinnedTypes,
   parsePinnedTypes,
-  PORTALDOT_SPEC1002_TYPES_PATH,
   type PinnedTypes,
   type LoadedRuntime,
 } from "./runtime.js";
+export { readPinnedTypes, PORTALDOT_SPEC1002_TYPES_PATH } from "./pinned-file.js";
 export { parseNativeAddress, parseH160, type NativeAddress } from "./address.js";
 export {
   encodeInkMessage,
