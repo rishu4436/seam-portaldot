@@ -319,8 +319,30 @@ The result (`LiveCapabilities`):
 
   The `assets.*` and `contracts.call` kinds carry no code, as in the compiler; `reason` explains them.
 
-The compiler is the source of truth for whether SEAM supports a kind. `tests/live-capabilities.test.ts` checks that `supported` and `reasonCode` equal what `compile()` gives on the same `facts`, for the spec 3002 fixture and for mutated versions of it.
-
-The expected argument shapes (`ACTION_SHAPES`) mirror the compiler: `V3_SHAPES` for the revive kinds and `nfts.mint`, and the `ARG_BINDINGS` names for `assets.*` and `contracts.call`. For `contracts.call`, `storageDepositLimit` is optional, because spec 1002 has none. `tests/live-capabilities.test.ts` keeps the tables identical to the compiler's. It also checks every verdict against `compile()` on the real spec 3002 and spec 1002 metadata.
+The verdict (`supported`, `reasonCode`, `reason`) is `supportedKinds(facts)` from `@seam/compiler/browser`, unchanged; this module has no support rules of its own. Indices are reported only when the metadata reading agrees with `supportedKinds`; if they ever differ, the action is unsupported. `tests/live-capabilities.test.ts` checks that every field equals `supportedKinds` and `compile()` on the same `facts`, for the spec 3002 and spec 1002 fixtures and for mutated versions of spec 3002. `@seam/compiler` does not depend on `@seam/chain`, so there is no cycle.
 
 `scripts/v3-live-capabilities.mjs` runs it read-only against the V3 test node. It writes `evidence/testnet-v3/capabilities-<ts>.json`.
+
+## Browser preflight
+
+`@seam/chain/browser` exports the same preflight as the node entry, over a plain JSON-RPC `send`:
+
+```ts
+import { preflight, preflightReport } from "@seam/chain/browser";
+
+const send = (method: string, params: unknown[]) => myFetchJsonRpc(method, params); // RpcSend
+const result = await preflight(send, plan, facts, { at, nonce, signedExtrinsics }); // PreflightResult
+const report = await preflightReport(send, plan, facts); // PreflightReport (coverage, transactions, nonce, ...)
+```
+
+- `preflight(rpc: RpcSend | RpcClient, plan: Plan, facts: RuntimeFacts, opts?: PreflightCoreOptions): Promise<PreflightResult>` returns `{ steps: [{ actionId, weight, fee, storageDeposit, proofSize?, dryRun, note }], totalFee }`, one step per plan step. This is what `@seam/policy/browser` `assertPolicyAllows` / `gatePolicy` take as `preflight`.
+- Node and browser run one implementation, `preflightWithClient` in `src/preflight-core.ts`. The node `preflight(endpoint, ...)` only opens the connection around it.
+- Methods it sends, all read-only: `chain_getBlockHash`, `chain_getHeader`, `state_getRuntimeVersion`, `system_accountNextIndex`, `payment_queryInfo`, `payment_queryFeeDetails`, `state_getStorage` (asset existence, Revive account mapping), `contracts_call` or `state_call ContractsApi_call` (for `contracts.call` steps), and `system_dryRun` only when signed extrinsics are given.
+- Fee and weight come from `payment_queryInfo` on a fake-signed extrinsic: the signer's address, the nonce, the era from the block and filler signature bytes (`fakeSignedExtrinsic`). It is never submittable and no key is needed.
+- `dryRun`:
+  - `"ok"` or `"failed"` for a step only from the node: `system_dryRun` of a really signed extrinsic, or a contract dry run for `contracts.call`.
+  - To get a signed dry run, pass `opts.signedExtrinsics`: the real signed extrinsics, one per transaction SEAM would send (same order as the signing requests; a sequential plan has one per step, an atomic plan one batch). SEAM never signs; without them `dryRun` is `"unknown"`.
+  - A fake signature is never dry-run: the node rejects it.
+- Anything the node does not answer is `{ unknown: true }`, or `dryRun: "unknown"`. An RPC error on `payment_queryInfo` leaves that step's fee and weight unknown and `totalFee` unknown, and the gate blocks. `storageDeposit` is always unknown (the runtime does not report it). If the node cannot be reached at all, `preflight` throws.
+
+`scripts/v3-live-preflight.mjs` runs it read-only against the V3 test node for the demo plan (`packages/console/src/demo/v3-demo-transfer.json`) and records Sentinel's gate verdict with the sequential demo policy. It writes `evidence/testnet-v3/preflight-<ts>.json`.

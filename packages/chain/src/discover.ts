@@ -23,7 +23,6 @@ import {
   withClient,
   type ConnectOptions,
   type Endpoint,
-  type RpcClient,
 } from "./rpc.js";
 import type {
   BlockRef,
@@ -36,25 +35,10 @@ import type {
 
 export interface DiscoverOptions extends ConnectOptions, FactsOptions {}
 
+export { readHead } from "./rpc-core.js";
+import { asHash, readHead } from "./rpc-core.js";
+
 const HASH_RE = /^0x[0-9a-f]{64}$/;
-
-function asHash(v: unknown, what: string): Hex {
-  if (typeof v !== "string" || !HASH_RE.test(v.toLowerCase())) {
-    throw new SeamChainError(
-      "NODE_MISSING_VALUE",
-      `node returned no valid ${what} (got ${JSON.stringify(v)})`,
-    );
-  }
-  return v.toLowerCase() as Hex;
-}
-
-/** Best block hash and number. */
-export async function readHead(client: RpcClient): Promise<BlockRef> {
-  const hash = asHash(await rpc(client, "chain_getBlockHash", []), "best block hash");
-  const header = await rpc<{ number: unknown } | null>(client, "chain_getHeader", [hash]);
-  if (!header) throw new SeamChainError("NODE_MISSING_VALUE", `no header for best block ${hash}`);
-  return { number: toSafeNumber(header.number), hash };
-}
 
 /** Finalized head: the block to use as the era checkpoint in a signing envelope. */
 export async function readCheckpoint(

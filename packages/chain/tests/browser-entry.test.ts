@@ -67,32 +67,61 @@ describe("browser entry has no node-only code", () => {
       logLevel: "silent",
     });
 
-  it("bundles for the browser with no node builtin, no ws client and only the pure facts path of @seam/compiler", () => {
+  it("bundles for the browser with no node builtin and no ws package; @seam/compiler only via its ./facts and ./browser entries", () => {
     const r = bundle("browser.ts");
     const inputs = Object.keys(r.metafile.inputs);
     expect(inputs.some((i) => /^(node:|fs$|net$|child_process$)/.test(i))).toBe(false);
-    expect(
-      inputs.some((i) =>
-        /node_modules\/(ws|@polkadot\/rpc-provider|@polkadot\/rpc-provider\/node_modules\/ws)\//.test(
-          i,
-        ),
-      ),
-    ).toBe(false);
-    // Only the pure facts path of @seam/compiler (`@seam/compiler/facts`) may be bundled; never its node-only modules.
+    // The `ws` npm package (node WebSocket) is never bundled; @polkadot/x-ws resolves to its browser build.
+    expect(inputs.some((i) => /node_modules\/ws\//.test(i))).toBe(false);
+    expect(inputs.some((i) => /x-ws\/(node|cjs)/.test(i))).toBe(false);
+    // Only files that @seam/compiler/browser itself bundles (Forge's browser-safe entry) may come from the compiler.
+    const compilerBrowser = new Set(
+      Object.keys(
+        esbuild.buildSync({
+          entryPoints: [fileURLToPath(new URL("../../compiler/dist/browser.js", import.meta.url))],
+          bundle: true,
+          platform: "browser",
+          format: "esm",
+          write: false,
+          metafile: true,
+          logLevel: "silent",
+        }).metafile.inputs,
+      ).map((i) => i.replace(/^.*\/compiler\/(dist|src)\//, "")),
+    );
     const compilerFiles = inputs
       .filter((i) => /(packages|node_modules\/@seam)\/compiler\/|^\.\.\/compiler\//.test(i))
       .map((i) => i.replace(/^.*\/(dist|src)\//, ""));
-    expect(
-      compilerFiles.filter(
-        (f) => !/^(facts-entry|facts|runtime|layout|canonical|types)\.(js|ts)$/.test(f),
-      ),
-    ).toEqual([]);
+    expect(compilerFiles.length).toBeGreaterThan(0);
+    expect(compilerFiles.filter((f) => !compilerBrowser.has(f))).toEqual([]);
     const text = r.outputFiles[0]!.text;
     expect(text).not.toMatch(/node:(fs|net|path|url|child_process|os|crypto)/);
     expect(text).not.toMatch(/require\(["'](fs|net|child_process|ws|node:[a-z_]+)["']\)/);
     expect(text).toMatch(/verifySignedAgainstRequest/);
     expect(text).toMatch(/function buildSigningRequest\b/);
     expect(text).toMatch(/function buildSigningRequests\b/);
+  });
+
+  it("@seam/chain's own browser code pulls in no RPC provider or ws client (only @seam/compiler/browser brings @polkadot/api)", () => {
+    const r = esbuild.buildSync({
+      entryPoints: [entry("browser.ts")],
+      bundle: true,
+      platform: "browser",
+      format: "esm",
+      write: false,
+      metafile: true,
+      logLevel: "silent",
+      external: ["@seam/compiler/browser"],
+    });
+    const inputs = Object.keys(r.metafile.inputs);
+    expect(
+      inputs.filter((i) => /@polkadot\/(rpc-provider|api|x-ws)\/|node_modules\/ws\//.test(i)),
+    ).toEqual([]);
+  });
+
+  it("no dependency cycle: @seam/compiler does not depend on @seam/chain", () => {
+    const pkg = require("../../compiler/package.json");
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies };
+    expect(Object.keys(deps).filter((d) => d.startsWith("@seam/"))).toEqual([]);
   });
 
   it("control: the node entry cannot be bundled for the browser (the check can fail)", () => {

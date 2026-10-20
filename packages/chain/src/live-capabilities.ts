@@ -1,121 +1,42 @@
 import { stringCamelCase } from "@polkadot/util";
 import {
   computeFingerprintDigest,
+  KIND_TO_CAPABILITY,
+  supportedKinds,
+  type ActionKind,
   type Capability,
   type Hex,
+  type KindAvailability,
   type RuntimeFacts,
   type RuntimeFingerprint,
   type StepReasonCode,
-} from "@seam/compiler/facts";
+} from "@seam/compiler/browser";
 import { SeamChainError } from "./errors.js";
 import { factsFromChainInputs, pinnedInputs, type FactsOptions } from "./facts-core.js";
 import { metadataLayoutHash } from "./metadata-layout.js";
 import { quietly } from "./quiet.js";
 import { loadRuntimeCore } from "./runtime-core.js";
+import type { RpcSend } from "./rpc-core.js";
 import type { BlockRef, ChainInputs } from "./types.js";
+export type { RpcSend } from "./rpc-core.js";
 
 /**
- * Live capabilities (browser-safe, read-only): for each SEAM action kind, whether the connected runtime supports it,
- * read from that runtime's own metadata. Indices, argument names and types come only from the metadata; nothing is
- * guessed. A missing pallet or call, an argument list that differs from what SEAM encodes, or types that cannot be
- * resolved make the action unsupported, with a machine-readable code. The shapes mirror @seam/compiler (V3_SHAPES in
- * v3-bindings.ts and ARG_BINDINGS in compile.ts); tests/live-capabilities.test.ts keeps them identical and checks every
- * verdict against the compiler itself.
+ * Live capabilities (browser-safe, read-only): for each SEAM action kind, what the connected runtime's own metadata
+ * shows (pallet and call indices, argument names and types) and whether SEAM supports it. The support verdict
+ * (`supported`, `reasonCode`, `reason`) is the compiler's: @seam/compiler/browser `supportedKinds(facts)`, unchanged.
+ * This module only reads; it has no support rules of its own. Indices are taken only when the metadata reading and
+ * supportedKinds agree; if they ever differ the action is reported unsupported (fail closed).
  */
 
-export const SEAM_ACTION_KINDS = [
-  "assets.transfer",
-  "assets.mint",
-  "nfts.mint",
-  "contracts.call",
-  "revive.call",
-  "revive.instantiate_with_code",
-  "revive.map_account",
-] as const;
-export type SeamActionKind = (typeof SEAM_ACTION_KINDS)[number];
+/** The compiler's kinds, in its order. */
+export const SEAM_ACTION_KINDS = Object.keys(KIND_TO_CAPABILITY) as ActionKind[];
+export type SeamActionKind = ActionKind;
 
-/** Same mapping as @seam/compiler KIND_TO_CAPABILITY. */
-export const ACTION_CAPABILITY: Record<SeamActionKind, string> = {
-  "assets.transfer": "Assets.transfer_keep_alive",
-  "assets.mint": "Assets.mint",
-  "nfts.mint": "Nfts.mint",
-  "contracts.call": "Contracts.call",
-  "revive.call": "Revive.call",
-  "revive.instantiate_with_code": "Revive.instantiate_with_code",
-  "revive.map_account": "Revive.map_account",
-};
+/** The compiler's KIND_TO_CAPABILITY (same object). */
+export const ACTION_CAPABILITY: Record<SeamActionKind, string> = KIND_TO_CAPABILITY;
 
-export type ArgClass =
-  | "h160"
-  | "account"
-  | "balance"
-  | "optBalance"
-  | "weight"
-  | "bytes"
-  | "id"
-  | "optSalt"
-  | "optionNone";
-
-/** Expected argument list per kind: camelCased metadata names (with accepted aliases) and type classes. */
-export const ACTION_SHAPES: Record<
-  SeamActionKind,
-  readonly { name: string; class: ArgClass; aliases?: readonly string[]; optional?: boolean }[]
-> = {
-  "assets.transfer": [
-    { name: "id", class: "id" },
-    { name: "target", class: "account" },
-    { name: "amount", class: "balance" },
-  ],
-  "assets.mint": [
-    { name: "id", class: "id" },
-    { name: "beneficiary", class: "account" },
-    { name: "amount", class: "balance" },
-  ],
-  "nfts.mint": [
-    { name: "collection", class: "id" },
-    { name: "item", class: "id" },
-    { name: "mintTo", class: "account" },
-    { name: "witnessData", class: "optionNone" },
-  ],
-  "contracts.call": [
-    { name: "dest", class: "account" },
-    { name: "value", class: "balance" },
-    { name: "gasLimit", class: "weight" },
-    // Older pallet-contracts (e.g. Portaldot mainnet spec 1002) has no storage_deposit_limit; the compiler binds by name.
-    { name: "storageDepositLimit", class: "optBalance", optional: true },
-    { name: "data", class: "bytes" },
-  ],
-  "revive.call": [
-    { name: "dest", class: "h160" },
-    { name: "value", class: "balance" },
-    { name: "gasLimit", class: "weight", aliases: ["weightLimit"] },
-    { name: "storageDepositLimit", class: "optBalance" },
-    { name: "data", class: "bytes" },
-  ],
-  "revive.instantiate_with_code": [
-    { name: "value", class: "balance" },
-    { name: "gasLimit", class: "weight", aliases: ["weightLimit"] },
-    { name: "storageDepositLimit", class: "optBalance" },
-    { name: "code", class: "bytes" },
-    { name: "data", class: "bytes" },
-    { name: "salt", class: "optSalt" },
-  ],
-  "revive.map_account": [],
-};
-
-/** Kinds the compiler encodes only from observed V3 metadata (its V3_KINDS); the other kinds carry no reason code. */
-export const V3_ACTION_KINDS: ReadonlySet<SeamActionKind> = new Set<SeamActionKind>([
-  "nfts.mint",
-  "revive.call",
-  "revive.instantiate_with_code",
-  "revive.map_account",
-]);
-
-/** Reason codes: exactly the compiler's StepReasonCode values (same as supportedKinds / compile()). */
-export type CapabilityReasonCode = Extract<
-  StepReasonCode,
-  "NO_OBSERVED_V3_METADATA" | "V3_ARG_SHAPE_MISMATCH"
->;
+/** Reason codes: the compiler's StepReasonCode values, as supportedKinds sets them. */
+export type CapabilityReasonCode = StepReasonCode;
 
 /** What was read from the metadata, independent of the support verdict. */
 export type CapabilityPresence = "observed" | "pallet_missing" | "call_missing" | "unreadable";
@@ -136,7 +57,7 @@ export interface ActionCapability {
   /** What the metadata shows for the pallet/call. */
   presence: CapabilityPresence;
   supported: boolean;
-  /** Set on unsupported V3 kinds, with the compiler's codes; absent otherwise (as in the compiler). */
+  /** supportedKinds' reasonCode for an unsupported kind, unchanged; absent when it gives none. */
   reasonCode?: CapabilityReasonCode;
   reason: string;
   /** From the metadata only; null when the call is not there. */
@@ -156,72 +77,6 @@ export interface LiveCapabilities {
   actions: Record<SeamActionKind, ActionCapability>;
   /** The RuntimeFacts these were derived from: pass them to the compiler (compile / supportedKinds). */
   facts: RuntimeFacts;
-}
-
-const UINT = /^u(8|16|32|64|128)$/;
-const BALANCE = /^u(64|128)$/;
-const stripCompact = (t: string) => t.replace(/^Compact<(.+)>$/, "$1");
-
-export function isWeightV2RawType(rawType: string): boolean {
-  try {
-    const t = JSON.parse(rawType);
-    return !!t && typeof t === "object" && Object.keys(t).sort().join(",") === "proofSize,refTime";
-  } catch {
-    return false;
-  }
-}
-
-/** Same rules as @seam/compiler matchesClass. */
-export function argMatchesClass(cls: ArgClass, rawType: string): boolean {
-  switch (cls) {
-    case "h160":
-      return rawType === "H160" || rawType === "[u8;20]";
-    case "account":
-      return (
-        rawType === "AccountId32" ||
-        rawType === "[u8;32]" ||
-        rawType === "AccountId" ||
-        rawType.includes('"Id":"AccountId"')
-      );
-    case "balance":
-      return BALANCE.test(stripCompact(rawType));
-    case "optBalance":
-      return BALANCE.test(stripCompact(rawType.replace(/^Option<(.+)>$/, "$1")));
-    case "weight":
-      return isWeightV2RawType(rawType) || /^u64$/.test(stripCompact(rawType));
-    case "bytes":
-      return rawType === "Bytes" || rawType === "Vec<u8>";
-    case "id":
-      return UINT.test(stripCompact(rawType));
-    case "optSalt":
-      return rawType === "Option<[u8;32]>" || rawType === "Option<H256>";
-    case "optionNone":
-      return /^Option</.test(rawType);
-  }
-}
-
-/** Pure check of observed args against the kind's shape. Returns undefined when they match, else a reason. */
-export function shapeMismatch(kind: SeamActionKind, args: ActionArg[]): string | undefined {
-  const full = ACTION_SHAPES[kind];
-  const names = new Set(args.map((a) => a.name));
-  // An optional argument is dropped from the expected list only when the metadata does not have it at all.
-  const shape = full.filter(
-    (s) => !s.optional || names.has(s.name) || (s.aliases ?? []).some((al) => names.has(al)),
-  );
-  const observed = args.map((a) => `${a.name}: ${a.rawType ?? a.type}`).join(", ") || "none";
-  if (args.length !== shape.length)
-    return `expected ${shape.length} arguments (${shape.map((s) => s.name).join(", ") || "none"}), metadata has ${args.length} (${observed})`;
-  for (let i = 0; i < shape.length; i++) {
-    const want = shape[i]!;
-    const got = args[i]!;
-    if (got.name !== want.name && !want.aliases?.includes(got.name))
-      return `argument ${i} should be "${want.name}", metadata has "${got.name}" (${observed})`;
-    if (got.rawType === null)
-      return `the type of "${got.name}" (${got.type}) could not be resolved`;
-    if (!argMatchesClass(want.class, got.rawType))
-      return `argument "${want.name}" should be ${want.class}, metadata has ${got.rawType} (${observed})`;
-  }
-  return undefined;
 }
 
 function palletNames(loaded: ReturnType<typeof loadRuntimeCore>): Set<string> {
@@ -250,6 +105,46 @@ function resolveRaw(registry: Reg, type: string, depth = 0): string {
   return raw;
 }
 
+type Reading = Pick<ActionCapability, "presence" | "palletIndex" | "callIndex" | "args">;
+
+/** What the metadata shows for one call: presence, indices and arguments. No verdict. */
+function readCall(
+  loaded: ReturnType<typeof loadRuntimeCore>,
+  pallets: Set<string>,
+  pallet: string,
+  cap: Capability | undefined,
+): Reading {
+  const none = (presence: CapabilityPresence): Reading => ({
+    presence,
+    palletIndex: null,
+    callIndex: null,
+    args: [],
+  });
+  if (!pallets.has(pallet)) return none("pallet_missing");
+  if (!cap || cap.status === "not_observed") return none("call_missing");
+  if (
+    cap.status !== "observed" ||
+    !Number.isInteger(cap.palletIndex) ||
+    !Number.isInteger(cap.callIndex)
+  )
+    return none("unreadable");
+  try {
+    const fn = loaded.registry.findMetaCall(new Uint8Array([cap.palletIndex!, cap.callIndex!]));
+    const args = fn.meta.args.map((a) => {
+      let rawType: string | null = null;
+      try {
+        rawType = resolveRaw(loaded.registry, a.type.toString());
+      } catch {
+        /* stays null */
+      }
+      return { name: stringCamelCase(a.name.toString()), type: a.type.toString(), rawType };
+    });
+    return { presence: "observed", palletIndex: cap.palletIndex!, callIndex: cap.callIndex!, args };
+  } catch {
+    return none("unreadable");
+  }
+}
+
 /**
  * Pure: chain inputs (as read from a node) -> live capabilities. Uses the same facts builder as discovery, so the
  * fingerprint and its digest are identical to the compiler's. `opts` as for factsFromChainInputs (V13 needs typesBundle).
@@ -266,82 +161,49 @@ export function liveCapabilities(inputs: ChainInputs, opts: FactsOptions = {}): 
     throw new SeamChainError("FACTS_MISMATCH", (e as Error).message);
   }
   const pallets = palletNames(loaded);
+  // The verdict: the compiler's, for these exact facts. Invalid facts throw there; surface that as FACTS_MISMATCH.
+  let verdicts: KindAvailability[];
+  try {
+    verdicts = supportedKinds(facts);
+  } catch (e) {
+    throw new SeamChainError(
+      "FACTS_MISMATCH",
+      `supportedKinds rejected the facts: ${(e as Error).message}`,
+    );
+  }
+  const byKind = new Map(verdicts.map((v) => [v.kind, v]));
   const actions = {} as Record<SeamActionKind, ActionCapability>;
   for (const kind of SEAM_ACTION_KINDS) {
     const capability = ACTION_CAPABILITY[kind];
     const [pallet] = capability.split(".");
     const cap: Capability | undefined = facts.capabilities[capability];
-    const base = { kind, capability, palletIndex: null, callIndex: null, args: [] as ActionArg[] };
-    const v3 = V3_ACTION_KINDS.has(kind);
-    const missing = (presence: CapabilityPresence, reason: string): ActionCapability => ({
-      ...base,
-      presence,
+    const reading = readCall(loaded, pallets, pallet!, cap);
+    const v = byKind.get(kind);
+    const unsupported = (reason: string, reasonCode?: StepReasonCode): ActionCapability => ({
+      kind,
+      capability,
+      ...reading,
       supported: false,
-      ...(v3 ? { reasonCode: "NO_OBSERVED_V3_METADATA" as const } : {}),
+      ...(reasonCode ? { reasonCode } : {}),
       reason,
     });
-    if (!pallets.has(pallet!)) {
-      actions[kind] = missing("pallet_missing", `this runtime has no ${pallet} pallet`);
-      continue;
-    }
-    if (!cap || cap.status === "not_observed") {
-      actions[kind] = missing(
-        "call_missing",
-        `the ${pallet} pallet has no ${capability} call on this runtime`,
+    if (!v) actions[kind] = unsupported("the compiler's supportedKinds did not report this kind");
+    else if (!v.supported) actions[kind] = unsupported(v.reason, v.reasonCode);
+    else if (
+      reading.presence !== "observed" ||
+      reading.palletIndex !== v.palletIndex ||
+      reading.callIndex !== v.callIndex
+    )
+      actions[kind] = unsupported(
+        `the compiler reports ${capability} at ${v.palletIndex}/${v.callIndex}, but the metadata reading is ${reading.presence} at ${reading.palletIndex ?? "-"}/${reading.callIndex ?? "-"}`,
       );
-      continue;
-    }
-    if (
-      cap.status !== "observed" ||
-      !Number.isInteger(cap.palletIndex) ||
-      !Number.isInteger(cap.callIndex)
-    ) {
-      actions[kind] = {
-        ...base,
-        presence: "unreadable",
-        supported: false,
-        reason: `${capability} could not be read completely from the metadata`,
-      };
-      continue;
-    }
-    const palletIndex = cap.palletIndex!;
-    const callIndex = cap.callIndex!;
-    let args: ActionArg[];
-    let unresolved = false;
-    try {
-      const fn = loaded.registry.findMetaCall(new Uint8Array([palletIndex, callIndex]));
-      args = fn.meta.args.map((a) => {
-        let rawType: string | null = null;
-        try {
-          rawType = resolveRaw(loaded.registry, a.type.toString());
-        } catch {
-          unresolved = true;
-        }
-        return { name: stringCamelCase(a.name.toString()), type: a.type.toString(), rawType };
-      });
-    } catch (e) {
-      actions[kind] = {
-        ...base,
-        presence: "unreadable",
-        supported: false,
-        reason: `${capability} (${palletIndex}/${callIndex}) could not be decoded: ${(e as Error).message}`,
-      };
-      continue;
-    }
-    const mismatch = shapeMismatch(kind, args);
-    const located = { ...base, presence: "observed" as const, palletIndex, callIndex, args };
-    if (mismatch)
-      actions[kind] = {
-        ...located,
-        supported: false,
-        ...(v3 ? { reasonCode: "V3_ARG_SHAPE_MISMATCH" as const } : {}),
-        reason: `${capability} is on this runtime but its arguments are not the shape SEAM encodes: ${unresolved ? "(some types could not be resolved) " : ""}${mismatch}`,
-      };
     else
       actions[kind] = {
-        ...located,
+        kind,
+        capability,
+        ...reading,
         supported: true,
-        reason: `${capability} is call ${palletIndex}/${callIndex} with the argument shape SEAM encodes`,
+        reason: `${capability} is call ${v.palletIndex}/${v.callIndex}; the compiler can encode it on this runtime`,
       };
   }
   const out: LiveCapabilities = {
@@ -357,9 +219,6 @@ export function liveCapabilities(inputs: ChainInputs, opts: FactsOptions = {}): 
   if (pinned.endpoint) out.endpoint = pinned.endpoint;
   return out;
 }
-
-/** Minimal JSON-RPC sender (e.g. a fetch wrapper in the browser, or @seam/chain's httpRpcClient().send). */
-export type RpcSend = (method: string, params: unknown[]) => Promise<unknown>;
 
 /**
  * Read-only: reads genesis hash, the finalized head, runtime version and metadata at that head, and system_properties,
