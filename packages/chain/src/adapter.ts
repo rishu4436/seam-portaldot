@@ -12,7 +12,7 @@ import { SeamChainError } from "./errors.js";
 import { toChainEvent, type ChainEvent } from "./events.js";
 import { preflight, type PreflightReport } from "./preflight.js";
 import { withClient, type ConnectOptions, type Endpoint } from "./rpc.js";
-import { decodeRuntime } from "./runtime.js";
+import { buildSigningEnvelope } from "./envelope.js";
 import { dryRunOne, dryRunSigned, type SignedDryRunDetail } from "./dryrun.js";
 import {
   assembleSignedExtrinsic,
@@ -127,19 +127,7 @@ export interface PortaldotAdapter extends ChainAdapter {
   readonly lastSubmit: SubmitResult | undefined;
 }
 
-/** Block time from metadata constants: Babe.ExpectedBlockTime, else 2 x Timestamp.MinimumPeriod. */
-export function blockTimeFromFacts(facts: RuntimeFacts): number | undefined {
-  const consts = decodeRuntime(facts).decorated().consts as unknown as Record<
-    string,
-    Record<string, { toNumber(): number } | undefined> | undefined
-  >;
-  const expected = consts.babe?.expectedBlockTime?.toNumber();
-  if (expected) return expected;
-  const min = consts.timestamp?.minimumPeriod?.toNumber();
-  // Below a second means manual/instant seal (substrate-contracts-node: MinimumPeriod 5 ms): blocks come per
-  // transaction, so metadata says nothing about real block time. Make the caller pass blockTimeMs.
-  return min && min * 2 >= 1000 ? min * 2 : undefined;
-}
+export { blockTimeFromFacts } from "./envelope.js";
 
 /** Maps a submitAndWatch result to the SDK's StepOutcome. */
 /** Classifies what we know about delivery from a finished watch. Anything ambiguous is 'uncertain'. */
@@ -246,24 +234,15 @@ export function createPortaldotAdapter(
       const f = needFacts();
       const report = await preflight(endpoint, plan, f, options);
       const checkpoint = await readSigningCheckpoint(endpoint, options);
-      const mortalityBlocks = options.mortalityBlocks ?? 64;
-      const blockTimeMs = options.blockTimeMs ?? blockTimeFromFacts(f);
-      if (!blockTimeMs)
-        throw new SeamChainError(
-          "NODE_MISSING_VALUE",
-          "block time not in metadata; pass options.blockTimeMs",
-        );
-      // The era counts from the checkpoint, so leave one block of margin before the transaction would die.
-      const expiresAt = new Date(
-        (options.now ?? (() => new Date()))().getTime() + (mortalityBlocks - 1) * blockTimeMs,
-      ).toISOString();
-      const envelope: SigningEnvelope = {
+      const envelope = buildSigningEnvelope({
         signer: encodeAddress(plan.signer.publicKey, f.fingerprint.ss58Prefix),
         nonce: report.nonce,
-        mortalityBlocks,
         checkpoint,
-        expiresAt,
-      };
+        mortalityBlocks: options.mortalityBlocks ?? 64,
+        now: (options.now ?? (() => new Date()))(),
+        facts: f,
+        ...(options.blockTimeMs !== undefined ? { blockTimeMs: options.blockTimeMs } : {}),
+      });
       lastPreflight = report;
       return { preflight: report.result, envelope };
     },

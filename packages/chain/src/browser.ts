@@ -76,3 +76,6 @@ export {
   type AccountMappingInfo,
 } from "./preflight-core.js";
 export type { Estimate, PreflightResult, PreflightStep } from "./types.js";
+// Signing envelope (the one @seam/policy's gate and approval take) and block time from metadata: same functions as node.
+export { blockTimeFromFacts, buildSigningEnvelope, type SigningEnvelopeInput } from "./envelope.js";
+export type { SigningEnvelope } from "./types.js";

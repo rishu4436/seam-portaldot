@@ -161,3 +161,4 @@ export {
 export { clientFromSend, type RpcSend } from "./rpc-core.js";
 export { preflightWithClient, type PreflightCoreOptions } from "./preflight-core.js";
 export { preflightReport as preflightReportFromSend } from "./preflight-browser.js";
+export { buildSigningEnvelope, type SigningEnvelopeInput } from "./envelope.js";
