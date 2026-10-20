@@ -1,0 +1,345 @@
+{
+  "source": "evidence/testnet-v3/README.md + runs/*.json",
+  "chain": "PortaldotV3 Test",
+  "specName": "portaldot-v3",
+  "specVersion": 3002,
+  "ss58": 42,
+  "token": "tPOT",
+  "decimals": 14,
+  "rows": [
+    {
+      "id": "R1",
+      "step": "revive.instantiate_with_code",
+      "txHash": "0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2",
+      "block": 102843,
+      "finalized": true,
+      "chainOutcome": "success: Revive.Instantiated(0x81ed…01ec, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95b); deposits 4.98 + 9.144 held",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1",
+      "record": "evidence/testnet-v3/runs/revive-deploy-1792412368928.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "R2",
+      "step": "SEAM plan: revive.call (data `0x`)",
+      "txHash": "0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482",
+      "block": 102853,
+      "finalized": true,
+      "chainOutcome": "success: Revive.ContractEmitted(0x86b9…d95b, 0x, [])",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x65ffd82b0ce6f7d211d58daf11b904ee8a5002bf39dc88a09647a9875098e4bd",
+      "record": "evidence/testnet-v3/runs/plan-revive-call-1792412445848.json",
+      "receipt": {
+        "kind": "receipt",
+        "shown": "run.receipt",
+        "result": "not_verified",
+        "fingerprintDigest": "0xba7b767eca99b786960c40fbeef84f94a9dece14f38d4f1b20dae2029e3bf8e5",
+        "steps": [
+          {
+            "actionId": "call",
+            "status": "finalized",
+            "verification": "unknown",
+            "coverage": "extrinsic_finalized",
+            "code": "unsupported_runtime",
+            "withNftsVerdict": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "R3",
+      "step": "SEAM plan: revive.call (data `0x01`, SELFDESTRUCT)",
+      "txHash": "0xc0ad1497f394767ccd74b1f7adfd8e37977761396070dcf55b3bb455eaa6338f",
+      "block": 102862,
+      "finalized": true,
+      "chainOutcome": "success, but the contract was not removed (no refund, see below)",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xb4c7334ed7adec3d5c665adc81e5c601b8473d163fb925f3f32992811dca8a7d",
+      "record": "evidence/testnet-v3/runs/plan-revive-terminate-1792412498767.json",
+      "receipt": {
+        "kind": "receipt",
+        "shown": "run.receipt",
+        "result": "not_verified",
+        "fingerprintDigest": "0xba7b767eca99b786960c40fbeef84f94a9dece14f38d4f1b20dae2029e3bf8e5",
+        "steps": [
+          {
+            "actionId": "terminate",
+            "status": "finalized",
+            "verification": "unknown",
+            "coverage": "extrinsic_finalized",
+            "code": "unsupported_runtime",
+            "withNftsVerdict": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "R4",
+      "step": "revive.remove_code (signed dry run only)",
+      "txHash": null,
+      "block": null,
+      "finalized": false,
+      "chainOutcome": "dry run failed: revive.CodeInUse",
+      "explorer": null,
+      "record": "evidence/testnet-v3/runs/revive-remove-code-1792412521183.json",
+      "receipt": {
+        "kind": "not_sent",
+        "label": "not sent: signed dry run only"
+      }
+    },
+    {
+      "id": "1",
+      "step": "revive.map_account",
+      "txHash": "0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812",
+      "block": 102233,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xd76f83f9390cd788e7e12778c81fee6bafe02c8d776e02ea1124dfd7f7859b4a",
+      "record": "evidence/testnet-v3/runs/map-account-1792408724499.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "2",
+      "step": "nfts.create",
+      "txHash": "0x390bc57994d562383ae3ffd3b7a0bfdcc07130d98c15751666ccfa38a92623af",
+      "block": 102241,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x89bbc8a4968c71aa9ca7cedd68672f04ced6d9e8f08ece873c71a7174a6b8a7b",
+      "record": "evidence/testnet-v3/runs/nfts-create-1792408936565.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "3",
+      "step": "nfts.mint",
+      "txHash": "0x9ea5ff6bfa593ae803a800b6806c80a7c068057f176e9355f098933917de8f75",
+      "block": 102327,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x01ad8cc29f5b80a9c165e1fe84b589ebf4f1e3a491c54fece3e4602358143af6",
+      "record": "evidence/testnet-v3/runs/nfts-mint-1792409706466.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "4",
+      "step": "assets.create",
+      "txHash": "0xbc93ca2f4f3f2067f0ba35772d6a50dbf9372db98888ea4d84581278e6ff7194",
+      "block": 102411,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x76a8504af171fcebc1b82fe5516cfb92ccd89b3133a30a6d8d9eaee6e8cde858",
+      "record": "evidence/testnet-v3/runs/assets-create-1792409775476.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "5",
+      "step": "balances.transfer_keep_alive",
+      "txHash": "0xcb5c06f8d0847099ecfcc1343f2b5872b1bc72c32ddabbc2981c10989a224ff6",
+      "block": 102451,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x234c2e17574d5c9444b654dfbc2f22a43b6fec45cc459205ae50f0f1a48d10a5",
+      "record": "evidence/testnet-v3/runs/fund-recipient-1792410012136.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "6",
+      "step": "balances.transfer_keep_alive",
+      "txHash": "0x18f8a01153581e611a3753bf3c54160b99b97cff82dac5437d191a33e97dda70",
+      "block": 102456,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x732604870d73fe39738a84ec396f1bbc31276bea8cc8dc90d13101bc76375890",
+      "record": "evidence/testnet-v3/runs/fund-recipient-1792410042910.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "7",
+      "step": "assets.mint",
+      "txHash": "0x8b84f63e44abd99a7c9561f4e80e087a32e013ec965e8bb70160c6fad73182be",
+      "block": 102493,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xa8d9713bd5607e7f1031c619a192d3c1436268cc472fe2053441351e803971ec",
+      "record": "evidence/testnet-v3/runs/assets-mint-1792410268239.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "8",
+      "step": "assets.transfer_keep_alive",
+      "txHash": "0x5a3fcfe808b02e5dbeb704bddcdb4092526d015856fffb151230e06b9f440ea4",
+      "block": 102529,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x5f3b25f2f353f9249c0fb186b854904e8310699e27ec487b0a3a6b88bdf50b3e",
+      "record": "evidence/testnet-v3/runs/assets-transfer-1792410479921.json",
+      "receipt": {
+        "kind": "none",
+        "label": "setup tx, no SEAM receipt"
+      }
+    },
+    {
+      "id": "9",
+      "step": "seam-plan-sequential attempt 1 (nonce 8)",
+      "txHash": "0x86daea7ed7f5346e248376d78f4756adf16f6988f67b1a1cad8bd1d775c446b6",
+      "block": 102612,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xaa123631c32a5b319d694338118570eaebc7dcaf18ea93e46619544d37f25ded",
+      "record": "evidence/testnet-v3/runs/plan-sequential-attempt1-1792411101481.json",
+      "receipt": {
+        "kind": "none",
+        "label": "earlier attempt: SEAM recording lost; rebuilt from chain"
+      }
+    },
+    {
+      "id": "10",
+      "step": "seam-plan-sequential attempt 1 (nonce 9)",
+      "txHash": "0xdcdb39b5302d0d4296ea731ed4ed8761ee57f81734697d0baedbb34d603005cf",
+      "block": 102616,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x24f4a1f92d1c93426eab972396dda10c564bf8082e06fc8c90ad8f7404b8db61",
+      "record": "evidence/testnet-v3/runs/plan-sequential-attempt1-1792411122983.json",
+      "receipt": {
+        "kind": "none",
+        "label": "earlier attempt: SEAM recording lost; rebuilt from chain"
+      }
+    },
+    {
+      "id": "11",
+      "step": "seam-plan-sequential attempt 2, step pay (SEAM marked it uncertain: HTTP retry got 1013 Already Imported)",
+      "txHash": "0x5c6f24c920fb94dbe80a912f349bba2bec3277e25873c81b1ec700cb191c71be",
+      "block": 102639,
+      "finalized": true,
+      "chainOutcome": "success",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x0c58416c2a5fa36a77812fd77fccc3a52bf542d7ef4888576dce7d6fc22e4b26",
+      "record": "evidence/testnet-v3/runs/plan-sequential-attempt2-pay-1792411204466.json",
+      "receipt": {
+        "kind": "none",
+        "label": "earlier attempt: SEAM marked the step uncertain; rebuilt from chain"
+      }
+    },
+    {
+      "id": "12",
+      "step": "SEAM plan, sequential [pay]",
+      "txHash": "0x67015f593a98a1ef1da9d07062a305d0b19c68371870edb864da3cb87a72971a",
+      "block": 102653,
+      "finalized": true,
+      "chainOutcome": "SEAM receipt step: finalized/verified",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0x152847f0eb2d96d186b8c036c741c2c5dc1adb521546762e1a83400ecdd60873",
+      "record": "evidence/testnet-v3/runs/plan-sequential-1792411270138.json",
+      "receipt": {
+        "kind": "receipt",
+        "shown": "nftVerdictReceipt.receipt (with nfts verdict)",
+        "result": "verified",
+        "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+        "steps": [
+          {
+            "actionId": "pay",
+            "status": "finalized",
+            "verification": "verified",
+            "coverage": "effect_proven",
+            "code": null,
+            "withNftsVerdict": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "13",
+      "step": "SEAM plan, sequential [nft]",
+      "txHash": "0x5adae6e98e2b3d823680a5c35bd0ee5ebb3e0bc924516c185c299c2a571744da",
+      "block": 102657,
+      "finalized": true,
+      "chainOutcome": "SEAM receipt step: finalized/unknown",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xb1e0903fdbee1930c0f09f0999d1eacf0649dcb45e13a18ee57874ee0838b3a0",
+      "record": "evidence/testnet-v3/runs/plan-sequential-1792411270138.json",
+      "receipt": {
+        "kind": "receipt",
+        "shown": "nftVerdictReceipt.receipt (with nfts verdict)",
+        "result": "verified",
+        "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+        "steps": [
+          {
+            "actionId": "nft",
+            "status": "finalized",
+            "verification": "verified",
+            "coverage": "effect_proven",
+            "code": null,
+            "withNftsVerdict": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "14",
+      "step": "SEAM plan, failing batch_all (gate blocked; test-only direct send)",
+      "txHash": "0xd16622312a942d519e3d246ef46d2c677050c09e787883f7c7c1ffc6595bda80",
+      "block": 102665,
+      "finalized": true,
+      "chainOutcome": "ExtrinsicFailed assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.; rollback verified",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xd1aab7bba1eabe4822b7af169a62ba7e364eb4ccbdb587d6f8dfed68c3cdb753",
+      "record": "evidence/testnet-v3/runs/plan-rollback-1792411297498.json",
+      "receipt": {
+        "kind": "gate_blocked",
+        "label": "SEAM gate blocked it before sending; test-only direct send failed and rolled back"
+      }
+    },
+    {
+      "id": "15",
+      "step": "SEAM plan, atomic [mint,nft]",
+      "txHash": "0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355",
+      "block": 102671,
+      "finalized": true,
+      "chainOutcome": "SEAM receipt step: finalized/verified",
+      "explorer": "https://node-console.portaldot.dev/#/explorer/query/0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b",
+      "record": "evidence/testnet-v3/runs/plan-atomic-1792411355057.json",
+      "receipt": {
+        "kind": "receipt",
+        "shown": "nftVerdictReceipt.receipt (with nfts verdict)",
+        "result": "verified",
+        "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+        "steps": [
+          {
+            "actionId": "mint",
+            "status": "finalized",
+            "verification": "verified",
+            "coverage": "effect_proven",
+            "code": null,
+            "withNftsVerdict": null
+          },
+          {
+            "actionId": "nft",
+            "status": "finalized",
+            "verification": "verified",
+            "coverage": "effect_proven",
+            "code": null,
+            "withNftsVerdict": null
+          }
+        ]
+      }
+    }
+  ]
+}
