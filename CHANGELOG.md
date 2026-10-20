@@ -7,6 +7,17 @@ audit item (SEAM-nnn) they close. Portaldot V3 claims are limited to what `evide
 
 ### SDK / CLI
 
+- SDK receipt verifiers for the coming `revive.instantiate_with_code` and `revive.map_account` action kinds (V3 spec 3002 only):
+  `verifyReviveInstantiateOutcome`, `decodeV3InstantiateWithCode`, `instantiateCodeHash`, `reviveAddressOf`,
+  `verifyMapAccountOutcome`, and `V3_SPEC3002_REVIVE_INSTANTIATED_SHAPE` (`Revive.Instantiated(deployer H160, contract H160)`,
+  observed in tx `0xad39bce1…acb2`). The deploy check rests on the call bytes (keccak256 of the code), success and an
+  `Instantiated` from the signer's H160, because the event has no code hash. map_account emits no event on V3, so it is `unknown`
+  unless a `Revive.OriginalAccount` read is supplied (`ContractEffect.originalAccount`). Both are wired into the `buildReceipt` /
+  `verifyStep` defaults for spec 3002 only. Tests use the recorded deploy and map_account transactions plus edited copies.
+  **Deploy through policy and a fresh account mapping are still NOT V3-verified**: no SEAM-planned run of either exists, and the
+  recorded map_account was for an account that was already mapped.
+- `seam verify` accepts a run record and never crashes on a non-receipt (fc5cae7).
+
 - SEAM-010 (SDK side): `nfts.mint` receipt steps are checked by default with `verifyNftsMintOutcome` against the planned collection,
   item and recipient, using `V3_SPEC3002_NFTS_SHAPE` (`Nfts.Issued(collection, item, owner)`, observed on the V3 testnet, spec 3002).
   `verified` only when `buildReceipt({ runtime })` is `portaldot-v3` spec 3002; otherwise capped at `contract_emitted`. Explicit
