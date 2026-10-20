@@ -1,5 +1,5 @@
-import { parseNativeAddress, type Hex, type RuntimeFingerprint } from "@seam/compiler";
-import type { Verification } from "@seam/policy";
+import { parseNativeAddress, type Hex, type RuntimeFingerprint } from "@seam/compiler/browser";
+import type { Verification } from "@seam/policy/browser";
 import type { ChainEvent, StepCode, VerifierCoverage } from "./receipt.js";
 
 /**

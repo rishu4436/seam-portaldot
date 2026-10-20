@@ -83,6 +83,10 @@ Also exported: `shapeMismatch`, `argMatchesClass`, `isWeightV2RawType`, `SEAM_AC
 `assets.transfer` 39/9, `assets.mint` 39/6, `nfts.mint` 47/3, `contracts.call` 21/6, `revive.call` 80/1,
 `revive.instantiate_with_code` 80/3, `revive.map_account` 80/7.
 
+## `@seam/sdk/browser` step verifiers
+
+After a step is sent, the console can check it with `verifyStep` from `@seam/sdk/browser`, which is the same function as in `@seam/sdk` and covers every kind the builder offers. Pass the V3 runtime fingerprint and the signed call bytes. `revive.call` stays `unknown` unless the manifest gives the expected contract event, and `revive.map_account` stays `unknown` without a `Revive.OriginalAccount` read. See `packages/sdk/README.md`.
+
 ## SDK / Node example
 
 [`docs/examples/builder-compile.mjs`](examples/builder-compile.mjs) uses the browser entries from Node. Run it from
