@@ -1,123 +1,143 @@
-# Judge demo script (3 minutes max)
+# SEAM: 5-minute judge walkthrough
 
-## Timing (total 180 s = 3:00, at the cap)
+**Total: 5:00.** Every command below exists in this repo and runs offline (no node, no wallet, no network) unless marked otherwise. Outputs are what the repo prints at `dd64b02`. Every V3 tx hash comes from [`evidence/testnet-v3/README.md`](../evidence/testnet-v3/README.md); nothing is invented.
 
-| # | Step | Seconds |
-|---|------|---------|
-| - | Opening statement ("Say this first") | 10 |
-| 1 | Manifest compiled from live metadata | 25 |
-| 2 | `npm run test:e2e` (sped-up recording or result) | 20 |
-| 3 | Sequential: one transaction per step | 40 |
-| 4 | Atomic: all or nothing | 25 |
-| 5 | Rollback and a gate block, explained | 50 |
-| 6 | Console and close | 10 |
-| | **Total** | **180** |
+| # | Segment | Time | Running total |
+|---|---|---|---|
+| 0 | Setup (before the clock starts) | 0:00 | 0:00 |
+| 1 | What SEAM is | 0:30 | 0:30 |
+| 2 | Compile from the runtime's own metadata | 0:35 | 1:05 |
+| 3 | Policy blocks before anything is signed | 0:25 | 1:30 |
+| 4 | Real V3 receipts: sequential and atomic plans | 0:55 | 2:25 |
+| 5 | V3 gate block and `batch_all` rollback | 0:35 | 3:00 |
+| 6 | Replay: execute and live verification agree, including `revive.call` | 0:40 | 3:40 |
+| 7 | Console, LIVE V3 view | 0:40 | 4:20 |
+| 8 | Honest status and close | 0:40 | 5:00 |
 
-Setup (section 0) happens before the demo and is not counted. The earlier version of this script added up to about 3:20; step 2 is now a sped-up recording (as in the video storyboard) rather than a live run, and steps 1 and 4 are tightened by 5 s each.
-
-**PENDING: browser-wallet scene.** No run has been signed in a browser wallet yet. A wallet-signed scene stays PENDING until the Portaldot testnet is up and a real signed run exists. Do not show or invent a tx hash for it; all hashes in this script come from the local chain only. If it is added later, it must fit by trimming another step so the total stays at or under 180 s.
-
-**Contract deploy: say it is an "unchecked setup step".** If the deploy is mentioned or shown, label it that way: it is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action. Policy covers the compiled plan steps only.
-
-**Local Portaldot dev node (spec 1002), optional evidence, not part of the 180 s table.** Recorded runs from a local Portaldot dev node (not the hosted testnet) are in [`evidence/portaldot-local-node`](../evidence/portaldot-local-node/README.md): sequential pay block 88, call block 91, mint block 94; atomic block 100 (tx `0xb3ded1ac...`); rollback gated with `signed_dry_run_failed`, bypass failed with `assets.BalanceLow`. Also a recorded run, runtime lock only: [`mainnet-plan-blocked.json`](../evidence/portaldot-local-node/mainnet-plan-blocked.json) shows the gate blocking the mainnet-snapshot plan with exactly one reason code, `runtime_changed` (planned digest `0xfa84b636…a896` vs local `0xfbc5239f…9310`; `genesisHash` and `metadataHash` differ). Say plainly that this demonstrates only the runtime lock: preflight and signing envelope are offline placeholders, `requireSignedDryRun` is false, `signed_bytes_match` is fed the plan's own bytes and shows nothing real, and the signed-bytes and signed-dry-run checks need a real signed run. Nothing signed, mainnet never contacted. If shown, say "local Portaldot dev node, spec 1002", and that the contract step is a raw-data call to a small hand-written Wasm emitter, **not** contract-by-message, because the ink! 5 demo contract cannot run on this old pallet. The contract deploy is an unchecked setup step. Wallet signing and the hosted V3 testnet stay PENDING. Full hashes: README section "Local Portaldot dev node (spec 1002), not the hosted testnet".
-
-**Say this first (10 s):** "What you will see ran on local chains (a substrate-contracts-node dev chain; a local Portaldot dev node, spec 1002, is shown separately). Separately, one funded run on the Portaldot V3 testnet, spec 3002, verified Assets, Nfts, sequential and atomic plans, batch rollback, and a SEAM-planned call to a deployed EVM contract. There is no per-call Revive event on V3, so that call's receipt rests on its call bytes and success. The mainnet snapshot is read-only."
-
-All outputs below were produced by running the command on the repo at the time of writing. Tx hashes and block numbers exist only on that local chain and change on every fresh run. Evidence files are in [`evidence/devnode/runs`](../evidence/README.md).
-
-## 0. Setup (before the demo)
+## 0. Setup (before the demo, not timed)
 
 ```bash
 npm install && npm run build
-node -e 'const fs=require("fs");const d="evidence/devnode/runs/";for(const [n,f] of [["sequential","sequential-1792301010881"],["atomic","atomic-1792301015006"]]){fs.writeFileSync(`/tmp/${n}-receipt.json`,JSON.stringify(require("./"+d+f+".json").run.receipt))}'
+node -e 'const fs=require("fs"),d="./evidence/testnet-v3/runs/";
+for (const [n,f] of [["seq","plan-sequential-1792411270138"],["atomic","plan-atomic-1792411355057"]]) {
+  const r=require(d+f+".json");
+  fs.writeFileSync(`/tmp/v3-${n}-receipt.json`, JSON.stringify(r.run.receipt));
+  fs.writeFileSync(`/tmp/v3-${n}-nft-receipt.json`, JSON.stringify(r.nftVerdictReceipt.receipt));
+}'
+npm run dev -w @seam/console &   # Vite on http://localhost:5173, keep a tab open
 ```
 
-## 1. One Manifest, compiled from live metadata (25 s)
+## 1. What SEAM is (0:30)
+
+Say: "SEAM is the execution layer for Portaldot. You write one **Manifest**: what should happen. SEAM reads the live runtime, **compiles** the exact calls from the chain's own metadata, checks them against a **policy**, gets an **approval**, hands the transaction to your wallet to **sign** (SEAM never holds keys), re-checks everything at a per-step submit gate, waits until it is **finalized**, and ends with a **verified receipt** anyone can re-check against the chain. There is no AI guessing anywhere in that path: if the metadata doesn't show a call, SEAM refuses instead of guessing."
+
+Show: the architecture diagram in the [README](../README.md#architecture).
+
+## 2. Compile from the runtime's own metadata (0:35)
 
 ```bash
+npx seam compile docs/examples/demo-manifest.json
 npx seam compile docs/examples/missing-pallet-manifest.json
 ```
-Say: "SEAM reads what the runtime really offers. A missing pallet is a plain answer, not a failed transaction."
-Proves: last lines include `- nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec 1002).` (against the bundled Portaldot mainnet snapshot).
+Output (second command):
+```
+Runtime: portaldot spec 1002 (POT), snapshot at block 2721455.
+Plan for 4 steps: this plan cannot run on this chain.
+- pay: assets.transfer is ready (Assets.transfer_keep_alive).
+- call: contracts.call is ready (Contracts.call).
+- receipt: assets.mint is ready (Assets.mint).
+- nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec 1002).
+```
+Say: "Same Manifest format, compiled against the bundled read-only Portaldot mainnet snapshot. Mainnet has no Nfts pallet, so that step is a plain answer, not a failed transaction."
 
-## 2. Live proof in one command (20 s, shown sped-up or as a result)
+## 3. Policy blocks before anything is signed (0:25)
 
 ```bash
-npm run test:e2e
+npx seam check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json
 ```
-Say: "This starts a fresh local chain, deploys a demo ink! contract, and runs the sequential, rollback and atomic flows, then cleans up."
-Proves: `Tests  3 passed (3)`. The test time is about 13-17 s (first run downloads the node binary), so do not run it live inside the cap: show a sped-up recording of the run, or show its final `Tests  3 passed (3)` result. Say which one it is. If time is short, skip this and use the recorded runs below.
+Output (end):
+```
+Blocked by policy (1 of 13 checks did not pass):
+- pay: Blocked: amount 2500 is over the limit of 1000 for asset 1.
+```
+Say: "Allow-lists and limits run before signing. Anything not allowed, or that can't be confirmed, is blocked."
 
-## 3. Sequential: one transaction per step (40 s)
+## 4. Real V3 receipts: sequential and atomic plans (0:55)
 
-Recorded run: `evidence/devnode/runs/sequential-1792301010881.json`
+Hosted Portaldot V3 testnet, `portaldot-v3` spec 3002, one disposable test wallet. These went manifest -> compile -> preflight -> policy -> approve -> sign -> submit gate -> finalized -> receipt.
 
 ```bash
-npx seam verify /tmp/sequential-receipt.json
+npx seam verify /tmp/v3-seq-nft-receipt.json
+npx seam verify /tmp/v3-atomic-nft-receipt.json
 ```
-Output:
+Output (sequential):
 ```
-Receipt is intact (digest matches).
-Verified: all 3 steps finalized and the chain shows exactly what was planned.
-- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0xa9b6c5fe...
-- call: finalized. The call succeeded and the contract emitted an event. Tx 0x23708127...
-- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x69d73cb0...
+Receipt status: integrity_checked (integrity only, not on-chain proof: ...)
+Verified: all 2 steps finalized and the chain shows exactly what was planned.
+- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x67015f593a98a1ef1da9d07062a305d0b19c68371870edb864da3cb87a72971a
+- nft: finalized. The NFT mint finalized and the chain shows exactly the requested arguments. Tx 0x5adae6e98e2b3d823680a5c35bd0ee5ebb3e0bc924516c185c299c2a571744da
 ```
-Say: "Three steps, three transactions. The contract step was called by name (`settle`) with the ABI, and verified by its `ContractEmitted` event. Before each send the gate re-checked everything."
-Proves: the run file's `gateChecks` has a `sending` and `done` entry per step, all `ok: true`, each with a `passed` list (`step_order`, `approval_*`, `runtime_unchanged`, `signed_bytes_match`, `signed_dry_run_ok`).
+The atomic one shows both steps (`mint`, `nft`) with the **same** tx `0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355` (#102671): one `Utility.batch_all`.
 
-## 4. Atomic: all or nothing in one transaction (25 s)
+Say: "Sequential: two transactions, blocks #102653 and #102657. Atomic: one `batch_all` in #102671; SEAM only allowed atomic mode because rollback was proven on V3 first (next segment). The NFT step is checked against the `Nfts.Issued(collection, item, owner)` shape read from V3's own metadata."
 
-Recorded run: `evidence/devnode/runs/atomic-1792301015006.json`
+Be precise: offline `seam verify` checks **integrity only** (the receipt was not edited). The on-chain proof is the hashes in the explorer links in the evidence README, and live re-verification (segment 6). If asked about the receipts written during the run itself (`run.receipt`): they say `nfts.mint` was `unknown` / `unsupported_runtime`, because the nfts verdict was not the default then; `nftVerdictReceipt` is the same run with the verdict applied, and is the default since.
 
-```bash
-npx seam verify /tmp/atomic-receipt.json
-```
-Output: the same "Verified: all 3 steps finalized ..." text, and all three steps show the **same** Tx `0x533223b9...`.
-Say: "Same three steps in one `Utility.batch_all`. SEAM only allows atomic mode because rollback was verified on this chain first."
-Proves: the run file's `compiledMode` is `atomic_verified`, reason "rollback on failure has been verified on this runtime."
-
-## 5. Rollback and a gate block, explained (50 s)
-
-Recorded run: `evidence/devnode/runs/rollback-1792301012980.json` (a `batch_all` whose step 2 overdraws).
+## 5. V3 gate block and `batch_all` rollback (0:35)
 
 ```bash
 node --input-type=module -e '
 import { explainSubmitCheck } from "@seam/sdk";
 import fs from "fs";
-const r = JSON.parse(fs.readFileSync("evidence/devnode/runs/rollback-1792301012980.json"));
+const r = JSON.parse(fs.readFileSync("evidence/testnet-v3/runs/plan-rollback-1792411297498.json"));
 console.log(explainSubmitCheck(r.run.check));
-console.log(r.conclusion);
-console.log(JSON.stringify(r.state));'
+console.log("batch_all rollback:", r.batchAllRollback);'
 ```
 Output (abridged):
 ```
 Not submitted:
 - Blocked: the dry run of the signed transaction failed, so it would fail on chain.
 Checks that passed:
-- this step of the approval hasn't been sent before (approval_unused: ...)
-- the approval hasn't expired (approval_valid_time: ...)
-- the approval's contents still match its hash (approval_intact: ...)
-- what is about to be sent is exactly what was approved (approval_matches: ...)
-- the chain runtime is the one the plan was prepared for (runtime_unchanged: ...)
-- the signed transaction bytes are exactly the approved calls (signed_bytes_match: ...)
-ROLLED BACK: batch_all failed as a whole (ExtrinsicFailed, the inner error from step 2); step 1's transfer and step 3's mint left no events and no balance change. Only the fee was charged (nonce advanced).
+- ... (approval_unused, approval_valid_time, approval_intact, approval_matches, runtime_unchanged, signed_bytes_match)
+batch_all rollback: verified
 ```
-Say: "The gate refused to send because the signed transaction would fail. Then, as a test-only bypass, we sent those exact signed bytes anyway: the whole batch failed, nothing from steps 1 and 3 stuck, only the fee was charged."
-Proves: in `state`, `before.asset` and `after.asset` are identical (alice 999999955000, bob 45000, charlie 126) and `aliceNonce` goes 52 to 53; `directSubmit.dispatchError` is `assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.`; `directSubmit` is labelled "test-only bypass of the gate, local dev chain".
+Say: "A four-step batch whose last step overdraws. SEAM's gate refused to send it. As a test-only bypass we then sent the same signed bytes directly: tx `0xd16622312a942d519e3d246ef46d2c677050c09e787883f7c7c1ffc6595bda80` in #102665 failed with `assets.BalanceLow`, and every balance, the asset supply and the NFT were unchanged. Only the fee was charged. That is the rollback proof the atomic plan relies on."
 
-Policy rules vs gate checks: `message_allowed`, `abi_pinned`, `selector_allowed` are **policy rules** (`policyResult.rules`); the gate's `passed` list holds the **submit-time** checks. See [reference](reference.md).
-
-## 6. Console and close (10 s)
+## 6. Replay: execute and live verification agree (0:40)
 
 ```bash
-npm run dev -w @seam/console   # http://localhost:5173
+npx vitest run --root packages/sdk tests/v3-replay.test.ts --reporter=verbose
 ```
-Say: "The console shows the same flow. Next step is the Portaldot V3 testnet: [testnet-checklist.md](testnet-checklist.md)."
-(The console starts with this command; what it shows was not re-verified for this script.)
+Output: `Tests  11 passed (11)`, including:
+```
+✓ sequential [pay, nft]: both sent once, nfts.mint verified / effect_proven, run verified
+✓ atomic batch_all [mint, nft]: one send, nfts.mint verified / effect_proven
+✓ revive.call without an expected event: unknown / effect_unproven (call bytes + success only)
+✓ revive.call with the expected ContractEmitted (data 0x, no topics) that matches: verified / effect_proven
+✓ revive.call with an expected event that does not match: not_verified / effect_mismatch
+✓ nfts.mint (sequential and atomic) and revive.call (with and without the expected event) agree
+```
+Say: "This replays the real V3 records (no network) through `Seam.execute` and through the live re-verifier. Both reach the same verdict. The EVM contract call (tx `0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482`, #102853) is `verified` only when we name the event the contract must emit; without one it stays `unknown`, because V3 has no per-call Revive event. SEAM never upgrades that to verified on its own."
 
-## Honest limits to state if asked
-- A second set of recordings came from a local Portaldot dev node (spec 1002, metadata V13, //Alice, throwaway chain): not the hosted testnet. The contract step there is a raw-data call to a hand-written Wasm emitter, not contract-by-message, and a mainnet-built plan is blocked at the gate on that node (fingerprint differs).
-- Local dev chain only, spec 100 / metadata V14; signed with the public `//Alice` dev account.
-- One Portaldot V3 testnet run (spec 3002, `evidence/testnet-v3`): one EVM contract deploy and SEAM `revive.call`, but no per-call Revive event, no deposit refund, no fresh account mapping, no ink!/PolkaVM or cross-VM on V3.
-- No run signed in a real browser wallet yet.
+Live form, for a judge with network (not run in the demo; read-only):
+`npx seam verify --endpoint <V3 wss> --plan plan.json receipt.json`. It re-reads block, signer, call bytes and events. A step whose receipt or re-check says `not_verified` comes back **`failed`** with a problem listed; atomic steps are compared against their own slice of the batch call. From the CLI, `nfts.mint` and `revive.call` steps stay `unknown`, because the CLI does not yet pass the runtime fingerprint (the SDK's `verifyReceiptLive(..., { runtime })` does).
+
+## 7. Console, LIVE V3 view (0:40)
+
+Open http://localhost:5173.
+- **Mode switch -> LIVE V3.** Show the "V3 RPC URL" field and "Check live". Say: "LIVE uses a real V3 RPC and your own wallet. With no endpoint it stays blocked before signing; it never falls back to a simulation."
+- Switch to the recorded mode and click through Manifest -> Plan -> Checks -> Approve -> Receipt. Say what the badge says: the recorded run is a **local Portaldot dev node, spec 1002**, not V3.
+
+Only say the console shows real V3 transactions if Pixel's LIVE V3 wiring has landed and you have checked it before the demo. Otherwise show the blocked state as above.
+
+## 8. Honest status and close (0:40)
+
+Say: "On the V3 testnet we've verified signing, dry runs and fees, Assets, Nfts, sequential and atomic SEAM plans, `batch_all` rollback, one EVM contract deploy and a SEAM-planned `revive.call`, 18 finalized transactions in all. Not verified on V3 yet: a `revive.call` effect without an emitted event (that stays unknown), the contract deposit refund (not possible on this runtime, EIP-6780), a deploy through policy, a fresh account mapping, ink!/PolkaVM, cross-VM, and a real browser-extension signature. Everything is in `evidence/testnet-v3`, and the table in the README says the same."
+
+## Facts to have ready if asked
+
+- Chain: `wss://test-node-v3.portaldot.dev`, `portaldot-v3` spec 3002, tx version 2, token tPOT. A test network, not mainnet. Mainnet was only ever read (snapshot at block 2,721,455).
+- Signer: a disposable test wallet whose keystore is outside the repo. All signatures came from a local keystore signer, **not** a browser extension.
+- The deploy (`0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2`, #102843) was signed through SEAM's signing path and a signed dry run, but it is a setup step **outside** policy: the compiler has no instantiate action.
+- `Revive.map_account` (`0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812`, #102233) dispatched, but the account was already auto-mapped, so it is **not** a fresh mapping.
+- Throwaway local dev chain proof: `npm run test:e2e` (~15 s, needs network the first time to download the node binary) runs sequential, rollback and atomic flows end to end. Show the result, don't run it inside the 5 minutes.

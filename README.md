@@ -1,12 +1,56 @@
 # SEAM
 
-**SEAM is the developer execution layer for Portaldot.** A developer (or an AI agent) writes one **Manifest** that says what should happen. SEAM then reads the live runtime (discovery, fingerprint, lock), compiles the exact calls from the chain's own metadata, runs a preflight, checks the result against a **policy**, asks for **approval**, hands the transaction to the user's **external wallet for signing** (SEAM never holds keys), re-checks everything at a **per-step submit gate**, tracks **finalization**, and ends with a **verified Receipt** that anyone can check.
+**SEAM is the execution layer for Portaldot: one Manifest in, one verified receipt out.** A developer (or an AI agent) writes a **Manifest** saying what should happen. SEAM reads the live runtime, **compiles** the exact calls from the chain's own metadata, checks them against a **policy**, binds an **approval**, hands the transaction to the user's own wallet to **sign** (SEAM never holds keys), re-checks everything at a per-step **submit gate**, waits until it is **finalized**, and ends with a **receipt** that anyone can re-verify against the chain. Nothing is guessed: if the metadata doesn't show a call, SEAM refuses to build it, and a step it cannot prove stays `unknown`, never "success".
 
 Built for Portaldot Hacker House 2026 (Modular Cloud & Middleware track).
 
+**For judges (5 minutes):** [docs/demo-script.md](docs/demo-script.md) is a timed walkthrough. The real V3 testnet transactions are in [`evidence/testnet-v3`](evidence/testnet-v3/README.md).
+
+## 5-minute quickstart
+
+Needs Node 22 or later. Everything here runs offline: no node, no wallet, no network after `npm install`.
+
+```bash
+npm install && npm run build
+
+# Compile a Manifest against the bundled read-only Portaldot mainnet snapshot (spec 1002)
+npx seam compile docs/examples/demo-manifest.json
+npx seam compile docs/examples/missing-pallet-manifest.json      # "Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists ..."
+npx seam check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json   # blocked: amount over limit
+
+# Check a real V3 testnet receipt (sequential plan, tx 0x67015f59…971a + 0x5adae6e9…44da)
+node -e 'const r=require("./evidence/testnet-v3/runs/plan-sequential-1792411270138.json");require("fs").writeFileSync("/tmp/v3-receipt.json",JSON.stringify(r.nftVerdictReceipt.receipt))'
+npx seam verify /tmp/v3-receipt.json            # offline: integrity only, not on-chain proof
+
+# Replay the real V3 records through execute and live verification (they must agree)
+npx vitest run --root packages/sdk tests/v3-replay.test.ts
+
+# The console (LIVE V3, recorded and offline modes)
+npm run dev -w @seam/console                     # http://localhost:5173
+```
+
+`npm test` runs every workspace suite. `npm run test:e2e` runs the full flow (sequential, rollback, atomic) on a throwaway local `substrate-contracts-node` in about 15 s; the first run downloads the node binary. More: [docs/quickstart.md](docs/quickstart.md).
+
+## V3 testnet status
+
+Hosted Portaldot V3 testnet, `portaldot-v3` spec 3002, 18 finalized transactions from one disposable test wallet on 2026-10-19. This table matches [`evidence/testnet-v3/README.md`](evidence/testnet-v3/README.md); details and full hashes are [below](#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified).
+
+| Verified on V3 (with evidence) | Example tx | Not verified on V3 |
+|---|---|---|
+| SEAM signing path, signed dry run, fee estimate (every tx) | all 18 | A `revive.call` effect without an emitted event: stays `unknown` (V3 has no per-call Revive event) |
+| Assets: create, mint, transfer | `0x5a3fcfe8…0ea4` #102529 | A deposit refund for a deployed contract (not possible on this runtime, EIP-6780) |
+| Nfts: create, mint, `Nfts.Issued` shape | `0x9ea5ff6b…8f75` #102327 | A contract deploy through policy (the deploy was a setup step, outside policy) |
+| SEAM sequential plan, receipt verified | `0x67015f59…971a` #102653, `0x5adae6e9…44da` #102657 | A fresh account mapping (the signer was already auto-mapped) |
+| `batch_all` rollback (gate blocked; test-only bypass rolled back) | `0xd1662231…da80` #102665 | ink! contracts and the PolkaVM path |
+| SEAM atomic plan (`atomic_verified`), receipt verified | `0x6be1232e…f355` #102671 | Cross-VM atomicity |
+| EVM contract deploy (`Revive.instantiate_with_code`) | `0xad39bce1…acb2` #102843 | A real browser-extension signature (a local keystore signer was used) |
+| SEAM-compiled `revive.call`; receipt `verified` only with an expected `ContractEmitted` | `0xec917338…7482` #102853 | Preflight simulation coverage for `nfts.mint` (`unobserved` by design) |
+
+Elsewhere: local runs on a `substrate-contracts-node` dev chain and a local Portaldot dev node (spec 1002). Portaldot **mainnet was only read** (a snapshot at block 2,721,455); nothing was ever submitted to it. There are no users or transaction volume yet. The business model is a hypothesis, not a result: SEAM stays open source, and one idea to test is a hosted service for runtime-change monitoring and independent receipt verification ([RuntimeGuard scope](docs/runtimeguard.md)). No customer, price or demand has been validated.
+
 ## Use it from your app
 
-[`examples/consumer`](examples/consumer/index.mjs) is the headline usage: a separate app that imports only `@seam/sdk`, `@seam/compiler` and `@seam/policy` (no repo paths, no node, no keys). Run it with `npm run build && npm run smoke:pack`, which packs the packages, installs them into an empty folder and runs it.
+[`examples/consumer`](examples/consumer/index.mjs) is a separate app that imports only `@seam/sdk`, `@seam/compiler` and `@seam/policy` (no repo paths, no node, no keys). Run it with `npm run build && npm run smoke:pack`, which packs the packages, installs them into an empty folder and runs it.
 
 ```js
 const facts = factsFromSnapshot(bundledSnapshotDir());            // a recorded runtime, offline
@@ -16,15 +60,6 @@ console.log(explainPlan(plan), explainPolicy(evaluatePolicy({ policy, plan, fact
 ```
 
 Sending it for real goes through approval, an external wallet and a per-step gate: see [docs/quickstart.md](docs/quickstart.md).
-
-## Status, in one place
-
-- **Verified so far:** local runs on a `substrate-contracts-node` dev chain and a **local Portaldot dev node, spec 1002**, plus **one funded run on the hosted Portaldot V3 testnet (spec 3002)** for Assets, Nfts, `Utility.batch_all`, one EVM contract deploy and a SEAM-compiled `revive.call` ([details](#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified)). **ink!/PolkaVM, cross-VM and a fresh account mapping are not verified on V3**, and a `revive.call` receipt can be `verified` only with an expected contract event (V3 has no per-call event).
-- **No users and no transaction volume yet.** Nothing here has been used by anyone outside the team.
-- **Business model: a hypothesis, not a result.** SEAM stays open source. One idea to test is a hosted service for teams building on Portaldot (runtime-change monitoring and independent receipt verification). No customer, price or demand has been validated, and no such service exists today ([RuntimeGuard scope](docs/runtimeguard.md)).
-
-> ## Honesty first
-> **Three chains were used: two local dev chains and the hosted Portaldot V3 testnet. Mainnet was only read.** (1) A `substrate-contracts-node` v0.42.0 dev chain (`--dev`, spec 100, metadata V14), (2) a **local Portaldot dev node (spec 1002, metadata V13)**, see [the section below](#local-portaldot-dev-node-spec-1002-not-the-hosted-testnet), and (3) the **hosted Portaldot V3 testnet** (`portaldot-v3` spec 3002): 18 finalized transactions from one disposable test wallet (two phases), see [the V3 section](#portaldot-v3-testnet-spec-3002-what-is-and-isnt-verified) and [`evidence/testnet-v3`](evidence/testnet-v3/README.md). On V3, only what that section lists is verified. One EVM contract was deployed and called through a SEAM plan; **ink!/PolkaVM and cross-VM atomicity are not verified**. Portaldot mainnet is only read (a read-only snapshot, spec 1002, metadata V13, block 2,721,455); nothing was ever submitted to it.
 
 ## What is built
 
@@ -37,48 +72,6 @@ Sending it for real goes through approval, an external wallet and a per-step gat
 - **Console**: a web UI that walks through the flow.
 - **Recorded runs** on the local dev chain: sequential, atomic and rollback, in [`evidence/devnode`](evidence/README.md); and on a local Portaldot dev node (spec 1002) in [`evidence/portaldot-local-node`](evidence/portaldot-local-node/README.md).
 - **Automated tests** (see below) and an end-to-end test (`npm run test:e2e`) that starts a fresh local chain.
-
-## Quickstart (about 5 minutes)
-
-Needs Node 22 or later (the commands below were run with `npm`, from the repo root).
-
-```bash
-npm install
-npm run build
-npm test            # every workspace suite; the run prints its own counts (CI shows the current ones)
-```
-
-Try the CLI offline, against the bundled Portaldot mainnet snapshot (read-only, no node or wallet needed):
-
-```bash
-npx seam digest docs/examples/demo-manifest.json
-npx seam compile docs/examples/demo-manifest.json
-npx seam check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json   # blocked: amount over limit
-npx seam compile docs/examples/missing-pallet-manifest.json                                 # "Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists"
-```
-
-Run the whole flow for real on a **throwaway local dev chain** (not Portaldot):
-
-```bash
-npm run test:e2e
-```
-
-This starts a fresh local `substrate-contracts-node` on port 9955, runs setup (asset + demo ink! contract), the sequential run, the rollback run and the atomic run, then always stops and cleans up the node. Expected: `Tests  3 passed (3)` in roughly 15 seconds. The first run downloads the node binary (sha256-checked) unless one is already present; it needs `curl` and network access for that.
-
-Check a recorded receipt from the repo, no chain needed:
-
-```bash
-node -e 'const r=require("./evidence/devnode/runs/sequential-1792301010881.json");require("fs").writeFileSync("/tmp/receipt.json",JSON.stringify(r.run.receipt))'
-npx seam verify /tmp/receipt.json   # offline: integrity only, not on-chain proof
-```
-
-Open the console:
-
-```bash
-npm run dev -w @seam/console     # Vite on http://localhost:5173
-```
-
-More: [docs/quickstart.md](docs/quickstart.md) (Manifest to plan to policy to receipt, plus the SDK code path) and [evidence/README.md](evidence/README.md) (how to re-record the dev-chain runs by hand).
 
 ## Architecture
 
@@ -112,7 +105,7 @@ Execution is either **sequential** (each step is gated just before it is sent; t
 - [docs/architecture.md](docs/architecture.md): architecture diagram (pipeline and per-step gate).
 - [docs/quickstart.md](docs/quickstart.md): clone to a compiled, policy-checked plan, offline.
 - [docs/reference.md](docs/reference.md): every Manifest field, plan mode, policy rule, block reason and receipt status.
-- [docs/demo-script.md](docs/demo-script.md): the ~3 minute judge walkthrough.
+- [docs/demo-script.md](docs/demo-script.md): the 5-minute judge walkthrough, with timing per segment.
 - [docs/testnet-checklist.md](docs/testnet-checklist.md): steps for the Portaldot V3 testnet. The first funded run is in [`evidence/testnet-v3`](evidence/testnet-v3/README.md).
 - [docs/submission-checklist.md](docs/submission-checklist.md): dates, rules, submission items.
 - [evidence/README.md](evidence/README.md): what each recorded run holds. Latest recordings: [sequential](evidence/devnode/runs/sequential-1792301010881.json), [rollback](evidence/devnode/runs/rollback-1792301012980.json), [atomic](evidence/devnode/runs/atomic-1792301015006.json).
@@ -186,7 +179,7 @@ In that run, SEAM's own receipt left the `nfts.mint` steps `unknown` (`unsupport
 - Preflight simulation coverage for `nfts.mint` (still `unobserved` by design).
 - A real browser-extension signature (a local keystore signer was used).
 
-**Chain findings** (from the evidence, not yet fixed in `@seam/chain`): the metadata bytes drift between blocks without a runtime upgrade (one storage fallback, `Revive.EthBlockBuilderIR`), so a pinned raw metadata hash goes stale within minutes; the node's WebSocket drops with code 1006 often.
+**Chain findings** (from the evidence): the metadata bytes drift between blocks without a runtime upgrade (one storage fallback, `Revive.EthBlockBuilderIR`), so a pinned raw metadata hash went stale within minutes; the node's WebSocket drops with code 1006 often. `@seam/chain` now fingerprints a stable metadata layout and has an HTTPS JSON-RPC transport (commit 2300423); that fix has not been re-checked by a new funded V3 run.
 
 **Contract deploy is an "unchecked setup step".** The demo contract deploy is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action. Only the compiled plan steps (such as `settle`) are covered by policy.
 

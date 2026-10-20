@@ -20,7 +20,8 @@ const HELP = `seam <command> [file] [options]
   seam check   <manifest.json> --policy <p.json>  Compile, then run the policy check
   seam verify  <receipt.json>                     Offline: integrity only (not edited since written). NOT on-chain proof
   seam verify  --endpoint <ws> --plan <plan.json> <receipt.json>
-                                                  Live: re-read the chain. chain_verified needs the plan; without --plan the result is unknown
+                                                  Live: re-read the chain. chain_verified needs the plan; without --plan the result is unknown.
+                                                  A step that is not_verified (in the receipt or on re-check) is failed, not unknown
   seam explain <plan|policy-result|receipt.json>  Explain any SEAM result in plain English
   seam drift   <snapA> <snapB> [--plan <plan.json>]  Compare two saved runtimes: changed fingerprint fields and calls (offline; exit 10 on drift)
   seam snapshot <ws-endpoint> <out-dir> [--name n]  Save a node's runtime (read-only) for offline use

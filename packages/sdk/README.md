@@ -40,7 +40,8 @@ seam digest  manifest.json
 seam compile manifest.json [--json]
 seam check   manifest.json --policy policy.json
 seam verify  receipt.json                       # offline: integrity only, not on-chain proof
-seam verify  --endpoint <ws> --plan plan.json receipt.json   # live chain re-read; without --plan the result is unknown
+seam verify  --endpoint <ws> --plan plan.json receipt.json   # live chain re-read; without --plan the result is unknown;
+                                                             # a not_verified step is failed, not unknown
 seam explain plan.json | policy-result.json | receipt.json
 ```
 
