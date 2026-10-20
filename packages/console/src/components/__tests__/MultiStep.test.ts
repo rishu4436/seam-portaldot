@@ -88,7 +88,9 @@ function setup(
       holder,
       freshFingerprint: async () => ({}),
       sign,
-      submitAndWait,
+      submitAndWait: submitAndWait as never,
+      // These fakes return receipt-shaped outcomes; the real verifyStep path is tested in VerifySteps.test.ts.
+      verifyOutcome: (_i, o) => o as never,
       gates: gates as never,
     });
   return { run, order, gates, sign, submitAndWait, holder };
@@ -235,7 +237,8 @@ describe("multi-step LIVE", () => {
       store: newApprovalStore(),
       freshFingerprint: async () => ({}),
       sign: t.sign,
-      submitAndWait: t.submitAndWait,
+      submitAndWait: t.submitAndWait as never,
+      verifyOutcome: (_i, o) => o as never,
       gates: t.gates as never,
       holder: t.holder,
       signal: ac.signal,
