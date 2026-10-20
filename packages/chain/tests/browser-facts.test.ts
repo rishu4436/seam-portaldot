@@ -120,9 +120,8 @@ describe("browser entry stays browser-safe with the facts path", () => {
     });
     const inputs = Object.keys(r.metafile.inputs);
     expect(inputs.some((i) => /^node:/.test(i))).toBe(false);
-    expect(inputs.some((i) => /compiler\/(src|dist)\/(pinned-file|compile|index)\./.test(i))).toBe(
-      false,
-    );
+    // compile.js now comes in through @seam/compiler/browser (browser-safe); the node-only modules never do.
+    expect(inputs.some((i) => /compiler\/(src|dist)\/(pinned-file|index)\./.test(i))).toBe(false);
     expect(r.outputFiles[0]!.text).toMatch(/function factsFromChainInputs\b/);
     expect(r.outputFiles[0]!.text).not.toMatch(/node:(fs|url|path)/);
   });

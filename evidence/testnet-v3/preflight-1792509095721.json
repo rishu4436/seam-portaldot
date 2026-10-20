@@ -1,0 +1,198 @@
+{
+  "kind": "seam-live-preflight",
+  "generatedAt": "2026-10-20T15:11:35.721Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "readOnly": "fake-signed extrinsic for payment_queryInfo only; no signature, no system_dryRun, nothing submitted",
+  "planSource": "packages/console/src/demo/v3-demo-transfer.json",
+  "planDigest": "0x5eda2d74a9e793025e1ad8dcb6c3ada83571fd2fb0217b62a335696d765246eb",
+  "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+  "fingerprint": {
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "metadataHash": "0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9",
+    "ss58Prefix": 42,
+    "tokenSymbol": "tPOT",
+    "tokenDecimals": 14,
+    "typesBundleHash": null
+  },
+  "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+  "metadataLayoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+  "metadataPinned": "evidence/v3-discovery/portaldot-v3-spec3002-metadata.hex",
+  "rpcMethods": [
+    "chain_getBlockHash",
+    "chain_getFinalizedHead",
+    "chain_getHeader",
+    "state_getRuntimeVersion",
+    "state_getMetadata",
+    "system_properties",
+    "system_accountNextIndex",
+    "payment_queryInfo",
+    "payment_queryFeeDetails",
+    "state_getStorage"
+  ],
+  "rpcRequests": {
+    "chain_getBlockHash": 1,
+    "chain_getFinalizedHead": 1,
+    "chain_getHeader": 2,
+    "state_getRuntimeVersion": 2,
+    "state_getMetadata": 1,
+    "system_properties": 1,
+    "system_accountNextIndex": 1,
+    "payment_queryInfo": 1,
+    "payment_queryFeeDetails": 1,
+    "state_getStorage": 1
+  },
+  "result": {
+    "steps": [
+      {
+        "actionId": "pay",
+        "weight": {
+          "value": "1037211000"
+        },
+        "fee": {
+          "value": "1470878675697"
+        },
+        "storageDeposit": {
+          "unknown": true
+        },
+        "proofSize": {
+          "value": "18392"
+        },
+        "dryRun": "unknown",
+        "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime; simulation coverage: asset_existence_check (only that the asset exists; not balances, permissions or state changed by other steps)"
+      }
+    ],
+    "totalFee": {
+      "value": "1470878675697"
+    }
+  },
+  "report": {
+    "coverage": {
+      "wholePlan": "none",
+      "steps": [
+        {
+          "actionId": "pay",
+          "basis": "asset_existence_check",
+          "proves": "only that the asset exists; not balances, permissions or state changed by other steps"
+        }
+      ],
+      "summary": "The plan was not simulated as a whole. Each step is checked alone against current state; later steps depend on earlier ones."
+    },
+    "nonce": 1,
+    "nonceSource": "node",
+    "atBlock": {
+      "hash": "0xe32db042622eb5492b8b3ba609053067e61cedf0ed8eccfe455f9338ad126e67",
+      "number": 118892
+    },
+    "transactions": [
+      {
+        "actionIds": [
+          "pay"
+        ],
+        "nonce": 1,
+        "queryInfo": {
+          "weight": "1037211000",
+          "class": "normal",
+          "partialFee": "1470878675697",
+          "weightVersion": 2,
+          "proofSize": "18392"
+        },
+        "feeDetails": {
+          "inclusionFee": {
+            "baseFee": "0x6725848",
+            "lenFee": "0x15642d3ec00",
+            "adjustedWeightFee": "0x2ded2ea9"
+          }
+        }
+      }
+    ],
+    "contractDryRuns": {}
+  },
+  "gate": {
+    "policy": "packages/console/src/demo/v3-demo-transfer-policy-sequential.json",
+    "options": {
+      "acknowledgedDowngrade": true
+    },
+    "allowed": true,
+    "blockedBy": [],
+    "explanations": [
+      {
+        "rule": "plan_integrity",
+        "status": "pass",
+        "code": "OK",
+        "message": "Plan integrity: Pass. Plan digest matches its contents."
+      },
+      {
+        "rule": "runtime_match",
+        "status": "pass",
+        "code": "OK",
+        "message": "Plan matches the current runtime: Pass. Plan was compiled against the current runtime."
+      },
+      {
+        "rule": "mode_allowed",
+        "status": "pass",
+        "code": "OK",
+        "message": "Execution mode allowed: Pass. Execution mode sequential is allowed."
+      },
+      {
+        "rule": "capability",
+        "status": "pass",
+        "code": "OK",
+        "message": "Capability allowed (step pay): Pass. Assets.transfer_keep_alive is observed and allowed.",
+        "actionId": "pay"
+      },
+      {
+        "rule": "asset_allowed",
+        "status": "pass",
+        "code": "OK",
+        "message": "Asset allowed (step pay): Pass. Asset 806707 is allowed.",
+        "actionId": "pay"
+      },
+      {
+        "rule": "recipient_allowed",
+        "status": "pass",
+        "code": "OK",
+        "message": "Recipient allowed (step pay): Pass. Recipient is allowed.",
+        "actionId": "pay"
+      },
+      {
+        "rule": "amount_limit",
+        "status": "pass",
+        "code": "OK",
+        "message": "Amount within limit (step pay): Pass. Amount 1 is within the limit of 10.",
+        "actionId": "pay"
+      },
+      {
+        "rule": "weight_limit",
+        "status": "pass",
+        "code": "OK",
+        "message": "Weight within limit (step pay): Pass. Weight 1037211000 is within limits.",
+        "actionId": "pay"
+      },
+      {
+        "rule": "storage_limit",
+        "status": "pass",
+        "code": "OK",
+        "message": "Storage deposit within limit (step pay): Pass. Storage deposit is unknown (allowed by policy, weaker proof).",
+        "actionId": "pay",
+        "weak": true
+      },
+      {
+        "rule": "dry_run",
+        "status": "pass",
+        "code": "OK",
+        "message": "Dry run (step pay): Pass. The dry run result is unknown. (allowed by policy, weaker proof).",
+        "actionId": "pay",
+        "weak": true
+      },
+      {
+        "rule": "fee_limit",
+        "status": "pass",
+        "code": "OK",
+        "message": "Fee within limit: Pass. Total fee 1470878675697 is within limits."
+      }
+    ]
+  }
+}

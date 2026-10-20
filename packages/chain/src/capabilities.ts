@@ -1,7 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { blake2AsU8a } from "@polkadot/util-crypto";
-import { u8aToHex } from "@polkadot/util";
 import { SeamChainError } from "./errors.js";
 import { PORTALDOT_MAINNET_GENESIS } from "./submit.js";
 import { decodeRuntime, metadataVersionOf } from "./runtime.js";
@@ -59,10 +57,8 @@ const CALLS: [string, string][] = [
 const RUNTIME_APIS = ["ReviveApi", "ContractsApi"] as const;
 const RPC_METHODS = ["state_call", "system_dryRun", "payment_queryInfo", "contracts_call"] as const;
 
-/** blake2b-64 of the API name: how a runtime lists its APIs in state_getRuntimeVersion. */
-export function runtimeApiId(name: string): string {
-  return u8aToHex(blake2AsU8a(name, 64));
-}
+export { runtimeApiId } from "./api-id.js";
+import { runtimeApiId } from "./api-id.js";
 
 /** Pure: a runtime model -> the capability entries. */
 export function capabilitiesFromModel(m: RuntimeModel): CapabilityEntry[] {

@@ -1,18 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- tests edit decoded metadata JSON */
 /**
  * liveCapabilities: per SEAM action, supported or not on a runtime, from that runtime's own metadata (P0-01).
- * Offline on the real V3 spec 3002 and mainnet spec 1002 fixtures; verdicts are cross-checked against the compiler.
+ * Offline on the real V3 spec 3002 and mainnet spec 1002 fixtures. The verdict is @seam/compiler/browser supportedKinds;
+ * these tests hold it equal to supportedKinds and to compile() on the same facts.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { compile, readPinnedTypes, type Manifest } from "@seam/compiler";
-import { V3_SHAPES } from "../../compiler/src/v3-bindings.js";
-import { KIND_TO_CAPABILITY } from "../../compiler/src/compile.js";
+import { KIND_TO_CAPABILITY, supportedKinds } from "@seam/compiler/browser";
 import * as browser from "../src/browser.js";
 import {
   ACTION_CAPABILITY,
-  ACTION_SHAPES,
   SEAM_ACTION_KINDS,
   chainInputsFromSnapshot,
   factsFromChainInputs,
@@ -68,6 +67,16 @@ const PROBE: Record<string, Record<string, unknown>> = {
   },
 };
 
+/** Spec 1002's pallet-contracts has no storage_deposit_limit and Weight V1, so the compiler rejects those args there. */
+function probeArgs(facts: any, kind: string): Record<string, unknown> {
+  const args = { ...PROBE[kind] };
+  if (kind === "contracts.call" && facts.metadataVersion < 14) {
+    delete args.proofSize;
+    delete args.storageDepositLimit;
+  }
+  return args;
+}
+
 /** The compiler's own verdict for one kind on these facts: "ok" or the step's reason code / reason. */
 function compilerVerdict(facts: any, kind: string): string {
   return compilerStep(facts, kind).verdict;
@@ -76,7 +85,7 @@ function compilerStep(facts: any, kind: string): { verdict: string; code?: strin
   const m: Manifest = {
     version: 1,
     signer: { type: "ss58", value: ALICE },
-    actions: [{ id: "a", kind: kind as any, args: PROBE[kind] as any }],
+    actions: [{ id: "a", kind: kind as any, args: probeArgs(facts, kind) as any }],
   };
   try {
     const step = compile(m, facts).steps[0]!;
@@ -255,20 +264,51 @@ describe("liveCapabilities fails closed on metadata changes", () => {
   });
 });
 
-describe("shape tables stay identical to the compiler's", () => {
-  it("kind -> capability mapping", () => {
-    expect(ACTION_CAPABILITY).toEqual(KIND_TO_CAPABILITY);
+describe("the verdict is supportedKinds, unchanged (no second source of truth)", () => {
+  it("kind -> capability mapping is the compiler's object", () => {
+    expect(ACTION_CAPABILITY).toBe(KIND_TO_CAPABILITY);
+    expect(SEAM_ACTION_KINDS).toEqual(Object.keys(KIND_TO_CAPABILITY));
   });
-  it("V3 kinds: names, aliases and classes equal V3_SHAPES", () => {
-    for (const [kind, shape] of Object.entries(V3_SHAPES))
-      expect(
-        ACTION_SHAPES[kind as keyof typeof ACTION_SHAPES].map((s) => [
-          s.name,
-          s.class,
-          s.aliases ?? [],
-        ]),
-      ).toEqual(shape!.map((s) => [s.name, s.class, s.aliases ?? []]));
-  });
+  const mutated = (f: (j: any) => void) => withMeta(mutateV14(v3Hex, f));
+  const cases: [string, () => [ChainInputs, any]][] = [
+    ["V3 3002", () => [v3Inputs(), {}]],
+    ["mainnet 1002", () => [snapshotInputs(), { typesBundle: readPinnedTypes() }]],
+    [
+      "V3 without Contracts",
+      () => [
+        mutated((j) => (j.pallets = j.pallets.filter((p: any) => p.name !== "Contracts"))),
+        {},
+      ],
+    ],
+    [
+      "V3 with an extra map_account arg",
+      () => [
+        mutated((j) => {
+          const v = lookupDef(j, callTypeId(j, "Revive")).variant.variants.find(
+            (x: any) => x.name === "map_account",
+          );
+          const u32 = j.lookup.types.find((t: any) => t.type.def.primitive === "U32").id;
+          v.fields.push({ name: "extra", type: u32, typeName: "u32", docs: [] });
+        }),
+        {},
+      ],
+    ],
+  ];
+  for (const [label, make] of cases)
+    it(label, () => {
+      const [inputs, opts] = make();
+      const caps = liveCapabilities(inputs, opts);
+      for (const v of supportedKinds(caps.facts)) {
+        const a = caps.actions[v.kind];
+        expect([v.kind, a.supported, a.reasonCode, a.supported ? undefined : a.reason]).toEqual([
+          v.kind,
+          v.supported,
+          v.supported ? undefined : v.reasonCode,
+          v.supported ? undefined : v.reason,
+        ]);
+        if (v.supported) expect([a.palletIndex, a.callIndex]).toEqual([v.palletIndex, v.callIndex]);
+      }
+    });
 });
 
 describe("readLiveCapabilities (read-only RPC through an injected send)", () => {

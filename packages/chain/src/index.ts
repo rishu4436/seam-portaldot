@@ -149,19 +149,15 @@ export {
 export {
   liveCapabilities,
   readLiveCapabilities,
-  shapeMismatch,
-  argMatchesClass,
-  isWeightV2RawType,
   SEAM_ACTION_KINDS,
   ACTION_CAPABILITY,
-  ACTION_SHAPES,
   type SeamActionKind,
-  type ArgClass,
   type CapabilityReasonCode,
   type CapabilityPresence,
-  V3_ACTION_KINDS,
   type ActionArg,
   type ActionCapability,
   type LiveCapabilities,
-  type RpcSend,
 } from "./live-capabilities.js";
+export { clientFromSend, type RpcSend } from "./rpc-core.js";
+export { preflightWithClient, type PreflightCoreOptions } from "./preflight-core.js";
+export { preflightReport as preflightReportFromSend } from "./preflight-browser.js";

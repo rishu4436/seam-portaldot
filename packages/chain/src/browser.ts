@@ -51,19 +51,28 @@ export type {
 export {
   liveCapabilities,
   readLiveCapabilities,
-  shapeMismatch,
-  argMatchesClass,
-  isWeightV2RawType,
   SEAM_ACTION_KINDS,
   ACTION_CAPABILITY,
-  ACTION_SHAPES,
   type SeamActionKind,
-  type ArgClass,
   type CapabilityReasonCode,
   type CapabilityPresence,
-  V3_ACTION_KINDS,
   type ActionArg,
   type ActionCapability,
   type LiveCapabilities,
-  type RpcSend,
 } from "./live-capabilities.js";
+export { clientFromSend, type RpcSend, type RpcClient } from "./rpc-core.js";
+// Preflight: one implementation with the node entry (preflightWithClient), over a plain send. Read-only.
+export { preflight, preflightReport } from "./preflight-browser.js";
+export {
+  preflightWithClient,
+  fakeSignedExtrinsic,
+  type PreflightCoreOptions,
+  type PreflightReport,
+  type PreflightTxDetail,
+  type SimulationCoverage,
+  type CoverageBasis,
+  type V3PreflightInfo,
+  type V3StepPreflight,
+  type AccountMappingInfo,
+} from "./preflight-core.js";
+export type { Estimate, PreflightResult, PreflightStep } from "./types.js";
