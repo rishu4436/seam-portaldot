@@ -52,6 +52,8 @@ export interface ConsoleLiveReceipt {
   verificationBasis: string;
   /** Submit-gate runtime lock basis and hashes from the policy result; omitted when not reported. Never metadata bytes. */
   runtimeLock?: import("./signflow").RuntimeLockInfo;
+  /** Submit-gate block detail (signed dry run) as reported; omitted when none. */
+  blockDetail?: import("./signflow").BlockDetail;
 }
 
 export function buildLiveReceipt(a: {
@@ -103,5 +105,6 @@ export function buildLiveReceipt(a: {
       ? "verifyStep (@seam/sdk/browser) on the extrinsic's events read back from its finalized block; not chain_verified (that needs the Node verifyReceiptLive re-read)"
       : "no verifyStep verdict",
     ...(out.runtimeLock ? { runtimeLock: { ...out.runtimeLock } } : {}),
+    ...(out.blockDetail ? { blockDetail: structuredClone(out.blockDetail) } : {}),
   };
 }

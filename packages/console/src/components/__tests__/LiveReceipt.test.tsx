@@ -312,3 +312,49 @@ describe("MultiStepPanel shows the runtime lock basis", () => {
     );
   });
 });
+
+describe("MultiStepPanel shows the signed dry-run block detail", () => {
+  const AT = { number: 120600, hash: "0x" + "5a".repeat(32) };
+  const run = (blockDetail: object) =>
+    ({
+      ok: false,
+      signRequests: 2,
+      stoppedAt: 1,
+      message: "m",
+      steps: [
+        { index: 0, actionId: "s0", status: "sent", message: "x", sendIndex: 0 },
+        {
+          index: 1,
+          actionId: "s1",
+          status: "blocked",
+          message: "Blocked at submit (signed_dry_run_failed)",
+          blockDetail,
+        },
+      ],
+    }) as never;
+  it.each([
+    [
+      "dispatch error",
+      { outcome: "failed", detail: "system_dryRun: dispatch failed: assets.BalanceLow: low" },
+    ],
+    ["validity error", { outcome: "failed", detail: "system_dryRun: invalid transaction: Stale" }],
+  ])("%s: shown on the blocked step with the dry-run block", async (_n, dryRun) => {
+    const { MultiStepPanel } = await import("../Modes");
+    render(
+      <MultiStepPanel
+        r={run({ code: "signed_dry_run_failed", dryRun, dryRunAt: AT, source: "s" })}
+      />,
+    );
+    expect(screen.getByTestId("seq-block-detail-1").textContent).toBe(
+      `Dry-run detail: failed, ${dryRun.detail} (dry run at block #120600, 0x5a5a5a5a…).`,
+    );
+    expect(screen.queryByTestId("seq-block-detail-0")).toBeNull();
+  });
+  it("no detail: says so plainly", async () => {
+    const { MultiStepPanel } = await import("../Modes");
+    render(<MultiStepPanel r={run({ code: "signed_dry_run_failed", source: "s" })} />);
+    expect(screen.getByTestId("seq-block-detail-1").textContent).toBe(
+      "Dry-run detail: no detail reported by the gate.",
+    );
+  });
+});

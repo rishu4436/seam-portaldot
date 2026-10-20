@@ -1,5 +1,6 @@
 import {
   loadChainFns,
+  blockDetailText,
   lockBasisText,
   newApprovalStore,
   preSign,
@@ -982,6 +983,12 @@ export function LivePanel({
                 {SIGNING_LABEL[out.signing]}
                 {out.signingCode ? ` (${out.signingCode})` : ""}
               </dd>
+              {out.blockDetail && (
+                <>
+                  <dt>Block detail</dt>
+                  <dd data-testid="live-block-detail">{blockDetailText(out.blockDetail)}</dd>
+                </>
+              )}
               {out.runtimeLock && (
                 <>
                   <dt>Runtime lock</dt>
@@ -1117,6 +1124,11 @@ export function MultiStepPanel({ r }: { r: MultiStepResult }) {
         {r.steps.map((s) => (
           <li key={s.index} data-status={s.status}>
             <code>{s.actionId}</code> {s.status}: {s.message}
+            {s.blockDetail && (
+              <div className="muted" data-testid={`seq-block-detail-${s.index}`}>
+                {blockDetailText(s.blockDetail)}
+              </div>
+            )}
             {s.runtimeLock && (
               <div className="muted" data-testid={`seq-lock-basis-${s.index}`}>
                 {lockBasisText(s.runtimeLock)}

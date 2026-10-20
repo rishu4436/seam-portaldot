@@ -28,6 +28,8 @@ export interface SequentialReceiptStep {
   reason: string;
   /** Submit-gate runtime lock basis and hashes for this step, from the policy result; omitted when not reported. */
   runtimeLock?: import("./signflow").RuntimeLockInfo;
+  /** Why the submit gate blocked this step (signed dry run), as reported; omitted when none. */
+  blockDetail?: import("./signflow").BlockDetail;
 }
 
 export interface SequentialReceipt {
@@ -79,6 +81,7 @@ export function buildSequentialReceipt(r: MultiStepResult): SequentialReceipt {
       verification: (sent && s.receipt?.verification) || "unknown",
       reason: s.message,
       ...(s.runtimeLock ? { runtimeLock: { ...s.runtimeLock } } : {}),
+      ...(s.blockDetail ? { blockDetail: structuredClone(s.blockDetail) } : {}),
     };
   });
   const result = overallResult(
