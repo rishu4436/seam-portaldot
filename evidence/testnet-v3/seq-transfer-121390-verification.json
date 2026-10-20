@@ -1,0 +1,289 @@
+{
+  "kind": "seam-v3-tx-verification",
+  "title": "Sequential 2-step assets.transfer_keep_alive at blocks #121390 and #121394: independent verification",
+  "readOnly": "read-only RPC; no signer, nothing signed or sent",
+  "generatedAt": "2026-10-20T19:25:56.912Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "specVersion": 3002,
+  "transactionVersion": 2,
+  "mainCommit": "2a445a6",
+  "receiptFile": "/workspace/demo-shots/seam-receipt-seq-0x8a933ad6.json",
+  "signedBy": "signed through the polkadot.js extension by the SEAM team",
+  "reproduce": [
+    "node packages/chain/scripts/v3-find-tx.mjs --hash 0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1 --signer 5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE --asset 806707 --plan /workspace/demo-shots/seam-receipt-seq-0x8a933ad6.json --max-blocks 400",
+    "node packages/chain/scripts/v3-verify-signature.mjs --block 121390 --hash 0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1",
+    "node packages/chain/scripts/v3-find-tx.mjs --hash 0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926 --signer 5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE --asset 806707 --plan /workspace/demo-shots/seam-receipt-seq-0x8a933ad6.json --max-blocks 400",
+    "node packages/chain/scripts/v3-verify-signature.mjs --block 121394 --hash 0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926",
+    "one-off read-only node check (not committed): signedExtrinsicDecoder(facts,{checkpoint:envelope.checkpoint}).metadataHashMode; computePlanDigest(receipt.plan); createApproval(receipt.approvalInputs); blake2-256 and metadataLayoutHash of state_getMetadata and System.Account at #121375/#121389/#121390/#121393/#121394"
+  ],
+  "verdict": "verified",
+  "steps": [
+    {
+      "index": 0,
+      "actionId": "step1",
+      "txHash": "0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1",
+      "block": {
+        "number": 121390,
+        "hash": "0xc151311fd7ed56735c715cd815277e790b0434a77ba64216e444518b5a79948f"
+      },
+      "extrinsicIndex": 1,
+      "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "nonce": 4,
+      "era": {
+        "mortal": true,
+        "period": 64,
+        "phase": 31,
+        "hex": "0xf501"
+      },
+      "eraBirth": {
+        "number": 121375,
+        "hash": "0x67e18d65d90baf4046e74494e0a2e6dd5e6fc90a006a5629748ee4537f11b160"
+      },
+      "metadataHashMode": 0,
+      "calls": [
+        {
+          "call": "assets.transferKeepAlive",
+          "args": {
+            "id": 806707,
+            "target": {
+              "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+            },
+            "amount": 1
+          }
+        }
+      ],
+      "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+      "planStepEncodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+      "feePaid": "1470873880829",
+      "reportedFee": "1470873880829",
+      "events": [
+        {
+          "pallet": "Balances",
+          "name": "Withdraw",
+          "args": [
+            "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+            "1470873880829"
+          ]
+        },
+        {
+          "pallet": "Assets",
+          "name": "Transferred",
+          "args": [
+            "806707",
+            "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+            "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+            "1"
+          ]
+        },
+        {
+          "pallet": "Balances",
+          "name": "Deposit",
+          "args": [
+            "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+            "1470873880829"
+          ]
+        },
+        {
+          "pallet": "TransactionPayment",
+          "name": "TransactionFeePaid",
+          "args": [
+            "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+            "1470873880829",
+            "0"
+          ]
+        },
+        {
+          "pallet": "System",
+          "name": "ExtrinsicSuccess",
+          "args": [
+            "{\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+          ]
+        }
+      ],
+      "accountBefore": {
+        "block": 121389,
+        "nonce": 4,
+        "free": "94116491646463"
+      },
+      "accountAfter": {
+        "block": 121390,
+        "nonce": 5,
+        "free": "92645617765634"
+      },
+      "checks": {
+        "txInBlock": true,
+        "signerIsSeamDemo": true,
+        "nonce": true,
+        "signatureValid": true,
+        "controlsInvalid": true,
+        "metadataHashMode0": true,
+        "callMatchesPlanStep": true,
+        "feeMatches": true,
+        "extrinsicSuccess": true,
+        "assetTransferred": true,
+        "freeDropEqualsFee": true,
+        "accountNonceAdvanced": true
+      },
+      "ok": true
+    },
+    {
+      "index": 1,
+      "actionId": "step2",
+      "txHash": "0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926",
+      "block": {
+        "number": 121394,
+        "hash": "0xe536bf47c351882b4b39689f0d941ce38de8982e4506ad9880209d0e4e6dd036"
+      },
+      "extrinsicIndex": 1,
+      "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "nonce": 5,
+      "era": {
+        "mortal": true,
+        "period": 64,
+        "phase": 31,
+        "hex": "0xf501"
+      },
+      "eraBirth": {
+        "number": 121375,
+        "hash": "0x67e18d65d90baf4046e74494e0a2e6dd5e6fc90a006a5629748ee4537f11b160"
+      },
+      "metadataHashMode": 0,
+      "calls": [
+        {
+          "call": "assets.transferKeepAlive",
+          "args": {
+            "id": 806707,
+            "target": {
+              "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+            },
+            "amount": 1
+          }
+        }
+      ],
+      "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+      "planStepEncodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+      "feePaid": "1470873873177",
+      "reportedFee": "1470873873177",
+      "events": [
+        {
+          "pallet": "Balances",
+          "name": "Withdraw",
+          "args": [
+            "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+            "1470873873177"
+          ]
+        },
+        {
+          "pallet": "Assets",
+          "name": "Transferred",
+          "args": [
+            "806707",
+            "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+            "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+            "1"
+          ]
+        },
+        {
+          "pallet": "Balances",
+          "name": "Deposit",
+          "args": [
+            "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+            "1470873873177"
+          ]
+        },
+        {
+          "pallet": "TransactionPayment",
+          "name": "TransactionFeePaid",
+          "args": [
+            "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+            "1470873873177",
+            "0"
+          ]
+        },
+        {
+          "pallet": "System",
+          "name": "ExtrinsicSuccess",
+          "args": [
+            "{\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+          ]
+        }
+      ],
+      "accountBefore": {
+        "block": 121393,
+        "nonce": 5,
+        "free": "92645617765634"
+      },
+      "accountAfter": {
+        "block": 121394,
+        "nonce": 6,
+        "free": "91174743892457"
+      },
+      "checks": {
+        "txInBlock": true,
+        "signerIsSeamDemo": true,
+        "nonce": true,
+        "signatureValid": true,
+        "controlsInvalid": true,
+        "metadataHashMode0": true,
+        "callMatchesPlanStep": true,
+        "feeMatches": true,
+        "extrinsicSuccess": true,
+        "assetTransferred": true,
+        "freeDropEqualsFee": true,
+        "accountNonceAdvanced": true
+      },
+      "ok": true
+    }
+  ],
+  "noncesConsecutive": true,
+  "planDigest": {
+    "recomputed": "0xcc65466679d0d2f98f7b3b06f9e5f7ac55b1cda92bdd33309a3f9a7f1ea41146",
+    "receipt": "0xcc65466679d0d2f98f7b3b06f9e5f7ac55b1cda92bdd33309a3f9a7f1ea41146",
+    "match": true
+  },
+  "approvalHash": {
+    "recomputed": "0x8a933ad63a8f7f335c8b4a36281445140f180957c98c804b174a403533a990b5",
+    "receipt": "0x8a933ad63a8f7f335c8b4a36281445140f180957c98c804b174a403533a990b5",
+    "match": true,
+    "method": "createApproval({...receipt.approvalInputs, now: new Date(receipt.approvalInputs.now)}) from @seam/policy (main 2a445a6)"
+  },
+  "runtimeLock": {
+    "receipt": [
+      {
+        "ok": true,
+        "changed": [],
+        "reason": "runtime unchanged since the plan was prepared",
+        "lockBasis": "raw",
+        "code": "runtime_unchanged"
+      },
+      {
+        "ok": true,
+        "changed": [],
+        "reason": "runtime unchanged since the plan was prepared",
+        "lockBasis": "raw",
+        "code": "runtime_unchanged"
+      }
+    ],
+    "rawMetadataHashByBlock": {
+      "121375": "0x66e056e6c2589f860f954f2ebf8854354f0e5fa5d96ff5f4b30e8a3cfe30addb",
+      "121389": "0x66e056e6c2589f860f954f2ebf8854354f0e5fa5d96ff5f4b30e8a3cfe30addb",
+      "121390": "0x66e056e6c2589f860f954f2ebf8854354f0e5fa5d96ff5f4b30e8a3cfe30addb",
+      "121393": "0x66e056e6c2589f860f954f2ebf8854354f0e5fa5d96ff5f4b30e8a3cfe30addb",
+      "121394": "0x66e056e6c2589f860f954f2ebf8854354f0e5fa5d96ff5f4b30e8a3cfe30addb"
+    },
+    "layoutHashByBlock": {
+      "121375": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+      "121389": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+      "121390": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+      "121393": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+      "121394": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304"
+    },
+    "receiptFingerprintMetadataHash": "0x66e056e6c2589f860f954f2ebf8854354f0e5fa5d96ff5f4b30e8a3cfe30addb",
+    "rawUnchanged": true
+  },
+  "notes": [
+    "v3-find-tx prints callMatch false / outcome mismatch only because it compares one tx against all plan steps at once (atomic view); the step-level comparison (callHex === plan.steps[i].encodedCall) is the right one for a sequential plan and is equal for both steps.",
+    "The receipt records only the plan-level envelope nonce (approvalInputs.envelope.nonce = 4); receipt.steps[] carry no per-step nonce. The step-2 nonce (5) is taken from the chain only."
+  ]
+}
