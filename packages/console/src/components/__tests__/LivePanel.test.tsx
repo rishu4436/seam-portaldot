@@ -48,6 +48,8 @@ const fakeHost = (): LiveHost => ({
     return toHex(JSON.stringify({ call: r.callHex, nonce: r.nonce, sig }));
   },
   extrinsicHash: hashOf,
+  feeEstimateExtrinsic: (req) =>
+    toHex(JSON.stringify({ fee: (req as { callHex: string }).callHex })),
 });
 const factsOk = async (): Promise<V3FactsResult> => ({
   ok: true,
@@ -68,6 +70,11 @@ const factsOk = async (): Promise<V3FactsResult> => ({
 });
 
 let submitted: string[] = [];
+let feeReply: unknown = {
+  weight: { ref_time: 1, proof_size: 2 },
+  class: "normal",
+  partialFee: "1480910852424",
+};
 let calls: string[] = [];
 function mockRpc() {
   const rpc = (method: string, params: unknown[]): unknown => {
@@ -89,6 +96,9 @@ function mockRpc() {
       case "author_submitExtrinsic":
         submitted.push(params[0] as string);
         return hashOf(params[0] as string);
+      case "payment_queryInfo":
+        if (feeReply instanceof Error) throw feeReply;
+        return feeReply;
       case "chain_getBlock":
         return params[0] === HEAD
           ? { block: { header: { number: "0xc9", parentHash: PARENT }, extrinsics: submitted } }
@@ -140,6 +150,11 @@ const press = () => fireEvent.click(screen.getByRole("button", { name: /check li
 beforeEach(() => {
   submitted = [];
   calls = [];
+  feeReply = {
+    weight: { ref_time: 1, proof_size: 2 },
+    class: "normal",
+    partialFee: "1480910852424",
+  };
   mockRpc();
 });
 afterEach(() => {
@@ -174,6 +189,49 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     expect(screen.getByRole("group", { name: "Transaction confirmation" })).toBeTruthy();
     expect(screen.getByText("Signed bytes match the approval")).toBeTruthy();
     expect(calls).toContain("author_submitExtrinsic");
+    expect(screen.getByText("1480910852424 base units (payment_queryInfo)")).toBeTruthy();
+    expect(calls.indexOf("payment_queryInfo")).toBeLessThan(
+      calls.indexOf("author_submitExtrinsic"),
+    );
+  });
+
+  it("fee estimate RPC error: blocked before the wallet is asked", async () => {
+    feeReply = new Error("boom");
+    const sign = mockExtension(GOOD_SIG);
+    renderPanel();
+    press();
+    await waitFor(() =>
+      expect(screen.getByText(/Fee estimate failed, so nothing will be signed/)).toBeTruthy(),
+    );
+    expect(sign).not.toHaveBeenCalled();
+    expect(submitted).toHaveLength(0);
+  });
+
+  it("fee estimate without partialFee: blocked", async () => {
+    feeReply = { weight: 1, class: "normal" };
+    const sign = mockExtension(GOOD_SIG);
+    renderPanel();
+    press();
+    await waitFor(() => expect(screen.getByText(/Fee estimate failed/)).toBeTruthy());
+    expect(sign).not.toHaveBeenCalled();
+  });
+
+  it("host without a fee encoder: blocked", async () => {
+    const sign = mockExtension(GOOD_SIG);
+    const h = fakeHost();
+    delete h.feeEstimateExtrinsic;
+    render(
+      <LivePanel
+        plan={plan}
+        facts={facts}
+        approval={approveWalletDemo(plan)}
+        hostLoader={async () => h}
+        factsStep={factsOk}
+      />,
+    );
+    press();
+    await waitFor(() => expect(screen.getByText(/Fee estimate failed/)).toBeTruthy());
+    expect(sign).not.toHaveBeenCalled();
   });
 
   it("blocks a tampered signature before submit", async () => {

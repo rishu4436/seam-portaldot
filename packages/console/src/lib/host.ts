@@ -48,6 +48,9 @@ type BuildFn = (
   meta: { actionIds: string[] },
 ) => unknown;
 
+/** 64 bytes of 0x01: a placeholder signature for fee estimation only. */
+export const FILLER_SIG = "0x" + "01".repeat(64);
+
 const isHex = (v: unknown): v is string => typeof v === "string" && /^0x[0-9a-fA-F]*$/.test(v);
 
 /** True only for facts that carry what the chain package needs to decode and encode (the compiler's RuntimeFacts shape). */
@@ -124,6 +127,15 @@ export function createLiveHost(
       return mod.assembleSignedExtrinsic(r.payload, signature, f);
     },
     extrinsicHash: hash,
+    // Fee estimate only: the approved payload with a FILLER signature (not verified, never valid), sent to payment_queryInfo.
+    // The node cannot accept it as a transaction; it exists so the fee is known before the wallet is asked.
+    feeEstimateExtrinsic(request) {
+      const r = request as { payload: Parameters<ChainBrowser["assembleSignedExtrinsic"]>[0] };
+      return mod.assembleSignedExtrinsic(r.payload, FILLER_SIG, f, {
+        scheme: "sr25519",
+        verify: false,
+      });
+    },
   };
 }
 
