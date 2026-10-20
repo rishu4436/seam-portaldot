@@ -31,6 +31,10 @@ export interface StepReport {
   status: "sent" | "blocked" | "not_run" | "failed";
   message: string;
   receipt?: ReceiptStepLike;
+  /** The send order (0-based) when this step's transaction was broadcast; absent when it was never sent. */
+  sendIndex?: number;
+  /** The read-back outcome (status, txHash, block, decoded events, extrinsicIndex); never signed bytes. */
+  outcome?: StepOutcome & { extrinsicIndex?: number };
 }
 export interface MultiStepResult {
   ok: boolean;
@@ -41,6 +45,13 @@ export interface MultiStepResult {
   stoppedAt?: number;
   gate?: GateOutcome;
   message: string;
+  /**
+   * The ONE engine approval (preSign's createApproval) binding the whole plan, with every input createApproval took
+   * plus its `now`, so the hash can be recomputed. Absent when preSign did not approve.
+   */
+  approval?: { hash: string; inputs: Record<string, unknown> & { now: string } };
+  /** The compiled plan the run used (no signed bytes). */
+  plan?: unknown;
 }
 
 interface PlanLike {
@@ -145,6 +156,8 @@ export async function runPlanSteps(args: {
     message: "Not run.",
   }));
   let signRequests = 0;
+  // Set once preSign approves; stop() reports it from then on.
+  const bound: { approval?: MultiStepResult["approval"] } = {};
   const holder = args.holder ?? new SignedHolder();
   // Every exit drops the signed bytes. Messages never carry them (redact covers any echo from a node or wallet).
   const stop = (
@@ -166,6 +179,8 @@ export async function runPlanSteps(args: {
       steps,
       stoppedAt: i,
       gate,
+      ...(bound.approval ? { approval: bound.approval } : {}),
+      plan: args.input.plan,
       message: `Stopped at step ${i + 1}${target ? ` (${target.actionId})` : ""}: ${msg}`,
     };
   };
@@ -185,6 +200,13 @@ export async function runPlanSteps(args: {
   if (!pre.res.ok) return stop(0, pre.res.message, pre.gate);
   const preSigned = pre.res.value;
   const hash = preSigned.approval.hash;
+  bound.approval = {
+    hash,
+    inputs: {
+      ...(preSigned.approvalInput as Record<string, unknown>),
+      now: preSigned.approvedAt,
+    },
+  };
   // ONE envelope for the whole plan (Chainsmith's buildSigningEnvelope in preSign): same checkpoint and short mortality
   // for every step; only the nonce moves (n + i). Its expiresAt is checked again before every send.
   const expiresAt = Date.parse(
@@ -251,7 +273,10 @@ export async function runPlanSteps(args: {
     if (expired()) return stop(i, expiredMsg, pre.gate);
     args.store.markUsed(usageKey(hash as `0x${string}`, sequential ? i : undefined));
     const r = await args.submitAndWait(i, all[i]);
-    if (!r.ok) return stop(i, r.message, pre.gate, "failed");
+    if (!r.ok) {
+      steps[i]!.sendIndex = i;
+      return stop(i, r.message, pre.gate, "failed");
+    }
     let callHex: string | undefined;
     try {
       callHex = callOfSigned(args.chain.signedExtrinsicDecoder?.(args.facts) as never, all[i]);
@@ -288,6 +313,9 @@ export async function runPlanSteps(args: {
           status: receipt.status === "failed" ? "failed" : "sent",
           message: receipt.reason,
           receipt,
+          sendIndex: i,
+          // Read-back data only, with any echo of the signed bytes redacted.
+          outcome: JSON.parse(holder.redact(JSON.stringify(r.value))),
         });
     }
     callHex = undefined;
@@ -304,6 +332,8 @@ export async function runPlanSteps(args: {
     signRequests,
     steps,
     gate: pre.gate,
+    approval: bound.approval,
+    plan: args.input.plan,
     message: `All ${n} transaction(s) sent.`,
   };
 }

@@ -233,3 +233,47 @@ describe("top-level Result line renders the receipt's result (single source of t
     expect(screen.getByTestId("receipt-live-status").textContent).toBe("unverified");
   });
 });
+
+describe("MultiStepPanel Result line is the sequential receipt's result", () => {
+  const base = {
+    signRequests: 2,
+    message: "m",
+    approval: { hash: "0x" + "ab".repeat(32), inputs: { now: "t" } },
+  };
+  const sentStep = (index: number, verification: "verified" | "not_verified") => ({
+    index,
+    actionId: `s${index}`,
+    status: "sent" as const,
+    message: "x",
+    sendIndex: index,
+    receipt: {
+      actionId: `s${index}`,
+      status: "finalized" as const,
+      events: [],
+      verification,
+      reason: "x",
+    },
+  });
+  it.each([
+    ["verified", { ok: true, steps: [sentStep(0, "verified"), sentStep(1, "verified")] }],
+    ["not_verified", { ok: true, steps: [sentStep(0, "verified"), sentStep(1, "not_verified")] }],
+    [
+      "not_verified",
+      {
+        ok: false,
+        stoppedAt: 1,
+        steps: [
+          sentStep(0, "verified"),
+          { index: 1, actionId: "s1", status: "not_run" as const, message: "Not run." },
+        ],
+      },
+    ],
+  ])("renders %s", async (want, r) => {
+    const { MultiStepPanel } = await import("../Modes");
+    const { buildSequentialReceipt } = await import("../../lib/seqreceipt");
+    const res = { ...base, ...r } as never;
+    render(<MultiStepPanel r={res} />);
+    expect(screen.getByTestId("seq-receipt-result").textContent).toBe(want);
+    expect(buildSequentialReceipt(res).result).toBe(want);
+  });
+});

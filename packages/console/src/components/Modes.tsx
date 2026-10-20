@@ -27,6 +27,7 @@ import { planCall, fingerprintMatches } from "../lib/liverequest";
 import type { CompiledStepContext } from "../lib/stepverify";
 import { checkRebind } from "../lib/rebind";
 import { buildLiveReceipt } from "../lib/livereceipt";
+import { buildSequentialReceipt } from "../lib/seqreceipt";
 import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
 import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
 import {
@@ -1065,11 +1066,32 @@ export function RiskLimits({
 
 /** Per-step result of a multi-step LIVE run: which step stopped and why. */
 export function MultiStepPanel({ r }: { r: MultiStepResult }) {
+  // Single source of truth: the Result line and the download are the same receipt object.
+  const receipt = buildSequentialReceipt(r);
   return (
     <div className="small" role="group" aria-label="Multi-step run">
       <p>
         <strong>{r.ok ? "All steps sent" : "Stopped"}</strong>: {r.message}
       </p>
+      <dl className="kv small">
+        <dt>Result</dt>
+        <dd data-testid="seq-receipt-result">{receipt.result}</dd>
+        <dt>Approval</dt>
+        <dd>
+          <code className="wrap">{receipt.approvalHash ?? "no engine approval bound"}</code>
+        </dd>
+      </dl>
+      {receipt.approvalHash && (
+        <button
+          type="button"
+          className="ghost xs"
+          onClick={() =>
+            downloadJson(`seam-receipt-seq-${receipt.approvalHash!.slice(0, 10)}.json`, receipt)
+          }
+        >
+          Download receipt
+        </button>
+      )}
       <ol>
         {r.steps.map((s) => (
           <li key={s.index} data-status={s.status}>
@@ -1170,7 +1192,7 @@ async function runMultiStepLive(a: {
         status,
       );
       return r.ok
-        ? { ok: true, value: r.outcome }
+        ? { ok: true, value: { ...r.outcome, extrinsicIndex: r.extrinsicIndex } as never }
         : {
             ok: true,
             value: {
