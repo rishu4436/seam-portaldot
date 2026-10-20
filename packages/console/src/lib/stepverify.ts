@@ -9,6 +9,7 @@ import { Metadata, TypeRegistry } from "@polkadot/types";
 import { u8aToHex } from "@polkadot/util";
 import { blake2AsHex, xxhashAsHex } from "@polkadot/util-crypto";
 import {
+  expectedEvent,
   perStepOfBatch,
   verifyStep,
   type ChainEvent,
@@ -45,7 +46,8 @@ function argToString(c: Codecish, typeName: string): string {
 }
 
 export type OutcomeRead =
-  { ok: true; outcome: StepOutcome; extrinsic: string } | { ok: false; message: string };
+  | { ok: true; outcome: StepOutcome; extrinsic: string; extrinsicIndex: number }
+  | { ok: false; message: string };
 
 /** Reads one extrinsic's events back from its block (by tx hash), decoded with the metadata at that block. */
 export async function readExtrinsicOutcome(
@@ -101,6 +103,7 @@ export async function readExtrinsicOutcome(
         events,
       },
       extrinsic: xts[idx]!,
+      extrinsicIndex: idx,
     };
   } catch (e) {
     return {
@@ -151,17 +154,40 @@ export function callOfSigned(
 }
 
 export interface CompiledStepContext {
-  /** The compiled plan's step (compiler PlanStep). */
+  /** The compiled plan's step (compiler PlanStep) for a single-call plan. */
   step: unknown;
   signerAccountId: string;
   runtime?: RuntimeLike;
   /** Decoder for signed extrinsics (@seam/chain/browser signedExtrinsicDecoder(facts)); gives the call read back. */
   decode?: (x: Hex) => unknown;
+  /** Atomic plans: the compiled plan; its steps are judged per step from the one batch outcome (perStepOfBatch). */
+  plan?: unknown;
+}
+
+export const PER_STEP_FROM_BATCH = "per-step from batch outcome";
+
+/**
+ * verifyStep verdicts for the plan steps a finalized extrinsic carried. Single call: verifyStep on that step. Atomic:
+ * perStepOfBatch + verifyStep for each step, each reason labelled "per-step from batch outcome". The call bytes are read
+ * back from the block and dropped; no output carries call or signed bytes.
+ */
+export function stepVerdicts(
+  ctx: CompiledStepContext,
+  outcome: StepOutcome,
+  extrinsic: string | undefined,
+): SdkReceiptStep[] {
+  const callHex = callOfSigned(ctx.decode, extrinsic);
+  const atomic = (ctx.plan as { mode?: string } | undefined)?.mode?.startsWith("atomic");
+  if (atomic)
+    return atomicStepReceipts(ctx.plan, outcome, callHex, ctx.signerAccountId, ctx.runtime).map(
+      (s) => ({ ...s, reason: `${PER_STEP_FROM_BATCH}: ${s.reason}` }),
+    );
+  return [verifyPlanStep(ctx.step, ctx.signerAccountId, outcome, ctx.runtime, callHex)];
 }
 
 /**
- * Single-call receipt check with verifyStep (any step kind). The call bytes come from the extrinsic as read back from the
- * finalized block, decoded by the chain package; they are not kept. Returns the console's EffectVerdict shape.
+ * Receipt check with verifyStep (any step kind; atomic per step from the batch). Returns the console's EffectVerdict
+ * shape with the per-step verdicts; "effect_proven" only when every step is verified.
  */
 export async function stepEffectCheck(
   rpc: RpcTransport,
@@ -170,21 +196,82 @@ export async function stepEffectCheck(
   ctx: CompiledStepContext,
 ): Promise<import("./effectcheck").EffectVerdict> {
   const at = new Date().toISOString();
-  const actionId = (ctx.step as { actionId?: string })?.actionId ?? "";
+  const actionId = (ctx.step as { actionId?: string })?.actionId ?? "batch";
   const r = await readExtrinsicOutcome(rpc, actionId, txHash, block, "finalized");
   if (!r.ok) return { verdict: "not_verified", reason: r.message, checkedAt: at };
-  const v = verifyPlanStep(
-    ctx.step,
-    ctx.signerAccountId,
-    r.outcome,
-    ctx.runtime,
-    callOfSigned(ctx.decode, r.extrinsic),
+  return effectFromOutcome(ctx, r.outcome, r.extrinsic, r.extrinsicIndex, at);
+}
+
+/** The actual fee this extrinsic paid: TransactionPayment.TransactionFeePaid(who, actualFee, tip). undefined if absent. */
+export function feePaidOf(outcome: StepOutcome): string | undefined {
+  const e = outcome.events.find(
+    (x) => x.pallet === "TransactionPayment" && x.name === "TransactionFeePaid",
   );
-  return v.verification === "verified"
-    ? { verdict: "effect_proven", extrinsicIndex: -1, event: {}, reason: v.reason, checkedAt: at }
+  const v = e?.args[1];
+  return v && /^\d+$/.test(v) ? v : undefined;
+}
+
+/** The plan's expected effect event as found in the outcome (transfer: named fields). {} when none matched. */
+export function matchedEvent(
+  ctx: CompiledStepContext,
+  outcome: StepOutcome,
+): Record<string, string> {
+  const step = ctx.step as { kind?: string } | undefined;
+  if (!step) return {};
+  const want = expectedEvent(step as never, ctx.signerAccountId as Hex);
+  if (!want) return {};
+  const lc = (x: string) => x.toLowerCase();
+  const hit = outcome.events.find(
+    (e) =>
+      e.pallet === want.pallet &&
+      e.name === want.name &&
+      e.args.length === want.args.length &&
+      want.args.every((w, i) => lc(e.args[i]!) === lc(w)),
+  );
+  if (!hit) return {};
+  if (step.kind === "assets.transfer") {
+    const [assetId, from, to, amount] = hit.args;
+    return {
+      pallet: hit.pallet,
+      name: hit.name,
+      assetId: assetId!,
+      from: from!,
+      to: to!,
+      amount: amount!,
+    };
+  }
+  return { pallet: hit.pallet, name: hit.name, args: JSON.stringify(hit.args) };
+}
+
+/** Builds the EffectVerdict from a read-back outcome: verifyStep per step, inclusion index, matched event, actual fee. */
+export function effectFromOutcome(
+  ctx: CompiledStepContext,
+  outcome: StepOutcome,
+  extrinsic: string | undefined,
+  extrinsicIndex: number,
+  at = new Date().toISOString(),
+): import("./effectcheck").EffectVerdict {
+  const steps = stepVerdicts(ctx, outcome, extrinsic);
+  const feePaid = feePaidOf(outcome);
+  const bad = steps.find((v) => v.verification !== "verified");
+  return !bad && steps.length
+    ? {
+        verdict: "effect_proven",
+        extrinsicIndex,
+        event: matchedEvent(ctx, outcome),
+        reason: steps.map((v) => v.reason).join(" "),
+        steps,
+        ...(feePaid ? { feePaid } : {}),
+        checkedAt: at,
+      }
     : {
         verdict: "not_verified",
-        reason: `${v.verification}${v.code ? ` (${v.code})` : ""}: ${v.reason}`,
+        reason: bad
+          ? `${bad.verification}${bad.code ? ` (${bad.code})` : ""}: ${bad.reason}`
+          : "No step was checked.",
+        steps,
+        extrinsicIndex,
+        ...(feePaid ? { feePaid } : {}),
         checkedAt: at,
       };
 }

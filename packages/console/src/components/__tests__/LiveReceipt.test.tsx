@@ -95,4 +95,54 @@ describe("LiveReceipt effect check", () => {
     expect(check).not.toHaveBeenCalled();
     expect(stepCheck).toHaveBeenCalledTimes(1);
   });
+
+  it("Download writes exactly the receipt the panel shows (result + verifyStep steps)", async () => {
+    const step = {
+      actionId: "pay",
+      status: "finalized",
+      events: [],
+      verification: "verified",
+      coverage: "effect_proven",
+      reason: "Transfer confirmed: asset, amount and account all match the plan.",
+    };
+    const stepCheck = vi.fn(async () => ({
+      verdict: "effect_proven" as const,
+      extrinsicIndex: -1,
+      event: {},
+      reason: step.reason,
+      steps: [step as never],
+      checkedAt: "t",
+    }));
+    const blobs: string[] = [];
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      class extends RealBlob {
+        constructor(parts: BlobPart[], o?: BlobPropertyBag) {
+          super(parts, o);
+          blobs.push(String(parts[0]));
+        }
+      },
+    );
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(
+      <LiveReceipt
+        out={out}
+        plan={plan}
+        rpc={rpc}
+        compiled={{ step: { kind: "assets.transfer" }, signerAccountId: "0x01" }}
+        stepCheck={stepCheck}
+      />,
+    );
+    await waitFor(() => expect(screen.getByTestId("receipt-result").textContent).toBe("verified"));
+    expect(screen.getByTestId("receipt-steps").textContent).toMatch(/pay verified/);
+    screen.getByRole("button", { name: /download receipt/i }).click();
+    expect(click).toHaveBeenCalled();
+    const saved = JSON.parse(blobs.at(-1)!);
+    expect(saved.result).toBe(screen.getByTestId("receipt-result").textContent);
+    expect(saved.steps).toEqual([step]);
+    expect(saved.verification).toBe("effect_proven");
+    vi.unstubAllGlobals();
+  });
 });

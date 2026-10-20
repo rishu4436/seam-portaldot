@@ -1,0 +1,18 @@
+{
+  "source": "Fields of the console receipt Anchor downloaded for 0x74a76dcb (demo-shots/seam-receipt-0x74a76dcb.json), kept to show the old values. Chain data is read from evidence/testnet-v3/builder-transfer-119634-verification.json on main.",
+  "oldReceipt": {
+    "result": "unverified",
+    "fee": "1470877255420",
+    "approvalHash": "0xcaa071a7ac70e8e286b9c0d5c05b4fe7d7fec8fcbe745b86072ce8e8c999f63f",
+    "planDigest": "0xcaa071a7ac70e8e286b9c0d5c05b4fe7d7fec8fcbe745b86072ce8e8c999f63f",
+    "manifestDigest": "0x04b35bfbfc2845fd2ef75e6f989af7a7906976fe08c52f8db34bc091ab779075",
+    "fingerprintDigest": "0xb1b2927cd62ab99d5592b4082c4efba4458c1f7fdb48fb65105a48328e9680cd",
+    "effect": {
+      "verdict": "effect_proven",
+      "extrinsicIndex": -1,
+      "event": {},
+      "reason": "Transfer confirmed: asset, amount and account all match the plan.",
+      "checkedAt": "2026-10-20T16:26:07.034Z"
+    }
+  }
+}
