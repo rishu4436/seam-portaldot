@@ -68,3 +68,45 @@ export function parseRuntimeFlag(
     );
   return fp;
 }
+
+/** Where a run record keeps its receipt, in the order `seam verify` prefers them. */
+export const RUN_RECORD_RECEIPT_FIELDS = [
+  "nftVerdictReceipt.receipt",
+  "run.receipt",
+  "receipt",
+] as const;
+
+const at = (d: unknown, path: string): unknown =>
+  path
+    .split(".")
+    .reduce<unknown>(
+      (o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined),
+      d,
+    );
+
+/**
+ * The receipt to check from a `seam verify` file: a receipt as is, or from a run record (evidence/testnet-v3/runs/plan-*.json)
+ * the first of `nftVerdictReceipt.receipt`, `run.receipt`, `receipt` that is present. `field` names the one used; `plan` is
+ * the record's own plan, if it has one. Throws a clear usage error when there is nothing to check.
+ */
+export function pickReceipt(
+  d: unknown,
+  file: string,
+): { receipt: unknown; field?: string; plan?: unknown } {
+  if (
+    d &&
+    typeof d === "object" &&
+    (d as { receiptVersion?: unknown }).receiptVersion !== undefined
+  )
+    return { receipt: d };
+  for (const field of RUN_RECORD_RECEIPT_FIELDS) {
+    const r = at(d, field);
+    if (r && typeof r === "object") {
+      const plan = at(d, "plan");
+      return { receipt: r, field, plan: plan && typeof plan === "object" ? plan : undefined };
+    }
+  }
+  throw new Error(
+    `${file} is not a SEAM receipt, and has none of the run-record fields ${RUN_RECORD_RECEIPT_FIELDS.join(", ")}. Pass a receipt JSON, or a run record (evidence/testnet-v3/runs/plan-*.json) that has one of those fields.`,
+  );
+}
