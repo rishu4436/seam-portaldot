@@ -12,6 +12,7 @@ import type {
 import { digest } from "./digest.js";
 import { checkAddressFor, normalizeAccount } from "./address.js";
 import { fingerprintDigest } from "./runtimeLock.js";
+import { checkDeployStep, isDeployKind, type DeployPolicy } from "./deploy.js";
 
 export type AllowList = "any" | string[];
 
@@ -53,6 +54,8 @@ export interface Policy {
   /** Require a successful system_dryRun of the signed transaction(s) at the submit gate. A failed one always blocks. */
   requireSignedDryRun: boolean;
   /** Which preflight unknowns may pass. Unknown capabilities are never allowed. */
+  /** Optional caps for revive.instantiate_with_code / revive.map_account steps (see deploy.ts). Missing = deploys blocked. */
+  deploy?: DeployPolicy;
   allowUnknown: {
     fee?: boolean;
     weight?: boolean;
@@ -274,6 +277,8 @@ export function evaluatePolicy({
       );
     } else pass("capability", `${step.capability} is observed and allowed`, id);
 
+    if (isDeployKind(step.kind as string))
+      rules.push(...checkDeployStep(step, policy.deploy, plan.signer.publicKey));
     const d = step.decodedArgs;
     const h160 = step.kind === "revive.call";
     for (const key of ["recipient", "contract"] as const) {
