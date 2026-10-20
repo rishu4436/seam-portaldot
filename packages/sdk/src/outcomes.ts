@@ -117,7 +117,15 @@ export interface OutcomeVerdict {
  * - `call_args_success_and_emitted`: the above, plus the `Revive.ContractEmitted` the caller expected, from `dest`, with
  *   the expected data (and topics, if given). `effect_proven`, but only as strong as that expected event.
  */
-export type EffectBasis = "call_args_and_success" | "call_args_success_and_emitted";
+export type EffectBasis =
+  | "call_args_and_success"
+  | "call_args_success_and_emitted"
+  /** instantiate_with_code: call bytes match the plan (incl. keccak256 of the code), success, and Revive.Instantiated by the signer's H160. */
+  | "call_args_success_and_instantiated"
+  /** map_account without a state read: the call succeeded; V3 emits no event, so nothing more is shown. */
+  | "call_success"
+  /** map_account: a supplied Revive.OriginalAccount read for the signer's H160. */
+  | "original_account_readback";
 
 const lc = (s: string | undefined) => (s ?? "").toLowerCase();
 const fmt = (e: ChainEvent) => `${e.pallet}.${e.name}(${e.args.join(", ")})`;

@@ -305,7 +305,12 @@ export async function verifyReceiptLive(
           undefined,
           runtime,
         );
-        const needsRuntime = planStep.kind === "nfts.mint" || planStep.kind === "revive.call";
+        const needsRuntime = [
+          "nfts.mint",
+          "revive.call",
+          "revive.instantiate_with_code",
+          "revive.map_account",
+        ].includes(planStep.kind as string);
         if (again.verification === "not_verified")
           problems.push(
             `${s.actionId}: the receipt says ${s.verification}, the chain's events give not_verified${again.code ? ` (${again.code})` : ""}.`,

@@ -7,6 +7,19 @@ import {
   verifyReviveCallV3Outcome,
 } from "./outcomes.js";
 import type { EffectBasis, NftsRuntime, OutcomeVerdict } from "./outcomes.js";
+import {
+  verifyMapAccountOutcome,
+  verifyReviveInstantiateOutcome,
+  type OriginalAccountRead,
+} from "./deploy-outcomes.js";
+
+/** Step kinds with a default V3 verdict (spec 3002 only for the revive ones). */
+const VERDICT_KINDS = [
+  "nfts.mint",
+  "revive.call",
+  "revive.instantiate_with_code",
+  "revive.map_account",
+];
 import { overallResult, type ReceiptStep, type StepStatus } from "@seam/policy";
 
 /**
@@ -53,6 +66,8 @@ export interface ContractEffect {
   stateReadback?: { expected: string; actual?: string | null };
   /** revive.call on V3 only: exact topics of the expected `Revive.ContractEmitted`, in order. Checked only when given. */
   emittedTopics?: Hex[];
+  /** revive.map_account on V3 only: a `Revive.OriginalAccount` read after the call. Without it the mapping is not proven. */
+  originalAccount?: OriginalAccountRead;
 }
 
 /**
@@ -213,8 +228,12 @@ export function verifyStep(
         ? defaultNftsVerdict(step, outcome, runtime)
         : step.kind === "revive.call"
           ? defaultReviveVerdict(step, outcome, effect, runtime)
-          : undefined);
-    if (v && (step.kind === "revive.call" || step.kind === "nfts.mint"))
+          : (step.kind as string) === "revive.instantiate_with_code"
+            ? defaultInstantiateVerdict(step, signerAccountId, outcome, runtime)
+            : (step.kind as string) === "revive.map_account"
+              ? defaultMapAccountVerdict(signerAccountId, outcome, effect, runtime)
+              : undefined);
+    if (v && VERDICT_KINDS.includes(step.kind as string))
       return applyVerdict(r, outcome, v, final, base1);
     return r(
       "unknown",
@@ -310,6 +329,60 @@ function defaultReviveVerdict(
   );
 }
 
+/**
+ * The default revive.instantiate_with_code verdict on V3 spec 3002 (`verifyReviveInstantiateOutcome`). On any other
+ * runtime there is none, so the step stays `unsupported_runtime`.
+ */
+function defaultInstantiateVerdict(
+  step: PlanStep,
+  signerAccountId: Hex,
+  outcome: StepOutcome,
+  runtime: NftsRuntime | undefined,
+): OutcomeVerdict | undefined {
+  if (!isObservedV3(runtime)) return undefined;
+  if (outcome.status !== "finalized" && outcome.status !== "included") return undefined;
+  const a = step.decodedArgs as Record<string, string | null | undefined>;
+  return verifyReviveInstantiateOutcome(
+    {
+      status: outcome.status,
+      events: outcome.events,
+      signerAccountId,
+      ...(outcome.callHex ? { callHex: outcome.callHex } : {}),
+      ...(runtime ? { runtime } : {}),
+    },
+    {
+      palletIndex: step.palletIndex,
+      callIndex: step.callIndex,
+      codeHash: a.codeHash ?? undefined,
+      value: a.value ?? undefined,
+      gasLimit: a.gasLimit ?? undefined,
+      proofSize: a.proofSize ?? undefined,
+      storageDepositLimit: a.storageDepositLimit,
+    },
+  );
+}
+
+/**
+ * The default revive.map_account verdict on V3 spec 3002 (`verifyMapAccountOutcome`). V3 emits no event for it, so it is
+ * `unknown` unless `effect.originalAccount` supplies a Revive.OriginalAccount read. Other runtimes: none.
+ */
+function defaultMapAccountVerdict(
+  signerAccountId: Hex,
+  outcome: StepOutcome,
+  effect: ContractEffect | undefined,
+  runtime: NftsRuntime | undefined,
+): OutcomeVerdict | undefined {
+  if (!isObservedV3(runtime)) return undefined;
+  if (outcome.status !== "finalized" && outcome.status !== "included") return undefined;
+  return verifyMapAccountOutcome({
+    status: outcome.status,
+    events: outcome.events,
+    signerAccountId,
+    ...(runtime ? { runtime } : {}),
+    ...(effect?.originalAccount ? { originalAccount: effect.originalAccount } : {}),
+  });
+}
+
 function applyVerdict(
   r: (
     v: ReceiptStep["verification"],
@@ -323,7 +396,10 @@ function applyVerdict(
   base1: VerifierCoverage,
 ): SdkReceiptStep {
   if (v.verification === "verified") {
-    const matched = !!v.matchedEvent && outcome.events.some((e) => fmt(e) === v.matchedEvent);
+    // A state-read verdict (map_account) has no event to match; it still needs a finalized step and effect_proven.
+    const matched =
+      v.basis === "original_account_readback" ||
+      (!!v.matchedEvent && outcome.events.some((e) => fmt(e) === v.matchedEvent));
     if (!final || !matched || v.coverage !== "effect_proven") {
       return r(
         "unknown",

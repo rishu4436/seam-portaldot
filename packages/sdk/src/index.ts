@@ -9,3 +9,4 @@ export * from "./flow.js";
 export * from "./offline.js";
 export * from "./cliargs.js";
 export * from "./fileStore.js";
+export * from "./deploy-outcomes.js";
