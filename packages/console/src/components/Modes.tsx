@@ -476,6 +476,14 @@ export function LivePanel({
   // Approval hashes already sent with. An approval is single use, so a second send with it is blocked here too.
   const [spent, setSpent] = useState<string[]>([]);
   const ok = !!v3RpcUrl(url);
+  // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
+  const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
+  useEffect(() => {
+    setOut(undefined);
+    setV3(undefined);
+    setDismissed(false);
+  }, [planKey]);
+  const ready = !!plan && !!approval && !approval.used;
   // The request comes from the compiled plan already in the console. Signature checks and extrinsic assembly come from the
   // injected LiveHost (planned: @seam/chain/browser); the console has no local copy, so without a host LIVE blocks before signing.
   const run = async () => {
@@ -573,7 +581,13 @@ export function LivePanel({
             aria-describedby="v3url-help"
           />
           <button disabled={busy} onClick={run}>
-            {busy ? "Checking…" : out ? "Retry connection" : "Check live"}
+            {busy
+              ? "Checking…"
+              : ready
+                ? "Check live and sign with wallet"
+                : out
+                  ? "Retry connection"
+                  : "Check live"}
           </button>
         </div>
         <div className="row small" style={{ marginTop: 8 }}>
@@ -600,6 +614,12 @@ export function LivePanel({
               ? "Not a valid ws(s):// or http(s):// URL."
               : `Valid URL. Nothing is contacted until you press the button.${url === V3_HTTPS_RPC ? " This is the default V3 testnet endpoint (HTTPS)." : ""}`}
         </p>
+        {ready && (
+          <p className="muted small">
+            One button runs the whole flow: live facts, fee estimate and preflight, then your wallet
+            extension asks you to sign. Nothing is signed if any step fails.
+          </p>
+        )}
         <ApprovalSummary plan={plan} approval={approval} />
         {v3 && <V3FactsNotice r={v3} />}
         {out?.status === "rejected" && !dismissed && (
