@@ -14,7 +14,7 @@ export const MODES: {
     id: "live",
     label: "LIVE V3",
     badge: "LIVE V3",
-    hint: "Real V3 RPC and your wallet. Blocked until a V3 RPC URL is configured and a chain client is wired.",
+    hint: "Real V3 RPC and your wallet. Real V3 RPC (default https://test-node-v3.portaldot.dev, read-only until you sign) and your wallet. Signing stays blocked until a plan is approved.",
     tone: "warn",
   },
   {

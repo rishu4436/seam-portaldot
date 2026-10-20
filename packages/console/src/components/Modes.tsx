@@ -17,7 +17,20 @@ import {
 } from "../lib/modes";
 import { runLive, v3RpcUrl, type LiveOutcome, type LiveDeps } from "../lib/live";
 import { planCall, fingerprintMatches } from "../lib/liverequest";
-import { loadLiveHost, type LiveHost } from "../lib/host";
+import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
+import {
+  V3_HTTPS_RPC,
+  discoverV3Facts,
+  loadFactsSnapshot,
+  type V3FactsResult,
+} from "../lib/v3facts";
+import type { RpcTransport } from "../lib/chainclient";
+
+/** Default facts step: committed V3 snapshot + live metadata over HTTPS (read-only). */
+export async function defaultV3Facts(rpc: RpcTransport): Promise<V3FactsResult> {
+  const [snap, crypto] = await Promise.all([loadFactsSnapshot(), import("@polkadot/util-crypto")]);
+  return discoverV3Facts(rpc, snap, (h) => crypto.blake2AsHex(h, 256));
+}
 import type { Approval, Plan, RuntimeFacts } from "../lib/types";
 import { finalityView } from "../lib/finality";
 import {
@@ -74,7 +87,7 @@ export function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode)
           <b>{m.label}</b>
           <span>
             {m.id === "live"
-              ? "Blocked until a V3 RPC URL is set"
+              ? "V3 testnet over HTTPS by default"
               : m.id === "recorded"
                 ? "Replay of real local run"
                 : "Synthetic demo"}
@@ -271,18 +284,55 @@ export function FinalityPanel({ out }: { out: LiveOutcome }) {
   );
 }
 
+export function V3FactsNotice({ r }: { r: V3FactsResult }) {
+  if (!r.ok)
+    return (
+      <div className="v3facts small" role="status">
+        <Tag tone="bad">V3 facts: blocked</Tag> <span>{r.message}</span>
+      </div>
+    );
+  const p = r.report;
+  return (
+    <div className="v3facts small" role="status">
+      <Tag tone="warn">V3 facts: snapshot + live metadata</Tag>
+      <dl className="kv small">
+        <dt>Node</dt>
+        <dd>
+          {p.specName} spec {p.specVersion}, tx v{p.transactionVersion}, finalized #
+          {p.finalizedBlock ?? "?"}
+        </dd>
+        <dt>Metadata (live)</dt>
+        <dd>
+          {p.metadataBytes} bytes, <code className="wrap">{p.liveMetadataHash}</code>
+        </dd>
+        <dt>Fingerprint</dt>
+        <dd>
+          Recorded snapshot from <code className="wrap">{p.snapshotFrom}</code>, not a live
+          discovery.{" "}
+          {p.metadataHashMatchesSnapshot
+            ? "Live metadata hash matches it."
+            : "Live metadata hash differs from it. On V3 only the metadata hash drifts (one storage default changes between blocks); genesis, spec and tx version match, and recorded receipts keep their own recorded fingerprint."}
+        </dd>
+      </dl>
+    </div>
+  );
+}
+
 export function LivePanel({
   plan,
   facts,
   approval,
   hostLoader = loadLiveHost,
+  factsStep = defaultV3Facts,
 }: {
   plan?: Plan;
   facts?: RuntimeFacts;
   approval?: Approval;
   hostLoader?: (facts?: unknown) => Promise<LiveHost | undefined>;
+  factsStep?: (rpc: RpcTransport) => Promise<V3FactsResult>;
 } = {}) {
-  const [url, setUrl] = useState<string>(import.meta.env.VITE_V3_RPC_URL ?? "");
+  const [url, setUrl] = useState<string>(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
+  const [v3, setV3] = useState<V3FactsResult>();
   const [out, setOut] = useState<LiveOutcome>();
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -299,7 +349,18 @@ export function LivePanel({
       if (u) {
         const b = await import("../lib/browserChain");
         const rpc = b.transportFor(u);
-        const host = await hostLoader(facts);
+        // The host needs chain-shaped RuntimeFacts. If the plan's facts are not that shape, run the read-only V3 facts step.
+        let hostFacts: unknown = facts;
+        if (!hasChainFacts(facts)) {
+          const r = await factsStep(rpc).catch((e: unknown): V3FactsResult => ({
+            ok: false,
+            reason: "rpc_error",
+            message: e instanceof Error ? e.message : String(e),
+          }));
+          setV3(r);
+          hostFacts = r.ok ? r.facts : undefined;
+        }
+        const host = await hostLoader(hostFacts);
         const call = planCall(plan);
         const gateMsg = !call.ok
           ? call.message
@@ -353,15 +414,15 @@ export function LivePanel({
       <div className="card">
         <h3>LIVE V3</h3>
         <p className="muted">
-          Uses a real V3 RPC and your own wallet. No V3 endpoint is configured by default, so
-          nothing here can succeed yet. Local spec-1002 results do not prove anything about V3
-          Revive.
+          Uses the real V3 testnet over HTTPS (read-only until you approve and sign with your own
+          wallet). Nothing is contacted until you press the button. Local spec-1002 results do not
+          prove anything about V3 Revive.
         </p>
         <label htmlFor="v3url">V3 RPC URL</label>
         <div className="row">
           <input
             id="v3url"
-            placeholder="wss://…"
+            placeholder={V3_HTTPS_RPC}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             aria-invalid={!!url && !ok}
@@ -393,8 +454,9 @@ export function LivePanel({
             ? "Empty: LIVE V3 stays blocked."
             : !ok
               ? "Not a valid ws(s):// or http(s):// URL."
-              : "Valid URL. Nothing is contacted until you press the button."}
+              : `Valid URL. Nothing is contacted until you press the button.${url === V3_HTTPS_RPC ? " This is the default V3 testnet endpoint (HTTPS)." : ""}`}
         </p>
+        {v3 && <V3FactsNotice r={v3} />}
         {out?.status === "rejected" && !dismissed && (
           <RejectionNotice onRetry={run} onDismiss={() => setDismissed(true)} />
         )}

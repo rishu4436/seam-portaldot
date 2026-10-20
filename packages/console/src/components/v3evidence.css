@@ -1,0 +1,35 @@
+.v3ev {
+  margin-top: 16px;
+}
+.v3ev .tw {
+  overflow-x: auto;
+}
+.v3ev table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+.v3ev th,
+.v3ev td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+  vertical-align: top;
+}
+.v3ev td .pill {
+  display: inline-block;
+  margin-bottom: 2px;
+}
+.v3facts {
+  margin-top: 8px;
+}
+.v3ev a {
+  color: #7cc4ff;
+}
+.v3ev td .pill {
+  white-space: normal;
+  text-transform: none;
+}
+.v3ev td code {
+  word-break: break-all;
+}

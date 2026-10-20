@@ -3,6 +3,7 @@ import * as api from "./lib/mock";
 import * as tc from "./lib/testchain";
 import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
 import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
+import { V3Evidence } from "./components/V3Evidence";
 import {
   RiskLimits,
   LivePanel,
@@ -507,7 +508,10 @@ export default function App() {
         </div>
         <ModeBadge mode={mode} />
         {mode === "live" ? (
-          <LivePanel plan={plan} facts={facts} approval={approval} />
+          <>
+            <LivePanel plan={plan} facts={facts} approval={approval} />
+            <V3Evidence />
+          </>
         ) : (
           <>
             <LocalNodeBanner />
