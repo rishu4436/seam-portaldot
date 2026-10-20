@@ -14,6 +14,7 @@
     "test": "npm test -w @seam/compiler && npm test -w @seam/policy && npm test -w @seam/sdk && npm test -w @seam/chain && npm test -w @seam/console",
     "smoke:pack": "bash scripts/pack-smoke.sh",
     "test:e2e": "bash tests/e2e/run.sh",
+    "seam": "node packages/sdk/dist/cli.js",
     "lint": "eslint . --max-warnings 159",
     "format": "prettier --write packages eslint.config.mjs",
     "format:check": "prettier --check packages eslint.config.mjs .prettierrc.json"

@@ -40,15 +40,15 @@ The local node run above ticks no V3 box. Hosted V3 boxes that the funded run co
 
 ## 1. Read the runtime (read-only)
 ```bash
-npx seam snapshot <WS_RPC_URL> evidence/testnet-v3/snapshot
+npm run -s seam -- snapshot <WS_RPC_URL> evidence/testnet-v3/snapshot
 ```
 Record: spec version, metadata version, genesis hash, block number. Compare with the dev chain (spec 100, V14) and mainnet (spec 1002, V13).
 
 ## 2. Compile the demo Manifest against it
 ```bash
-npx seam compile docs/examples/demo-manifest.json --snapshot evidence/testnet-v3/snapshot --token SYMBOL:DECIMALS
+npm run -s seam -- compile docs/examples/demo-manifest.json --snapshot evidence/testnet-v3/snapshot --token SYMBOL:DECIMALS
 # or read the live node directly:
-npx seam compile docs/examples/demo-manifest.json --endpoint <WS_RPC_URL> --token SYMBOL:DECIMALS
+npm run -s seam -- compile docs/examples/demo-manifest.json --endpoint <WS_RPC_URL> --token SYMBOL:DECIMALS
 ```
 - `--token SYMBOL:DECIMALS` only if the node does not report its token (SEAM stops if the node reports a different one).
 - For contract calls by name, add `--abi demo=contracts/seam-demo/artifacts/metadata.json` and use `abiRef: "demo"`. A raw-`data` call needs no ABI.
@@ -78,7 +78,7 @@ npx seam compile docs/examples/demo-manifest.json --endpoint <WS_RPC_URL> --toke
 - [ ] Sequential: transfer, contract call, mint, one transaction per step, each gated.
 - [ ] Rollback test, then atomic (only if rollback verified).
 - [ ] At least one run **signed by a real external wallet** (browser extension), not a dev key. SEAM never holds keys; do not commit seeds or signatures.
-- [ ] `npx seam verify <receipt.json>` on each receipt.
+- [ ] `npm run -s seam -- verify <receipt.json>` on each receipt.
 
 ## 6. Record (the Oct 24 check-in needs these)
 For each run, save under `evidence/testnet-v3/` (no signatures, seeds or keys):

@@ -33,7 +33,7 @@ Amounts are always whole numbers in base units, written as strings. Use `toBaseU
 ## 3. Check it and get its digest
 
 ```bash
-npx seam digest docs/examples/demo-manifest.json
+npm run -s seam -- digest docs/examples/demo-manifest.json
 # Manifest is valid. Digest: 0x4152a194...
 ```
 
@@ -42,7 +42,7 @@ The digest is the same on any machine for the same Manifest, whatever the key or
 ## 4. Compile it against the runtime
 
 ```bash
-npx seam compile docs/examples/demo-manifest.json
+npm run -s seam -- compile docs/examples/demo-manifest.json
 ```
 
 ```
@@ -56,8 +56,8 @@ Why this mode: Utility.batch_all exists but its rollback on failure is not verif
 Now try a Manifest that asks for something this chain doesn't have:
 
 ```bash
-npx seam compile docs/examples/missing-pallet-manifest.json
-# - nft: can't run, because Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec 1002).
+npm run -s seam -- compile docs/examples/missing-pallet-manifest.json
+# - nft: can't run, because Nfts.mint cannot be compiled: this runtime's metadata has no Nfts.mint call (runtime spec 1002), so SEAM does not guess the call layout. It compiles on a runtime that has it, such as Portaldot V3 (spec 3002).
 ```
 
 (That is the bundled mainnet snapshot, spec 1002. Against the V3 testnet runtime, spec 3002, `nfts.mint` compiles.)
@@ -69,10 +69,10 @@ SEAM reads what the runtime really offers instead of assuming, so a missing pall
 A policy is the set of rules your app allows. Anything not allowed, and anything SEAM can't confirm, is blocked.
 
 ```bash
-npx seam check docs/examples/demo-manifest.json --policy docs/examples/demo-policy.json
+npm run -s seam -- check docs/examples/demo-manifest.json --policy docs/examples/demo-policy.json
 # Offline check passed: all 13 rules that don't need a node passed. ...
 
-npx seam check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json
+npm run -s seam -- check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json
 # - pay: Blocked: amount 2500 is over the limit of 1000 for asset 1.
 ```
 
@@ -127,7 +127,7 @@ await seam.execute({ ...prepared, policy, facts, approval: approval.approval, wa
 Every run ends in a receipt that says what the chain actually shows, step by step.
 
 ```bash
-npx seam verify receipt.json
+npm run -s seam -- verify receipt.json
 # Receipt status: integrity_checked (integrity only, not on-chain proof: ...)
 # Verified: all 3 steps finalized and the chain shows exactly what was planned.
 ```
@@ -135,7 +135,7 @@ npx seam verify receipt.json
 Offline, `seam verify` checks **integrity only, not on-chain proof**: it detects edits to a receipt, but anyone can edit a receipt and recompute its digest, so it does not show that any transaction exists. To check against the chain, re-read it live:
 
 ```bash
-npx seam verify --endpoint ws://127.0.0.1:9944 --plan plan.json receipt.json
+npm run -s seam -- verify --endpoint ws://127.0.0.1:9944 --plan plan.json receipt.json
 # Receipt status: chain_verified (live, read from ws://...)   or   failed / unknown
 ```
 
