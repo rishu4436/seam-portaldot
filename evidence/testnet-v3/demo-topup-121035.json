@@ -1,0 +1,101 @@
+{
+  "kind": "seam-v3-tx-verification",
+  "purpose": "seam-demo top-up of asset 806707 (step-2 keep-alive needed balance above minBalance 1)",
+  "generatedAt": "2026-10-20T18:47:22.046Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "specVersion": 3002,
+  "hash": "0x0329221171eaa7f473d7a7d6a1a77422247058b839693b4fc0567a2455e0490f",
+  "block": {
+    "number": 121035,
+    "hash": "0xce04b9b92b90f213fe2e2c3c915cddab98f61136c0986c0602088b6cf31f3470"
+  },
+  "parentHash": "0x8a92fe6515502d34f6760d52c0c9267e54e3c267dda2dfec1d92258341a17603",
+  "extrinsicIndex": 1,
+  "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "nonce": 20,
+  "call": "assets.transferKeepAlive",
+  "args": {
+    "id": 806707,
+    "target": {
+      "id": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE"
+    },
+    "amount": 5
+  },
+  "events": [
+    {
+      "pallet": "balances",
+      "name": "Withdraw",
+      "args": [
+        "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+        1470874560699
+      ]
+    },
+    {
+      "pallet": "assets",
+      "name": "Transferred",
+      "args": [
+        806707,
+        "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+        "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+        5
+      ]
+    },
+    {
+      "pallet": "balances",
+      "name": "Deposit",
+      "args": [
+        "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+        1470874560699
+      ]
+    },
+    {
+      "pallet": "transactionPayment",
+      "name": "TransactionFeePaid",
+      "args": [
+        "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+        1470874560699,
+        0
+      ]
+    },
+    {
+      "pallet": "system",
+      "name": "ExtrinsicSuccess",
+      "args": [
+        {
+          "weight": {
+            "refTime": 1145368000,
+            "proofSize": 18392
+          },
+          "class": "Normal",
+          "paysFee": "Yes"
+        }
+      ]
+    }
+  ],
+  "assetBefore": {
+    "signer": 999997495,
+    "seamDemo": 1
+  },
+  "assetAfter": {
+    "signer": 999997490,
+    "seamDemo": 6
+  },
+  "freeBefore": "98177110626304877",
+  "freeAfter": "98175639751744178",
+  "finalizedHead": 121037,
+  "canonical": true,
+  "finalized": true,
+  "dispatch": {
+    "ok": true
+  },
+  "fee": "1470874560699",
+  "assetMinBalance": 1,
+  "method": "same approach as #118070: @polkadot/api over HTTP, SEAM test keystore decoded with the password from env; this time a single assets.transferKeepAlive (no batch, no tPOT moved)",
+  "budget": {
+    "spentPlanck": "1824360248255822",
+    "spentTPOT": "18.24360248255822",
+    "capPlanck": "2304034302112647",
+    "leftUnderCapPlanck": "479674053856825"
+  }
+}
