@@ -33,6 +33,7 @@ const CALL = run("plan-revive-call-1792412445848.json");
 // Each run carries the fingerprint it was planned on (metadata can differ between runs), so each uses its own.
 const fp = (rec: typeof SEQ) => rec.fingerprint as RuntimeFingerprint;
 const V3 = fp(SEQ);
+const LIVE: RuntimeFingerprint = { ...V3, metadataHash: ("0x" + "ab".repeat(32)) as Hex };
 
 type Rec = typeof SEQ;
 /** What execute saw for each step: recorded tx, events and the signed call bytes. */
@@ -54,6 +55,10 @@ const outcomesOf = (rec: Rec, structured = false): StepOutcome[] =>
 
 /** A read-only chain that returns exactly the recorded data. `callHex` can be overridden to simulate tampering. */
 const readerOf = (outcomes: StepOutcome[], signer: Hex, callHex?: Hex): ReceiptChainReader => ({
+  // The node's live fingerprint: the V3 runtime with drifted metadata (only the metadata hash differs).
+  async runtimeFingerprint() {
+    return LIVE;
+  },
   async finalizedNumber() {
     return Math.max(...outcomes.map((o) => o.block!.number)) + 10;
   },
@@ -202,5 +207,42 @@ describe("SYNTHETIC: fail closed", () => {
     };
     const live = await verifyReceiptLive(receipt, noCall, { plan, effects, runtime: fp(CALL) });
     expect(live.status).not.toBe("chain_verified");
+  });
+});
+
+describe("SYNTHETIC: the pinned runtime must be the node's runtime", () => {
+  const go = async (live: RuntimeFingerprint | null | "missing") => {
+    const { receipt, outcomes, plan } = execute(SEQ);
+    const base = readerOf(outcomes, plan.signer.publicKey);
+    const reader: ReceiptChainReader =
+      live === "missing"
+        ? { ...base, runtimeFingerprint: undefined }
+        : { ...base, runtimeFingerprint: async () => live };
+    return verifyReceiptLive(receipt, reader, { plan, runtime: V3 });
+  };
+  it("metadata hash drift only: pinned runtime used, chain_verified, drift noted", async () => {
+    const live = await go(LIVE);
+    expect(live.status).toBe("chain_verified");
+    expect(live.notes.join(" ")).toMatch(/metadata hash differs/);
+  });
+  it("another genesis, spec, transaction version or ss58: failed", async () => {
+    for (const bad of [
+      { ...LIVE, genesisHash: ("0x" + "01".repeat(32)) as Hex },
+      { ...LIVE, specVersion: 3003 },
+      { ...LIVE, specName: "portaldot" },
+      { ...LIVE, transactionVersion: LIVE.transactionVersion + 1 },
+      { ...LIVE, ss58Prefix: 0 },
+    ]) {
+      const live = await go(bad);
+      expect(live.status).toBe("failed");
+      expect(live.problems.join(" ")).toMatch(/node is not the runtime this receipt is for/);
+    }
+  });
+  it("live runtime unreadable or not provided: pinned runtime not used, unknown (never chain_verified)", async () => {
+    for (const x of [null, "missing"] as const) {
+      const live = await go(x);
+      expect(live.status).toBe("unknown");
+      expect(live.notes.join(" ")).toMatch(/runtime could not be read/);
+    }
   });
 });

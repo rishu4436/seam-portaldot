@@ -32,6 +32,7 @@ const ATOMIC = run("plan-atomic-1792411355057.json");
 const SEQ = run("plan-sequential-1792411270138.json");
 const CALL = run("plan-revive-call-1792412445848.json");
 const fp = (rec: typeof SEQ) => rec.fingerprint as RuntimeFingerprint;
+const LIVE: RuntimeFingerprint = { ...fp(SEQ), metadataHash: ("0x" + "ab".repeat(32)) as Hex };
 
 /** One read-only tx: what the chain returns for it. */
 interface Tx {
@@ -41,6 +42,10 @@ interface Tx {
   callHex?: Hex;
 }
 const readerOf = (txs: Tx[], signer: Hex): ReceiptChainReader => ({
+  // The node's live fingerprint: the V3 runtime with drifted metadata (only the metadata hash differs).
+  async runtimeFingerprint() {
+    return LIVE;
+  },
   async finalizedNumber() {
     return Math.max(...txs.map((t) => t.block.number)) + 10;
   },
