@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from "vitest";
 import { canRunNextStep } from "@seam/policy/browser";
 import { newApprovalStore } from "../../lib/signflow";
 import { runPlanSteps, SignedHolder, type ReceiptStepLike } from "../../lib/multistep";
-import { verifyPlanStep } from "../../lib/stepverify";
+import { atomicStepReceipts, verifyPlanStep } from "../../lib/stepverify";
 
 const rec = JSON.parse(
   readFileSync(
@@ -37,10 +37,10 @@ const calls: string[] = rec.signingRequests.map(
 );
 const SIGNED = (i: number) => "0x" + `e${i}`.repeat(150);
 
-function run(outs: Outcome[], facts: unknown = rec.facts) {
+function run(outs: Outcome[], facts: unknown = rec.facts, R = rec, callList = calls) {
   const holder = new SignedHolder();
   const submitAndWait = vi.fn(async (i: number) => ({ ok: true as const, value: outs[i] }));
-  const decode = vi.fn((x: string) => ({ call: calls[[SIGNED(0), SIGNED(1)].indexOf(x)] }));
+  const decode = vi.fn((x: string) => ({ call: callList[[SIGNED(0), SIGNED(1)].indexOf(x)] }));
   const ok = { ok: true as const, explanations: [] };
   const p = runPlanSteps({
     chain: {
@@ -48,9 +48,9 @@ function run(outs: Outcome[], facts: unknown = rec.facts) {
       signedExtrinsicDecoder: () => decode,
     } as never,
     send: async () => null,
-    input: { policy: {}, plan: rec.plan },
+    input: { policy: {}, plan: R.plan },
     facts,
-    signer: rec.envelope.signer,
+    signer: R.envelope.signer,
     ctx: { nonce: 0, mortalityBlocks: 64, checkpointNumber: 1, checkpointHash: "0x" },
     now: () => new Date(),
     store: newApprovalStore(),
@@ -136,5 +136,56 @@ describe("verifyStep gates the next step (real V3 records)", () => {
       "not_verified",
     );
     expect(t.submitAndWait).toHaveBeenCalledTimes(1);
+  });
+
+  describe("atomic (real V3 batch #102671, perStepOfBatch)", () => {
+    const A = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "../../evidence/testnet-v3/runs/plan-atomic-1792411355057.json"),
+        "utf8",
+      ),
+    );
+    const batch: Outcome = (() => {
+      const o = A.nftVerdictReceipt.outcomesUsed[0];
+      return {
+        actionId: o.actionId,
+        status: o.status,
+        txHash: o.txHash,
+        block: o.block,
+        events: o.events.map((e: Outcome["events"][0]) => ({
+          pallet: e.pallet,
+          name: e.name,
+          args: e.args,
+        })),
+      };
+    })();
+    const batchCall: string = A.signingRequests[0].payload.method;
+    it("one signing request; each step is per-step verified from the batch outcome", async () => {
+      const t = run([batch], A.facts, A, [batchCall]);
+      const r = await t.p;
+      expect(r.ok ? "ok" : r.message).toBe("ok");
+      expect(r.signRequests).toBe(1);
+      expect(r.steps.map((s) => s.receipt?.verification)).toEqual(["verified", "verified"]);
+      expect(
+        r.steps.every((s) => /^per-step verified from the batch outcome/.test(s.message)),
+      ).toBe(true);
+      expect(JSON.stringify(r)).not.toMatch(/chain_verified/);
+    });
+    it("tampered batch copy (Assets.Issued amount changed): that step is not verified", async () => {
+      const bad = structuredClone(batch);
+      const ev = bad.events.find((e) => e.pallet === "Assets" && e.name === "Issued")!;
+      ev.args[ev.args.length - 1] = "999999";
+      const r = await run([bad], A.facts, A, [batchCall]).p;
+      expect(r.steps[0].receipt?.verification).toBe("not_verified");
+      expect(r.steps[1].receipt?.verification).toBe("verified");
+      const direct = atomicStepReceipts(
+        A.plan,
+        bad as never,
+        batchCall,
+        A.plan.signer.publicKey,
+        A.facts.fingerprint,
+      );
+      expect(direct.map((x) => x.verification)).toEqual(["not_verified", "verified"]);
+    });
   });
 });

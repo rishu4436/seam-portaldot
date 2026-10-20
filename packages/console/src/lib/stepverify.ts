@@ -9,6 +9,7 @@ import { Metadata, TypeRegistry } from "@polkadot/types";
 import { u8aToHex } from "@polkadot/util";
 import { blake2AsHex, xxhashAsHex } from "@polkadot/util-crypto";
 import {
+  perStepOfBatch,
   verifyStep,
   type ChainEvent,
   type SdkReceiptStep,
@@ -186,4 +187,35 @@ export async function stepEffectCheck(
         reason: `${v.verification}${v.code ? ` (${v.code})` : ""}: ${v.reason}`,
         checkedAt: at,
       };
+}
+
+/**
+ * Atomic plans: one batch outcome. perStepOfBatch (@seam/sdk/browser) gives each step its own outcome, with its call
+ * bytes only when the signed batch call is exactly batch_all of the plan's calls; verifyStep checks each. This is a
+ * per-step check of the batch's events, not a chain_verified provenance.
+ */
+export function atomicStepReceipts(
+  plan: unknown,
+  batchOutcome: StepOutcome,
+  signedBatchCall: string | undefined,
+  signerAccountId: string,
+  runtime: RuntimeLike | undefined,
+): SdkReceiptStep[] {
+  const p = plan as { steps: { actionId: string }[] };
+  const per = perStepOfBatch(
+    plan as never,
+    [{ ...batchOutcome, actionId: "batch" }],
+    signedBatchCall as Hex | undefined,
+  );
+  return p.steps.map((step) => {
+    const o = per.find((x) => x.actionId === step.actionId);
+    return verifyStep(
+      step as never,
+      signerAccountId as Hex,
+      o,
+      undefined,
+      undefined,
+      runtime as never,
+    );
+  });
 }

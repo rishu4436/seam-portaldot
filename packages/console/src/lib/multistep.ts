@@ -10,7 +10,7 @@
 import { usageKey, type ApprovalStore } from "@seam/policy/browser";
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "./policygate";
 import type { StepOutcome } from "@seam/sdk/browser";
-import { callOfSigned, verifyPlanStep } from "./stepverify";
+import { atomicStepReceipts, callOfSigned, verifyPlanStep } from "./stepverify";
 import { preSign, preSubmit, type ChainFns, type SigningContext } from "./signflow";
 
 type Send = (method: string, params: unknown[]) => Promise<unknown>;
@@ -259,17 +259,38 @@ export async function runPlanSteps(args: {
       callHex = undefined;
     }
     const verified = verify(i, r.value, callHex);
-    callHex = undefined;
     const receipt = { ...verified, reason: holder.redact(verified.reason) };
     receipts.push(receipt);
     const done = receipt.status === "finalized" && receipt.verification === "verified";
-    const forStep = sequential ? [steps[i]] : steps;
-    for (const s of forStep)
-      Object.assign(s, {
-        status: receipt.status === "failed" ? "failed" : "sent",
-        message: receipt.reason,
-        receipt,
-      });
+    const atomic = plan.mode.startsWith("atomic");
+    if (atomic && !args.verifyOutcome && signerAccountId) {
+      // Atomic: Quill's perStepOfBatch splits the one batch outcome into per-step outcomes (each step's call is a
+      // verified slice of the signed batch call); verifyStep then checks each step. Labelled per-step verified.
+      const per = atomicStepReceipts(args.input.plan, r.value, callHex, signerAccountId, runtime);
+      for (const s of steps) {
+        const pr = per.find((x) => x.actionId === s.actionId);
+        const rr = pr
+          ? {
+              ...pr,
+              reason: holder.redact(`per-step verified from the batch outcome: ${pr.reason}`),
+            }
+          : receipt;
+        Object.assign(s, {
+          status: rr.status === "failed" ? "failed" : "sent",
+          message: rr.reason,
+          receipt: rr,
+        });
+      }
+    } else {
+      const forStep = sequential ? [steps[i]] : steps;
+      for (const s of forStep)
+        Object.assign(s, {
+          status: receipt.status === "failed" ? "failed" : "sent",
+          message: receipt.reason,
+          receipt,
+        });
+    }
+    callHex = undefined;
     if (sequential && i < n - 1 && !done)
       return stop(
         i + 1,
