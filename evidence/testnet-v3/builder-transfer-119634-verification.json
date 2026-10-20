@@ -1,0 +1,216 @@
+{
+  "kind": "seam-v3-tx-verification",
+  "title": "Builder-plan assets.transfer, block #119634: independent verification",
+  "readOnly": "read-only RPC; no wallet, no signer, nothing sent",
+  "reproduce": [
+    "node packages/chain/scripts/v3-find-tx.mjs --hash 0x74a76dcbe62d1c8bf1cf5bf2701938ab65df5cbb0b30c6303d2b96dfc36ded6d --signer 5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE --asset 806707",
+    "node packages/chain/scripts/v3-verify-signature.mjs --block 119634 --hash 0x74a76dcbe62d1c8bf1cf5bf2701938ab65df5cbb0b30c6303d2b96dfc36ded6d"
+  ],
+  "chain": {
+    "kind": "seam-v3-tx-verification",
+    "generatedAt": "2026-10-20T16:27:26.086Z",
+    "endpoint": "https://test-node-v3.portaldot.dev",
+    "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "finalizedHead": {
+      "number": 119646,
+      "hash": "0x13e5f802944e5d61b97f78b7fe55dc715ce39e4480510cbf3b642811b3f0442a"
+    },
+    "hash": "0x74a76dcbe62d1c8bf1cf5bf2701938ab65df5cbb0b30c6303d2b96dfc36ded6d",
+    "block": {
+      "number": 119634,
+      "hash": "0xb0b7e0b55571619b1717a6f08fef5c655d4633935ceb8624233c541ab55eb3da"
+    },
+    "canonical": true,
+    "finalized": true,
+    "extrinsicIndex": 1,
+    "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+    "signerMatch": true,
+    "call": "assets.transferKeepAlive",
+    "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+    "calls": [
+      {
+        "call": "assets.transferKeepAlive",
+        "args": {
+          "id": 806707,
+          "target": {
+            "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+          },
+          "amount": 1
+        }
+      }
+    ],
+    "balances": {
+      "asset": "806707",
+      "before": 119633,
+      "after": 119634,
+      "accounts": {
+        "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE": {
+          "assetBefore": "4",
+          "assetAfter": "3",
+          "assetDelta": "-1"
+        },
+        "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB": {
+          "assetBefore": "2501",
+          "assetAfter": "2502",
+          "assetDelta": "1"
+        }
+      },
+      "signerFree": {
+        "before": "98529120200481",
+        "after": "97058242950829",
+        "drop": "1470877249652",
+        "dropEqualsFee": true
+      }
+    },
+    "dispatch": {
+      "ok": true
+    },
+    "fee": "1470877249652",
+    "events": [
+      {
+        "pallet": "Balances",
+        "name": "Withdraw",
+        "args": [
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "1470877249652"
+        ]
+      },
+      {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "args": [
+          "806707",
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+          "1"
+        ]
+      },
+      {
+        "pallet": "Balances",
+        "name": "Deposit",
+        "args": [
+          "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+          "1470877249652"
+        ]
+      },
+      {
+        "pallet": "TransactionPayment",
+        "name": "TransactionFeePaid",
+        "args": [
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "1470877249652",
+          "0"
+        ]
+      },
+      {
+        "pallet": "System",
+        "name": "ExtrinsicSuccess",
+        "args": [
+          "{\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+        ]
+      }
+    ],
+    "outcome": "verified",
+    "reasons": []
+  },
+  "signature": {
+    "block": {
+      "number": 119634,
+      "hash": "0xb0b7e0b55571619b1717a6f08fef5c655d4633935ceb8624233c541ab55eb3da"
+    },
+    "txHash": "0x74a76dcbe62d1c8bf1cf5bf2701938ab65df5cbb0b30c6303d2b96dfc36ded6d",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+    "nonce": 1,
+    "tip": "0",
+    "era": {
+      "mortal": true,
+      "period": 64,
+      "phase": 11,
+      "hex": "0xb500"
+    },
+    "eraBirth": {
+      "number": 119627,
+      "hash": "0x77dd4023f35fce7726d78d172bef4bb50d5b6a0ddfd83f60f8b06805d1ab8c47"
+    },
+    "signatureValid": true,
+    "controlNoContext": false,
+    "controlWrongCheckpoint": false
+  },
+  "nonce": {
+    "observed": 1,
+    "previous": {
+      "tx": "0x8a2c8b92560b8238c3ecdcda10f822b3c995926452f4c51c43fb3bca131ea4ad",
+      "block": 118310,
+      "nonce": 0
+    },
+    "gap": false,
+    "continuity": {
+      "assetAfter118310": "4",
+      "assetBefore119634": "4",
+      "freeAfter118310": "98529120200481",
+      "freeBefore119634": "98529120200481"
+    }
+  },
+  "plan": {
+    "file": null,
+    "planDigestClaimed": "0xcaa071a7ac70e8e286b9c0d5c05b4fe7d7fec8fcbe745b86072ce8e8c999f63f",
+    "recomputed": null,
+    "note": "No plan file is committed for this builder plan and the receipt carries no plan or call bytes, so the plan digest could not be recomputed and the call bytes could only be checked against the decoded call (they are byte-identical to the committed demo plan step pay encodedCall, which encodes the same transfer)."
+  },
+  "receiptClaim": {
+    "file": "/workspace/demo-shots/seam-receipt-0x74a76dcb.json",
+    "receipt": {
+      "receiptKind": "seam/console-live-receipt/v1",
+      "result": "unverified",
+      "txHash": "0x74a76dcbe62d1c8bf1cf5bf2701938ab65df5cbb0b30c6303d2b96dfc36ded6d",
+      "block": {
+        "number": 119634,
+        "hash": "0xb0b7e0b55571619b1717a6f08fef5c655d4633935ceb8624233c541ab55eb3da"
+      },
+      "planDigest": "0xcaa071a7ac70e8e286b9c0d5c05b4fe7d7fec8fcbe745b86072ce8e8c999f63f",
+      "manifestDigest": "0x04b35bfbfc2845fd2ef75e6f989af7a7906976fe08c52f8db34bc091ab779075",
+      "fingerprintDigest": "0xb1b2927cd62ab99d5592b4082c4efba4458c1f7fdb48fb65105a48328e9680cd",
+      "approvalHash": "0xcaa071a7ac70e8e286b9c0d5c05b4fe7d7fec8fcbe745b86072ce8e8c999f63f",
+      "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "fee": "1470877255420",
+      "coverage": "extrinsic_finalized",
+      "effect": {
+        "verdict": "effect_proven",
+        "extrinsicIndex": -1,
+        "event": {},
+        "reason": "Transfer confirmed: asset, amount and account all match the plan.",
+        "checkedAt": "2026-10-20T16:26:07.034Z"
+      },
+      "verification": "effect_proven"
+    },
+    "comparison": {
+      "txHash": true,
+      "block": true,
+      "signer": true,
+      "fee": {
+        "receipt": "1470877255420",
+        "chain": "1470877249652",
+        "equal": false
+      },
+      "extrinsicIndex": {
+        "receipt": -1,
+        "chain": 1
+      },
+      "result": {
+        "receipt": "unverified",
+        "verification": "effect_proven",
+        "effectVerdict": "effect_proven"
+      }
+    },
+    "issues": [
+      "receipt result is \"unverified\" while verification/effect.verdict say effect_proven (and the console showed Effect Proven): Pixel field to fix",
+      "receipt fee 1470877255420 is not the on-chain TransactionFeePaid 1470877249652 (differs by 5768 planck; looks like the preflight estimate)",
+      "receipt effect.extrinsicIndex is -1 and effect.event is {} although the chain shows extrinsic index 1 with an Assets.Transferred event",
+      "receipt approvalHash equals planDigest"
+    ]
+  },
+  "verdict": "verified"
+}
