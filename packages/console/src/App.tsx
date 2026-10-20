@@ -1,3 +1,4 @@
+import demoSequentialPolicy from "./demo/v3-demo-transfer-policy-sequential.json";
 import { useMemo, useState } from "react";
 import * as api from "./lib/mock";
 import * as tc from "./lib/testchain";
@@ -8,6 +9,7 @@ import { WalletDemoCard } from "./components/WalletDemo";
 import { ManifestBuilder } from "./components/ManifestBuilder";
 import {
   approveWalletDemo,
+  walletDemo,
   walletDemoFacts,
   walletDemoPlan,
   WALLET_DEMO_LABEL,
@@ -311,6 +313,15 @@ export default function App() {
   const [walletDemoOn, setWalletDemoOn] = useState(false);
   const [demoApproval, setDemoApproval] = useState<Approval>();
   const demoPlan = useMemo(() => walletDemoPlan(), []);
+  // The authoritative gate checks the demo's raw compiled plan against the sequential demo policy; facts are read live.
+  const demoPolicyInput = useMemo(
+    () => ({
+      policy: demoSequentialPolicy.policy,
+      plan: walletDemo.plan,
+      manifest: walletDemo.manifest,
+    }),
+    [],
+  );
   const demoFacts = useMemo(() => walletDemoFacts(), []);
   const real = source === "testchain";
   const manifest = useMemo(
@@ -548,6 +559,7 @@ export default function App() {
               plan={walletDemoOn ? demoPlan : plan}
               facts={walletDemoOn ? demoFacts : facts}
               approval={walletDemoOn ? demoApproval : approval}
+              policyInput={walletDemoOn ? demoPolicyInput : undefined}
             />
             <V3Evidence />
           </>

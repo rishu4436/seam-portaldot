@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
-// Manifest Builder with a fake extension and fake live facts. No real chain, wallet or keystore.
+// Manifest Builder with a fake extension and facts built from the committed real V3 spec 3002 metadata. No real chain, wallet or keystore.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { factsFromMetadata } from "@seam/compiler/browser";
 import { ManifestBuilder, actionSupport } from "../ManifestBuilder";
 import { buildManifest, parseManifestJson } from "../../lib/manifestbuilder";
 import type { V3FactsResult } from "../../lib/v3facts";
@@ -16,14 +19,27 @@ const injected = () => ({
     }),
   },
 });
-const caps = {
-  "Assets.transfer_keep_alive": { status: "observed" },
-  "Assets.mint": { status: "observed" },
-  "Nfts.mint": { status: "not_observed" },
-};
+// Tests run from packages/console.
+const root = (p: string) => resolve(process.cwd(), "../..", p);
+const demo = JSON.parse(
+  readFileSync(root("packages/console/src/demo/v3-demo-transfer.json"), "utf8"),
+);
+const real = factsFromMetadata({
+  metadataHex: readFileSync(
+    root("evidence/v3-discovery/portaldot-v3-spec3002-metadata.hex"),
+    "utf8",
+  ).trim(),
+  genesisHash: demo.manifest.chain.genesisHash,
+  tokenSymbol: "tPOT",
+  tokenDecimals: 14,
+});
+// Same real facts with Nfts.mint marked not observed, to show an unsupported action and its reason.
 const facts = {
-  fingerprint: { genesisHash: "0x" + "ab".repeat(32), specVersion: 3002, specName: "portaldot-v3" },
-  capabilities: caps,
+  ...real,
+  capabilities: {
+    ...real.capabilities,
+    "Nfts.mint": { ...real.capabilities["Nfts.mint"], status: "not_observed" },
+  },
 };
 const factsStep = vi.fn(
   async (): Promise<V3FactsResult> => ({ ok: true, facts, report: {} }) as unknown as V3FactsResult,
@@ -34,7 +50,8 @@ describe("Manifest builder", () => {
     const s = actionSupport(facts as never);
     expect(s.find((x) => x.kind === "assets.transfer")?.supported).toBe(true);
     expect(s.find((x) => x.kind === "nfts.mint")).toMatchObject({ supported: false });
-    expect(s.find((x) => x.kind === "revive.call")?.reason).toMatch(/not present/);
+    expect(s.find((x) => x.kind === "nfts.mint")?.reason).toMatch(/Nfts\.mint/);
+    expect(s.find((x) => x.kind === "revive.call")?.supported).toBe(true);
     expect(actionSupport().every((x) => !x.supported)).toBe(true);
   });
 
@@ -51,7 +68,7 @@ describe("Manifest builder", () => {
     fireEvent.click(screen.getByText("Connect wallet"));
     await screen.findByRole("option", { name: /seam-demo/ });
     fireEvent.click(screen.getByText("Read live facts"));
-    await screen.findByText(/spec 3002/);
+    await screen.findByText(/Live runtime:/);
     expect(screen.getByText("+ nfts.mint").closest("button")!.hasAttribute("disabled")).toBe(true);
     fireEvent.click(screen.getByText("+ assets.transfer"));
     fireEvent.change(screen.getByLabelText("step1 assetId"), { target: { value: "806707" } });
