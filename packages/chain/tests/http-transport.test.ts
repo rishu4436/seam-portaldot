@@ -226,3 +226,55 @@ describe("httpRpcClient: emulated author_submitAndWatchExtrinsic", () => {
     expect(calls.filter((m) => m === "author_submitExtrinsic")).toHaveLength(1);
   });
 });
+
+describe("httpRpcClient: uncertain path (audit 2026-10-20)", () => {
+  it("a 503 on author_submitExtrinsic is not retried, while the same 503 on a read is", async () => {
+    let n = 0;
+    const { url, calls } = await mock((_b, _q, res) => {
+      if (n++ < 1) {
+        res.statusCode = 503;
+        res.end();
+        return undefined;
+      }
+      return { result: "0x1" };
+    });
+    const c = httpRpcClient(url, fast);
+    await expect(c.send("author_submitExtrinsic", ["0x00"])).rejects.toThrow();
+    expect(calls).toEqual(["author_submitExtrinsic"]);
+    n = 0;
+    await expect(c.send("chain_getBlockHash", [1])).resolves.toBe("0x1");
+    expect(calls.filter((m) => m === "chain_getBlockHash")).toHaveLength(2);
+  });
+
+  it("a lost submit response leads to a block scan (chain_getBlock), never a second submit", async () => {
+    const XT = "0x280403000b63ce64c10c05";
+    let best = 5;
+    const hash = (x: number) => "0x" + x.toString(16).padStart(64, "0");
+    const { url, calls } = await mock((b) => {
+      switch (b.method) {
+        case "author_submitExtrinsic":
+          return DROP;
+        case "chain_getHeader":
+          if (best < 9) best++;
+          return { result: { number: "0x" + best.toString(16) } };
+        case "chain_getBlockHash":
+          return { result: hash(b.params[0] as number) };
+        case "chain_getBlock":
+          return { result: { block: { extrinsics: ["0x00"] } } };
+        case "chain_getFinalizedHead":
+          return { result: hash(5) };
+      }
+      return { error: { code: -32601, message: "method not found" } };
+    });
+    const c = httpRpcClient(url, fast);
+    const updates: unknown[] = [];
+    await c.subscribe("author_extrinsicUpdate", "author_submitAndWatchExtrinsic", [XT], (_e, u) =>
+      updates.push(u),
+    );
+    await new Promise((r) => setTimeout(r, 300));
+    c.close();
+    expect(updates).toEqual([]);
+    expect(calls.filter((m) => m === "author_submitExtrinsic")).toHaveLength(1);
+    expect(calls.filter((m) => m === "chain_getBlock").length).toBeGreaterThan(0);
+  });
+});

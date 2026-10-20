@@ -1,0 +1,30 @@
+[
+  {
+    "run": "plan-sequential-1792411270138.json",
+    "result": "verified",
+    "steps": "pay:verified nft:verified",
+    "integrity": "integrity_checked",
+    "live": "chain_verified"
+  },
+  {
+    "run": "plan-atomic-1792411355057.json",
+    "result": "verified",
+    "steps": "mint:verified nft:verified",
+    "integrity": "integrity_checked",
+    "live": "chain_verified"
+  },
+  {
+    "run": "plan-revive-call-1792412445848.json",
+    "result": "not_verified",
+    "steps": "call:unknown(effect_unproven)",
+    "integrity": "integrity_checked",
+    "live": "unknown"
+  },
+  {
+    "run": "plan-revive-terminate-1792412498767.json",
+    "result": "not_verified",
+    "steps": "terminate:unknown(effect_unproven)",
+    "integrity": "integrity_checked",
+    "live": "unknown"
+  }
+]

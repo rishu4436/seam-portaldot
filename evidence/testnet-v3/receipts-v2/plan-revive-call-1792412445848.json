@@ -1,0 +1,65 @@
+{
+  "kind": "seam-receipt-v2",
+  "generatedAt": "2026-10-20T12:32:05.298Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "source": "runs/plan-revive-call-1792412445848.json",
+  "how": "events, signer and call bytes re-read live from V3 (not copied from the record); receipt built by the current @seam/sdk buildReceipt with runtime = the record's fingerprint; then verifyReceiptLive with the record's plan and runtime",
+  "originalReceiptDigest": "0xa33b023f09fb6abe3546c3e11c4ed21747a6c63a740230139f5440458a9f088c",
+  "integrity": {
+    "status": "integrity_checked",
+    "note": "integrity only, not on-chain proof: this checks that the receipt was not edited after it was written. Anyone can recompute that digest, so it does not show that any transaction exists. Use live verification (seam verify --endpoint) for that."
+  },
+  "live": {
+    "status": "unknown",
+    "problems": [],
+    "notes": [
+      "The node's metadata hash differs from the pinned one (0xead4d72cf3ac54c52f6b7776504fc3dba6456164deac64fb7d37454819e68f4f vs 0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec); genesis, spec, transaction version and ss58 match, so the pinned runtime is used.",
+      "call: the chain's events give coverage extrinsic_finalized, not effect_proven (no complete state assertion), so it is not chain_verified."
+    ],
+    "steps": [
+      {
+        "actionId": "call",
+        "status": "unknown"
+      }
+    ]
+  },
+  "receipt": {
+    "receiptVersion": 1,
+    "manifestDigest": "0xeecd45232e6ffe3dcb851773eb29996845527b8da1797296a1a6a3ebf1fed7f8",
+    "planDigest": "0x86b9dcd2d8433986523462d03a9e10afdd229a0502df2fff8a28475d774fc8c7",
+    "fingerprintDigest": "0xba7b767eca99b786960c40fbeef84f94a9dece14f38d4f1b20dae2029e3bf8e5",
+    "policyDigest": "0x6215d0865ec3307c6d3af83e17a4d90e39fbdd3ba3a6dc922a5466393977f12d",
+    "approvalHash": "0xf982c40debe22c5eb8c08d1bcee21c6e5107a2b0f414d135f029fa79946cdb38",
+    "mode": "sequential",
+    "steps": [
+      {
+        "actionId": "call",
+        "status": "finalized",
+        "txHash": "0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482",
+        "block": {
+          "number": 102853,
+          "hash": "0x65ffd82b0ce6f7d211d58daf11b904ee8a5002bf39dc88a09647a9875098e4bd"
+        },
+        "events": [
+          "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1484747013712)",
+          "Revive.ContractEmitted(0x86b9cc2d456eed16a6872e1d5646f606a59cd95b, 0x, [])",
+          "Balances.Deposit(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 3862081212)",
+          "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1480884932500)",
+          "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1480884932500, 0)",
+          "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":19922,\"refTime\":1112691031}})"
+        ],
+        "verification": "unknown",
+        "coverage": "extrinsic_finalized",
+        "reason": "The on-chain call matches the plan exactly (dest, value, weight, deposit limit, data) and succeeded. V3 has no per-call event and no expected contract event was given, so what the contract did is not proven.",
+        "code": "effect_unproven",
+        "basis": "call_args_and_success"
+      }
+    ],
+    "result": "not_verified",
+    "coverage": {
+      "verified": 0,
+      "expected": 1
+    },
+    "receiptDigest": "0x2020a9526a6035fef6a88e62ee4bb88ab1d0cdfb09a7211a4019a7d1a444327a"
+  }
+}
