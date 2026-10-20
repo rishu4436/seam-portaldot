@@ -20,6 +20,11 @@ export interface FakeNodeOptions {
   facts: RuntimeFacts;
   /** Asset ids that exist (Assets.Asset storage present). */
   existingAssets?: string[];
+  /**
+   * Real Assets.Asset / Assets.Account storage (SCALE-encoded with the runtime's own types) for these assets:
+   * minBalance and per-account balances (SS58 -> balance). Accounts not listed have no Assets.Account entry.
+   */
+  assetBalances?: { assetId: string; minBalance: bigint; accounts: Record<string, bigint> }[];
   /** Response for contracts_call. Default: Ok, flags 0. */
   contractsCall?: unknown;
   /** Make an extrinsic fail with this DispatchError (by call index). */
@@ -108,6 +113,27 @@ export class FakeNode implements RpcClient {
     return b ? { number: `0x${b.number.toString(16)}`, parentHash: "0x" + "00".repeat(32) } : null;
   }
 
+  private assetsQuery() {
+    type Entry = Parameters<typeof storageKey>[0] & {
+      meta: { type: { asMap: { value: unknown } } };
+    };
+    return (
+      decodeRuntime(this.o.facts).decorated().query as unknown as {
+        assets: { asset: Entry; account: Entry };
+      }
+    ).assets;
+  }
+  private encodeValue(entry: "asset" | "account", value: Record<string, unknown>): Hex {
+    const { registry } = decodeRuntime(this.o.facts);
+    const t = this.assetsQuery()[entry].meta.type.asMap.value;
+    const reg = registry as unknown as {
+      createLookupType(t: unknown): string;
+      createTypeUnsafe(t: string, p: unknown[]): { toU8a(): Uint8Array };
+    };
+    const v = reg.createTypeUnsafe(reg.createLookupType(t), [value]);
+    return u8aToHex(v.toU8a()) as Hex;
+  }
+
   private assetKey(id: string): string {
     return storageKey((decodeRuntime(this.o.facts).decorated().query as any).assets.asset, id);
   }
@@ -182,6 +208,15 @@ export class FakeNode implements RpcClient {
         const [key, at] = params as [string, string | undefined];
         if (key === SYSTEM_EVENTS_KEY)
           return r(at ? (this.blocks.get(at.toLowerCase())?.events ?? null) : null);
+        for (const a of this.o.assetBalances ?? []) {
+          if (key === this.assetKey(a.assetId))
+            return r(
+              this.encodeValue("asset", { minBalance: a.minBalance, supply: 1000n, accounts: 1 }),
+            );
+          for (const [who, balance] of Object.entries(a.accounts))
+            if (key === storageKey(this.assetsQuery().account, a.assetId, who))
+              return r(this.encodeValue("account", { balance }));
+        }
         for (const id of this.o.existingAssets ?? [])
           if (key === this.assetKey(id)) return r("0x00");
         return r(null);

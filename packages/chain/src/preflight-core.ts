@@ -369,6 +369,130 @@ async function assetExists(
   }
 }
 
+type StorageEntryLoose = Parameters<typeof storageKey>[0] & {
+  meta: { type: { isMap: boolean; asMap: { value: unknown }; asPlain: unknown } };
+};
+
+/** Reads one storage value and decodes it strictly (every byte must be used). null: no entry. Throws on any other problem. */
+async function readStorageValue(
+  client: RpcClient,
+  facts: RuntimeFacts,
+  entry: StorageEntryLoose,
+  args: unknown[],
+  at: Hex,
+): Promise<Record<string, { toBigInt(): bigint }> | null> {
+  const { registry } = decodeRuntime(facts);
+  const raw = await rpc<string | null>(client, "state_getStorage", [
+    storageKey(entry, ...args),
+    at,
+  ]);
+  if (raw === null || raw === undefined || raw === "0x") return null;
+  const t = entry.meta.type.isMap ? entry.meta.type.asMap.value : entry.meta.type.asPlain;
+  const r = registry as unknown as {
+    createLookupType(t: unknown): string;
+    createTypeUnsafe(t: string, p: unknown[], o: { isPedantic: boolean }): unknown;
+  };
+  const v = r.createTypeUnsafe(r.createLookupType(t), [hexToU8a(raw)], { isPedantic: true }) as {
+    isSome?: boolean;
+    unwrap?: () => unknown;
+  };
+  const inner = v.isSome === undefined ? v : v.isSome ? v.unwrap!() : null;
+  return inner as Record<string, { toBigInt(): bigint }> | null;
+}
+
+/**
+ * Running asset-balance check for a sequence of assets.transfer steps, before anything is signed. The signer's
+ * Assets.Account balance and the asset's minBalance are read at the preflight block, then each step's amount is
+ * taken off in plan order. A step fails if its amount exceeds the running balance, or if it would leave the signer
+ * with 0 < remaining < minBalance, or (transfer_keep_alive, which the compiler uses for assets.transfer) with
+ * remaining < minBalance, i.e. it cannot empty the account. Only failures are reported: a passing check never makes
+ * a step 'ok'. If anything cannot be read or decoded, or the call is neither Assets.transfer nor
+ * Assets.transfer_keep_alive, the step is left as it was (unknown). Later steps are not checked after a failure.
+ */
+async function assetBalanceFailures(
+  client: RpcClient,
+  facts: RuntimeFacts,
+  plan: Plan,
+  signerSs58: string,
+  at: Hex,
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!plan.steps.some((s) => s.kind === "assets.transfer")) return out;
+  let decorated: {
+    query?: { assets?: { account?: StorageEntryLoose; asset?: StorageEntryLoose } };
+    tx?: { assets?: Record<string, { callIndex?: Uint8Array } | undefined> };
+  };
+  try {
+    decorated = decodeRuntime(facts).decorated() as never;
+  } catch {
+    return out;
+  }
+  const account = decorated.query?.assets?.account;
+  const asset = decorated.query?.assets?.asset;
+  if (!account || !asset) return out;
+  const idx = (n: string) => {
+    const c = decorated.tx?.assets?.[n]?.callIndex;
+    return c ? u8aToHex(c) : undefined;
+  };
+  const keepAliveIdx = idx("transferKeepAlive");
+  const transferIdx = idx("transfer");
+  const running = new Map<string, { balance: bigint; minBalance: bigint } | null>();
+  const read = async (assetId: string) => {
+    if (running.has(assetId)) return running.get(assetId)!;
+    let v: { balance: bigint; minBalance: bigint } | null = null;
+    try {
+      const details = await readStorageValue(client, facts, asset, [assetId], at);
+      if (details?.minBalance) {
+        const acct = await readStorageValue(client, facts, account, [assetId, signerSs58], at);
+        const balance = acct === null ? 0n : acct.balance?.toBigInt();
+        if (balance !== undefined) v = { balance, minBalance: details.minBalance.toBigInt() };
+      }
+    } catch {
+      v = null;
+    }
+    running.set(assetId, v);
+    return v;
+  };
+  for (const [i, s] of plan.steps.entries()) {
+    const a = s.decodedArgs;
+    if (s.kind === "assets.mint" && a.assetId !== undefined && a.recipient === signerSs58) {
+      const r = running.get(a.assetId);
+      if (r && a.amount !== undefined) r.balance += BigInt(a.amount);
+      continue;
+    }
+    if (s.kind !== "assets.transfer" || a.assetId === undefined || a.amount === undefined) continue;
+    const ci = s.encodedCall ? s.encodedCall.slice(0, 6).toLowerCase() : undefined;
+    const keepAlive = ci !== undefined && ci === keepAliveIdx;
+    if (!keepAlive && (ci === undefined || ci !== transferIdx)) {
+      running.set(a.assetId, null); // unknown call: stop checking this asset
+      continue;
+    }
+    const r = await read(a.assetId);
+    if (!r) continue;
+    const amount = BigInt(a.amount);
+    const who = `${signerSs58} (the signer)`;
+    if (a.recipient === signerSs58) continue; // to itself: balance unchanged
+    if (amount > r.balance) {
+      out.set(
+        s.actionId,
+        `asset balance check: step ${i + 1} would transfer ${amount} of asset ${a.assetId} but ${who} would hold only ${r.balance} by then`,
+      );
+      break;
+    }
+    const remaining = r.balance - amount;
+    if ((remaining > 0n || keepAlive) && remaining < r.minBalance) {
+      out.set(
+        s.actionId,
+        `asset balance check: step ${i + 1} would leave ${who} with ${remaining} of asset ${a.assetId}, below minBalance ${r.minBalance}` +
+          (keepAlive ? "; transfer_keep_alive cannot empty the account" : ""),
+      );
+      break;
+    }
+    r.balance = remaining;
+  }
+  return out;
+}
+
 type DecoratedLoose = {
   tx?: { revive?: { mapAccount?: unknown } };
   query?: { revive?: { originalAccount?: Parameters<typeof storageKey>[0] } };
@@ -643,6 +767,11 @@ export async function preflightWithClient(
       }
     }
 
+    // Before signing only: with real signed extrinsics each step's own system_dryRun decides, and earlier steps may
+    // already be on chain (their amounts are then in the balance read here).
+    const balanceFailures = opts.signedExtrinsics
+      ? new Map<string, string>()
+      : await assetBalanceFailures(client, facts, plan, signerSs58, atBlock.hash);
     const contractDryRuns: Record<string, unknown> = {};
     const v3Steps: V3StepPreflight[] = [];
     const steps: PreflightStep[] = [];
@@ -669,6 +798,11 @@ export async function preflightWithClient(
           notes.push(
             `asset ${s.decodedArgs.assetId} does not exist on chain (Assets.Asset is empty)`,
           );
+        }
+        const balanceNote = balanceFailures.get(s.actionId);
+        if (balanceNote && dryRun !== "failed") {
+          dryRun = "failed";
+          notes.push(balanceNote);
         }
       }
       if (tx.dryRun && dryRun !== "failed") {
