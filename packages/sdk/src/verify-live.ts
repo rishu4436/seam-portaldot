@@ -8,6 +8,7 @@ import type { NftsRuntime } from "./outcomes.js";
 import { perStepOfBatch } from "./flow.js";
 import {
   checkReceipt,
+  receiptShapeProblem,
   verifyStep,
   type ChainEvent,
   type ContractEffect,
@@ -84,6 +85,9 @@ export async function verifyReceiptLive(
   const notes: string[] = [];
   const steps: LiveVerification["steps"] = [];
   const { plan } = opts;
+  const shape = receiptShapeProblem(receipt);
+  if (shape)
+    return { status: "failed", problems: [`This is not a SEAM receipt (${shape}).`], notes, steps };
   if (!checkReceipt(receipt))
     return {
       status: "failed",

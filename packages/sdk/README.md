@@ -43,6 +43,7 @@ seam verify  receipt.json                       # offline: integrity only, not o
 seam verify  --endpoint <ws> --plan plan.json receipt.json   # live chain re-read; without --plan the result is unknown;
                                                              # a not_verified step is failed, not unknown
 seam verify  --endpoint <ws> --plan plan.json --runtime run.json receipt.json   # pin the plan's runtime (run record or fingerprint JSON)
+seam verify  run.json --endpoint <ws> --runtime run.json   # a run record works as the receipt too (uses its receipt and plan)
 seam explain plan.json | policy-result.json | receipt.json
 ```
 

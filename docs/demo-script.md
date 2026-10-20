@@ -171,13 +171,69 @@ Output (test lines; timings removed):
 ```
 Say: "This replays the real V3 records (no network) through `Seam.execute` and through the live re-verifier. Both reach the same verdict. The EVM contract call (tx `0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482`, #102853) is `verified` only when we name the event the contract must emit; without one it stays `unknown`, because V3 has no per-call Revive event. SEAM never upgrades that to verified on its own."
 
-Live form, for a judge with network (not run in the demo; read-only, nothing is signed or sent). After the setup step, also write the recorded plan: `node -e 'require("fs").writeFileSync("/tmp/v3-seq-plan.json",JSON.stringify(require("./evidence/testnet-v3/runs/plan-sequential-1792411270138.json").plan))'`, then:
+Live form, for a judge with network (not run inside the 5 minutes). Read-only, against the hosted V3 testnet, run on 2026-10-20 (IST). Nothing is signed or sent. A run record can be passed as the receipt: `seam verify` then checks its `nftVerdictReceipt.receipt` (or `run.receipt`, or `receipt`), says which, and uses the record's own `plan` unless `--plan` is given.
+
+Sequential plan (#102653, #102657), exit 0:
 
 ```bash
-npm run -s seam -- verify --endpoint wss://test-node-v3.portaldot.dev --plan /tmp/v3-seq-plan.json --runtime evidence/testnet-v3/runs/plan-sequential-1792411270138.json /tmp/v3-seq-nft-receipt.json
+npm run -s seam -- verify evidence/testnet-v3/runs/plan-sequential-1792411270138.json --endpoint https://test-node-v3.portaldot.dev --runtime evidence/testnet-v3/runs/plan-sequential-1792411270138.json
 ```
 
-It re-reads block, signer, call bytes and events. `--runtime` takes the run record's `fingerprint`: it must have the receipt's `fingerprintDigest`, and genesis, spec, transaction version and ss58 must match the node; only the metadata hash may differ. Without `--runtime`, `nfts.mint` and `revive.call` steps stay `unknown`. A step whose receipt or re-check says `not_verified` comes back **`failed`** with a problem listed; atomic steps are re-checked against their own slice of the batch call. This live command has not been run against V3 for this script, so no output is shown.
+```
+- note: evidence/testnet-v3/runs/plan-sequential-1792411270138.json is a run record; checking its "nftVerdictReceipt.receipt".
+- note: using the plan in evidence/testnet-v3/runs/plan-sequential-1792411270138.json ("plan").
+2026-10-20 10:18:13        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+2026-10-20 10:18:14        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+2026-10-20 10:18:15        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+Receipt status: chain_verified (live, read from https://test-node-v3.portaldot.dev).
+- note: The node's metadata hash differs from the pinned one (0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 vs 0x8ea432f8fa29914ac4689b31997308f9e5c37eff02f68df52d1a6853c32140b0); genesis, spec, transaction version and ss58 match, so the pinned runtime is used.
+The transactions, blocks, signer, call and events in this receipt match the chain. What they prove is what the result below says.
+Verified: all 2 steps finalized and the chain shows exactly what was planned.
+- pay: finalized. Transfer confirmed: asset, amount and account all match the plan. Tx 0x67015f593a98a1ef1da9d07062a305d0b19c68371870edb864da3cb87a72971a
+- nft: finalized. The NFT mint finalized and the chain shows exactly the requested arguments. Tx 0x5adae6e98e2b3d823680a5c35bd0ee5ebb3e0bc924516c185c299c2a571744da
+```
+
+Atomic plan (#102671), exit 0:
+
+```bash
+npm run -s seam -- verify evidence/testnet-v3/runs/plan-atomic-1792411355057.json --endpoint https://test-node-v3.portaldot.dev --runtime evidence/testnet-v3/runs/plan-atomic-1792411355057.json
+```
+
+```
+- note: evidence/testnet-v3/runs/plan-atomic-1792411355057.json is a run record; checking its "nftVerdictReceipt.receipt".
+- note: using the plan in evidence/testnet-v3/runs/plan-atomic-1792411355057.json ("plan").
+2026-10-20 10:18:19        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+2026-10-20 10:18:20        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+2026-10-20 10:18:22        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+Receipt status: chain_verified (live, read from https://test-node-v3.portaldot.dev).
+- note: The node's metadata hash differs from the pinned one (0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 vs 0x8ea432f8fa29914ac4689b31997308f9e5c37eff02f68df52d1a6853c32140b0); genesis, spec, transaction version and ss58 match, so the pinned runtime is used.
+The transactions, blocks, signer, call and events in this receipt match the chain. What they prove is what the result below says.
+Verified: all 2 steps finalized and the chain shows exactly what was planned.
+- mint: finalized. Mint confirmed: asset, amount and account all match the plan. Tx 0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355
+- nft: finalized. The NFT mint finalized and the chain shows exactly the requested arguments. Tx 0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355
+```
+
+`revive.call` without an expected event (#102853), exit 6:
+
+```bash
+npm run -s seam -- verify evidence/testnet-v3/runs/plan-revive-call-1792412445848.json --endpoint https://test-node-v3.portaldot.dev --runtime evidence/testnet-v3/runs/plan-revive-call-1792412445848.json
+```
+
+```
+- note: evidence/testnet-v3/runs/plan-revive-call-1792412445848.json is a run record; checking its "run.receipt".
+- note: using the plan in evidence/testnet-v3/runs/plan-revive-call-1792412445848.json ("plan").
+2026-10-20 10:18:26        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+2026-10-20 10:18:27        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+2026-10-20 10:18:28        REGISTRY: Unknown signed extensions AuthorizeCall, EthSetOrigin found, treating them as no-effect
+Receipt status: unknown (live, read from https://test-node-v3.portaldot.dev).
+- note: The node's metadata hash differs from the pinned one (0xead4d72cf3ac54c52f6b7776504fc3dba6456164deac64fb7d37454819e68f4f vs 0x8ea432f8fa29914ac4689b31997308f9e5c37eff02f68df52d1a6853c32140b0); genesis, spec, transaction version and ss58 match, so the pinned runtime is used.
+- note: call: the chain's events give coverage extrinsic_finalized, not effect_proven (no complete state assertion), so it is not chain_verified.
+Not verified: 0 of 1 steps could be confirmed on chain.
+- call: finalized. SEAM has no check for revive.call on this runtime (unsupported_runtime). The extrinsic succeeded, but its effect was not checked. Tx 0xec9173388b0a017adc6ad0916f3549f6c3aee838e9fe856838aed7f79ef17482
+```
+
+The `REGISTRY` lines come from the polkadot.js type registry (V3's `AuthorizeCall` and `EthSetOrigin` signed extensions carry no payload). The metadata-hash note is expected: V3's raw metadata drifts between blocks, and only genesis, spec, transaction version and ss58 must match. The `revive.call` record has no `nftVerdictReceipt`, so its `run.receipt` (written during the run, with `unsupported_runtime`) is checked; live re-verification gives `unknown`, because no expected contract event is given and V3 has no per-call Revive event. Its exit code 6 means `unknown`.
+
 
 ## 7. Console, LIVE V3 view (0:40)
 
