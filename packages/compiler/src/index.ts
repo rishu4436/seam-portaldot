@@ -39,4 +39,5 @@ export {
   blankStorageFallbacks,
   METADATA_LAYOUT_DOMAIN,
   type MetadataLayout,
+  BLANKED_STORAGE_DEFAULTS,
 } from "./layout.js";

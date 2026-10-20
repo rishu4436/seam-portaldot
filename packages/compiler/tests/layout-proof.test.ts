@@ -32,7 +32,7 @@ const manifest = rec.manifest as Manifest;
 const recorded: AtomicRollbackProof = rec.facts.behaviour.batchAllRollbackProof;
 const fp = rec.facts.fingerprint;
 /** Same value @seam/chain's metadataLayoutHash gives for every spec 3002 blob read so far. */
-const V3_LAYOUT = "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6";
+const V3_LAYOUT = "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304";
 
 function facts(proof: unknown, hex = v3Hex, extra: object = {}): RuntimeFacts {
   return factsFromMetadata({

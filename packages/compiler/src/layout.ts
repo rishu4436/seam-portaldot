@@ -5,17 +5,27 @@ import { withoutLookupWarning } from "./runtime.js";
 import type { Hex } from "./types.js";
 
 /**
- * Metadata layout hash: blake2b-256 over the metadata with every storage entry's default value (`fallback`) blanked.
+ * Storage defaults (pallet, entry) the layout hash ignores. Same list as @seam/chain's BLANKED_STORAGE_DEFAULTS. Only
+ * entries observed to drift without a runtime upgrade belong here; any other storage default is part of the layout.
+ */
+export const BLANKED_STORAGE_DEFAULTS: readonly (readonly [pallet: string, entry: string])[] =
+  Object.freeze([Object.freeze(["Revive", "EthBlockBuilderIR"] as const)]);
+const isBlanked = (pallet: string, entry: string) =>
+  BLANKED_STORAGE_DEFAULTS.some(([p, e]) => p === pallet && e === entry);
+
+/**
+ * Metadata layout hash: blake2b-256 over the metadata with only the allow-listed storage defaults
+ * (BLANKED_STORAGE_DEFAULTS, today only Revive.EthBlockBuilderIR) blanked. A change to any other default changes it.
  * Same definition and domains as @seam/chain's metadataLayoutHash, so both packages produce identical values.
  *
  * Why: on Portaldot V3 spec 3002 `Revive.EthBlockBuilderIR`'s fallback is state-dependent, so the raw metadata
- * bytes change block to block with no runtime upgrade. Nothing SEAM encodes or decodes reads a fallback.
+ * bytes change block to block with no runtime upgrade. (v1 blanked every storage default; its values differ.)
  *
  * Fail closed: the metadata is decoded and rebuilt unchanged first; unless that round-trips byte for byte
  * (V13-V15 only), the hash is taken over the raw bytes under a separate domain, so it only matches an identical blob.
  */
-export const METADATA_LAYOUT_DOMAIN = "seam/metadata-layout/v1";
-export const METADATA_LAYOUT_RAW_DOMAIN = "seam/metadata-layout/v1/raw";
+export const METADATA_LAYOUT_DOMAIN = "seam/metadata-layout/v2";
+export const METADATA_LAYOUT_RAW_DOMAIN = "seam/metadata-layout/v2/raw";
 
 type AnyCodec = {
   registry: TypeRegistry;
@@ -41,13 +51,14 @@ function rebuiltBody(inner: StructLike, version: number, blank: boolean): Uint8A
   const reg = inner.registry;
   const out = pallets.map((p) => {
     const ps = p as StructLike;
+    const pname = ps.get("name")!.toString();
     const st = ps.get("storage") as OptionLike | undefined;
     if (!st || st.isNone) return rebuild(ps, {});
     const s = st.unwrap() as StructLike;
     const items = s.get("items") as VecLike;
     const newItems = items.map((e) => {
       const es = e as StructLike;
-      if (!blank) return rebuild(es, {});
+      if (!blank || !isBlanked(pname, es.get("name")!.toString())) return rebuild(es, {});
       const fb = es.get("fallback")!;
       return rebuild(es, { fallback: new fb.constructor(reg, "0x") });
     });
@@ -58,7 +69,7 @@ function rebuiltBody(inner: StructLike, version: number, blank: boolean): Uint8A
   return rebuild(inner, { [key]: new pallets.constructor(reg, out) }).toU8a();
 }
 
-/** Metadata bytes with every storage default blanked, or undefined when they cannot be normalized safely. Pure. */
+/** Metadata bytes with the allow-listed storage defaults blanked, or undefined when they cannot be normalized safely. Pure. */
 export function blankStorageFallbacks(metadataHex: string): Uint8Array | undefined {
   try {
     const bytes = hexBytes(metadataHex.trim().toLowerCase());
