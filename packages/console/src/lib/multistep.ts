@@ -47,6 +47,13 @@ export interface StepReport {
   runtimeLock?: RuntimeLockInfo;
   /** Why the submit gate blocked this step (signed dry run), as reported; absent otherwise. */
   blockDetail?: BlockDetail;
+  /**
+   * Nonce this step's transaction was actually signed with: the trusted decoder's reading of the signed bytes when
+   * available ("decoded"), else the nonce in the signing request sent to the wallet ("signing_request"). Absent when
+   * never signed. Receipt metadata only: never part of approvalInputs or the plan digest.
+   */
+  nonce?: number;
+  nonceSource?: "decoded" | "signing_request";
 }
 export interface MultiStepResult {
   ok: boolean;
@@ -232,9 +239,22 @@ export async function runPlanSteps(args: {
   for (const [i, c] of calls.value.entries()) {
     if (cancelled()) return stop(i, "Cancelled. Nothing more was signed or sent.");
     signRequests++;
-    const s = await args.sign(i, c, args.ctx.nonce + i);
+    const requested = args.ctx.nonce + i;
+    const s = await args.sign(i, c, requested);
     if (!s.ok) return stop(i, `Signing failed: ${s.message} Nothing was sent.`, pre.gate);
     holder.put(i, s.value);
+    let decodedNonce: unknown;
+    try {
+      const dec = args.chain.signedExtrinsicDecoder?.(args.facts) as
+        ((x: `0x${string}`) => { nonce?: unknown } | null) | undefined;
+      decodedNonce = dec?.(s.value as `0x${string}`)?.nonce;
+    } catch {
+      decodedNonce = undefined;
+    }
+    const signedNonce = Number.isSafeInteger(decodedNonce)
+      ? { nonce: decodedNonce as number, nonceSource: "decoded" as const }
+      : { nonce: requested, nonceSource: "signing_request" as const };
+    for (const st of steps) if (c.actionIds.includes(st.actionId)) Object.assign(st, signedNonce);
   }
 
   const n = calls.value.length;

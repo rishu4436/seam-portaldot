@@ -74,7 +74,14 @@ const outcome = (i: number) => ({
   ],
 });
 
-async function run(opts: { stopAfterFirst?: boolean; badFirst?: boolean } = {}) {
+async function run(
+  opts: {
+    stopAfterFirst?: boolean;
+    badFirst?: boolean;
+    signFailAt?: number;
+    decoded?: (x: string) => unknown;
+  } = {},
+) {
   const submitAndWait = vi.fn(async (i: number) => {
     const o = outcome(i);
     // A tampered inclusion: the chain moved 2, the plan approved 1.
@@ -82,7 +89,9 @@ async function run(opts: { stopAfterFirst?: boolean; badFirst?: boolean } = {}) 
     return { ok: true as const, value: o as never };
   });
   const r = await runPlanSteps({
-    chain,
+    chain: opts.decoded
+      ? { ...chain, signedExtrinsicDecoder: (() => opts.decoded) as never }
+      : chain,
     send: async () => null,
     input: { policy, plan, manifest } as never,
     facts,
@@ -98,7 +107,11 @@ async function run(opts: { stopAfterFirst?: boolean; badFirst?: boolean } = {}) 
     freshFingerprint: async () => ({
       fingerprint: (facts as { fingerprint: unknown }).fingerprint,
     }),
-    sign: vi.fn(async (i: number) => ({ ok: true as const, value: SIGNED(i) })),
+    sign: vi.fn(async (i: number) =>
+      i === opts.signFailAt
+        ? { ok: false as const, message: "wallet refused" }
+        : { ok: true as const, value: SIGNED(i) },
+    ),
     submitAndWait,
     gates: {
       preSign,
@@ -153,6 +166,8 @@ describe("sequential multi-step receipt", () => {
         actionId: plan.steps[i]!.actionId,
         sent: true,
         sendIndex: i,
+        nonce: 5 + i,
+        nonceSource: "signing_request",
         status: "finalized",
         txHash: outcome(i).txHash,
         block: outcome(i).block,
@@ -239,5 +254,52 @@ describe("sequential multi-step receipt", () => {
       for (const i of [0, 1]) expect(text).not.toContain(SIGNED(i).slice(2));
       expect(text).not.toMatch(/"(signedTx|signedExtrinsics?|signature)":/);
     }
+  });
+});
+
+describe("per-step signed nonce (receipt metadata only)", () => {
+  it("two signed steps record nonces n and n+1 from the signing requests; signed bytes never in the receipt", async () => {
+    const { r, receipt } = await run();
+    expect(r.ok ? "ok" : r.message).toBe("ok");
+    expect(receipt.steps.map((s: { nonce?: number }) => s.nonce)).toEqual([5, 6]);
+    expect(receipt.steps.map((s: { nonceSource?: string }) => s.nonceSource)).toEqual([
+      "signing_request",
+      "signing_request",
+    ]);
+    const t = JSON.stringify(receipt);
+    for (const i of [0, 1]) expect(t).not.toContain(SIGNED(i).slice(2, 40));
+  });
+  it("prefers the decoder's nonce read from the signed bytes", async () => {
+    const decoded = (x: string) => ({ nonce: x === SIGNED(0) ? 5 : 6 });
+    const { receipt } = await run({ decoded });
+    expect(receipt.steps.map((s: { nonce?: number }) => s.nonce)).toEqual([5, 6]);
+    expect(receipt.steps.map((s: { nonceSource?: string }) => s.nonceSource)).toEqual([
+      "decoded",
+      "decoded",
+    ]);
+  });
+  it("a step that was never signed has no nonce", async () => {
+    const { r, receipt } = await run({ signFailAt: 1 });
+    expect(r.ok).toBe(false);
+    expect(receipt.steps[0].nonce).toBe(5);
+    expect("nonce" in receipt.steps[1]).toBe(false);
+    expect("nonceSource" in receipt.steps[1]).toBe(false);
+  });
+  it("approvalInputs and the approvalHash recomputation are unchanged by the step nonces", async () => {
+    const { receipt } = await run();
+    expect(rerun(receipt.approvalInputs)).toBe(receipt.approvalHash);
+    expect(receipt.approvalInputs.envelope.nonce).toBe(5);
+    expect(receipt.planDigest).toBe(plan.planDigest);
+    // Stripping the step nonces changes nothing the approval or plan digest covers.
+    const bare = {
+      ...receipt,
+      steps: receipt.steps.map(
+        ({ nonce: _n, nonceSource: _s, ...rest }: Record<string, unknown>) => rest,
+      ),
+    };
+    expect(bare.approvalInputs).toEqual(receipt.approvalInputs);
+    expect(rerun(bare.approvalInputs)).toBe(receipt.approvalHash);
+    expect(JSON.stringify(receipt.approvalInputs)).not.toMatch(/"nonceSource"/);
+    expect(receipt.plan.planDigest ?? receipt.planDigest).toBe(plan.planDigest);
   });
 });
