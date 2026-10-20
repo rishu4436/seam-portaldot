@@ -1,0 +1,350 @@
+{
+  "kind": "seam-v3-tx-verification",
+  "title": "Sequential 2-step assets.transfer_keep_alive, step 1 at block #120936: independent verification",
+  "readOnly": "read-only RPC; no signer, nothing signed or sent",
+  "reproduce": [
+    "node packages/chain/scripts/v3-find-tx.mjs --hash 0x8a07ad3206f11dc121570d71ea924e8a60c5fa8ce311001184184de2b3d74e37 --signer 5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE --asset 806707 --plan /workspace/demo-shots/seam-receipt-seq-0xf974fd1c.json --max-blocks 400",
+    "node packages/chain/scripts/v3-verify-signature.mjs --block 120936 --hash 0x8a07ad3206f11dc121570d71ea924e8a60c5fa8ce311001184184de2b3d74e37",
+    "node packages/chain/scripts/v3-plan-fingerprint.mjs --digest 0x8bc3d4cd38574e44aae882b61c8f9f41aad9d6be076744bb55b7e2b3a2a092a8 --from 120880 --to 120940",
+    "one-off read-only node check (not committed): signedExtrinsicDecoder(...).metadataHashMode with the era checkpoint; createApproval({...receipt.approvalInputs, now: new Date(receipt.approvalInputs.now)}); metadataLayoutHash of state_getMetadata at #120930 and #120931; System.Account nonce at #119996/#120935/#120936; Assets.Asset 806707 and Assets.Account at the finalized head"
+  ],
+  "chain": {
+    "kind": "seam-v3-tx-verification",
+    "generatedAt": "2026-10-20T18:40:36.822Z",
+    "endpoint": "https://test-node-v3.portaldot.dev",
+    "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "finalizedHead": {
+      "number": 120969,
+      "hash": "0xdb3eb040e9e85bd79deb581a905eec80c38c46ed7e099dc78cd4664e51b83f7f"
+    },
+    "hash": "0x8a07ad3206f11dc121570d71ea924e8a60c5fa8ce311001184184de2b3d74e37",
+    "block": {
+      "number": 120936,
+      "hash": "0xed27dfe0a7694f8fa3dc5df10502926e0a9144d828c040ee6b307609ed125440"
+    },
+    "canonical": true,
+    "finalized": true,
+    "extrinsicIndex": 1,
+    "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+    "signerMatch": true,
+    "call": "assets.transferKeepAlive",
+    "callHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+    "calls": [
+      {
+        "call": "assets.transferKeepAlive",
+        "args": {
+          "id": 806707,
+          "target": {
+            "id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+          },
+          "amount": 1
+        }
+      }
+    ],
+    "plan": {
+      "file": "/workspace/demo-shots/seam-receipt-seq-0xf974fd1c.json",
+      "planDigest": "0x13b62017c19c6b8088e2c080dd57e06de4d9789ac5351cdb31b695bde46f779f",
+      "recomputedPlanDigest": "0x13b62017c19c6b8088e2c080dd57e06de4d9789ac5351cdb31b695bde46f779f",
+      "planDigestMatches": true,
+      "signerMatches": true,
+      "callMatch": false,
+      "callReason": "batch inner calls differ from the plan steps",
+      "planCalls": [
+        "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204"
+      ],
+      "stepCallMatch": {
+        "step": "step1",
+        "receiptEncodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "chainCallHex": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "equal": true
+      },
+      "scriptNote": "v3-find-tx compares the tx call with ALL plan steps (atomic/batch view), so on a 2-step sequential plan it reports callMatch false and outcome mismatch. The step-level check (chain call == plan.steps[0].encodedCall) is equal; the script's 'mismatch' is an artefact of the script, not of the chain."
+    },
+    "balances": {
+      "asset": "806707",
+      "before": 120935,
+      "after": 120936,
+      "accounts": {
+        "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE": {
+          "assetBefore": "2",
+          "assetAfter": "1",
+          "assetDelta": "-1"
+        },
+        "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB": {
+          "assetBefore": "2503",
+          "assetAfter": "2504",
+          "assetDelta": "1"
+        }
+      },
+      "signerFree": {
+        "before": "95587366396859",
+        "after": "94116491646463",
+        "drop": "1470874750396",
+        "dropEqualsFee": true
+      }
+    },
+    "dispatch": {
+      "ok": true
+    },
+    "fee": "1470874750396",
+    "events": [
+      {
+        "pallet": "Balances",
+        "name": "Withdraw",
+        "args": [
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "1470874750396"
+        ]
+      },
+      {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "args": [
+          "806707",
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+          "1"
+        ]
+      },
+      {
+        "pallet": "Balances",
+        "name": "Deposit",
+        "args": [
+          "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+          "1470874750396"
+        ]
+      },
+      {
+        "pallet": "TransactionPayment",
+        "name": "TransactionFeePaid",
+        "args": [
+          "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+          "1470874750396",
+          "0"
+        ]
+      },
+      {
+        "pallet": "System",
+        "name": "ExtrinsicSuccess",
+        "args": [
+          "{\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+        ]
+      }
+    ],
+    "outcome": "mismatch",
+    "reasons": [
+      "call bytes differ from the committed evidence"
+    ]
+  },
+  "signature": {
+    "block": {
+      "number": 120936,
+      "hash": "0xed27dfe0a7694f8fa3dc5df10502926e0a9144d828c040ee6b307609ed125440"
+    },
+    "txHash": "0x8a07ad3206f11dc121570d71ea924e8a60c5fa8ce311001184184de2b3d74e37",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+    "nonce": 3,
+    "tip": "0",
+    "era": {
+      "mortal": true,
+      "period": 64,
+      "phase": 2,
+      "hex": "0x2500"
+    },
+    "eraBirth": {
+      "number": 120898,
+      "hash": "0x7c980533f783cf239285bf84cd1a9c937c85ad6a89105db41e62f866e0fca526"
+    },
+    "signatureValid": true,
+    "controlNoContext": false,
+    "controlWrongCheckpoint": false,
+    "metadataHashMode": 0,
+    "metadataHashModeNote": "decoded from the extrinsic's own CheckMetadataHash bytes by signedExtrinsicDecoder (0 = Disabled)"
+  },
+  "nonce": {
+    "observed": 3,
+    "expected": 3,
+    "previous": {
+      "tx": "0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402",
+      "block": 119996,
+      "nonce": 2
+    },
+    "accountNonce": {
+      "after119996": 3,
+      "before120936": 3,
+      "after120936": 4
+    },
+    "gap": false,
+    "continuity": {
+      "assetAfter119996": "2",
+      "assetBefore120936": "2",
+      "freeAfter119996": "95587366396859",
+      "freeBefore120936": "95587366396859"
+    }
+  },
+  "planFingerprint": {
+    "receiptFingerprintDigest": "0x8bc3d4cd38574e44aae882b61c8f9f41aad9d6be076744bb55b7e2b3a2a092a8",
+    "matchingBlocks": {
+      "from": 120880,
+      "to": 120930,
+      "count": 51,
+      "note": "scanned #120880..#120940; matches up to the window start"
+    },
+    "nonMatchingBlocks": [
+      120940,
+      120939,
+      120938,
+      120937,
+      120936,
+      120935,
+      120934,
+      120933,
+      120932,
+      120931
+    ],
+    "rawMetadataChangedAt": 120931,
+    "metadataHashByBlock": {
+      "#120880..#120930": "0xe2eee0e6a7a1fccc043973cd01640f3debaefeafe0a7f9586f5085aa26e51fde",
+      "#120931..#120940": "0x1615e1d4fc4fe2dc390a67a778ca4fea125c3ea0e4cc7ed69fd0156ac3e0a1e8"
+    },
+    "layoutHashAllBlocks": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+    "allLayoutEqual": true,
+    "fingerprint": {
+      "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "specName": "portaldot-v3",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataHash": "0xe2eee0e6a7a1fccc043973cd01640f3debaefeafe0a7f9586f5085aa26e51fde",
+      "ss58Prefix": 42,
+      "tokenSymbol": "tPOT",
+      "tokenDecimals": 14,
+      "typesBundleHash": null
+    }
+  },
+  "runtimeLock": {
+    "receipt": {
+      "ok": true,
+      "changed": [
+        "metadataHash"
+      ],
+      "reason": "runtime layout unchanged: only allow-listed storage defaults drifted (metadata 0xe2eee0e6a7a1fccc043973cd01640f3debaefeafe0a7f9586f5085aa26e51fde -> 0x1615e1d4fc4fe2dc390a67a778ca4fea125c3ea0e4cc7ed69fd0156ac3e0a1e8, layout 0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304)",
+      "lockBasis": "layout_hash",
+      "code": "runtime_layout_unchanged",
+      "preparedMetadataHash": "0xe2eee0e6a7a1fccc043973cd01640f3debaefeafe0a7f9586f5085aa26e51fde",
+      "currentMetadataHash": "0x1615e1d4fc4fe2dc390a67a778ca4fea125c3ea0e4cc7ed69fd0156ac3e0a1e8",
+      "preparedLayoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+      "currentLayoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304"
+    },
+    "independent": {
+      "120930": {
+        "hash": "0xfa1587ae74b8540e72957862c37f8f6577bb81a756f957f0363087d8a6135119",
+        "metadataHash": "0xe2eee0e6a7a1fccc043973cd01640f3debaefeafe0a7f9586f5085aa26e51fde",
+        "layoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304"
+      },
+      "120931": {
+        "hash": "0x849bb0d6743d6192d2b6b4927eaf5832de1f545728a3a51eef0950adf095db67",
+        "metadataHash": "0x1615e1d4fc4fe2dc390a67a778ca4fea125c3ea0e4cc7ed69fd0156ac3e0a1e8",
+        "layoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304"
+      }
+    },
+    "preparedRawSeenLive": true,
+    "currentRawSeenLive": true,
+    "bothLayoutEqualReceipt": true,
+    "note": "layout hashes recomputed with metadataLayoutHash (@seam/chain) from the raw state_getMetadata blobs"
+  },
+  "approvalHash": {
+    "receipt": "0xf974fd1c485a4a3e44846ca365255675cd38e2a609382aea2983a0d7f92b3ed7",
+    "recomputed": "0xf974fd1c485a4a3e44846ca365255675cd38e2a609382aea2983a0d7f92b3ed7",
+    "status": "match",
+    "method": "createApproval({...receipt.approvalInputs, now: new Date(receipt.approvalInputs.now)}) from @seam/policy at main cb4442b",
+    "binding": {
+      "manifestDigest": "0xc12da6a1d50d399433bd48eb97bc2488ee0bbda0e190e0a4aa6119c4ca1f36ab",
+      "planDigest": "0x13b62017c19c6b8088e2c080dd57e06de4d9789ac5351cdb31b695bde46f779f",
+      "planContentDigest": "0xa154bffa38d8faca66274aa3f51a272e5f0a8f329317cf282addf69226fd1bcc",
+      "callsDigest": "0xba335eec3342ab346474f2158ffd07804cae06075fa7e25347dfd26077ce8c5a",
+      "fingerprintDigest": "0x8bc3d4cd38574e44aae882b61c8f9f41aad9d6be076744bb55b7e2b3a2a092a8",
+      "policyDigest": "0x38896faf86872dec1f8eb022c8a31bc0bb44037e42036d259ba920528e75bf59",
+      "policyResultDigest": "0xfdea8f7c2db879246434d1a710bb2900a458c08d524e2c67eb703a36ac8cf49c",
+      "envelopeDigest": "0x2e1e6c662ea43a74c61c54e6afd580432bbf9188167d4ae0ba4a1fd2f6f4bd8b",
+      "preflightDigest": "0x279b52b852f681f6849202a1f2146d62c95e6baaa87dd6b9824c70a91bfd4247",
+      "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "nonce": 3,
+      "mortalityBlocks": 64,
+      "expiresAt": "2026-10-20T18:38:16.734Z"
+    }
+  },
+  "receiptClaims": {
+    "txHash": true,
+    "block": true,
+    "signer": true,
+    "planDigest": {
+      "receipt": "0x13b62017c19c6b8088e2c080dd57e06de4d9789ac5351cdb31b695bde46f779f",
+      "plan": "0x13b62017c19c6b8088e2c080dd57e06de4d9789ac5351cdb31b695bde46f779f",
+      "recomputed": "0x13b62017c19c6b8088e2c080dd57e06de4d9789ac5351cdb31b695bde46f779f",
+      "equal": true
+    },
+    "fee": {
+      "receipt": "1470874750396",
+      "chain": "1470874750396",
+      "equal": true,
+      "estimate": "1470874817473"
+    },
+    "extrinsicIndex": {
+      "receipt": 1,
+      "chain": 1,
+      "equal": true
+    },
+    "event": {
+      "receipt": {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "assetId": "806707",
+        "from": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "to": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+        "amount": "1"
+      },
+      "chain": {
+        "assetId": "806707",
+        "from": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "to": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+        "amount": "1"
+      },
+      "equal": true
+    },
+    "result": "partial",
+    "step1Verification": "verified"
+  },
+  "step2": {
+    "sent": false,
+    "status": "not_run",
+    "receiptReason": "Blocked at submit (signed_dry_run_failed): Blocked: the dry run of the signed transaction failed, so it would fail on chain. Nothing was sent.",
+    "seamDemoAsset806707": {
+      "after120936": "1",
+      "atFinalizedHead": {
+        "block": 120996,
+        "balance": "1"
+      }
+    },
+    "assetDetails": {
+      "minBalance": 1,
+      "isSufficient": false,
+      "status": "Live"
+    },
+    "likelyCause": "transfer_keep_alive of 1 would take seam-demo from 1 to 0, below minBalance 1, i.e. reap the account; keep-alive refuses that, so the signed dry run fails",
+    "exactError": "not observable: the signed step-2 bytes were kept in memory only and not recorded; V3 offers no way to replay them here",
+    "ruledOut": {
+      "nonce": "account nonce was 4 after #120936 and step 2 was prepared for nonce 4",
+      "era": "checkpoint #120898 period 64 is valid to about #120962"
+    }
+  },
+  "mismatches": [],
+  "notes": [
+    "v3-find-tx compares the tx call with ALL plan steps (atomic/batch view), so on a 2-step sequential plan it reports callMatch false and outcome mismatch. The step-level check (chain call == plan.steps[0].encodedCall) is equal; the script's 'mismatch' is an artefact of the script, not of the chain.",
+    "receipt result is partial: step 1 verified, step 2 blocked at submit and never sent"
+  ],
+  "verdict": "verified (step 1)"
+}
