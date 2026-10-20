@@ -24,6 +24,7 @@ import {
 } from "../lib/modes";
 import { runLive, v3RpcUrl, type LiveOutcome, type LiveDeps } from "../lib/live";
 import { planCall, fingerprintMatches } from "../lib/liverequest";
+import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
 import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
 import {
   V3_HTTPS_RPC,
@@ -596,6 +597,7 @@ export function LivePanel({
   const ok = !!v3RpcUrl(url);
   const [receiptRpc, setReceiptRpc] = useState<RpcTransport>();
   const [gate, setGate] = useState<GateOutcome>();
+  const [multi, setMulti] = useState<MultiStepResult>();
   // Single-use approvals, as the policy engine tracks them. Lives as long as the panel.
   const store = useRef(newApprovalStore());
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
@@ -604,6 +606,7 @@ export function LivePanel({
     setOut(undefined);
     setV3(undefined);
     setGate(undefined);
+    setMulti(undefined);
     setDismissed(false);
   }, [planKey]);
   const ready = !!plan && !!approval && !approval.used;
@@ -632,6 +635,28 @@ export function LivePanel({
           hostFacts = r.ok ? r.facts : undefined;
         }
         const host = await hostLoader(hostFacts);
+        // Sequential plans with more than one step: one engine approval, each step signed in order, then sent one at a
+        // time behind its own gate and checkBeforeSubmit (see lib/multistep.ts). Any block stops the remaining steps.
+        const multiCalls = policyInput ? callsToSignOf(policyInput.plan as never) : undefined;
+        if (multiCalls?.ok && multiCalls.value.length > 1 && policyInput) {
+          setMulti(
+            await runMultiStepLive({
+              rpc,
+              b,
+              host,
+              hostFacts,
+              signer: plan?.signer,
+              ready: ready && !spent.includes(approval?.hash ?? ""),
+              input: policyInput,
+              chainLoader,
+              store: store.current,
+              now,
+              factsStep,
+              acknowledgedDowngrade,
+            }),
+          );
+          return;
+        }
         const call = planCall(plan);
         const gateMsg = !call.ok
           ? call.message
@@ -781,6 +806,7 @@ export function LivePanel({
         )}
         <ApprovalSummary plan={plan} approval={approval} />
         {gate && <PolicyGatePanel gate={gate} />}
+        {multi && <MultiStepPanel r={multi} />}
         {v3 && <V3FactsNotice r={v3} />}
         {out?.status === "rejected" && !dismissed && (
           <RejectionNotice onRetry={run} onDismiss={() => setDismissed(true)} />
@@ -916,4 +942,123 @@ export function RiskLimits({
       )}
     </section>
   );
+}
+
+/** Per-step result of a multi-step LIVE run: which step stopped and why. */
+export function MultiStepPanel({ r }: { r: MultiStepResult }) {
+  return (
+    <div className="small" role="group" aria-label="Multi-step run">
+      <p>
+        <strong>{r.ok ? "All steps sent" : "Stopped"}</strong>: {r.message}
+      </p>
+      <ol>
+        {r.steps.map((s) => (
+          <li key={s.index} data-status={s.status}>
+            <code>{s.actionId}</code> {s.status}: {s.message}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+async function runMultiStepLive(a: {
+  rpc: RpcTransport;
+  b: typeof import("../lib/browserChain");
+  host: LiveHost | undefined;
+  hostFacts: unknown;
+  signer: string | undefined;
+  ready: boolean;
+  input: PolicyGateInput;
+  chainLoader: () => Promise<ChainFns>;
+  store: ReturnType<typeof newApprovalStore>;
+  now: () => number;
+  factsStep: (rpc: RpcTransport) => Promise<V3FactsResult>;
+  acknowledgedDowngrade?: boolean;
+}): Promise<MultiStepResult> {
+  const blocked = (message: string): MultiStepResult => ({
+    ok: false,
+    signRequests: 0,
+    steps: [],
+    stoppedAt: 0,
+    message: `Stopped at step 1: ${message}`,
+  });
+  if (!a.ready) return blocked("The plan is not approved, or its approval was already used.");
+  if (!a.host)
+    return blocked(
+      "The signature verifier and extrinsic assembler are not installed in this build, so nothing can be signed.",
+    );
+  if (!a.signer || !a.hostFacts) return blocked("No signer or live runtime facts.");
+  const host = a.host;
+  const ctx = await a.b.readSigningContext(a.rpc, a.signer);
+  if (!ctx.ok) return blocked(ctx.message);
+  const client = a.b.createBrowserChainClient(a.rpc, { extrinsicHash: host.extrinsicHash });
+  const wallet = a.b.createExtensionSigner({ assemble: (sig, _p, req) => host.assemble(sig, req) });
+  return runPlanSteps({
+    chain: await a.chainLoader(),
+    send: a.rpc as never,
+    input: a.input,
+    facts: a.hostFacts,
+    signer: a.signer,
+    ctx: ctx.value,
+    now: () => new Date(a.now()),
+    store: a.store,
+    acknowledgedDowngrade: a.acknowledgedDowngrade,
+    freshFingerprint: async () => {
+      const r = await a.factsStep(a.rpc);
+      return r.ok ? (r.facts as { fingerprint?: unknown }).fingerprint : undefined;
+    },
+    sign: async (_i, call, nonce) => {
+      const req = await host.buildRequest({
+        signer: a.signer!,
+        callHex: call.callHex,
+        actionIds: call.actionIds,
+        context: { ...ctx.value, nonce },
+      });
+      if (!req.ok) return { ok: false, message: req.message };
+      const s = await wallet.sign(req.value);
+      if (!s.ok) return { ok: false, message: s.message };
+      const v = await host.verifyBinding(s.value.signedTx, req.value);
+      if (!v.ok) return { ok: false, message: `Signed bytes differ (${v.reasons.join(", ")}).` };
+      return { ok: true, value: s.value.signedTx };
+    },
+    submitAndWait: async (i, signedTx) => {
+      const step = (
+        a.input.plan as {
+          steps: { actionId: string; kind: string; decodedArgs: Record<string, string> }[];
+        }
+      ).steps[i];
+      const sub = await client.submit({ signedTx });
+      if (!sub.ok) return { ok: false, message: sub.message };
+      const v = await client.verify(sub.value.txHash);
+      const st = v.ok ? v.value.state : undefined;
+      // The effect is checked only for assets.transfer (Assets.Transferred with the planned values). Anything else, or a
+      // failed check, stays "unknown"/"not_verified", and the engine then refuses to send the next step.
+      let verification: "verified" | "not_verified" | "unknown" = "unknown";
+      let reason = v.ok ? (v.value.note ?? `state ${st ?? "unknown"}`) : v.message;
+      if (st === "finalized" && v.ok && v.value.block && step?.kind === "assets.transfer") {
+        const { checkAssetsTransferEffect } = await import("../lib/effectcheck");
+        const e = await checkAssetsTransferEffect(a.rpc, sub.value.txHash, v.value.block.hash, {
+          assetId: step.decodedArgs.assetId,
+          from: a.signer!,
+          to: step.decodedArgs.recipient,
+          amount: step.decodedArgs.amount,
+        });
+        verification = e.verdict === "effect_proven" ? "verified" : "not_verified";
+        reason = e.verdict === "effect_proven" ? "Assets.Transferred matches the plan" : e.reason;
+      }
+      return {
+        ok: true,
+        value: {
+          actionId: step?.actionId ?? "",
+          status: st === "finalized" || st === "included" ? st : "uncertain",
+          txHash: sub.value.txHash,
+          ...(v.ok && v.value.block ? { block: v.value.block } : {}),
+          events: [],
+          verification,
+          reason,
+        },
+      };
+    },
+  });
 }

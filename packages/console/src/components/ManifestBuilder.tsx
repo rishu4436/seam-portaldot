@@ -24,6 +24,7 @@ import {
 import { V3_HTTPS_RPC, type V3FactsResult } from "../lib/v3facts";
 import type { RpcTransport } from "../lib/chainclient";
 import { liveFactsStep, downloadJson } from "./Modes";
+import { loadChainFns } from "../lib/signflow";
 import { BuilderPolicy, type BuilderSelection } from "./BuilderPolicy";
 import type { Plan as PolicyPlan } from "@seam/policy/browser";
 
@@ -438,6 +439,11 @@ export function ManifestBuilder({
           <BuilderPolicy
             plan={plan as PolicyPlan}
             manifest={toCompilerManifest(manifest)}
+            readPreflight={async () => {
+              const t = transportFor ?? (await import("../lib/browserChain")).transportFor;
+              const chain = await loadChainFns();
+              return chain.preflight(t(url), plan, live);
+            }}
             onUse={onUsePolicy && ((sel) => onUsePolicy({ ...sel, facts: live }))}
           />
         </>

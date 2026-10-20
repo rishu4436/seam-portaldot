@@ -2,20 +2,36 @@
 // capabilities, assets, recipients, contracts, per-asset amounts (the largest single step, since amount_limit is per step),
 // native value, step count and mode, plus a fee cap. There is no allow-all default: anything not in the plan is "*": "0" or
 // an empty list. The user may only tighten it; tightenPolicy refuses anything looser than the derived policy.
+// The fee cap is the plan's own preflight totalFee + 25%; with no known totalFee there is no policy (fail closed).
 // The authoritative decision stays with Sentinel's engine (runPolicyGate / preSign); this file only builds the input.
 import { parsePolicy, type Plan, type Policy } from "@seam/policy/browser";
 
-/** Default fee cap in base units (0.05 tPOT at 14 decimals), the same cap as the committed V3 demo policy. Lower only. */
-export const DEFAULT_BUILDER_FEE_CAP = "5000000000000";
-
 const uint = (s: unknown): s is string => typeof s === "string" && /^\d+$/.test(s);
+
+/**
+ * Fee cap margin over the plan's own preflight totalFee: +25%, rounded up, in bigint. Fees move a little between the
+ * preflight here and the re-preflight at the gate, so the cap is the measured fee plus this fixed margin; nothing else.
+ */
+export const FEE_CAP_MARGIN_PERCENT = 25n;
+
+/** totalFee from the plan's own preflight + 25%, rounded up. undefined when the preflight has no known totalFee. */
+export function feeCapFromPreflight(preflight: unknown): string | undefined {
+  const t = (preflight as { totalFee?: { value?: unknown; unknown?: boolean } } | undefined)
+    ?.totalFee;
+  if (!t || t.unknown || !uint(t.value)) return undefined;
+  const v = BigInt(t.value);
+  return ((v * (100n + FEE_CAP_MARGIN_PERCENT) + 99n) / 100n).toString();
+}
+
 const maxOf = (a: string | undefined, b: string) =>
   a === undefined || BigInt(b) > BigInt(a) ? b : a;
 const uniq = (xs: string[]) => [...new Set(xs)];
 
-export type Derived = { ok: true; policy: Policy } | { ok: false; message: string };
+export type Derived =
+  { ok: true; policy: Policy } | { ok: false; code?: "FEE_CAP_UNKNOWN"; message: string };
 
-export function derivePolicy(plan: Plan, opts: { maxFee?: string } = {}): Derived {
+/** opts.preflight is the plan's own preflight (PreflightResult). Without a known totalFee there is no policy. */
+export function derivePolicy(plan: Plan, opts: { preflight?: unknown } = {}): Derived {
   if (!plan || !Array.isArray(plan.steps) || !plan.steps.length)
     return { ok: false, message: "No compiled plan, so no policy can be derived." };
   if (plan.mode === "unavailable")
@@ -23,9 +39,14 @@ export function derivePolicy(plan: Plan, opts: { maxFee?: string } = {}): Derive
   const bad = plan.steps.find((s) => s.status !== "ok");
   if (bad)
     return { ok: false, message: `Step ${bad.actionId} is unavailable; no policy is derived.` };
-  const maxFee = opts.maxFee ?? DEFAULT_BUILDER_FEE_CAP;
-  if (!uint(maxFee))
-    return { ok: false, message: "The fee cap must be a whole number of base units." };
+  const maxFee = feeCapFromPreflight(opts.preflight);
+  if (maxFee === undefined)
+    return {
+      ok: false,
+      code: "FEE_CAP_UNKNOWN",
+      message:
+        "The plan's preflight has no known total fee, so no fee cap can be derived. No policy, so the gate blocks and nothing will be signed.",
+    };
   const assets: string[] = [];
   const recipients: string[] = [];
   const contracts: string[] = [];

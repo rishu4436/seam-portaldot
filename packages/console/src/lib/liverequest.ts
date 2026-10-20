@@ -22,7 +22,7 @@ export function planCall(plan: Plan | undefined): Res<LiveCall> {
   const single = plan.mode === "sequential" && plan.steps.length === 1;
   if (plan.mode === "sequential" && !single)
     return no(
-      "Sequential plans need one signature per step. The console LIVE flow signs a single atomic call only, so this is blocked.",
+      "A multi-step sequential plan is signed and sent step by step (lib/multistep.ts runPlanSteps) and needs its policy input; it can't go through the single-call path.",
     );
   const callHex = single ? plan.steps[0].encodedCall : plan.outerCall?.encodedCall;
   if (!callHex || !/^0x[0-9a-fA-F]+$/.test(callHex))
