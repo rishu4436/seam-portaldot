@@ -8,19 +8,19 @@ Built for Portaldot Hacker House 2026 (Modular Cloud & Middleware track).
 
 ## 5-minute quickstart
 
-Needs Node 22 or later. Everything here runs offline: no node, no wallet, no network after `npm install`.
+Needs Node 22 or later. Run from the repo root. Everything here runs offline: no node, no wallet, no network after `npm ci`. `npm run -s seam -- <command>` runs the built CLI; `npx seam` does not work on a fresh clone, because the bin is linked before `dist/cli.js` exists.
 
 ```bash
-npm install && npm run build
+npm ci && npm run build
 
 # Compile a Manifest against the bundled read-only Portaldot mainnet snapshot (spec 1002)
-npx seam compile docs/examples/demo-manifest.json
-npx seam compile docs/examples/missing-pallet-manifest.json      # "Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists ..."
-npx seam check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json   # blocked: amount over limit
+npm run -s seam -- compile docs/examples/demo-manifest.json
+npm run -s seam -- compile docs/examples/missing-pallet-manifest.json      # "Nfts.mint cannot be compiled: this runtime's metadata has no Nfts.mint call (runtime spec 1002) ..."
+npm run -s seam -- check docs/examples/demo-manifest.json --policy docs/examples/strict-policy.json   # blocked: amount over limit
 
 # Check a real V3 testnet receipt (sequential plan, tx 0x67015f59…971a + 0x5adae6e9…44da)
 node -e 'const r=require("./evidence/testnet-v3/runs/plan-sequential-1792411270138.json");require("fs").writeFileSync("/tmp/v3-receipt.json",JSON.stringify(r.nftVerdictReceipt.receipt))'
-npx seam verify /tmp/v3-receipt.json            # offline: integrity only, not on-chain proof
+npm run -s seam -- verify /tmp/v3-receipt.json            # offline: integrity only, not on-chain proof
 
 # Replay the real V3 records through execute and live verification (they must agree)
 npx vitest run --root packages/sdk tests/v3-replay.test.ts
