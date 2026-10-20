@@ -115,7 +115,13 @@ export interface RuntimeFacts {
 }
 
 export type ActionKind =
-  "assets.transfer" | "assets.mint" | "contracts.call" | "revive.call" | "nfts.mint";
+  | "assets.transfer"
+  | "assets.mint"
+  | "contracts.call"
+  | "revive.call"
+  | "nfts.mint"
+  | "revive.instantiate_with_code"
+  | "revive.map_account";
 
 export type SignerType = "ss58" | "accountId32" | "h160";
 

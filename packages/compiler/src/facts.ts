@@ -24,6 +24,8 @@ export const SEAM_CAPABILITIES = [
   "Contracts.call",
   "Revive.call",
   "Nfts.mint",
+  "Revive.instantiate_with_code",
+  "Revive.map_account",
   "Utility.batch_all",
 ] as const;
 
