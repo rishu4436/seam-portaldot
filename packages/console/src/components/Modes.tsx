@@ -519,8 +519,11 @@ export function LiveReceipt({
         </button>
       </div>
       <dl className="kv small">
+        {/* Single source of truth: the same receipt object the download writes. */}
         <dt>Result</dt>
-        <dd>{out.status}</dd>
+        <dd data-testid="receipt-result">{receipt.result}</dd>
+        <dt>Live status (raw submit outcome, not the verdict)</dt>
+        <dd data-testid="receipt-live-status">{receipt.liveStatus}</dd>
         <dt>Tx hash</dt>
         <dd>
           <code className="wrap">{out.txHash}</code>
@@ -535,8 +538,6 @@ export function LiveReceipt({
         <dd>
           <code className="wrap">{receipt.approvalHash ?? "no engine approval bound"}</code>
         </dd>
-        <dt>Result</dt>
-        <dd data-testid="receipt-result">{receipt.result}</dd>
         <dt>Coverage</dt>
         <dd>{COVERAGE_LABEL[out.coverage]}</dd>
         <dt>Effect</dt>
