@@ -26,7 +26,7 @@ describe("capabilities missing from the runtime", () => {
       encodedCall: null,
     });
     expect(p.steps[0]!.reason).toMatch(
-      /^Nfts\.mint cannot be compiled: no observed V3 Revive\/Nfts metadata exists/,
+      /^Nfts\.mint cannot be compiled: this runtime's metadata has no /,
     );
     expect(p.steps[0]!.reasonCode).toBe("NO_OBSERVED_V3_METADATA");
     expect(p.outerCall).toBeUndefined();
@@ -39,7 +39,7 @@ describe("capabilities missing from the runtime", () => {
     );
     expect(p.mode).toBe("unavailable");
     expect(p.steps[0]!.reason).toMatch(
-      /^Revive\.call cannot be compiled: no observed V3 Revive\/Nfts metadata exists/,
+      /^Revive\.call cannot be compiled: this runtime's metadata has no /,
     );
   });
 
@@ -53,7 +53,7 @@ describe("capabilities missing from the runtime", () => {
     const p = compile(m, facts);
     expect(p.mode).toBe("unavailable");
     expect(p.modeReason).toContain(
-      'step "nft": Nfts.mint cannot be compiled: no observed V3 Revive/Nfts metadata exists',
+      'step "nft": Nfts.mint cannot be compiled: this runtime\'s metadata has no Nfts.mint call',
     );
     expect(p.steps.slice(0, 3).every((s) => s.status === "ok" && s.encodedCall)).toBe(true);
     expect(p.outerCall).toBeUndefined();
