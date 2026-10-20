@@ -451,7 +451,10 @@ export function LiveReceipt({
   compiled,
   stepCheck,
   engineApprovalHash,
+  approvalInputs,
 }: {
+  /** preSign's createApproval inputs + now, so the hash can be recomputed. */
+  approvalInputs?: Record<string, unknown> & { now: string };
   /** The engine's createApproval hash from preSign. */
   engineApprovalHash?: string;
   out: LiveOutcome;
@@ -504,6 +507,7 @@ export function LiveReceipt({
     effect,
     checked: !!want,
     engineApprovalHash,
+    approvalInputs,
     compiledPlan: compiled?.plan,
   });
 
@@ -522,8 +526,8 @@ export function LiveReceipt({
         {/* Single source of truth: the same receipt object the download writes. */}
         <dt>Result</dt>
         <dd data-testid="receipt-result">{receipt.result}</dd>
-        <dt>Live status (raw submit outcome, not the verdict)</dt>
-        <dd data-testid="receipt-live-status">{receipt.liveStatus}</dd>
+        <dt>Live status at finalization (before the effect check, not the verdict)</dt>
+        <dd data-testid="receipt-live-status">{receipt.liveStatusAtFinalization}</dd>
         <dt>Tx hash</dt>
         <dd>
           <code className="wrap">{out.txHash}</code>
@@ -642,6 +646,7 @@ export function LivePanel({
   const [receiptCtx, setReceiptCtx] = useState<CompiledStepContext>();
   // The policy engine's createApproval hash bound at preSign; the receipt records this, not the UI approval token.
   const [engineApproval, setEngineApproval] = useState<string>();
+  const [approvalInputs, setApprovalInputs] = useState<Record<string, unknown> & { now: string }>();
   // Cancels a multi-step run when the panel unmounts or the plan changes; the run then drops its signed bytes.
   const abort = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => abort.current?.abort(), []);
@@ -652,6 +657,7 @@ export function LivePanel({
   useEffect(() => {
     setOut(undefined);
     setEngineApproval(undefined);
+    setApprovalInputs(undefined);
     setV3(undefined);
     setGate(undefined);
     setMulti(undefined);
@@ -818,6 +824,11 @@ export function LivePanel({
           if (!pre.res.ok) return pre.res;
           const preSigned = pre.res.value;
           setEngineApproval((preSigned.approval as { hash?: string } | undefined)?.hash);
+          setApprovalInputs(
+            preSigned.approvalInput
+              ? { ...preSigned.approvalInput, now: preSigned.approvedAt }
+              : undefined,
+          );
           deps.beforeSubmit = async (signedTx) =>
             gates.preSubmit({
               chain: chainFns,
@@ -931,6 +942,7 @@ export function LivePanel({
               rpc={receiptRpc}
               compiled={receiptCtx}
               engineApprovalHash={engineApproval}
+              approvalInputs={approvalInputs}
             />
             <dl className="kv">
               <dt>Network</dt>

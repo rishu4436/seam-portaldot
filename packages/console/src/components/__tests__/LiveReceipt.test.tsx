@@ -200,7 +200,9 @@ describe("top-level Result line renders the receipt's result (single source of t
     await waitFor(() => expect(screen.getByTestId("receipt-result").textContent).toBe("verified"));
     expect(resultLines()).toEqual(["verified"]);
     expect(screen.getByTestId("receipt-live-status").textContent).toBe("unverified");
-    expect(screen.getByText(/Live status \(raw submit outcome, not the verdict\)/)).toBeTruthy();
+    expect(
+      screen.getByText(/Live status at finalization \(before the effect check, not the verdict\)/),
+    ).toBeTruthy();
     expect(downloaded().result).toBe("verified");
   });
   it("not_verified: a failed effect check renders not_verified, same as the download", async () => {
