@@ -60,7 +60,9 @@ describe("@seam/policy/browser entry", () => {
     const bad = g.external.filter((s) => s.startsWith("node:") || builtins.has(s.split("/")[0]));
     expect(bad).toEqual([]);
     // only pure-JS deps
-    expect(g.external.every((s) => s.startsWith("@noble/hashes"))).toBe(true);
+    expect(
+      g.external.every((s) => s.startsWith("@noble/hashes") || s === "@seam/compiler/browser"),
+    ).toBe(true);
     for (const f of g.files)
       expect(readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")).not.toMatch(
         /\bprocess\.|\bBuffer\b|__dirname/,
