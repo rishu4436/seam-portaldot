@@ -3,8 +3,14 @@
 // capabilities; the compiler is the only authority on arguments and encoding. Nothing here signs or submits.
 import { useMemo, useState } from "react";
 import {
+  argFields,
+  checkManifest,
+  supportedKinds,
+  type Manifest,
+  type RuntimeFacts,
+} from "@seam/compiler/browser";
+import {
   ACTION_KINDS,
-  FORM_FIELDS,
   buildManifest,
   emptyAction,
   listWalletAccounts,
@@ -19,49 +25,102 @@ import { V3_HTTPS_RPC, type V3FactsResult } from "../lib/v3facts";
 import type { RpcTransport } from "../lib/chainclient";
 import { liveFactsStep, downloadJson } from "./Modes";
 
-const KIND_CAPABILITY: Record<BuilderKind, string> = {
-  "assets.transfer": "Assets.transfer_keep_alive",
-  "assets.mint": "Assets.mint",
-  "nfts.mint": "Nfts.mint",
-  "contracts.call": "Contracts.call",
-  "revive.call": "Revive.call",
-  "revive.instantiate_with_code": "Revive.instantiate_with_code",
-  "revive.map_account": "Revive.map_account",
-};
 type Facts = Extract<V3FactsResult, { ok: true }>["facts"];
 export type CompileFn = (
   manifest: DraftManifest,
   facts: Facts,
-) => Promise<{ ok: true; plan: unknown } | { ok: false; message: string }>;
+) => Promise<
+  { ok: true; plan: unknown } | { ok: false; message: string; fieldErrors?: Record<string, string> }
+>;
 
 export interface ActionSupport {
   kind: BuilderKind;
   supported: boolean;
   reason: string;
+  reasonCode?: string;
 }
-/** Support per action, read from the live facts' observed capabilities. No facts means nothing is supported. */
+/** Support per action from the compiler's own supportedKinds(facts). No facts, or facts it rejects, means nothing is supported. */
 export function actionSupport(facts?: Facts): ActionSupport[] {
-  const caps = (facts as { capabilities?: Record<string, { status?: string }> } | undefined)
-    ?.capabilities;
+  if (!facts)
+    return ACTION_KINDS.map((kind) => ({
+      kind,
+      supported: false,
+      reason: "Read live runtime facts first.",
+    }));
+  let ks: ReturnType<typeof supportedKinds>;
+  try {
+    ks = supportedKinds(facts as unknown as RuntimeFacts);
+  } catch (e) {
+    const reason = `The compiler rejected these runtime facts: ${e instanceof Error ? e.message : String(e)}`;
+    return ACTION_KINDS.map((kind) => ({ kind, supported: false, reason }));
+  }
   return ACTION_KINDS.map((kind) => {
-    const cap = KIND_CAPABILITY[kind];
-    if (!caps) return { kind, supported: false, reason: "Read live runtime facts first." };
-    const st = caps[cap]?.status;
-    return st === "observed"
-      ? { kind, supported: true, reason: `${cap} is in this runtime's metadata.` }
+    const k = ks.find((x) => x.kind === kind);
+    if (!k) return { kind, supported: false, reason: "The compiler does not know this kind." };
+    return k.supported
+      ? {
+          kind,
+          supported: true,
+          reason: `${k.capability} is call ${k.palletIndex}/${k.callIndex} in this runtime's metadata.`,
+        }
       : {
           kind,
           supported: false,
-          reason: `${cap} is ${st ?? "not present"} in this runtime's metadata.`,
+          reason: k.reason,
+          ...("reasonCode" in k && k.reasonCode ? { reasonCode: k.reasonCode } : {}),
         };
   });
 }
+
+/** Turns form strings into the values the compiler expects: json fields are parsed, everything else stays a string. */
+export function toCompilerManifest(m: DraftManifest): Manifest {
+  return {
+    ...m,
+    actions: m.actions.map((a) => {
+      const types = Object.fromEntries(argFields(a.kind).map((f) => [f.name, f.type]));
+      return {
+        ...a,
+        args: Object.fromEntries(
+          Object.entries(a.args).map(([k, v]) => {
+            if (types[k] !== "json") return [k, v];
+            try {
+              return [k, JSON.parse(v)];
+            } catch {
+              return [k, v];
+            }
+          }),
+        ),
+      };
+    }),
+  } as unknown as Manifest;
+}
+
+/** Default compile: Forge's checkManifest. Never throws; field issues come back keyed by "actionId field". */
+export const browserCompile: CompileFn = async (manifest, facts) => {
+  const r = checkManifest(toCompilerManifest(manifest), facts as unknown as RuntimeFacts);
+  if (r.ok && r.plan && !r.unavailable.length) return { ok: true, plan: r.plan };
+  const fieldErrors: Record<string, string> = {};
+  const lines: string[] = [];
+  for (const i of r.issues) {
+    const path = (i as { path?: string }).path ?? "";
+    const msg = (i as { message?: string }).message ?? String((i as { code?: string }).code);
+    const mm = /^actions\[(\d+)\]\.args\.(\w+)/.exec(path);
+    const act = mm && manifest.actions[Number(mm[1])];
+    if (act && mm) fieldErrors[`${act.id} ${mm[2]}`] = msg;
+    lines.push(path ? `${path}: ${msg}` : msg);
+  }
+  for (const u of r.unavailable)
+    lines.push(
+      `step ${u.actionId} cannot run${u.reasonCode ? ` (${u.reasonCode})` : ""}: ${u.reason}`,
+    );
+  return { ok: false, message: lines.join("; ") || "The compiler returned no plan.", fieldErrors };
+};
 
 export function ManifestBuilder({
   getInjected,
   transportFor,
   factsStep = liveFactsStep,
-  compile,
+  compile = browserCompile,
   onCompiled,
 }: {
   getInjected?: Parameters<typeof listWalletAccounts>[0];
@@ -81,6 +140,7 @@ export function ManifestBuilder({
   const [importMsg, setImportMsg] = useState<string>();
   const [compileMsg, setCompileMsg] = useState<string>();
   const [plan, setPlan] = useState<unknown>();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const live = facts?.ok ? facts.facts : undefined;
   const support = useMemo(() => actionSupport(live), [live]);
@@ -144,17 +204,17 @@ export function ManifestBuilder({
   };
   const doCompile = async () => {
     setCompileMsg(undefined);
+    setFieldErrors({});
     setPlan(undefined);
     if (!manifest || !live) return;
-    if (!compile)
-      return setCompileMsg(
-        "The browser compiler is not wired in this build, so nothing was compiled.",
-      );
     const r = await compile(manifest, live).catch((e: unknown) => ({
       ok: false as const,
       message: e instanceof Error ? e.message : String(e),
     }));
-    if (!r.ok) return setCompileMsg(`Compile failed: ${r.message}`);
+    if (!r.ok) {
+      setFieldErrors(("fieldErrors" in r && r.fieldErrors) || {});
+      return setCompileMsg(`Compile failed: ${r.message}`);
+    }
     setPlan(r.plan);
     onCompiled?.(r.plan, manifest, live);
   };
@@ -256,26 +316,36 @@ export function ManifestBuilder({
         ))}
       </ul>
       {actions.map((a, i) => {
-        const f = FORM_FIELDS[a.kind];
+        const f = argFields(a.kind);
         return (
           <fieldset key={a.id} aria-label={`Action ${a.id}`}>
             <legend>
               {i + 1}. {a.kind} <code>{a.id}</code>
             </legend>
-            {[...f.required, ...f.optional].map((k) => (
-              <label key={k} className="small">
-                {k}
-                {f.required.includes(k) ? " *" : ""}
-                <input
-                  aria-label={`${a.id} ${k}`}
-                  value={a.args[k] ?? ""}
-                  onChange={(e) => update(i, { ...a, args: { ...a.args, [k]: e.target.value } })}
-                />
-              </label>
-            ))}
-            {!f.required.length && !f.optional.length && (
-              <p className="muted small">No arguments.</p>
-            )}
+            {f.map((fld) => {
+              const err = fieldErrors[`${a.id} ${fld.name}`];
+              return (
+                <label key={fld.name} className="small" title={fld.description}>
+                  {fld.name}
+                  {fld.required ? " *" : ""} <span className="muted">({fld.type})</span>
+                  <input
+                    aria-label={`${a.id} ${fld.name}`}
+                    aria-invalid={err ? true : undefined}
+                    value={a.args[fld.name] ?? ""}
+                    onChange={(e) =>
+                      update(i, { ...a, args: { ...a.args, [fld.name]: e.target.value } })
+                    }
+                  />
+                  {err && (
+                    <span role="alert" className="small">
+                      {" "}
+                      {err}
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+            {!f.length && <p className="muted small">No arguments.</p>}
             <div className="row">
               <button
                 className="ghost xs"

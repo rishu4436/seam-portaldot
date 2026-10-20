@@ -1,5 +1,5 @@
 // Manifest Builder state: wallet accounts, the draft Manifest and JSON import/export. Pure helpers, no RPC and no signing.
-// Field lists only lay out the form; the compiler stays the authority on argument validation and encoding.
+// Form fields come from the compiler's argFields(); the compiler stays the authority on argument validation and encoding.
 import type { InjectedWeb3 } from "./extensionsigner";
 
 export const ACTION_KINDS = [
@@ -12,26 +12,6 @@ export const ACTION_KINDS = [
   "revive.map_account",
 ] as const;
 export type BuilderKind = (typeof ACTION_KINDS)[number];
-
-/** Form fields per kind, mirroring the compiler's accepted arg names (required first). */
-export const FORM_FIELDS: Record<BuilderKind, { required: string[]; optional: string[] }> = {
-  "assets.transfer": { required: ["assetId", "amount", "recipient"], optional: [] },
-  "assets.mint": { required: ["assetId", "amount", "recipient"], optional: [] },
-  "nfts.mint": { required: ["collection", "item", "recipient"], optional: [] },
-  "contracts.call": {
-    required: ["contract", "value", "gasLimit"],
-    optional: ["data", "message", "args", "abiRef", "abiHash", "proofSize", "storageDepositLimit"],
-  },
-  "revive.call": {
-    required: ["contract", "value", "data"],
-    optional: ["gasLimit", "proofSize", "storageDepositLimit"],
-  },
-  "revive.instantiate_with_code": {
-    required: ["value", "gasLimit", "proofSize", "storageDepositLimit", "code", "data"],
-    optional: ["salt"],
-  },
-  "revive.map_account": { required: [], optional: [] },
-};
 
 export interface DraftAction {
   id: string;
