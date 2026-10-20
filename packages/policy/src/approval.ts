@@ -311,6 +311,11 @@ export interface DecodedSignedExtrinsic {
   genesisHash?: Hex;
   /** True only if the signature verifies for the signer over this payload. */
   signatureValid: boolean;
+  /**
+   * CheckMetadataHash mode decoded from the extension bytes: 0 (disabled), 1 (enabled). Omitted when the runtime has
+   * no such extension or the decoder can't tell; then the layout-hash runtime lock is refused (raw match required).
+   */
+  metadataHashMode?: 0 | 1;
 }
 
 export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerprint"> {
@@ -319,6 +324,13 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
   preparedFingerprint: RuntimeFingerprint;
   /** Fingerprint read from the node right before submission. */
   currentFingerprint: RuntimeFingerprint;
+  /**
+   * Optional raw metadata blobs (plan facts' source.metadataHex, and the fresh read). When ONLY metadataHash differs,
+   * both are given, and every signed extrinsic is decoded (trusted decoder) with CheckMetadataHash mode 0, the gate
+   * recomputes both raw hashes and both layout hashes itself and lets an allow-listed storage-default drift through.
+   */
+  preparedMetadataHex?: string;
+  currentMetadataHex?: string;
   /**
    * The encoded calls the wallet REPORTED it signed, in order. Wallet-controlled: only used when no trusted decoder
    * is given. Prefer signedExtrinsics + decodeSignedExtrinsic (SEAM-001).
@@ -505,8 +517,22 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheck {
       "what is about to be sent is exactly what was approved (plan, policy, runtime, envelope, preflight)",
     );
 
-  const lock = checkRuntimeLock(input.preparedFingerprint, input.currentFingerprint);
+  let metadataHashModeOff = false;
+  if (input.decodeSignedExtrinsic && input.signedExtrinsics?.length) {
+    try {
+      const dec = input.signedExtrinsics.map((x) => input.decodeSignedExtrinsic!(x));
+      metadataHashModeOff = dec.every((d) => d !== null && d.metadataHashMode === 0);
+    } catch {
+      metadataHashModeOff = false;
+    }
+  }
+  const lock = checkRuntimeLock(input.preparedFingerprint, input.currentFingerprint, {
+    preparedMetadataHex: input.preparedMetadataHex,
+    currentMetadataHex: input.currentMetadataHex,
+    metadataHashModeOff,
+  });
   if (!lock.ok) reasons.push({ code: "runtime_changed", message: lock.reason });
+  else if (lock.lockBasis === "layout_hash") ok("runtime_layout_unchanged", lock.reason);
   else ok("runtime_unchanged", "the runtime is the one the plan was prepared for");
 
   const expected = callsToSign(plan).map((c) => (c ?? "").toLowerCase());
