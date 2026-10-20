@@ -96,6 +96,8 @@ export interface LiveOutcome {
   block?: { number: number; hash: string };
   rpcAttempts: number;
   submitted: boolean;
+  /** How the submit gate's runtime lock passed (policy result via preSubmit); absent when not reported. No metadata bytes. */
+  runtimeLock?: import("./signflow").RuntimeLockInfo;
 }
 
 export interface LiveDeps {
@@ -220,6 +222,8 @@ export async function runLive(
         signingCode: /^Blocked at submit \(([^)]+)\)/.exec(g.message)?.[1] ?? "submit_gate_blocked",
       });
     o.signing = "binding_ok";
+    const rl = (g.value as { runtimeLock?: LiveOutcome["runtimeLock"] } | undefined)?.runtimeLock;
+    if (rl) o.runtimeLock = rl;
   }
 
   const sub = await chain.submit(s.value);

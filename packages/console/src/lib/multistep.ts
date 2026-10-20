@@ -11,7 +11,14 @@ import { usageKey, type ApprovalStore } from "@seam/policy/browser";
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "./policygate";
 import type { StepOutcome } from "@seam/sdk/browser";
 import { atomicStepReceipts, callOfSigned, verifyPlanStep } from "./stepverify";
-import { preSign, preSubmit, type ChainFns, type SigningContext } from "./signflow";
+import {
+  preSign,
+  preSubmit,
+  type ChainFns,
+  type FreshRead,
+  type RuntimeLockInfo,
+  type SigningContext,
+} from "./signflow";
 
 type Send = (method: string, params: unknown[]) => Promise<unknown>;
 type Res<T> = { ok: true; value: T } | { ok: false; message: string };
@@ -35,6 +42,8 @@ export interface StepReport {
   sendIndex?: number;
   /** The read-back outcome (status, txHash, block, decoded events, extrinsicIndex); never signed bytes. */
   outcome?: StepOutcome & { extrinsicIndex?: number };
+  /** How the submit gate's runtime lock passed for this step (policy result); absent when the gate didn't pass. */
+  runtimeLock?: RuntimeLockInfo;
 }
 export interface MultiStepResult {
   ok: boolean;
@@ -93,7 +102,7 @@ export async function runPlanSteps(args: {
   ctx: SigningContext;
   now: () => Date;
   store: ApprovalStore;
-  freshFingerprint: () => Promise<unknown>;
+  freshFingerprint: () => Promise<FreshRead | undefined>;
   /** Asks the wallet to sign one call at the given nonce; returns the signed extrinsic bytes (already binding-checked). */
   sign: (
     i: number,
@@ -268,6 +277,7 @@ export async function runPlanSteps(args: {
         : {}),
     });
     if (!check.ok) return stop(i, check.message, pre.gate);
+    if (check.value.runtimeLock) steps[i]!.runtimeLock = check.value.runtimeLock;
     // Last look right before broadcasting: the window, and a cancel during the checks.
     if (cancelled()) return stop(i, "Cancelled. Nothing more was sent.");
     if (expired()) return stop(i, expiredMsg, pre.gate);
