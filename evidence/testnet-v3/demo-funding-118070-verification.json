@@ -1,0 +1,131 @@
+{
+  "kind": "seam-v3-tx-verification",
+  "generatedAt": "2026-10-20T13:50:31.042Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "finalizedHead": {
+    "number": 118083,
+    "hash": "0xc5b3eb02f09fa8e3c77812e251de06f4498e321560815a3c02366c0a3ef3b674"
+  },
+  "hash": "0x2269c4b7a54bbb5d5e217a89034f4b56c719ba7b825dfa549f1faa65d50ad605",
+  "block": {
+    "number": 118070,
+    "hash": "0xdefa1e3048b8245490d6665e2e5a1df52bcf118cf4e95a2387317da2e75bd721"
+  },
+  "canonical": true,
+  "finalized": true,
+  "extrinsicIndex": 1,
+  "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "signerMatch": true,
+  "call": "utility.batchAll",
+  "calls": [
+    {
+      "call": "balances.transferKeepAlive",
+      "args": {
+        "dest": {
+          "id": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE"
+        },
+        "value": 100000000000000
+      }
+    },
+    {
+      "call": "assets.transferKeepAlive",
+      "args": {
+        "id": 806707,
+        "target": {
+          "id": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE"
+        },
+        "amount": 5
+      }
+    }
+  ],
+  "dispatch": {
+    "ok": true
+  },
+  "fee": "1921050270352",
+  "events": [
+    {
+      "pallet": "Balances",
+      "name": "Withdraw",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "1921050270352"
+      ]
+    },
+    {
+      "pallet": "System",
+      "name": "NewAccount",
+      "args": [
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b"
+      ]
+    },
+    {
+      "pallet": "Balances",
+      "name": "Endowed",
+      "args": [
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "100000000000000"
+      ]
+    },
+    {
+      "pallet": "Balances",
+      "name": "Transfer",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "100000000000000"
+      ]
+    },
+    {
+      "pallet": "Utility",
+      "name": "ItemCompleted",
+      "args": []
+    },
+    {
+      "pallet": "Assets",
+      "name": "Transferred",
+      "args": [
+        "806707",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "5"
+      ]
+    },
+    {
+      "pallet": "Utility",
+      "name": "ItemCompleted",
+      "args": []
+    },
+    {
+      "pallet": "Utility",
+      "name": "BatchCompleted",
+      "args": []
+    },
+    {
+      "pallet": "Balances",
+      "name": "Deposit",
+      "args": [
+        "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+        "1921050270352"
+      ]
+    },
+    {
+      "pallet": "TransactionPayment",
+      "name": "TransactionFeePaid",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "1921050270352",
+        "0"
+      ]
+    },
+    {
+      "pallet": "System",
+      "name": "ExtrinsicSuccess",
+      "args": [
+        "{\"weight\":{\"refTime\":1373748526,\"proofSize\":25982},\"class\":\"Normal\",\"paysFee\":\"Yes\"}"
+      ]
+    }
+  ],
+  "outcome": "verified",
+  "reasons": []
+}
