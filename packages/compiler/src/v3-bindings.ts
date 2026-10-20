@@ -18,6 +18,7 @@ export type ShapeClass =
   | "weight" // Weight v2 { refTime, proofSize } or a single u64 (v1)
   | "bytes" // Bytes / Vec<u8>
   | "id" // Compact<uN> or uN (collection / item ids)
+  | "optSalt" // Option<[u8;32]>: the manifest's salt, or None when it gives none
   | "optionNone"; // Option<..>: SEAM always supplies None (it never invents a witness)
 
 export interface ShapeArg {
@@ -38,6 +39,18 @@ export const V3_SHAPES: Partial<Record<ActionKind, readonly ShapeArg[]>> = {
     { name: "storageDepositLimit", class: "optBalance", seamKey: "storageDepositLimit" },
     { name: "data", class: "bytes", seamKey: "data" },
   ],
+  // pallet-revive instantiate_with_code (real V3 spec 3002: 80/3). codeHash is never an argument: the compiler
+  // derives it from `code` for policy (keccak-256, the pallet-revive code hash).
+  "revive.instantiate_with_code": [
+    { name: "value", class: "balance", seamKey: "value" },
+    { name: "gasLimit", class: "weight", seamKey: "gasLimit", aliases: ["weightLimit"] },
+    { name: "storageDepositLimit", class: "optBalance", seamKey: "storageDepositLimit" },
+    { name: "code", class: "bytes", seamKey: "code" },
+    { name: "data", class: "bytes", seamKey: "data" },
+    { name: "salt", class: "optSalt", seamKey: "salt" },
+  ],
+  // pallet-revive map_account (real V3 spec 3002: 80/7) takes no arguments; it maps the origin.
+  "revive.map_account": [],
   "nfts.mint": [
     { name: "collection", class: "id", seamKey: "collection" },
     { name: "item", class: "id", seamKey: "item" },
@@ -56,7 +69,12 @@ export function bindingsFor(kind: ActionKind): Record<string, string> {
   return out;
 }
 
-export const V3_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>(["revive.call", "nfts.mint"]);
+export const V3_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>([
+  "revive.call",
+  "nfts.mint",
+  "revive.instantiate_with_code",
+  "revive.map_account",
+]);
 
 const UINT = /^u(8|16|32|64|128)$/;
 const BALANCE = /^u(64|128)$/;
@@ -86,6 +104,8 @@ export function matchesClass(cls: ShapeClass, rawType: string, isWeightV2: boole
       return rawType === "Bytes" || rawType === "Vec<u8>";
     case "id":
       return UINT.test(stripCompact(rawType));
+    case "optSalt":
+      return rawType === "Option<[u8;32]>" || rawType === "Option<H256>";
     case "optionNone":
       return /^Option</.test(rawType);
   }

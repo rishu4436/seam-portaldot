@@ -1,4 +1,5 @@
-import { stringCamelCase } from "@polkadot/util";
+import { hexToU8a, stringCamelCase, u8aToHex } from "@polkadot/util";
+import { keccakAsU8a } from "@polkadot/util-crypto";
 import { DOMAIN, NotCanonicalError, digestJson } from "./canonical.js";
 import { metadataLayout, metadataLayoutHash } from "./layout.js";
 import { parseH160, parseNativeAddress } from "./address.js";
@@ -33,6 +34,8 @@ export const KIND_TO_CAPABILITY: Record<ActionKind, string> = {
   "contracts.call": "Contracts.call",
   "revive.call": "Revive.call",
   "nfts.mint": "Nfts.mint",
+  "revive.instantiate_with_code": "Revive.instantiate_with_code",
+  "revive.map_account": "Revive.map_account",
 };
 
 export const BATCH_CAPABILITY = "Utility.batch_all";
@@ -61,6 +64,13 @@ const ARG_SCHEMA: Record<ActionKind, { required: string[]; optional: string[] }>
     optional: ["gasLimit", "proofSize", "storageDepositLimit"],
   },
   "nfts.mint": { required: ["collection", "item", "recipient"], optional: [] },
+  // Deploys always carry explicit, finite limits (policy blocks a missing one anyway). codeHash is computed, never given.
+  "revive.instantiate_with_code": {
+    required: ["value", "gasLimit", "proofSize", "storageDepositLimit", "code", "data"],
+    optional: ["salt"],
+  },
+  // Maps the signer's own account; the call takes no arguments.
+  "revive.map_account": { required: [], optional: [] },
 };
 
 /**
@@ -85,6 +95,8 @@ const ARG_BINDINGS: Partial<Record<ActionKind, Record<string, string>>> = {
   },
   // revive.call / nfts.mint: derived from V3_SHAPES (v3-bindings.ts); used only after the metadata's argument shape is verified.
   "revive.call": bindingsOf("revive.call"),
+  "revive.instantiate_with_code": bindingsOf("revive.instantiate_with_code"),
+  "revive.map_account": bindingsOf("revive.map_account"),
   "nfts.mint": bindingsOf("nfts.mint"),
 };
 // Binding keys are camelCase; metadata names (snake_case) are camelCased before lookup.
@@ -364,6 +376,49 @@ function validateAction(
       }
       break;
     }
+    case "revive.instantiate_with_code": {
+      set("value", parseAmount(a.value, p("value"), issues));
+      set("gasLimit", parseAmount(a.gasLimit, p("gasLimit"), issues));
+      set("proofSize", parseAmount(a.proofSize, p("proofSize"), issues));
+      if (a.storageDepositLimit === null) {
+        issues.push({
+          code: "MANIFEST_INVALID",
+          path: p("storageDepositLimit"),
+          message:
+            "revive.instantiate_with_code needs a finite storageDepositLimit (base-unit integer string); null (no limit) is not allowed for deploys",
+        });
+      } else
+        set(
+          "storageDepositLimit",
+          parseAmount(a.storageDepositLimit, p("storageDepositLimit"), issues),
+        );
+      const code = parseHexBytes(a.code, p("code"), issues);
+      if (code !== undefined && code.length <= 2) {
+        issues.push({
+          code: "MANIFEST_INVALID",
+          path: p("code"),
+          message: "code must not be empty",
+        });
+      } else if (code !== undefined) {
+        set("code", code);
+        // pallet-revive's code hash is keccak-256 of the code blob. Computed here; a caller can never supply it.
+        values.codeHash = u8aToHex(keccakAsU8a(hexToU8a(code), 256));
+      }
+      set("data", parseHexBytes(a.data, p("data"), issues));
+      if (a.salt !== undefined) {
+        if (typeof a.salt !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(a.salt)) {
+          issues.push({
+            code: "MANIFEST_INVALID",
+            path: p("salt"),
+            message: "salt must be 0x + 64 hex chars (32 bytes), or omitted for None",
+          });
+        } else set("salt", a.salt.toLowerCase());
+      }
+      break;
+    }
+    case "revive.map_account":
+      // decodedArgs.account (the signer) is filled in compile(), once the signer is known.
+      break;
     case "nfts.mint": {
       set("collection", parseId(a.collection, p("collection"), issues));
       set("item", parseId(a.item, p("item"), issues));
@@ -563,6 +618,7 @@ interface EncodeResult {
 const OPTIONAL_RUNTIME_ARGS: Partial<Record<ActionKind, string[]>> = {
   "contracts.call": ["proofSize", "storageDepositLimit"],
   "revive.call": ["proofSize", "storageDepositLimit"],
+  "revive.instantiate_with_code": ["proofSize"],
 };
 
 function isWeightV2(rawType: string): boolean {
@@ -624,7 +680,12 @@ function encodeStep(
   }
   // Arguments the runtime takes but the manifest did not give: unavailable, never guessed.
   const missing = metaArgs
-    .filter((a) => bindings[a.name] !== "__none" && !(bindings[a.name]! in v.encodeValues))
+    .filter(
+      (a) =>
+        bindings[a.name] !== "__none" &&
+        bindings[a.name] !== "salt" &&
+        !(bindings[a.name]! in v.encodeValues),
+    )
     .map((a) => bindings[a.name]!);
   if (missing.length) {
     return {
@@ -684,6 +745,10 @@ function encodeStep(
         }
       }
       ordered.push({ refTime: raw, proofSize: proof });
+      continue;
+    }
+    if (seamKey === "salt" && !(seamKey in v.encodeValues)) {
+      ordered.push(null); // no salt given: None (shape check proved it is Option<[u8;32]>)
       continue;
     }
     if (raw === null) {
@@ -754,6 +819,7 @@ function signerFor(
       return undefined;
     }
     if (!m.actions.every((a) => a.kind === "revive.call")) {
+      // Deploys and map_account are signed by a native AccountId32 origin, never an H160.
       issues.push({
         code: "ADDRESS_TYPE",
         path: "signer",
@@ -811,6 +877,8 @@ function v3Observed(rt: LoadedRuntime, capability: string, cap: Capability | und
 const NO_V3_METADATA_KINDS: ReadonlySet<ActionKind> = new Set<ActionKind>([
   "revive.call",
   "nfts.mint",
+  "revive.instantiate_with_code",
+  "revive.map_account",
 ]);
 
 const PARTIAL_EXECUTION_RISK =
@@ -1077,7 +1145,9 @@ export function compile(
       capability,
       palletIndex: null,
       callIndex: null,
-      decodedArgs: v!.values as Record<string, string>, // storageDepositLimit may be null, see PlanStep
+      decodedArgs: (action.kind === "revive.map_account" && signer
+        ? { account: signer.value }
+        : v!.values) as Record<string, string>, // storageDepositLimit may be null, see PlanStep
       encodedCall: null,
       status: "unavailable",
     };
