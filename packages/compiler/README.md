@@ -288,10 +288,10 @@ step that is unavailable with its reason. It never signs or submits. (Submitting
 
 ## Metadata layout hash (`metadataLayoutHash`, `metadataLayout`, `blankStorageFallbacks`)
 
-blake2b-256 over `utf8("seam/metadata-layout/v1") ++ metadata` with every storage entry's `fallback` blanked; the same
+blake2b-256 over `utf8("seam/metadata-layout/v2") ++ metadata` with only the allow-listed storage defaults (`BLANKED_STORAGE_DEFAULTS`, today only `Revive.EthBlockBuilderIR`) blanked; any other default change changes the hash; the same
 definition and value as `@seam/chain`'s `metadataLayoutHash`. Fail closed: if the metadata (V13-V15) does not
 decode and rebuild unchanged byte for byte, the hash is taken over the raw bytes under
-`seam/metadata-layout/v1/raw` (`normalized: false`), so it only ever matches identical bytes, and the compiler never
+`seam/metadata-layout/v2/raw` (`normalized: false`), so it only ever matches identical bytes, and the compiler never
 accepts a rollback proof on it. `factsFromMetadata({ ..., withLayoutHash: true })` records it as
 `facts.metadataLayoutHash`; that field is outside the fingerprint and every digest, and if present must match the bytes
 (`FACTS_INVALID` otherwise). Fingerprints and plan digests are unchanged: the runtime lock still binds the raw hash.

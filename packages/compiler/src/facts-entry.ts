@@ -18,4 +18,4 @@ export {
   parsePinnedTypes,
   type PinnedTypes,
 } from "./runtime.js";
-export { metadataLayoutHash } from "./layout.js";
+export { metadataLayoutHash, BLANKED_STORAGE_DEFAULTS } from "./layout.js";
