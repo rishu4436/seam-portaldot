@@ -23,6 +23,55 @@ send gate (per step) → submit → receipt. Each stage can refuse; none can be 
 | Sequential continuation | Stops before the next step if the previous one is not acceptable | At baseline an unverified or merely included step could let the flow continue (SEAM-002); treat dependent sequential runs as unsafe until fixed |
 | Receipt | Records tx hash, block, events and per-step verification | See below |
 
+## Browser policy flow
+
+Added in Sentinel `3a425c6` (on `main` at `dbe8e3b`). `@seam/policy/browser` (`packages/policy/src/browser.ts`)
+re-exports everything in `@seam/policy` (including `evaluatePolicy`) and adds a pre-sign gate. Its import graph has no
+node built-ins (`policy/test/browser-entry.test.ts`, "has no node built-in imports anywhere in its graph").
+
+```ts
+gatePolicy(input: PolicyInput, opts?: GateOptions): GateResult
+assertPolicyAllows(input: PolicyInput, opts?: GateOptions): GateResult   // throws PolicyBlockedError unless allowed
+explainPolicy(result: PolicyResult): RuleExplanation[]                   // one line per rule, none dropped
+class PolicyBlockedError extends Error { gate: GateResult; codes: string[] }
+```
+
+- `GateOptions`: `acknowledgedDowngrade?`, `envelope?: { expiresAt }`, `now?`.
+- `GateResult`: `{ allowed, result?, explanations, blockedBy }`. `blockedBy` lists every rule that is not `pass`.
+- `RuleExplanation`: `{ rule, status: "pass" | "fail" | "unknown", code, message, actionId?, weak? }`. Codes come from
+  `codeFor`: the rule's own code, `OK` for a pass, `<RULE>_UNKNOWN` for an unknown, or a fail code such as
+  `PLAN_MODE_NOT_ALLOWED`, `SIGNER_MISMATCH`, `AMOUNT_OVER_LIMIT`, `FEE_OVER_LIMIT`, `DRY_RUN_FAILED`.
+
+Call `assertPolicyAllows` immediately before the wallet signer. It is fail-closed: `allowed` is true only if the engine
+allows the plan **and** every explanation is `pass`. It blocks when:
+
+- any rule is `fail` or `unknown` (an unknown is never treated as a pass, even if the engine result says allowed);
+- `evaluatePolicy` throws (`POLICY_EVALUATION_ERROR`);
+- a preferred-atomic plan fell back to sequential and the person did not acknowledge it (`MODE_DOWNGRADE_NOT_ACKNOWLEDGED`);
+- an `envelope` is given and its `expiresAt` is past or invalid (`SIGNING_WINDOW_EXPIRED`);
+- no preflight is given (`PREFLIGHT_UNKNOWN`), or a plan step has no preflight entry.
+
+Tests in `policy/test/browser-entry.test.ts` use a spy signer: a violation never calls it, and the happy path calls it
+exactly once.
+
+**Wallet demo policy.** `packages/console/src/demo/v3-demo-transfer.json` allows only `atomic_verified`, but its plan is
+`sequential`. It is left unchanged. The new `packages/console/src/demo/v3-demo-transfer-policy-sequential.json` is the same
+policy with `allowedModes: ["sequential"]` (a test checks that nothing else differs). With it the demo plan passes the gate
+(with the downgrade acknowledged); the original `atomic_verified`-only policy blocks with `PLAN_MODE_NOT_ALLOWED` before
+the signer is called.
+
+**At submit**, `checkBeforeSubmit` (`packages/policy/src/approval.ts`) still runs after signing. It enforces single use
+(`approval_reused`, `approval_reserved`, `approval_uncertain`: one approval allows exactly one submission), and the signed
+dry run: a failed one blocks (`signed_dry_run_failed`), and when the policy sets `requireSignedDryRun` a missing or unknown
+one blocks (`signed_dry_run_missing`). Without `requireSignedDryRun`, a send with no signed dry run passes as
+`signed_dry_run_not_checked` (weaker proof).
+
+**Console status on `dbe8e3b`.** The console does not import `@seam/policy/browser` yet; Pixel is wiring it in front of
+the signer. The Risk limits view (`console/src/lib/limits.ts`) only displays the policy and never authorizes anything.
+The wallet demo's Approve button is still enabled by the console's own `checkWalletDemoPolicy` pre-check
+(`console/src/lib/walletdemo.ts`), which is not the policy engine and does not check the plan mode. The console does not
+call `checkBeforeSubmit` either. Browser preflight is not exported yet, so once wired the gate will block with `PREFLIGHT_UNKNOWN`.
+
 ## Known limits, stated plainly
 
 - **Receipt hash is integrity only.** `seam verify` recomputes an unkeyed digest of the receipt JSON. Anyone who edits a receipt
