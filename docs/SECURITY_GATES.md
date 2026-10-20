@@ -81,7 +81,7 @@ What `packages/console/src/lib/multistep.ts` does:
 - **Per-step gates (sequential).** For every step after the first, the policy gate runs again on a fresh preflight. Each step then gets a re-preflight with the signed bytes, and `checkBeforeSubmit` runs with that step's `sendIndex` and the earlier receipts.
 - **Signed bytes stay in memory.** A `SignedHolder` keeps them in memory only. They are never written to logs, storage, exports or receipts, and `redact()` removes them from any message. The holder is cleared on a block, a failure, a cancel, an unmount (an `AbortController` in `Modes.tsx`) and at the end of the run.
 - **A block or failure stops the run.** A blocked or failed step stops all remaining steps.
-- **Unverifiable steps stop the run.** The next step is sent only if the previous one is finalized and `verified`. Any step kind the console can't verify stops the run after that step.
+- **Unverifiable steps stop the run.** The rule is `canRunNextStep` in `@seam/policy` (`packages/policy/src/approval.ts`): a step may start only when every earlier step is `finalized` and `verified`, with a tx hash and block and no failure event. The console does not call it directly. It passes the earlier receipts as `previousSteps` to `checkBeforeSubmit`, which runs `canRunNextStep` and blocks with `previous_step_failed` (plus the specific code, such as `verification_unknown`) or `previous_steps_missing`. Any step kind the console can't verify therefore stops the run after that step.
 
 Accepted limits:
 
