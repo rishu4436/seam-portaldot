@@ -608,15 +608,50 @@ export interface DecodedSignedExtrinsic {
 }
 
 /**
+ * The chain context of an approved signing envelope (e.g. @seam/policy's SigningEnvelope): the checkpoint block the mortal
+ * era was built from. Genesis, spec and transaction version come from the facts. Signer and nonce are NOT taken from
+ * here; checkBeforeSubmit compares them to the envelope itself.
+ */
+export interface SignatureContext {
+  checkpoint: { hash: string };
+}
+
+function envelopeContext(
+  ctx: SignatureContext,
+  facts: RuntimeFacts,
+  s: SignedCall,
+): Pick<SigningRequest, "nonce" | "payload">[] {
+  const hash = ctx?.checkpoint?.hash;
+  if (typeof hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(hash)) return []; // fail closed: nothing verifies
+  const fp = facts.fingerprint;
+  return [
+    {
+      nonce: s.nonce,
+      payload: {
+        address: s.signer.ss58,
+        specVersion: fp.specVersion,
+        transactionVersion: fp.transactionVersion,
+        genesisHash: fp.genesisHash,
+        // An immortal era signs against genesis; a mortal one against its checkpoint block.
+        blockHash: (s.era.mortal ? hash : fp.genesisHash) as Hex,
+      } as unknown as SigningRequest["payload"],
+    },
+  ];
+}
+
+/**
  * Builds the trusted decoder for checkBeforeSubmit. Pass the approved signing requests: they supply the chain
  * context a signature commits to (genesis, spec, tx version, era block hash), which the extrinsic itself does not
  * carry. The returned function never trusts wallet-provided values: it decodes the extrinsic, and signatureValid is
  * true only if the signature verifies under the context of an approved request with the same signer and nonce.
+ * Instead of the requests, the approved envelope ({ checkpoint: { hash } }) can be passed: the payload is then rebuilt
+ * from the extrinsic's own call, era, nonce and tip plus the facts' genesis, spec and transaction version.
+ * With neither (the default), no signature can be checked and signatureValid is always false (the gate blocks).
  * Returns null when the bytes are not a decodable signed extrinsic (the gate then fails closed). Never throws.
  */
 export function signedExtrinsicDecoder(
   facts: RuntimeFacts,
-  requests: SigningRequest[] = [],
+  context: SigningRequest[] | SignatureContext = [],
 ): (extrinsic: Hex) => DecodedSignedExtrinsic | null {
   return (extrinsic: Hex) => {
     let s: SignedCall;
@@ -628,6 +663,9 @@ export function signedExtrinsicDecoder(
     const { registry } = encodeRuntime(facts);
     let signatureValid = false;
     let genesisHash: Hex | undefined;
+    const requests: Pick<SigningRequest, "nonce" | "payload">[] = Array.isArray(context)
+      ? context
+      : envelopeContext(context, facts, s);
     for (const r of requests) {
       const p = r.payload;
       try {
