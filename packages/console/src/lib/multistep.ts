@@ -15,6 +15,7 @@ import {
   preSign,
   preSubmit,
   type ChainFns,
+  type BlockDetail,
   type FreshRead,
   type RuntimeLockInfo,
   type SigningContext,
@@ -44,6 +45,8 @@ export interface StepReport {
   outcome?: StepOutcome & { extrinsicIndex?: number };
   /** How the submit gate's runtime lock passed for this step (policy result); absent when the gate didn't pass. */
   runtimeLock?: RuntimeLockInfo;
+  /** Why the submit gate blocked this step (signed dry run), as reported; absent otherwise. */
+  blockDetail?: BlockDetail;
 }
 export interface MultiStepResult {
   ok: boolean;
@@ -276,7 +279,13 @@ export async function runPlanSteps(args: {
         ? { sequential: { signedExtrinsics: all, sendIndex: i, previousSteps: [...receipts] } }
         : {}),
     });
-    if (!check.ok) return stop(i, check.message, pre.gate);
+    if (!check.ok) {
+      const bd = (check as { blockDetail?: BlockDetail }).blockDetail;
+      const r = stop(i, check.message, pre.gate);
+      const st = r.steps.find((x) => x.index === i);
+      if (bd && st) st.blockDetail = bd;
+      return r;
+    }
     if (check.value.runtimeLock) steps[i]!.runtimeLock = check.value.runtimeLock;
     // Last look right before broadcasting: the window, and a cancel during the checks.
     if (cancelled()) return stop(i, "Cancelled. Nothing more was sent.");

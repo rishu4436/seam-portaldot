@@ -17,7 +17,51 @@ type Res<T> = { ok: true; value: T } | { ok: false; reason: "unavailable"; messa
 type Send = (method: string, params: unknown[]) => Promise<unknown>;
 type PreflightRes = { steps: { actionId: string; dryRun: string }[]; totalFee?: unknown };
 
+/** One signed transaction's system_dryRun as @seam/chain's preflightReport returns it (transactions[i].dryRun). */
+export interface ChainDryRun {
+  outcome: "ok" | "failed" | "unknown";
+  detail: string;
+}
+type PreflightReportRes = {
+  result: PreflightRes;
+  atBlock?: { number: number; hash: string };
+  transactions?: { dryRun?: ChainDryRun }[];
+};
+
+/**
+ * Why the submit gate blocked on the signed dry run, exactly as reported. checkBeforeSubmit (@seam/policy) only gives
+ * the code; the dry-run outcome and detail string and the block it ran at come from @seam/chain's preflightReport.
+ * No signed bytes, no metadata. dryRun / dryRunAt are absent when the chain did not report them.
+ */
+export interface BlockDetail {
+  code: string;
+  /** transactions[sendIndex].dryRun, unchanged. */
+  dryRun?: ChainDryRun;
+  /** preflightReport.atBlock: the block the dry run ran at. */
+  dryRunAt?: { number: number; hash: string };
+  source: string;
+}
+
+export const NO_DETAIL = "no detail reported by the gate";
+
+/** Plain sentence for the block message and panels. Never guesses a cause. */
+export function blockDetailText(d: BlockDetail | undefined): string | undefined {
+  if (!d) return undefined;
+  if (!d.dryRun) return `Dry-run detail: ${NO_DETAIL}.`;
+  const at = d.dryRunAt
+    ? ` (dry run at block #${d.dryRunAt.number}, ${d.dryRunAt.hash.slice(0, 10)}…)`
+    : "";
+  return `Dry-run detail: ${d.dryRun.outcome}, ${d.dryRun.detail}${at}.`;
+}
+
 export interface ChainFns {
+  /** @seam/chain/browser preflightReport: same preflight plus per-transaction dry-run detail and the block. Optional. */
+  preflightReport?(
+    send: Send,
+    plan: unknown,
+    facts: unknown,
+    opts?: { signedExtrinsics?: string[] },
+  ): Promise<PreflightReportRes>;
   preflight(
     send: Send,
     plan: unknown,
@@ -187,16 +231,30 @@ export async function preSubmit(args: {
    * the index being sent, and the receipts of the earlier steps. Atomic / single-call plans leave these out.
    */
   sequential?: { signedExtrinsics: string[]; sendIndex: number; previousSteps: unknown[] };
-}): Promise<Res<{ passed: { code: string; detail: string }[]; runtimeLock?: RuntimeLockInfo }>> {
+}): Promise<
+  | {
+      ok: true;
+      value: { passed: { code: string; detail: string }[]; runtimeLock?: RuntimeLockInfo };
+    }
+  | { ok: false; reason: "unavailable"; message: string; blockDetail?: BlockDetail }
+> {
   const { chain, send, pre, facts, signedTx } = args;
   const all = args.sequential?.signedExtrinsics ?? [signedTx];
   let pf: PreflightRes;
+  let report: PreflightReportRes | undefined;
   let current: unknown;
   let currentMetadataHex: string | undefined;
   try {
-    pf = await chain.preflight(send, pre.approvalInput.plan, facts, {
-      signedExtrinsics: all,
-    });
+    // preflightReport runs the same preflight; its .result is exactly what preflight returns, so the gate is unchanged.
+    if (chain.preflightReport) {
+      report = await chain.preflightReport(send, pre.approvalInput.plan, facts, {
+        signedExtrinsics: all,
+      });
+      pf = report.result;
+    } else
+      pf = await chain.preflight(send, pre.approvalInput.plan, facts, {
+        signedExtrinsics: all,
+      });
     const fresh = await args.freshFingerprint();
     current = fresh?.fingerprint;
     currentMetadataHex = fresh?.metadataHex;
@@ -235,10 +293,30 @@ export async function preSubmit(args: {
   } catch (e) {
     return no(`The submit gate failed, so nothing was sent: ${errMsg(e)}`);
   }
-  if (!check.ok)
-    return no(
-      `Blocked at submit (${check.reasons.map((r) => r.code).join(", ")}): ${check.reasons.map((r) => r.message).join(" ")} Nothing was sent.`,
-    );
+  if (!check.ok) {
+    const dryCode = check.reasons.find((r) => r.code.startsWith("signed_dry_run_"))?.code;
+    let blockDetail: BlockDetail | undefined;
+    if (dryCode) {
+      const tx = report?.transactions?.[args.sequential?.sendIndex ?? 0];
+      blockDetail = {
+        code: dryCode,
+        ...(tx?.dryRun ? { dryRun: { outcome: tx.dryRun.outcome, detail: tx.dryRun.detail } } : {}),
+        ...(tx?.dryRun && report?.atBlock
+          ? { dryRunAt: { number: report.atBlock.number, hash: report.atBlock.hash } }
+          : {}),
+        source: tx?.dryRun
+          ? "@seam/chain preflightReport transactions[i].dryRun (checkBeforeSubmit reports only the code)"
+          : "checkBeforeSubmit reports only the code; @seam/chain reported no dry-run detail",
+      };
+    }
+    const extra = blockDetail ? ` ${blockDetailText(blockDetail)}` : "";
+    return {
+      ...no(
+        `Blocked at submit (${check.reasons.map((r) => r.code).join(", ")}): ${check.reasons.map((r) => r.message).join(" ")} Nothing was sent.${extra}`,
+      ),
+      ...(blockDetail ? { blockDetail } : {}),
+    };
+  }
   // Recorded exactly as the gate returned it; the console computes nothing about the lock itself.
   return { ok: true, value: { passed: check.passed, runtimeLock: check.runtimeLock } };
 }

@@ -98,6 +98,8 @@ export interface LiveOutcome {
   submitted: boolean;
   /** How the submit gate's runtime lock passed (policy result via preSubmit); absent when not reported. No metadata bytes. */
   runtimeLock?: import("./signflow").RuntimeLockInfo;
+  /** Submit-gate block detail (signed dry run), as reported; absent when not blocked there. */
+  blockDetail?: import("./signflow").BlockDetail;
 }
 
 export interface LiveDeps {
@@ -218,6 +220,9 @@ export async function runLive(
     const g = await deps.beforeSubmit(s.value.signedTx, request);
     if (!g.ok)
       return done("blocked", g.message, {
+        ...((g as { blockDetail?: LiveOutcome["blockDetail"] }).blockDetail
+          ? { blockDetail: (g as { blockDetail?: LiveOutcome["blockDetail"] }).blockDetail }
+          : {}),
         signing: "submit_blocked",
         signingCode: /^Blocked at submit \(([^)]+)\)/.exec(g.message)?.[1] ?? "submit_gate_blocked",
       });

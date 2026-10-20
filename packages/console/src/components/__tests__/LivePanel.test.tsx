@@ -442,4 +442,49 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     );
     expect(preSubmit).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    [
+      {
+        code: "signed_dry_run_failed",
+        dryRun: { outcome: "failed", detail: "system_dryRun: invalid transaction: Stale" },
+        dryRunAt: { number: 7, hash: "0x" + "77".repeat(32) },
+        source: "s",
+      },
+      "Dry-run detail: failed, system_dryRun: invalid transaction: Stale (dry run at block #7, 0x77777777…).",
+    ],
+    [
+      { code: "signed_dry_run_failed", source: "s" },
+      "Dry-run detail: no detail reported by the gate.",
+    ],
+  ])(
+    "submit blocked on the signed dry run: the LIVE panel shows the detail (%#)",
+    async (blockDetail, text) => {
+      mockExtension(GOOD_SIG);
+      const gates = {
+        preSign: passGates.preSign,
+        preSubmit: vi.fn(async () => ({
+          ok: false as const,
+          reason: "unavailable" as const,
+          message: "Blocked at submit (signed_dry_run_failed): x Nothing was sent.",
+          blockDetail,
+        })),
+      };
+      render(
+        <LivePanel
+          plan={plan}
+          facts={facts}
+          approval={approveWalletDemo(plan)}
+          hostLoader={async () => fakeHost()}
+          factsStep={factsOk}
+          gates={gates as never}
+          chainLoader={noChain}
+        />,
+      );
+      press();
+      await waitFor(() => expect(screen.getByTestId("live-block-detail")).toBeTruthy());
+      expect(screen.getByTestId("live-block-detail").textContent).toBe(text);
+      expect(submitted).toHaveLength(0);
+    },
+  );
 });
