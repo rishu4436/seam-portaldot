@@ -1,5 +1,6 @@
 import { V3_HTTPS_RPC } from "./lib/v3facts";
 import { engineApprovalCheck, loadChainFns } from "./lib/signflow";
+import { approveWithRebind } from "./lib/rebind";
 import type { GateOutcome } from "./lib/policygate";
 import demoSequentialPolicy from "./demo/v3-demo-transfer-policy-sequential.json";
 import { useMemo, useState } from "react";
@@ -337,6 +338,7 @@ export default function App() {
   const [builderEngine, setBuilderEngine] = useState<GateOutcome>();
   const [builderApproval, setBuilderApproval] = useState<Approval>();
   const [builderChecking, setBuilderChecking] = useState(false);
+  const [builderNote, setBuilderNote] = useState<string>();
   const builderPlan = useMemo(
     () => (builderSel ? walletDemoPlan(builderSel.plan as never) : undefined),
     [builderSel],
@@ -632,16 +634,44 @@ export default function App() {
                     try {
                       const b = await import("./lib/browserChain");
                       const rpc = b.transportFor(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
-                      const g = await engineApprovalCheck({
-                        chain: await loadChainFns(),
-                        send: rpc,
+                      const chain = await loadChainFns();
+                      setBuilderApproval(undefined);
+                      setBuilderNote(undefined);
+                      // Re-read facts once; Forge's rebindPlan decides against the builder's snapshot.
+                      const o = await approveWithRebind({
+                        manifest: builderSel.manifest,
+                        plan: builderSel.plan,
+                        planFacts: builderSel.facts,
                         readFacts: async () => {
                           const r = await liveFactsStep(rpc);
                           return r.ok ? r.facts : undefined;
                         },
-                        input: builderInput!,
-                        now: new Date(),
+                        check: (live) =>
+                          engineApprovalCheck({
+                            chain,
+                            send: rpc,
+                            readFacts: async () => live,
+                            input: builderInput!,
+                            now: new Date(),
+                          }),
                       });
+                      if (o.kind === "rebound") {
+                        // New plan, new digest; the old approval is gone and a fresh one is required.
+                        setBuilderSel({ ...builderSel, plan: o.plan as never, facts: o.liveFacts });
+                        setBuilderEngine(undefined);
+                        setBuilderNote(o.message);
+                        return;
+                      }
+                      if (o.kind === "blocked") {
+                        setBuilderEngine({
+                          ok: false,
+                          codes: [o.code],
+                          explanations: [],
+                          message: o.message,
+                        });
+                        return;
+                      }
+                      const g = o.gate;
                       setBuilderEngine(g);
                       setBuilderApproval(
                         g.ok
@@ -655,6 +685,11 @@ export default function App() {
                 >
                   {builderChecking ? "Checking…" : "Check policy and approve"}
                 </button>
+                {builderNote && (
+                  <p role="alert" className="small">
+                    {builderNote}
+                  </p>
+                )}
                 {builderEngine && <PolicyGatePanel gate={builderEngine} />}
               </section>
             )}
@@ -663,6 +698,19 @@ export default function App() {
               facts={walletDemoOn ? demoFacts : builderPlan ? builderFacts : facts}
               approval={walletDemoOn ? demoApproval : builderPlan ? builderApproval : approval}
               policyInput={walletDemoOn ? demoPolicyInput : builderInput}
+              rebind={
+                !walletDemoOn && builderSel
+                  ? {
+                      planFacts: builderSel.facts,
+                      onRebound: (plan, liveFacts, message) => {
+                        setBuilderSel({ ...builderSel, plan: plan as never, facts: liveFacts });
+                        setBuilderApproval(undefined);
+                        setBuilderEngine(undefined);
+                        setBuilderNote(message);
+                      },
+                    }
+                  : undefined
+              }
             />
             <V3Evidence />
           </>

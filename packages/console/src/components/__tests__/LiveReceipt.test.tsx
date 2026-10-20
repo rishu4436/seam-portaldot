@@ -67,4 +67,32 @@ describe("LiveReceipt effect check", () => {
     expect(check).not.toHaveBeenCalled();
     expect(screen.getByTestId("receipt-effect").textContent).toMatch(/not finalized/);
   });
+
+  it("with the compiled step, verifyStep decides for any step kind (not only transfers)", async () => {
+    const stepCheck = vi.fn(async () => ({
+      verdict: "effect_proven" as const,
+      extrinsicIndex: -1,
+      event: {},
+      reason: "NFT confirmed",
+      checkedAt: "",
+    }));
+    const check = vi.fn();
+    render(
+      <LiveReceipt
+        out={out}
+        plan={{ ...plan, steps: [] }}
+        rpc={rpc}
+        effectCheck={check}
+        compiled={{ step: { kind: "nfts.mint" }, signerAccountId: "0x01" }}
+        stepCheck={stepCheck}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("receipt-effect").textContent).toMatch(
+        /verifyStep\): NFT confirmed/,
+      ),
+    );
+    expect(check).not.toHaveBeenCalled();
+    expect(stepCheck).toHaveBeenCalledTimes(1);
+  });
 });

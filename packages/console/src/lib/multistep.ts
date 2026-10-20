@@ -9,6 +9,8 @@
 // Nothing here talks to a wallet itself: sign and submitAndWait are injected (the LivePanel wires the extension signer).
 import { usageKey, type ApprovalStore } from "@seam/policy/browser";
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "./policygate";
+import type { StepOutcome } from "@seam/sdk/browser";
+import { atomicStepReceipts, callOfSigned, verifyPlanStep } from "./stepverify";
 import { preSign, preSubmit, type ChainFns, type SigningContext } from "./signflow";
 
 type Send = (method: string, params: unknown[]) => Promise<unknown>;
@@ -87,8 +89,16 @@ export async function runPlanSteps(args: {
     call: { actionIds: string[]; callHex: string },
     nonce: number,
   ) => Promise<Res<string>>;
-  /** Submits signed bytes and waits for inclusion/finality; returns the receipt step. */
-  submitAndWait: (i: number, signedTx: string) => Promise<Res<ReceiptStepLike>>;
+  /**
+   * Submits signed bytes, waits for inclusion/finality and reads the extrinsic's events back; returns the SDK
+   * StepOutcome (status, txHash, block, events). Verification is NOT decided here.
+   */
+  submitAndWait: (i: number, signedTx: string) => Promise<Res<StepOutcome>>;
+  /**
+   * Decides a step's verification. Default: Quill's verifyStep (@seam/sdk/browser) with the V3 runtime facts and the
+   * call decoded from the in-memory signed bytes. Only "verified" lets the next step run.
+   */
+  verifyOutcome?: (i: number, outcome: StepOutcome, callHex: string | undefined) => ReceiptStepLike;
   acknowledgedDowngrade?: boolean;
   /** Holds the signed bytes in memory for this run only. Injectable so tests can check it is emptied. */
   holder?: SignedHolder;
@@ -102,6 +112,30 @@ export async function runPlanSteps(args: {
   };
 }): Promise<MultiStepResult> {
   const G = args.gates ?? { preSign, preSubmit, policyGate: runPolicyGate };
+  const runtime = (args.facts as { fingerprint?: { specName?: string; specVersion?: number } })
+    ?.fingerprint;
+  const signerAccountId = (args.input.plan as { signer?: { publicKey?: string } })?.signer
+    ?.publicKey;
+  const verify =
+    args.verifyOutcome ??
+    ((i: number, o: StepOutcome, callHex: string | undefined): ReceiptStepLike => {
+      const atomic = (args.input.plan as PlanLike).mode.startsWith("atomic");
+      const step = (args.input.plan as { steps: unknown[] }).steps[i];
+      // Atomic: one batch outcome; per-step-of-batch verification isn't available here, so it stays unknown.
+      if (atomic || !step || !signerAccountId)
+        return {
+          actionId: o.actionId,
+          status: o.status as ReceiptStepLike["status"],
+          ...(o.txHash ? { txHash: o.txHash } : {}),
+          ...(o.block ? { block: o.block } : {}),
+          events: [],
+          verification: "unknown",
+          reason: atomic
+            ? "Atomic batch: per-step verification of the batch is not available in the console."
+            : "No plan step or signer account to verify against.",
+        };
+      return verifyPlanStep(step, signerAccountId, o, runtime, callHex) as ReceiptStepLike;
+    });
   const plan = args.input.plan as PlanLike;
   const calls = callsToSignOf(plan);
   const steps: StepReport[] = (plan?.steps ?? []).map((s, index) => ({
@@ -218,16 +252,45 @@ export async function runPlanSteps(args: {
     args.store.markUsed(usageKey(hash as `0x${string}`, sequential ? i : undefined));
     const r = await args.submitAndWait(i, all[i]);
     if (!r.ok) return stop(i, r.message, pre.gate, "failed");
-    const receipt = { ...r.value, reason: holder.redact(r.value.reason) };
+    let callHex: string | undefined;
+    try {
+      callHex = callOfSigned(args.chain.signedExtrinsicDecoder?.(args.facts) as never, all[i]);
+    } catch {
+      callHex = undefined;
+    }
+    const verified = verify(i, r.value, callHex);
+    const receipt = { ...verified, reason: holder.redact(verified.reason) };
     receipts.push(receipt);
     const done = receipt.status === "finalized" && receipt.verification === "verified";
-    const forStep = sequential ? [steps[i]] : steps;
-    for (const s of forStep)
-      Object.assign(s, {
-        status: receipt.status === "failed" ? "failed" : "sent",
-        message: receipt.reason,
-        receipt,
-      });
+    const atomic = plan.mode.startsWith("atomic");
+    if (atomic && !args.verifyOutcome && signerAccountId) {
+      // Atomic: Quill's perStepOfBatch splits the one batch outcome into per-step outcomes (each step's call is a
+      // verified slice of the signed batch call); verifyStep then checks each step. Labelled per-step verified.
+      const per = atomicStepReceipts(args.input.plan, r.value, callHex, signerAccountId, runtime);
+      for (const s of steps) {
+        const pr = per.find((x) => x.actionId === s.actionId);
+        const rr = pr
+          ? {
+              ...pr,
+              reason: holder.redact(`per-step verified from the batch outcome: ${pr.reason}`),
+            }
+          : receipt;
+        Object.assign(s, {
+          status: rr.status === "failed" ? "failed" : "sent",
+          message: rr.reason,
+          receipt: rr,
+        });
+      }
+    } else {
+      const forStep = sequential ? [steps[i]] : steps;
+      for (const s of forStep)
+        Object.assign(s, {
+          status: receipt.status === "failed" ? "failed" : "sent",
+          message: receipt.reason,
+          receipt,
+        });
+    }
+    callHex = undefined;
     if (sequential && i < n - 1 && !done)
       return stop(
         i + 1,

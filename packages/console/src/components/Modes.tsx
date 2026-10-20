@@ -24,6 +24,8 @@ import {
 } from "../lib/modes";
 import { runLive, v3RpcUrl, type LiveOutcome, type LiveDeps } from "../lib/live";
 import { planCall, fingerprintMatches } from "../lib/liverequest";
+import type { CompiledStepContext } from "../lib/stepverify";
+import { checkRebind } from "../lib/rebind";
 import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
 import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
 import {
@@ -445,21 +447,35 @@ export function LiveReceipt({
   approval,
   rpc,
   effectCheck = checkAssetsTransferEffect,
+  compiled,
+  stepCheck,
 }: {
   out: LiveOutcome;
   plan?: Plan;
   approval?: Approval;
   rpc?: RpcTransport;
   effectCheck?: typeof checkAssetsTransferEffect;
+  /** The compiled step + signer + V3 runtime. When given, Quill's verifyStep decides for ANY step kind. */
+  compiled?: CompiledStepContext;
+  stepCheck?: (
+    rpc: RpcTransport,
+    txHash: string,
+    block: { number: number; hash: string },
+    ctx: CompiledStepContext,
+  ) => Promise<EffectVerdict>;
 }) {
   const [effect, setEffect] = useState<EffectVerdict>();
-  const want = transferExpectation(plan);
+  // With the compiled step, verifyStep checks every kind; the transfer-only check is only the fallback without it.
+  const want = compiled ? true : transferExpectation(plan);
   const blockHash = out.block?.hash;
   useEffect(() => {
     setEffect(undefined);
     if (!rpc || !want || !out.txHash || !blockHash || out.txState !== "finalized") return;
     let live = true;
-    effectCheck(rpc, out.txHash, blockHash, want).then((v) => live && setEffect(v));
+    const check = compiled
+      ? (stepCheck ?? defaultStepCheck)(rpc, out.txHash, out.block!, compiled)
+      : effectCheck(rpc, out.txHash, blockHash, want as TransferExpectation);
+    check.then((v) => live && setEffect(v));
     return () => {
       live = false;
     };
@@ -471,9 +487,11 @@ export function LiveReceipt({
       ? out.txState === "finalized"
         ? "checking…"
         : "not checked (not finalized)"
-      : effect.verdict === "effect_proven"
-        ? `effect proven: Assets.Transferred asset ${effect.event.assetId}, amount ${effect.event.amount}, to the planned recipient (extrinsic #${effect.extrinsicIndex})`
-        : `not verified: ${effect.reason}`;
+      : effect.verdict === "effect_proven" && effect.reason
+        ? `effect proven (verifyStep): ${effect.reason}`
+        : effect.verdict === "effect_proven"
+          ? `effect proven: Assets.Transferred asset ${effect.event.assetId}, amount ${effect.event.amount}, to the planned recipient (extrinsic #${effect.extrinsicIndex})`
+          : `not verified: ${effect.reason}`;
   const receipt = {
     receiptKind: "seam/console-live-receipt/v1",
     result: out.status,
@@ -570,7 +588,16 @@ export function LivePanel({
   policyGate = runPolicyGate,
   chainLoader = loadChainFns,
   gates = { preSign, preSubmit },
+  rebind,
 }: {
+  /**
+   * Builder plans: the facts snapshot the plan was compiled with. Before signing, the re-read facts go through Forge's
+   * rebindPlan; a rebound plan is handed back (new digest, approval discarded) and nothing is signed; RUNTIME_CHANGED blocks.
+   */
+  rebind?: {
+    planFacts: unknown;
+    onRebound: (plan: unknown, liveFacts: unknown, message: string) => void;
+  };
   plan?: Plan;
   facts?: RuntimeFacts;
   approval?: Approval;
@@ -598,6 +625,7 @@ export function LivePanel({
   const [receiptRpc, setReceiptRpc] = useState<RpcTransport>();
   const [gate, setGate] = useState<GateOutcome>();
   const [multi, setMulti] = useState<MultiStepResult>();
+  const [receiptCtx, setReceiptCtx] = useState<CompiledStepContext>();
   // Cancels a multi-step run when the panel unmounts or the plan changes; the run then drops its signed bytes.
   const abort = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => abort.current?.abort(), []);
@@ -638,7 +666,53 @@ export function LivePanel({
           setV3(r);
           hostFacts = r.ok ? r.facts : undefined;
         }
+        if (rebind && policyInput) {
+          const rb = checkRebind(
+            policyInput.manifest,
+            policyInput.plan,
+            rebind.planFacts,
+            hostFacts,
+          );
+          if (rb.kind !== "same") {
+            if (rb.kind === "rebound") rebind.onRebound(rb.plan, rb.liveFacts, rb.message);
+            setOut({
+              status: "blocked",
+              message: rb.message,
+              coverage: "none",
+              simulation: "none",
+              signing: "not_started",
+              txState: "not_run",
+              provenance: "unknown",
+              rpcAttempts: 0,
+              submitted: false,
+            });
+            return;
+          }
+        }
         const host = await hostLoader(hostFacts);
+        // Single-call receipt: verifyStep on the compiled step with the V3 runtime (any step kind).
+        const cp = policyInput?.plan as
+          { mode?: string; steps?: unknown[]; signer?: { publicKey?: string } } | undefined;
+        if (
+          cp?.steps?.length === 1 &&
+          cp.mode === "sequential" &&
+          cp.signer?.publicKey &&
+          hostFacts
+        ) {
+          const fns = await chainLoader().catch(() => undefined);
+          let decode: CompiledStepContext["decode"];
+          try {
+            decode = fns?.signedExtrinsicDecoder(hostFacts) as never;
+          } catch {
+            decode = undefined;
+          }
+          setReceiptCtx({
+            step: cp.steps[0],
+            signerAccountId: cp.signer.publicKey,
+            runtime: (hostFacts as { fingerprint?: CompiledStepContext["runtime"] }).fingerprint,
+            decode,
+          });
+        } else setReceiptCtx(undefined);
         // Sequential plans with more than one step: one engine approval, each step signed in order, then sent one at a
         // time behind its own gate and checkBeforeSubmit (see lib/multistep.ts). Any block stops the remaining steps.
         const multiCalls = policyInput ? callsToSignOf(policyInput.plan as never) : undefined;
@@ -834,7 +908,13 @@ export function LivePanel({
           <>
             <p>{out.message}</p>
             <FinalityPanel out={out} />
-            <LiveReceipt out={out} plan={plan} approval={approval} rpc={receiptRpc} />
+            <LiveReceipt
+              out={out}
+              plan={plan}
+              approval={approval}
+              rpc={receiptRpc}
+              compiled={receiptCtx}
+            />
             <dl className="kv">
               <dt>Network</dt>
               <dd>
@@ -853,7 +933,10 @@ export function LivePanel({
                 )}
               </dd>
               <dt>Signing</dt>
-              <dd>{SIGNING_LABEL[out.signing]}</dd>
+              <dd>
+                {SIGNING_LABEL[out.signing]}
+                {out.signingCode ? ` (${out.signingCode})` : ""}
+              </dd>
               <dt>Fee estimate</dt>
               <dd>{out.fee ? `${out.fee} base units (payment_queryInfo)` : "not estimated"}</dd>
               <dt>Simulation</dt>
@@ -1032,42 +1115,49 @@ async function runMultiStepLive(a: {
       return { ok: true, value: s.value.signedTx };
     },
     submitAndWait: async (i, signedTx) => {
-      const step = (
-        a.input.plan as {
-          steps: { actionId: string; kind: string; decodedArgs: Record<string, string> }[];
-        }
-      ).steps[i];
+      const step = (a.input.plan as { steps: { actionId: string }[] }).steps[i];
       const sub = await client.submit({ signedTx });
       if (!sub.ok) return { ok: false, message: sub.message };
       const v = await client.verify(sub.value.txHash);
       const st = v.ok ? v.value.state : undefined;
-      // The effect is checked only for assets.transfer (Assets.Transferred with the planned values). Anything else, or a
-      // failed check, stays "unknown"/"not_verified", and the engine then refuses to send the next step.
-      let verification: "verified" | "not_verified" | "unknown" = "unknown";
-      let reason = v.ok ? (v.value.note ?? `state ${st ?? "unknown"}`) : v.message;
-      if (st === "finalized" && v.ok && v.value.block && step?.kind === "assets.transfer") {
-        const { checkAssetsTransferEffect } = await import("../lib/effectcheck");
-        const e = await checkAssetsTransferEffect(a.rpc, sub.value.txHash, v.value.block.hash, {
-          assetId: step.decodedArgs.assetId,
-          from: a.signer!,
-          to: step.decodedArgs.recipient,
-          amount: step.decodedArgs.amount,
-        });
-        verification = e.verdict === "effect_proven" ? "verified" : "not_verified";
-        reason = e.verdict === "effect_proven" ? "Assets.Transferred matches the plan" : e.reason;
-      }
-      return {
-        ok: true,
-        value: {
-          actionId: step?.actionId ?? "",
-          status: st === "finalized" || st === "included" ? st : "uncertain",
-          txHash: sub.value.txHash,
-          ...(v.ok && v.value.block ? { block: v.value.block } : {}),
-          events: [],
-          verification,
-          reason,
-        },
-      };
+      const status = st === "finalized" || st === "included" ? st : "uncertain";
+      if (!v.ok || !v.value.block)
+        return {
+          ok: true,
+          value: {
+            actionId: step?.actionId ?? "",
+            status,
+            txHash: sub.value.txHash as never,
+            events: [],
+          },
+        };
+      // The extrinsic's own events, read back from its block; verifyStep decides (see lib/stepverify.ts).
+      const { readExtrinsicOutcome } = await import("../lib/stepverify");
+      const r = await readExtrinsicOutcome(
+        a.rpc,
+        step?.actionId ?? "",
+        sub.value.txHash,
+        v.value.block,
+        status,
+      );
+      return r.ok
+        ? { ok: true, value: r.outcome }
+        : {
+            ok: true,
+            value: {
+              actionId: step?.actionId ?? "",
+              status: "uncertain",
+              txHash: sub.value.txHash as never,
+              events: [],
+            },
+          };
     },
   });
 }
+
+const defaultStepCheck = async (
+  rpc: RpcTransport,
+  txHash: string,
+  block: { number: number; hash: string },
+  ctx: CompiledStepContext,
+) => (await import("../lib/stepverify")).stepEffectCheck(rpc, txHash, block, ctx);
