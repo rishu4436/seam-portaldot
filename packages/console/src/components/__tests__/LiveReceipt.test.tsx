@@ -146,3 +146,88 @@ describe("LiveReceipt effect check", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("top-level Result line renders the receipt's result (single source of truth)", () => {
+  // Anchor's run 0xf883200e: the raw live status was "unverified" while the receipt said "verified".
+  const unverifiedOut = { ...out, status: "unverified" } as unknown as LiveOutcome;
+  const okStep = {
+    actionId: "pay",
+    status: "finalized",
+    events: [],
+    verification: "verified",
+    coverage: "effect_proven",
+    reason: "Transfer confirmed.",
+  };
+  const downloaded = (): Record<string, unknown> => {
+    const blobs: string[] = [];
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      class extends RealBlob {
+        constructor(parts: BlobPart[], o?: BlobPropertyBag) {
+          super(parts, o);
+          blobs.push(String(parts[0]));
+        }
+      },
+    );
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    screen.getByRole("button", { name: /download receipt/i }).click();
+    vi.unstubAllGlobals();
+    return JSON.parse(blobs.at(-1)!);
+  };
+  const resultLines = () =>
+    screen.getAllByText(/^Result$/).map((dt) => dt.nextElementSibling?.textContent);
+  const compiled = { step: { kind: "assets.transfer" }, signerAccountId: "0x01" };
+
+  it("verified: Result shows verified while the live status stays labelled separately as unverified", async () => {
+    const stepCheck = vi.fn(async () => ({
+      verdict: "effect_proven" as const,
+      extrinsicIndex: 1,
+      event: {},
+      steps: [okStep as never],
+      checkedAt: "t",
+    }));
+    render(
+      <LiveReceipt
+        out={unverifiedOut}
+        plan={plan}
+        rpc={rpc}
+        compiled={compiled}
+        stepCheck={stepCheck}
+      />,
+    );
+    await waitFor(() => expect(screen.getByTestId("receipt-result").textContent).toBe("verified"));
+    expect(resultLines()).toEqual(["verified"]);
+    expect(screen.getByTestId("receipt-live-status").textContent).toBe("unverified");
+    expect(screen.getByText(/Live status \(raw submit outcome, not the verdict\)/)).toBeTruthy();
+    expect(downloaded().result).toBe("verified");
+  });
+  it("not_verified: a failed effect check renders not_verified, same as the download", async () => {
+    const stepCheck = vi.fn(async () => ({
+      verdict: "not_verified" as const,
+      reason: "amount differs",
+      steps: [{ ...okStep, verification: "not_verified" } as never],
+      checkedAt: "t",
+    }));
+    render(
+      <LiveReceipt out={out} plan={plan} rpc={rpc} compiled={compiled} stepCheck={stepCheck} />,
+    );
+    await waitFor(() => expect(stepCheck).toHaveBeenCalled());
+    await waitFor(() => expect(resultLines()).toEqual(["not_verified"]));
+    expect(downloaded().result).toBe("not_verified");
+  });
+  it("unverified live status with no proven effect: Result is the receipt's not_verified, never the raw status", async () => {
+    const check = vi
+      .fn()
+      .mockResolvedValue({ verdict: "not_verified", reason: "no event", checkedAt: "t" });
+    render(<LiveReceipt out={unverifiedOut} plan={plan} rpc={rpc} effectCheck={check} />);
+    await waitFor(() =>
+      expect(screen.getByTestId("receipt-effect").textContent).toMatch(/not verified/),
+    );
+    const saved = downloaded();
+    expect(resultLines()).toEqual([saved.result]);
+    expect(saved.result).toBe("not_verified");
+    expect(screen.getByTestId("receipt-live-status").textContent).toBe("unverified");
+  });
+});
