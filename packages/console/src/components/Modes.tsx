@@ -26,6 +26,7 @@ import { runLive, v3RpcUrl, type LiveOutcome, type LiveDeps } from "../lib/live"
 import { planCall, fingerprintMatches } from "../lib/liverequest";
 import type { CompiledStepContext } from "../lib/stepverify";
 import { checkRebind } from "../lib/rebind";
+import { buildLiveReceipt } from "../lib/livereceipt";
 import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
 import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
 import {
@@ -449,7 +450,10 @@ export function LiveReceipt({
   effectCheck = checkAssetsTransferEffect,
   compiled,
   stepCheck,
+  engineApprovalHash,
 }: {
+  /** The engine's createApproval hash from preSign. */
+  engineApprovalHash?: string;
   out: LiveOutcome;
   plan?: Plan;
   approval?: Approval;
@@ -492,24 +496,17 @@ export function LiveReceipt({
         : effect.verdict === "effect_proven"
           ? `effect proven: Assets.Transferred asset ${effect.event.assetId}, amount ${effect.event.amount}, to the planned recipient (extrinsic #${effect.extrinsicIndex})`
           : `not verified: ${effect.reason}`;
-  const receipt = {
-    receiptKind: "seam/console-live-receipt/v1",
-    result: out.status,
-    txHash: out.txHash,
-    block: out.block ?? null,
-    planDigest: plan?.digest ?? null,
-    manifestDigest: plan?.manifestDigest ?? null,
-    fingerprintDigest: plan?.fingerprintDigest ?? null,
-    approvalHash: approval?.hash ?? null,
-    signer: plan?.signer ?? null,
-    fee: out.fee ?? null,
-    coverage: out.coverage,
-    effect: effect ?? {
-      verdict: "not_verified",
-      reason: want ? "not checked yet" : "no effect check for this plan",
-    },
-    verification: effect?.verdict === "effect_proven" ? "effect_proven" : "unverified",
-  };
+  // The one receipt object: the panel below reads it, and Download writes exactly it.
+  const receipt = buildLiveReceipt({
+    out,
+    plan,
+    approval,
+    effect,
+    checked: !!want,
+    engineApprovalHash,
+    compiledPlan: compiled?.plan,
+  });
+
   return (
     <div className="receipt small" role="group" aria-label="Receipt">
       <div className="row between">
@@ -536,8 +533,10 @@ export function LiveReceipt({
         </dd>
         <dt>Approval</dt>
         <dd>
-          <code className="wrap">{approval?.hash ?? "unknown"}</code>
+          <code className="wrap">{receipt.approvalHash ?? "no engine approval bound"}</code>
         </dd>
+        <dt>Result</dt>
+        <dd data-testid="receipt-result">{receipt.result}</dd>
         <dt>Coverage</dt>
         <dd>{COVERAGE_LABEL[out.coverage]}</dd>
         <dt>Effect</dt>
@@ -547,6 +546,20 @@ export function LiveReceipt({
           </Tag>{" "}
           {effectLabel}
         </dd>
+        {receipt.steps.length > 0 && (
+          <>
+            <dt>Steps (verifyStep)</dt>
+            <dd>
+              <ul data-testid="receipt-steps">
+                {receipt.steps.map((st) => (
+                  <li key={st.actionId}>
+                    <code>{st.actionId}</code> {st.verification}: {st.reason}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </>
+        )}
       </dl>
     </div>
   );
@@ -626,6 +639,8 @@ export function LivePanel({
   const [gate, setGate] = useState<GateOutcome>();
   const [multi, setMulti] = useState<MultiStepResult>();
   const [receiptCtx, setReceiptCtx] = useState<CompiledStepContext>();
+  // The policy engine's createApproval hash bound at preSign; the receipt records this, not the UI approval token.
+  const [engineApproval, setEngineApproval] = useState<string>();
   // Cancels a multi-step run when the panel unmounts or the plan changes; the run then drops its signed bytes.
   const abort = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => abort.current?.abort(), []);
@@ -635,6 +650,7 @@ export function LivePanel({
   const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
   useEffect(() => {
     setOut(undefined);
+    setEngineApproval(undefined);
     setV3(undefined);
     setGate(undefined);
     setMulti(undefined);
@@ -693,12 +709,9 @@ export function LivePanel({
         // Single-call receipt: verifyStep on the compiled step with the V3 runtime (any step kind).
         const cp = policyInput?.plan as
           { mode?: string; steps?: unknown[]; signer?: { publicKey?: string } } | undefined;
-        if (
-          cp?.steps?.length === 1 &&
-          cp.mode === "sequential" &&
-          cp.signer?.publicKey &&
-          hostFacts
-        ) {
+        const single = cp?.steps?.length === 1 && cp.mode === "sequential";
+        const atomicPlan = !!cp?.mode?.startsWith("atomic");
+        if ((single || atomicPlan) && cp?.steps && cp.signer?.publicKey && hostFacts) {
           const fns = await chainLoader().catch(() => undefined);
           let decode: CompiledStepContext["decode"];
           try {
@@ -707,7 +720,8 @@ export function LivePanel({
             decode = undefined;
           }
           setReceiptCtx({
-            step: cp.steps[0],
+            step: single ? cp.steps[0] : undefined,
+            plan: cp,
             signerAccountId: cp.signer.publicKey,
             runtime: (hostFacts as { fingerprint?: CompiledStepContext["runtime"] }).fingerprint,
             decode,
@@ -802,6 +816,7 @@ export function LivePanel({
           if (pre.gate) setGate(pre.gate);
           if (!pre.res.ok) return pre.res;
           const preSigned = pre.res.value;
+          setEngineApproval((preSigned.approval as { hash?: string } | undefined)?.hash);
           deps.beforeSubmit = async (signedTx) =>
             gates.preSubmit({
               chain: chainFns,
@@ -914,6 +929,7 @@ export function LivePanel({
               approval={approval}
               rpc={receiptRpc}
               compiled={receiptCtx}
+              engineApprovalHash={engineApproval}
             />
             <dl className="kv">
               <dt>Network</dt>

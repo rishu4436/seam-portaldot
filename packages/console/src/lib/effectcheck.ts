@@ -4,6 +4,7 @@
 import { Metadata, TypeRegistry } from "@polkadot/types";
 import { blake2AsHex, xxhashAsHex } from "@polkadot/util-crypto";
 import type { RpcTransport } from "./chainclient";
+import type { SdkReceiptStep } from "@seam/sdk/browser";
 
 export interface TransferExpectation {
   assetId: string;
@@ -17,10 +18,21 @@ export type EffectVerdict =
       extrinsicIndex: number;
       /** Set by the verifyStep-based check (any step kind): its plain-language reason. */
       reason?: string;
+      /** verifyStep output per plan step (atomic: perStepOfBatch, per step from the batch outcome). */
+      steps?: SdkReceiptStep[];
+      /** Actual fee from this extrinsic's TransactionPayment.TransactionFeePaid event. */
+      feePaid?: string;
       event: Record<string, string>;
       checkedAt: string;
     }
-  | { verdict: "not_verified"; reason: string; checkedAt: string };
+  | {
+      verdict: "not_verified";
+      reason: string;
+      checkedAt: string;
+      steps?: SdkReceiptStep[];
+      extrinsicIndex?: number;
+      feePaid?: string;
+    };
 
 const EVENTS_KEY = xxhashAsHex("System", 128) + xxhashAsHex("Events", 128).slice(2);
 
