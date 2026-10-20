@@ -1,3 +1,4 @@
+import type { RuntimeFingerprint } from "@seam/compiler";
 /** Parses `--token SYMBOL:DECIMALS` into the chain layer's `declaredToken`. Throws a usage error on a bad format. */
 export function parseTokenFlag(
   v: string | undefined,
@@ -31,4 +32,39 @@ export function parseAbiFlags(
     }
   }
   return abis;
+}
+
+const FP_KEYS = ["genesisHash", "specName", "specVersion", "transactionVersion", "metadataHash"];
+const isFingerprint = (v: unknown): v is RuntimeFingerprint =>
+  !!v &&
+  typeof v === "object" &&
+  FP_KEYS.every((k) => (v as Record<string, unknown>)[k] !== undefined);
+
+/**
+ * Parses `--runtime <file>` for `seam verify --endpoint`: a recorded run (its `.fingerprint`, as in
+ * evidence/testnet-v3/runs/plan-*.json) or a bare RuntimeFingerprint JSON. Throws a clear usage error otherwise.
+ */
+export function parseRuntimeFlag(
+  file: string | undefined,
+  load: (file: string) => unknown,
+): RuntimeFingerprint | undefined {
+  if (file === undefined) return undefined;
+  if (!file || file.startsWith("--"))
+    throw new Error("--runtime needs a file: a run record or a RuntimeFingerprint JSON");
+  let d: unknown;
+  try {
+    d = load(file);
+  } catch (e) {
+    throw new Error(`--runtime: cannot read ${file}: ${(e as Error).message}`);
+  }
+  const fp = isFingerprint((d as { fingerprint?: unknown })?.fingerprint)
+    ? (d as { fingerprint: RuntimeFingerprint }).fingerprint
+    : isFingerprint(d)
+      ? d
+      : undefined;
+  if (!fp)
+    throw new Error(
+      `--runtime: ${file} is neither a run record with a "fingerprint" nor a RuntimeFingerprint (needs ${FP_KEYS.join(", ")})`,
+    );
+  return fp;
 }

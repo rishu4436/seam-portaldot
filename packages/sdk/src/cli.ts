@@ -11,7 +11,7 @@ import { diffRuntimes, explainDrift } from "./drift.js";
 import { createChainReader, verifyReceiptLive } from "./verify-live.js";
 import { explainManifestIssues, explainPlan, explainPolicy, explainReceipt } from "./explain.js";
 import { factsFromSnapshot } from "./offline.js";
-import { parseAbiFlags, parseTokenFlag } from "./cliargs.js";
+import { parseAbiFlags, parseRuntimeFlag, parseTokenFlag } from "./cliargs.js";
 
 const HELP = `seam <command> [file] [options]
 
@@ -22,6 +22,11 @@ const HELP = `seam <command> [file] [options]
   seam verify  --endpoint <ws> --plan <plan.json> <receipt.json>
                                                   Live: re-read the chain. chain_verified needs the plan; without --plan the result is unknown.
                                                   A step that is not_verified (in the receipt or on re-check) is failed, not unknown
+  seam verify  --endpoint <ws> --plan <plan.json> --runtime <run.json|fingerprint.json> <receipt.json>
+                                                  Also pin the runtime the plan ran on (a run record's "fingerprint", or a bare
+                                                  RuntimeFingerprint). Its digest must equal the receipt's fingerprintDigest, and
+                                                  genesis, spec, tx version and ss58 must match the node (only the metadata hash may
+                                                  differ). Turns on the V3 nfts.mint / revive.call checks
   seam explain <plan|policy-result|receipt.json>  Explain any SEAM result in plain English
   seam drift   <snapA> <snapB> [--plan <plan.json>]  Compare two saved runtimes: changed fingerprint fields and calls (offline; exit 10 on drift)
   seam snapshot <ws-endpoint> <out-dir> [--name n]  Save a node's runtime (read-only) for offline use
@@ -203,6 +208,7 @@ async function main() {
         "--name",
         "--token",
         "--abi",
+        "--runtime",
       ])[1];
       if (!rf) throw new Error("missing receipt file");
       const r = read(rf) as Receipt;
@@ -228,10 +234,16 @@ async function main() {
         process.exit(oc.exitCode);
       }
       const planFile = flag("--plan");
+      // Parsed before any network call, so a bad --runtime file fails fast with a usage error.
+      const runtime = parseRuntimeFlag(
+        argv.includes("--runtime") ? (flag("--runtime") ?? "") : undefined,
+        read,
+      );
       const facts = await loadFacts();
       const reader = await createChainReader(endpoint, facts);
       const live = await verifyReceiptLive(r, reader, {
         plan: planFile ? read(planFile) : undefined,
+        runtime,
       });
       const lines = [
         `Receipt status: ${live.status} (live, read from ${endpoint}).`,
