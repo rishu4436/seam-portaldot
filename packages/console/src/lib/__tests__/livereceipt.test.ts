@@ -62,7 +62,7 @@ describe("receipt carries the verifyStep verdict", () => {
     });
     expect(r.result).toBe("verified");
     expect(r.verification).toBe("effect_proven");
-    expect(r.liveStatus).toBe("unverified");
+    expect(r.liveStatusAtFinalization).toBe("unverified");
     expect(r.steps).toHaveLength(1);
     expect(r.steps[0]).toMatchObject({
       actionId: "pay",

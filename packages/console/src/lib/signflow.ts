@@ -60,6 +60,8 @@ export interface PreSigned {
   gate: GateOutcome;
   approval: BoundApproval;
   approvalInput: Record<string, unknown>;
+  /** The `now` createApproval was called with (ISO); with approvalInput it reproduces approval.hash. */
+  approvedAt: string;
   preflight: PreflightRes;
 }
 
@@ -143,7 +145,16 @@ export async function preSign(args: {
   if (!a.ok) return { gate, res: no(`${a.reason} Nothing was signed.`) };
   return {
     gate,
-    res: { ok: true, value: { gate, approval: a.approval, approvalInput, preflight } },
+    res: {
+      ok: true,
+      value: {
+        gate,
+        approval: a.approval,
+        approvalInput,
+        approvedAt: now.toISOString(),
+        preflight,
+      },
+    },
   };
 }
 

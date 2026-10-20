@@ -16,8 +16,12 @@ export interface ConsoleLiveReceipt {
   receiptKind: "seam/console-live-receipt/v1";
   /** SDK Receipt.result values only. */
   result: ReceiptResult;
-  /** The LIVE run's own status (transport + finality), kept separately from the verdict. */
-  liveStatus: LiveOutcome["status"];
+  /**
+   * The LIVE run's raw status as the submit/finality watcher reported it at finalization, BEFORE the effect check.
+   * It is not updated by verification and is not the verdict; `result` is.
+   */
+  liveStatusAtFinalization: LiveOutcome["status"];
+  liveStatusNote: string;
   txHash: string | null;
   block: { number: number; hash: string } | null;
   planDigest: string | null;
@@ -25,6 +29,13 @@ export interface ConsoleLiveReceipt {
   fingerprintDigest: string | null;
   /** The policy engine's createApproval hash bound at preSign (never the plan digest); null when none was bound. */
   approvalHash: string | null;
+  /**
+   * Everything createApproval (@seam/policy) took, so approvalHash can be recomputed:
+   * createApproval({ ...approvalInputs, now: new Date(approvalInputs.now) }).approval.hash === approvalHash.
+   * manifestDigest, plan, envelope (unsigned signing envelope), preflight (dry-run before signing), policy,
+   * policyResult, fingerprint, now, and acknowledgedDowngrade when set. No signed bytes, no keys. null when none bound.
+   */
+  approvalInputs: (Record<string, unknown> & { now: string }) | null;
   signer: string | null;
   /** Actual fee paid, from this extrinsic's TransactionPayment.TransactionFeePaid event; null when not read. */
   fee: string | null;
@@ -51,6 +62,8 @@ export function buildLiveReceipt(a: {
   engineApprovalHash?: string;
   /** The compiled plan (compiler Plan) the run signed. */
   compiledPlan?: unknown;
+  /** preSign's approvalInput plus its `now` (ISO). */
+  approvalInputs?: Record<string, unknown> & { now: string };
 }): ConsoleLiveReceipt {
   const { out, plan, effect } = a;
   const steps = (effect?.steps ?? []).map((s) => ({ ...s }));
@@ -60,13 +73,16 @@ export function buildLiveReceipt(a: {
   return {
     receiptKind: "seam/console-live-receipt/v1",
     result,
-    liveStatus: out.status,
+    liveStatusAtFinalization: out.status,
+    liveStatusNote:
+      "Raw submit/finality status before the effect check; not updated by verification. The verdict is `result`.",
     txHash: out.txHash ?? null,
     block: out.block ?? null,
     planDigest: plan?.digest ?? null,
     manifestDigest: plan?.manifestDigest ?? null,
     fingerprintDigest: plan?.fingerprintDigest ?? null,
     approvalHash: a.engineApprovalHash ?? null,
+    approvalInputs: a.engineApprovalHash && a.approvalInputs ? a.approvalInputs : null,
     signer: plan?.signer ?? null,
     fee: effect?.feePaid ?? null,
     feeBasis: effect?.feePaid
