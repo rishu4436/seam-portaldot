@@ -1,0 +1,137 @@
+{
+ "kind": "v3-metadata-stability",
+ "note": "READ-ONLY. state_getMetadata over HTTPS at several blocks; no signing, no submission, no wallet.",
+ "endpoint": "https://test-node-v3.portaldot.dev",
+ "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+ "startedAt": "2026-10-20T12:32:30.125Z",
+ "finishedAt": "2026-10-20T12:32:56.216Z",
+ "reads": [
+  {
+   "block": 117308,
+   "blockHash": "0x44d05b0c36033f7f140847cf74e7bf276992ed57f9634830163c5da5b778322b",
+   "specVersion": 3002,
+   "transactionVersion": 2,
+   "metadataBytes": 561916,
+   "rawMetadataHash": "0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec",
+   "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+  },
+  {
+   "block": 117311,
+   "blockHash": "0x658ec54356418fb9ea0abc30d34a5d3c448da54b9f96a86b16fd4f960d3cd204",
+   "specVersion": 3002,
+   "transactionVersion": 2,
+   "metadataBytes": 561916,
+   "rawMetadataHash": "0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec",
+   "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+  },
+  {
+   "block": 117208,
+   "blockHash": "0x9ad0e5a9b66f5602f522ac730f86feae2a19ad4238a4d04c4466eb6854cfcba8",
+   "specVersion": 3002,
+   "transactionVersion": 2,
+   "metadataBytes": 561916,
+   "rawMetadataHash": "0xa337ee85790f083d181d1bfb14fca6919c1e47159881f5181af7d862d0efca61",
+   "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+  },
+  {
+   "block": 116808,
+   "blockHash": "0x8ff566e17bd927a817402039339f683f6011e6e1f8bb5827f9336cf466a35db8",
+   "specVersion": 3002,
+   "transactionVersion": 2,
+   "metadataBytes": 561916,
+   "rawMetadataHash": "0x12ce356fbf79f7edf622f0241c348ad43d3cebb6aef4105586daff7e56b3516b",
+   "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+  }
+ ],
+ "storageDefaultsThatDiffer": {
+  "117308->117311": [],
+  "117208->117308": [
+   {
+    "entry": "Revive.EthBlockBuilderIR",
+    "bytesA": 388,
+    "bytesB": 388
+   }
+  ],
+  "116808->117308": [
+   {
+    "entry": "Revive.EthBlockBuilderIR",
+    "bytesA": 388,
+    "bytesB": 388
+   }
+  ],
+  "2026-10-18-discovery->117308": [
+   {
+    "entry": "Revive.EthBlockBuilderIR",
+    "bytesA": 388,
+    "bytesB": 388
+   }
+  ]
+ },
+ "discovery2026_10_18": {
+  "rawMetadataHash": "0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9",
+  "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+ },
+ "fingerprintAtB": {
+  "atBlock": {
+   "number": 117311,
+   "hash": "0x658ec54356418fb9ea0abc30d34a5d3c448da54b9f96a86b16fd4f960d3cd204"
+  },
+  "pins": [
+   {
+    "pinnedTo": "A",
+    "preparedDigest": "0xb397fd4a0d71f00dd35da7ebcd98e43c3233baff45c79f78a9c48446c30fbb29",
+    "digestNowWithoutPin": "0xb397fd4a0d71f00dd35da7ebcd98e43c3233baff45c79f78a9c48446c30fbb29",
+    "digestNowPinned": "0xb397fd4a0d71f00dd35da7ebcd98e43c3233baff45c79f78a9c48446c30fbb29",
+    "lockWouldPass": true,
+    "rawHashesEqual": true,
+    "drift": null
+   },
+   {
+    "pinnedTo": "block 117208",
+    "preparedDigest": "0x3964ede3d8256e99a868950d67264522890cfbebf2aeb8cb83a6dc445103b801",
+    "digestNowWithoutPin": "0xb397fd4a0d71f00dd35da7ebcd98e43c3233baff45c79f78a9c48446c30fbb29",
+    "digestNowPinned": "0x3964ede3d8256e99a868950d67264522890cfbebf2aeb8cb83a6dc445103b801",
+    "lockWouldPass": true,
+    "rawHashesEqual": false,
+    "drift": {
+     "liveMetadataHash": "0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec",
+     "pinnedMetadataHash": "0xa337ee85790f083d181d1bfb14fca6919c1e47159881f5181af7d862d0efca61",
+     "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+    }
+   },
+   {
+    "pinnedTo": "block 116808",
+    "preparedDigest": "0x9439404e9d1d941e7bcb2aa00ac3fca6c961a0e91459fcd57912fefdb4772520",
+    "digestNowWithoutPin": "0xb397fd4a0d71f00dd35da7ebcd98e43c3233baff45c79f78a9c48446c30fbb29",
+    "digestNowPinned": "0x9439404e9d1d941e7bcb2aa00ac3fca6c961a0e91459fcd57912fefdb4772520",
+    "lockWouldPass": true,
+    "rawHashesEqual": false,
+    "drift": {
+     "liveMetadataHash": "0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec",
+     "pinnedMetadataHash": "0x12ce356fbf79f7edf622f0241c348ad43d3cebb6aef4105586daff7e56b3516b",
+     "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+    }
+   },
+   {
+    "pinnedTo": "2026-10-18 discovery",
+    "preparedDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+    "digestNowWithoutPin": "0xb397fd4a0d71f00dd35da7ebcd98e43c3233baff45c79f78a9c48446c30fbb29",
+    "digestNowPinned": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+    "lockWouldPass": true,
+    "rawHashesEqual": false,
+    "drift": {
+     "liveMetadataHash": "0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec",
+     "pinnedMetadataHash": "0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9",
+     "layoutHash": "0x8baafefc7b7389dae868986f4d87cbe989e4a6c00e4995c2366beae374d2c1a6"
+    }
+   }
+  ]
+ },
+ "httpRequests": {
+  "chain_getBlockHash": 7,
+  "chain_getHeader": 9,
+  "state_getMetadata": 5,
+  "state_getRuntimeVersion": 5,
+  "system_properties": 1
+ }
+}

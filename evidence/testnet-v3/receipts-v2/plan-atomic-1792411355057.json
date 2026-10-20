@@ -1,0 +1,94 @@
+{
+  "kind": "seam-receipt-v2",
+  "generatedAt": "2026-10-20T12:32:02.044Z",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "source": "runs/plan-atomic-1792411355057.json",
+  "how": "events, signer and call bytes re-read live from V3 (not copied from the record); receipt built by the current @seam/sdk buildReceipt with runtime = the record's fingerprint; then verifyReceiptLive with the record's plan and runtime",
+  "originalReceiptDigest": "0xfae2898071a5745110d7c761db356879b4372d5979497e325fe02fb5f536dba7",
+  "integrity": {
+    "status": "integrity_checked",
+    "note": "integrity only, not on-chain proof: this checks that the receipt was not edited after it was written. Anyone can recompute that digest, so it does not show that any transaction exists. Use live verification (seam verify --endpoint) for that."
+  },
+  "live": {
+    "status": "chain_verified",
+    "problems": [],
+    "notes": [
+      "The node's metadata hash differs from the pinned one (0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 vs 0x99c62ac2c3f6580a91ac204e60dd2751d29807f607faa47a6e3a0110e2ce47ec); genesis, spec, transaction version and ss58 match, so the pinned runtime is used."
+    ],
+    "steps": [
+      {
+        "actionId": "mint",
+        "status": "chain_verified"
+      },
+      {
+        "actionId": "nft",
+        "status": "chain_verified"
+      }
+    ]
+  },
+  "receipt": {
+    "receiptVersion": 1,
+    "manifestDigest": "0x14fbf2f7c43a1bcef824884d2f2f5d03bb686c0566b849cf1b880c1e21eb89e7",
+    "planDigest": "0x431806bf10a6dcfebc28f4f5930c5ad17f2bbb25b083e7d2fcdafc2c44e4b11b",
+    "fingerprintDigest": "0xcc8d609b6d67e17f246d06480c3bf39bd24cd7e0b7d2a40ebd461f6fa3fedcb1",
+    "policyDigest": "0xa29f30ca81595c46c4b3b5c83d97798ecd15a809b668d423b27dc11beea7700d",
+    "approvalHash": "0x64638e2ea0fc1cc346a9a2e63dbb9cb83a640b32c81efd06ab956dde86b4c0c6",
+    "mode": "atomic_verified",
+    "steps": [
+      {
+        "actionId": "mint",
+        "status": "finalized",
+        "txHash": "0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355",
+        "block": {
+          "number": 102671,
+          "hash": "0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b"
+        },
+        "events": [
+          "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278)",
+          "Assets.Issued(806707, 0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a, 7)",
+          "Utility.ItemCompleted()",
+          "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+          "Nfts.Issued(0, 3, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+          "Utility.ItemCompleted()",
+          "Utility.BatchCompleted()",
+          "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1941197884278)",
+          "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278, 0)",
+          "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":24182,\"refTime\":1516762526}})"
+        ],
+        "verification": "verified",
+        "coverage": "effect_proven",
+        "reason": "Mint confirmed: asset, amount and account all match the plan."
+      },
+      {
+        "actionId": "nft",
+        "status": "finalized",
+        "txHash": "0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355",
+        "block": {
+          "number": 102671,
+          "hash": "0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b"
+        },
+        "events": [
+          "Balances.Withdraw(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278)",
+          "Assets.Issued(806707, 0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a, 7)",
+          "Utility.ItemCompleted()",
+          "Balances.Reserved(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 10000000000000)",
+          "Nfts.Issued(0, 3, 0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467)",
+          "Utility.ItemCompleted()",
+          "Utility.BatchCompleted()",
+          "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1941197884278)",
+          "TransactionPayment.TransactionFeePaid(0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467, 1941197884278, 0)",
+          "System.ExtrinsicSuccess({\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":24182,\"refTime\":1516762526}})"
+        ],
+        "verification": "verified",
+        "coverage": "effect_proven",
+        "reason": "The NFT mint finalized and the chain shows exactly the requested arguments."
+      }
+    ],
+    "result": "verified",
+    "coverage": {
+      "verified": 2,
+      "expected": 2
+    },
+    "receiptDigest": "0x981103c10a35b6bf94bf339ff2ebd54a4c9936f357dbf5ad63b5dc2ae770307c"
+  }
+}
