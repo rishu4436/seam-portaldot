@@ -86,7 +86,7 @@ function setup(
       now: () => new Date(clock()),
       store: newApprovalStore(),
       holder,
-      freshFingerprint: async () => ({}),
+      freshFingerprint: async () => ({ fingerprint: {} }),
       sign,
       submitAndWait: submitAndWait as never,
       // These fakes return receipt-shaped outcomes; the real verifyStep path is tested in VerifySteps.test.ts.
@@ -235,7 +235,7 @@ describe("multi-step LIVE", () => {
       ctx: { nonce: 7, mortalityBlocks: 64, checkpointNumber: 1, checkpointHash: "0x" },
       now: () => new Date(),
       store: newApprovalStore(),
-      freshFingerprint: async () => ({}),
+      freshFingerprint: async () => ({ fingerprint: {} }),
       sign: t.sign,
       submitAndWait: t.submitAndWait as never,
       verifyOutcome: (_i, o) => o as never,
@@ -299,5 +299,29 @@ describe("signed bytes never leave memory", () => {
       for (const m of src.matchAll(/(downloadJson|download|policyJson)\(([^)]*)\)/g))
         expect(m[2], f).not.toMatch(/signed/i);
     }
+  });
+  it("one facts snapshot: preSign, every preSubmit and the fresh-fingerprint read all see the run's facts object", async () => {
+    const t = setup(seqPlan);
+    await t.run();
+    const sf = (t.gates.preSign.mock.calls[0] as never as [{ facts: unknown }])[0].facts;
+    const sub = t.gates.preSubmit.mock.calls.map(
+      (c) => (c as never as [{ facts: unknown }])[0].facts,
+    );
+    expect(sub).toHaveLength(2);
+    for (const f of sub) expect(f).toBe(sf);
+  });
+  it("each step keeps the submit gate's runtimeLock (policy result) for the receipt", async () => {
+    const t = setup(seqPlan);
+    const lock = {
+      lockBasis: "layout_hash" as const,
+      preparedMetadataHash: "0x01",
+      currentMetadataHash: "0x02",
+    };
+    t.gates.preSubmit.mockImplementation(async () => ({
+      ok: true as const,
+      value: { passed: [], runtimeLock: lock } as never,
+    }));
+    const r = await t.run();
+    expect(r.steps.map((s) => s.runtimeLock)).toEqual([lock, lock]);
   });
 });

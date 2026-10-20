@@ -54,7 +54,7 @@ function run(outs: Outcome[], facts: unknown = rec.facts, R = rec, callList = ca
     ctx: { nonce: 0, mortalityBlocks: 64, checkpointNumber: 1, checkpointHash: "0x" },
     now: () => new Date(),
     store: newApprovalStore(),
-    freshFingerprint: async () => ({}),
+    freshFingerprint: async () => ({ fingerprint: {} }),
     sign: async (i) => ({ ok: true, value: SIGNED(i) }),
     submitAndWait: submitAndWait as never,
     holder,

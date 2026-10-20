@@ -1,4 +1,19 @@
-import { loadChainFns, newApprovalStore, preSign, preSubmit, type ChainFns } from "../lib/signflow";
+import {
+  loadChainFns,
+  lockBasisText,
+  newApprovalStore,
+  preSign,
+  preSubmit,
+  type ChainFns,
+  type FreshRead,
+} from "../lib/signflow";
+
+/** The fresh read for the submit gate: fingerprint plus raw metadata (memory only, never logged or stored). */
+function freshRead(facts: unknown): FreshRead | undefined {
+  const f = facts as { fingerprint?: unknown; source?: { metadataHex?: string } } | undefined;
+  if (!f?.fingerprint) return undefined;
+  return { fingerprint: f.fingerprint, metadataHex: f.source?.metadataHex };
+}
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "../lib/policygate";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -841,7 +856,7 @@ export function LivePanel({
               store: store.current,
               freshFingerprint: async () => {
                 const r = await factsStep(rpc);
-                return r.ok ? (r.facts as { fingerprint?: unknown }).fingerprint : undefined;
+                return r.ok ? freshRead(r.facts) : undefined;
               },
             });
           return req;
@@ -967,6 +982,12 @@ export function LivePanel({
                 {SIGNING_LABEL[out.signing]}
                 {out.signingCode ? ` (${out.signingCode})` : ""}
               </dd>
+              {out.runtimeLock && (
+                <>
+                  <dt>Runtime lock</dt>
+                  <dd data-testid="live-lock-basis">{lockBasisText(out.runtimeLock)}</dd>
+                </>
+              )}
               <dt>Fee estimate</dt>
               <dd>{out.fee ? `${out.fee} base units (payment_queryInfo)` : "not estimated"}</dd>
               <dt>Simulation</dt>
@@ -1096,6 +1117,11 @@ export function MultiStepPanel({ r }: { r: MultiStepResult }) {
         {r.steps.map((s) => (
           <li key={s.index} data-status={s.status}>
             <code>{s.actionId}</code> {s.status}: {s.message}
+            {s.runtimeLock && (
+              <div className="muted" data-testid={`seq-lock-basis-${s.index}`}>
+                {lockBasisText(s.runtimeLock)}
+              </div>
+            )}
           </li>
         ))}
       </ol>
@@ -1149,7 +1175,7 @@ async function runMultiStepLive(a: {
     signal: a.signal,
     freshFingerprint: async () => {
       const r = await a.factsStep(a.rpc);
-      return r.ok ? (r.facts as { fingerprint?: unknown }).fingerprint : undefined;
+      return r.ok ? freshRead(r.facts) : undefined;
     },
     sign: async (_i, call, nonce) => {
       const req = await host.buildRequest({

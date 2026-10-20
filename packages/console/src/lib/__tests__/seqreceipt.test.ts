@@ -95,7 +95,9 @@ async function run(opts: { stopAfterFirst?: boolean; badFirst?: boolean } = {}) 
     },
     now: () => new Date(),
     store: newApprovalStore(),
-    freshFingerprint: async () => (facts as { fingerprint: unknown }).fingerprint,
+    freshFingerprint: async () => ({
+      fingerprint: (facts as { fingerprint: unknown }).fingerprint,
+    }),
     sign: vi.fn(async (i: number) => ({ ok: true as const, value: SIGNED(i) })),
     submitAndWait,
     gates: {

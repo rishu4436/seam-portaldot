@@ -9,6 +9,7 @@ import {
   InMemoryApprovalStore,
   type ApprovalStore,
   type BoundApproval,
+  type LockResult,
 } from "@seam/policy/browser";
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "./policygate";
 
@@ -158,13 +159,26 @@ export async function preSign(args: {
   };
 }
 
+/**
+ * The submit gate's runtime lock exactly as checkBeforeSubmit returned it (@seam/policy LockResult: ok, code, lockBasis,
+ * both raw and both layout hashes when computed). Never carries metadata bytes.
+ */
+export type RuntimeLockInfo = LockResult;
+
+/** What freshFingerprint returns: the fresh fingerprint plus the raw metadata from the same read (memory only). */
+export interface FreshRead {
+  fingerprint: unknown;
+  metadataHex?: string;
+}
+
 /** After the wallet signed: real dry run of the signed bytes, fresh fingerprint, then checkBeforeSubmit. */
 export async function preSubmit(args: {
   chain: ChainFns;
   send: Send;
   pre: PreSigned;
   facts: unknown;
-  freshFingerprint: () => Promise<unknown>;
+  /** Fresh fingerprint and raw metadata, read right before submit. metadataHex stays in memory only. */
+  freshFingerprint: () => Promise<FreshRead | undefined>;
   signedTx: string;
   now: Date;
   store: ApprovalStore;
@@ -173,28 +187,37 @@ export async function preSubmit(args: {
    * the index being sent, and the receipts of the earlier steps. Atomic / single-call plans leave these out.
    */
   sequential?: { signedExtrinsics: string[]; sendIndex: number; previousSteps: unknown[] };
-}): Promise<Res<{ passed: { code: string; detail: string }[] }>> {
+}): Promise<Res<{ passed: { code: string; detail: string }[]; runtimeLock?: RuntimeLockInfo }>> {
   const { chain, send, pre, facts, signedTx } = args;
   const all = args.sequential?.signedExtrinsics ?? [signedTx];
   let pf: PreflightRes;
   let current: unknown;
+  let currentMetadataHex: string | undefined;
   try {
     pf = await chain.preflight(send, pre.approvalInput.plan, facts, {
       signedExtrinsics: all,
     });
-    current = await args.freshFingerprint();
+    const fresh = await args.freshFingerprint();
+    current = fresh?.fingerprint;
+    currentMetadataHex = fresh?.metadataHex;
   } catch (e) {
     return no(`Could not re-check the signed transaction, so it was not sent: ${errMsg(e)}`);
   }
   if (!current) return no("Could not re-read the runtime before submit, so nothing was sent.");
   const plan = pre.approvalInput.plan as { mode?: string };
+  const preparedFingerprint = (facts as { fingerprint: unknown }).fingerprint;
+  const preparedMetadataHex = (facts as { source?: { metadataHex?: string } })?.source?.metadataHex;
   let check: ReturnType<typeof checkBeforeSubmit>;
   try {
     check = checkBeforeSubmit({
       ...(pre.approvalInput as object),
       approval: pre.approval,
-      preparedFingerprint: (facts as { fingerprint: unknown }).fingerprint,
+      preparedFingerprint,
       currentFingerprint: current,
+      // The gate recomputes raw and layout hashes from both blobs itself; it never trusts a supplied layout hash.
+      // CheckMetadataHash mode comes only from the trusted decoder; the console never supplies or fakes it.
+      preparedMetadataHex,
+      currentMetadataHex,
       signedCalls: [],
       signedExtrinsics: all,
       decodeSignedExtrinsic: chain.signedExtrinsicDecoder(facts, pre.approvalInput.envelope),
@@ -216,7 +239,18 @@ export async function preSubmit(args: {
     return no(
       `Blocked at submit (${check.reasons.map((r) => r.code).join(", ")}): ${check.reasons.map((r) => r.message).join(" ")} Nothing was sent.`,
     );
-  return { ok: true, value: { passed: check.passed } };
+  // Recorded exactly as the gate returned it; the console computes nothing about the lock itself.
+  return { ok: true, value: { passed: check.passed, runtimeLock: check.runtimeLock } };
+}
+
+/** Plain sentence for the panels; hashes shortened. */
+export function lockBasisText(l: RuntimeLockInfo | undefined): string | undefined {
+  if (!l) return undefined;
+  if (l.lockBasis === "raw")
+    return "Runtime lock passed: the runtime is unchanged since the plan was prepared.";
+  if (l.lockBasis !== "layout_hash") return undefined;
+  const sh = (h?: string) => (h ? `${h.slice(0, 10)}…` : "unknown");
+  return `Runtime lock passed on the layout hash: only the raw metadata hash changed (${sh(l.preparedMetadataHash)} -> ${sh(l.currentMetadataHash)}).`;
 }
 
 export const newApprovalStore = (): ApprovalStore => new InMemoryApprovalStore();

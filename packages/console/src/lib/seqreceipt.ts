@@ -26,6 +26,8 @@ export interface SequentialReceiptStep {
   /** verifyStep verdict; "unknown" when the step never ran (status "not_run", as in the SDK ReceiptStep). */
   verification: "verified" | "not_verified" | "unknown";
   reason: string;
+  /** Submit-gate runtime lock basis and hashes for this step, from the policy result; omitted when not reported. */
+  runtimeLock?: import("./signflow").RuntimeLockInfo;
 }
 
 export interface SequentialReceipt {
@@ -76,6 +78,7 @@ export function buildSequentialReceipt(r: MultiStepResult): SequentialReceipt {
       event,
       verification: (sent && s.receipt?.verification) || "unknown",
       reason: s.message,
+      ...(s.runtimeLock ? { runtimeLock: { ...s.runtimeLock } } : {}),
     };
   });
   const result = overallResult(

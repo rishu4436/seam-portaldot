@@ -277,3 +277,38 @@ describe("MultiStepPanel Result line is the sequential receipt's result", () => 
     expect(buildSequentialReceipt(res).result).toBe(want);
   });
 });
+
+describe("MultiStepPanel shows the runtime lock basis", () => {
+  it("says plainly when the lock passed on the layout hash, with both raw hashes shortened", async () => {
+    const { MultiStepPanel } = await import("../Modes");
+    const lock = {
+      lockBasis: "layout_hash" as const,
+      preparedMetadataHash: "0x523cc072" + "0".repeat(56),
+      currentMetadataHash: "0xec8e7fb6" + "0".repeat(56),
+    };
+    render(
+      <MultiStepPanel
+        r={
+          {
+            ok: true,
+            signRequests: 1,
+            message: "m",
+            steps: [
+              {
+                index: 0,
+                actionId: "s0",
+                status: "sent",
+                message: "x",
+                sendIndex: 0,
+                runtimeLock: lock,
+              },
+            ],
+          } as never
+        }
+      />,
+    );
+    expect(screen.getByTestId("seq-lock-basis-0").textContent).toBe(
+      "Runtime lock passed on the layout hash: only the raw metadata hash changed (0x523cc072… -> 0xec8e7fb6…).",
+    );
+  });
+});

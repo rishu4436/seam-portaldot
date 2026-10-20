@@ -104,7 +104,7 @@ async function gate(
     signedTx: tx,
     now,
     store: newApprovalStore(),
-    freshFingerprint: async () => facts.fingerprint,
+    freshFingerprint: async () => ({ fingerprint: facts.fingerprint }),
   });
 }
 

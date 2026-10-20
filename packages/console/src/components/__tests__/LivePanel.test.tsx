@@ -407,4 +407,39 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     expect(submitted).toHaveLength(0);
     expect(calls).not.toContain("author_submitExtrinsic");
   });
+
+  it("submit gate passed on the layout hash: the panel says so, and the fresh read carries the metadata in memory", async () => {
+    mockExtension(GOOD_SIG);
+    const lock = {
+      lockBasis: "layout_hash" as const,
+      preparedMetadataHash: "0x523cc072" + "0".repeat(56),
+      currentMetadataHash: "0xec8e7fb6" + "0".repeat(56),
+    };
+    const preSubmit = vi.fn(async (a: { freshFingerprint: () => Promise<unknown> }) => {
+      const f = (await a.freshFingerprint()) as { fingerprint?: unknown } | undefined;
+      expect(f?.fingerprint).toBeTruthy();
+      expect((f as { metadataHex?: string }).metadataHex).toBe("0x6d657461");
+      return { ok: true as const, value: { passed: [], runtimeLock: lock } };
+    });
+    render(
+      <LivePanel
+        plan={plan}
+        facts={facts}
+        approval={approveWalletDemo(plan)}
+        hostLoader={async () => fakeHost()}
+        factsStep={async () => ({
+          ...(await factsOk()),
+          facts: { fingerprint: fp, source: { metadataHex: "0x6d657461" } } as never,
+        })}
+        gates={{ preSign: passGates.preSign, preSubmit: preSubmit as never }}
+        chainLoader={noChain}
+      />,
+    );
+    press();
+    await waitFor(() => expect(screen.getByTestId("live-lock-basis")).toBeTruthy());
+    expect(screen.getByTestId("live-lock-basis").textContent).toBe(
+      "Runtime lock passed on the layout hash: only the raw metadata hash changed (0x523cc072… -> 0xec8e7fb6…).",
+    );
+    expect(preSubmit).toHaveBeenCalledTimes(1);
+  });
 });

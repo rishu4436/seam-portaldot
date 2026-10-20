@@ -112,7 +112,7 @@ describe("signing gates (real engine)", () => {
       signedTx: "0x1234",
       now,
       store: newApprovalStore(),
-      freshFingerprint: async () => facts.fingerprint,
+      freshFingerprint: async () => ({ fingerprint: facts.fingerprint }),
     });
     expect(s.ok).toBe(false);
     expect(!s.ok && s.message).toMatch(/Blocked at submit/);
