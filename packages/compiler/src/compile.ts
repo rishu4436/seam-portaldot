@@ -1,5 +1,6 @@
 import { stringCamelCase } from "@polkadot/util";
 import { DOMAIN, NotCanonicalError, digestJson } from "./canonical.js";
+import { metadataLayout, metadataLayoutHash } from "./layout.js";
 import { parseH160, parseNativeAddress } from "./address.js";
 import { V3_KINDS, bindingsFor, checkV3Shape } from "./v3-bindings.js";
 import { computeFingerprintDigest } from "./facts.js";
@@ -508,6 +509,11 @@ function validateFacts(facts: RuntimeFacts, issues: CompileIssue[]): LoadedRunti
   }
   if (rt.metadataHash !== facts.fingerprint.metadataHash)
     bad("source.metadataHex does not hash to fingerprint.metadataHash");
+  if (
+    facts.metadataLayoutHash !== undefined &&
+    facts.metadataLayoutHash !== metadataLayoutHash(facts.source.metadataHex)
+  )
+    bad("metadataLayoutHash does not match the layout hash of source.metadataHex");
   if (rt.typesBundleHash !== facts.fingerprint.typesBundleHash)
     bad("source.typesBundle does not hash to fingerprint.typesBundleHash");
   return rt;
@@ -817,7 +823,22 @@ const PARTIAL_EXECUTION_RISK =
 export function evaluateRollbackProof(
   facts: RuntimeFacts,
   kinds: readonly ActionKind[],
-): { ok: true } | { ok: false; reason: string } {
+): { ok: true; via?: "layout_hash" } | { ok: false; reason: string } {
+  try {
+    return checkRollbackProof(facts, kinds);
+  } catch (e) {
+    // Anything that cannot be read or decoded: never atomic.
+    return {
+      ok: false,
+      reason: `the rollback proof is rejected: it could not be checked (${(e as Error).message})`,
+    };
+  }
+}
+
+function checkRollbackProof(
+  facts: RuntimeFacts,
+  kinds: readonly ActionKind[],
+): { ok: true; via?: "layout_hash" } | { ok: false; reason: string } {
   const proof = facts.behaviour.batchAllRollbackProof as AtomicRollbackProof | undefined;
   if (proof === undefined) {
     return {
@@ -837,17 +858,69 @@ export function evaluateRollbackProof(
     typeof a === "string" && a.toLowerCase() === b.toLowerCase();
   if (!hex32(proof.genesisHash) || !eq(proof.genesisHash, fp.genesisHash))
     return no(`genesisHash ${String(proof.genesisHash)} is not this chain (${fp.genesisHash})`);
-  if (!hex32(proof.metadataHash) || !eq(proof.metadataHash, fp.metadataHash))
+  if (!hex32(proof.metadataHash))
+    return no(`metadataHash ${String(proof.metadataHash)} is not a 32-byte hex hash`);
+  if (proof.specVersion !== fp.specVersion)
+    return no(`specVersion ${String(proof.specVersion)} is not this runtime's (${fp.specVersion})`);
+  if (proof.specName !== undefined && proof.specName !== fp.specName)
+    return no(`specName ${String(proof.specName)} is not this runtime's (${fp.specName})`);
+  let viaLayout = false;
+  if (eq(proof.metadataHash, fp.metadataHash)) {
+    if (
+      proof.fingerprintDigest !== undefined &&
+      !eq(proof.fingerprintDigest, facts.fingerprintDigest)
+    )
+      return no("fingerprintDigest does not match the facts");
+  } else if (proof.metadataLayoutHash === undefined) {
     return no(
       `metadataHash ${String(proof.metadataHash)} is not this runtime's (${fp.metadataHash})`,
     );
-  if (proof.specVersion !== fp.specVersion)
-    return no(`specVersion ${String(proof.specVersion)} is not this runtime's (${fp.specVersion})`);
-  if (
-    proof.fingerprintDigest !== undefined &&
-    !eq(proof.fingerprintDigest, facts.fingerprintDigest)
-  )
-    return no("fingerprintDigest does not match the facts");
+  } else {
+    // Raw bytes differ: accept only if the layouts (storage defaults blanked) are the same.
+    if (!hex32(proof.metadataLayoutHash))
+      return no(`metadataLayoutHash ${String(proof.metadataLayoutHash)} is not a 32-byte hex hash`);
+    // Every binding the raw hash would have given is required and compared explicitly.
+    if (typeof proof.specName !== "string")
+      return no("specName is required when the proof is matched on metadataLayoutHash");
+    if (!Number.isInteger(proof.transactionVersion))
+      return no("transactionVersion is required when the proof is matched on metadataLayoutHash");
+    if (proof.transactionVersion !== fp.transactionVersion)
+      return no(
+        `transactionVersion ${String(proof.transactionVersion)} is not this runtime's (${fp.transactionVersion})`,
+      );
+    if (!Number.isInteger(proof.ss58Prefix))
+      return no("ss58Prefix is required when the proof is matched on metadataLayoutHash");
+    if (proof.ss58Prefix !== fp.ss58Prefix)
+      return no(`ss58Prefix ${String(proof.ss58Prefix)} is not this runtime's (${fp.ss58Prefix})`);
+    const bi = proof.batchAll;
+    if (!isObject(bi) || !Number.isInteger(bi.palletIndex) || !Number.isInteger(bi.callIndex))
+      return no(
+        `batchAll { palletIndex, callIndex } of ${BATCH_CAPABILITY} is required when the proof is matched on metadataLayoutHash`,
+      );
+    const batch = facts.capabilities[BATCH_CAPABILITY];
+    if (!batch || batch.status !== "observed")
+      return no(`${BATCH_CAPABILITY} is not observed on this runtime`);
+    if (bi.palletIndex !== batch.palletIndex || bi.callIndex !== batch.callIndex)
+      return no(
+        `${BATCH_CAPABILITY} indices ${bi.palletIndex}/${bi.callIndex} are not this runtime's (${String(batch.palletIndex)}/${String(batch.callIndex)})`,
+      );
+    const origin = capabilityOrigin(
+      loadRuntime(facts.source.metadataHex, facts.source.typesBundle),
+      BATCH_CAPABILITY,
+      batch,
+    );
+    if (origin) return no(origin);
+    const layout = metadataLayout(facts.source.metadataHex);
+    if (!layout.normalized)
+      return no(
+        `metadataHash ${String(proof.metadataHash)} is not this runtime's (${fp.metadataHash}) and this metadata cannot be normalized to a layout hash`,
+      );
+    if (!eq(proof.metadataLayoutHash, layout.hash))
+      return no(
+        `metadataLayoutHash ${String(proof.metadataLayoutHash)} is not this runtime's (${layout.hash}): the metadata layout differs, not just storage defaults`,
+      );
+    viaLayout = true;
+  }
   if (!hex32(proof.txHash) && !hex32(proof.blockHash))
     return no("txHash or blockHash (0x + 64 hex) is required");
   const present = (v: unknown) =>
@@ -864,7 +937,7 @@ export function evaluateRollbackProof(
     return no(
       `composition covers ${proof.composition.join(", ")} but this plan also uses ${missing.join(", ")}`,
     );
-  return { ok: true };
+  return viaLayout ? { ok: true, via: "layout_hash" } : { ok: true };
 }
 
 interface ModeChoice {
@@ -872,6 +945,8 @@ interface ModeChoice {
   modeReason: string;
   /** Set when a batch was not possible; says why. compile() turns it into a downgrade or an atomicRequired block. */
   atomicBlock?: string;
+  /** Set only when atomic_verified rests on a rollback proof matched by layout hash. */
+  proofBasis?: "layout_hash";
 }
 
 function selectMode(
@@ -919,7 +994,11 @@ function selectMode(
     if (proof.ok) {
       return {
         mode: "atomic_verified",
-        modeReason: `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has been verified on this runtime.`,
+        ...(proof.via === "layout_hash" ? { proofBasis: "layout_hash" as const } : {}),
+        modeReason:
+          proof.via === "layout_hash"
+            ? `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has been verified on this runtime (rollback proof accepted on layout hash; raw metadata differs only in storage defaults).`
+            : `All steps go in one ${BATCH_CAPABILITY}; rollback on failure has been verified on this runtime.`,
       };
     }
     unverifiedWhy = `${BATCH_CAPABILITY} rollback is claimed verified but ${proof.reason}`;
@@ -1049,10 +1128,12 @@ export function compile(
     manifest.atomicRequired === true,
   );
   let { mode, modeReason } = choice;
+  let proofBasis = choice.proofBasis;
   let modeDowngrade: ModeDowngrade | undefined;
   if (steps.length === 1 && (mode === "atomic_verified" || mode === "atomic_unverified")) {
     mode = "sequential";
     modeReason = "Single step: it is atomic on its own, so no batch is needed.";
+    proofBasis = undefined;
   } else if (
     steps.length > 1 &&
     choice.atomicBlock !== undefined &&
@@ -1086,6 +1167,7 @@ export function compile(
     signer: signer!,
     mode,
     modeReason,
+    ...(proofBasis === "layout_hash" ? { rollbackProofBasis: proofBasis } : {}),
     ...(modeDowngrade ? { modeDowngrade } : {}),
     steps,
   };
