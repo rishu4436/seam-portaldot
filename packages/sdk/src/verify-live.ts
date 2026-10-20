@@ -30,7 +30,21 @@ export interface ReceiptChainReader {
     blockHash: Hex,
     txHash: Hex,
   ): Promise<{ extrinsicIndex: number; signer?: Hex; callHex?: Hex; events: ChainEvent[] } | null>;
+  /**
+   * The node's own runtime fingerprint, read live. Needed to use a pinned `runtime`: its genesis, spec name, spec version,
+   * transaction version and ss58 prefix must equal the node's. Without it a pinned runtime is not used.
+   */
+  runtimeFingerprint?(): Promise<RuntimeFingerprint | null>;
 }
+
+/** The fields a pinned runtime must share with the live node. Only `metadataHash` (storage-default drift) may differ. */
+const IDENTITY = [
+  "genesisHash",
+  "specName",
+  "specVersion",
+  "transactionVersion",
+  "ss58Prefix",
+] as const;
 
 export interface LiveVerification {
   status: Exclude<ReceiptCheckStatus, "integrity_checked">;
@@ -53,7 +67,8 @@ const lc = (s?: string) => (s ?? "").toLowerCase();
  *
  * `runtime` is the RuntimeFingerprint the plan ran on. It turns on the same default nfts.mint / revive.call checks `buildReceipt`
  * uses, so execute and verify-live agree. It is used only if its digest equals the receipt's `fingerprintDigest`; a different
- * fingerprint is a problem (`failed`). Without it those default checks stay capped, and a step whose receipt says more than the
+ * fingerprint is a problem (`failed`). The reader's live `runtimeFingerprint()` must also share genesis, spec name, spec version,
+ * transaction version and ss58 with it (only the metadata hash may differ); a mismatch is `failed`, an unreadable one leaves it unused. Without it those default checks stay capped, and a step whose receipt says more than the
  * capped re-check gives `unknown`, never `chain_verified`.
  */
 export async function verifyReceiptLive(
@@ -88,11 +103,39 @@ export async function verifyReceiptLive(
     } catch {
       d = undefined;
     }
-    if (d && lc(d) === lc(receipt.fingerprintDigest)) runtime = opts.runtime;
-    else
+    if (!d || lc(d) !== lc(receipt.fingerprintDigest))
       problems.push(
         "The runtime given is not the runtime this receipt is for (fingerprint digest differs).",
       );
+    else {
+      let live: RuntimeFingerprint | null = null;
+      try {
+        live = reader.runtimeFingerprint ? await reader.runtimeFingerprint() : null;
+      } catch {
+        live = null;
+      }
+      if (!live)
+        notes.push(
+          "The node's runtime could not be read, so the pinned runtime was not used; nfts.mint and revive.call checks stay capped.",
+        );
+      else {
+        const pinned = opts.runtime;
+        const differs = IDENTITY.filter(
+          (k) => String(pinned[k]).toLowerCase() !== String(live![k]).toLowerCase(),
+        );
+        if (differs.length)
+          problems.push(
+            `The node is not the runtime this receipt is for (${differs.map((k) => `${k} ${String(pinned[k])} vs live ${String(live![k])}`).join("; ")}).`,
+          );
+        else {
+          runtime = pinned;
+          if (lc(pinned.metadataHash) !== lc(live.metadataHash))
+            notes.push(
+              `The node's metadata hash differs from the pinned one (${pinned.metadataHash} vs ${live.metadataHash}); genesis, spec, transaction version and ss58 match, so the pinned runtime is used.`,
+            );
+        }
+      }
+    }
   }
   // Fail closed: chain_verified is only reachable with a plan, a planned-vs-on-chain call comparison and proven effects.
   let unknown = false;
@@ -321,6 +364,10 @@ export async function createChainReader(
   const call = <T>(method: string, params: unknown[]) =>
     chain.withClient(endpoint, (c: any) => c.send(method, params) as Promise<T>);
   return {
+    async runtimeFingerprint() {
+      return ((facts as { fingerprint?: RuntimeFingerprint } | null)?.fingerprint ??
+        null) as RuntimeFingerprint | null;
+    },
     async finalizedNumber() {
       const head = await call<string>("chain_getFinalizedHead", []);
       const h = await call<{ number: string | number } | null>("chain_getHeader", [head]);
