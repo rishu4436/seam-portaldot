@@ -5,3 +5,4 @@ export * from "./runtimeLock.js";
 export * from "./policy.js";
 export * from "./approval.js";
 export * from "./policyFile.js";
+export * from "./deploy.js";
