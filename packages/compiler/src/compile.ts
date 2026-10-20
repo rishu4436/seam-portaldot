@@ -1003,10 +1003,9 @@ export function compile(
       status: "unavailable",
     };
     if (NO_V3_METADATA_KINDS.has(action.kind) && !v3Observed(rt, capability, cap)) {
-      // TODO(SEAM-006/007): needs REAL observed Portaldot V3 metadata for Revive (call: dest/value/weight/storage deposit/data)
-      // and Nfts (mint: collection/item/mint_to/witness). Until a V3 runtime's metadata is captured and pinned as a fixture,
-      // encoding either kind would be guessing the layout. Remove this branch only together with fixture-backed encoders + tests.
-      step.reason = `${capability} cannot be compiled: no observed V3 Revive/Nfts metadata exists, so SEAM does not guess the call layout (runtime spec ${fp.specVersion})`;
+      // Revive.call / Nfts.mint are only encoded from this runtime's own observed metadata, checked against the
+      // V3 shape contract (v3-bindings.ts). A runtime without them gets a plain blocker, never a guessed layout.
+      step.reason = `${capability} cannot be compiled: this runtime's metadata has no ${capability} call (runtime spec ${fp.specVersion}), so SEAM does not guess the call layout. It compiles on a runtime that has it, such as Portaldot V3 (spec 3002)`;
       step.reasonCode = "NO_OBSERVED_V3_METADATA";
     } else if (!cap || cap.status === "not_observed") {
       step.reason = `${capability} is not on this runtime (spec ${fp.specVersion})`;
