@@ -21,7 +21,9 @@ import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
 import {
   V3_HTTPS_RPC,
   discoverV3Facts,
+  discoverV3LiveFacts,
   loadFactsSnapshot,
+  type FactsBuilder,
   type V3FactsResult,
 } from "../lib/v3facts";
 import type { RpcTransport } from "../lib/chainclient";
@@ -33,11 +35,19 @@ export async function defaultV3Facts(rpc: RpcTransport): Promise<V3FactsResult> 
 }
 
 /**
- * SEAM(facts-builder): the one place LIVE gets its chain-shaped RuntimeFacts. Today it is the recorded snapshot + live metadata
- * (defaultV3Facts). When `factsFromChainInputs` lands in @seam/chain/browser (Quill, bot5/browser-facts), swap this for a step
- * that reads genesis, runtime version, metadata and properties over `rpc` and builds the facts live. Keep the V3FactsResult shape.
+ * LIVE facts step: real RuntimeFacts built in the browser by @seam/chain/browser's factsFromChainInputs from this node's own
+ * reads. The recorded snapshot is loaded only for comparison in the notice. A builder error fails closed (no facts, no host).
+ * The snapshot-based defaultV3Facts above is kept as a labelled fallback for display/tests, not used by default.
  */
-export const liveFactsStep: (rpc: RpcTransport) => Promise<V3FactsResult> = defaultV3Facts;
+export async function liveFactsStep(rpc: RpcTransport): Promise<V3FactsResult> {
+  const [snap, mod] = await Promise.all([
+    loadFactsSnapshot().catch(() => undefined),
+    import("@seam/chain/browser"),
+  ]);
+  return discoverV3LiveFacts(rpc, mod.factsFromChainInputs as unknown as FactsBuilder, {
+    snapshot: snap,
+  });
+}
 import type { Approval, Plan, RuntimeFacts } from "../lib/types";
 import { finalityView } from "../lib/finality";
 import {
@@ -299,9 +309,38 @@ export function V3FactsNotice({ r }: { r: V3FactsResult }) {
       </div>
     );
   const p = r.report;
+  if (p.provenance === "live_chain_inputs")
+    return (
+      <div className="v3facts small" role="status">
+        <Tag tone="ok">V3 facts: built live from this node</Tag>
+        <dl className="kv small">
+          <dt>Node</dt>
+          <dd>
+            {p.specName} spec {p.specVersion}, tx v{p.transactionVersion}, finalized #
+            {p.finalizedBlock ?? "?"}
+          </dd>
+          <dt>Metadata (live)</dt>
+          <dd>
+            {p.metadataBytes} bytes, <code className="wrap">{p.liveMetadataHash}</code>
+          </dd>
+          <dt>Fingerprint (live)</dt>
+          <dd>
+            <code className="wrap">{p.liveFingerprintDigest}</code>
+          </dd>
+          <dt>Recorded snapshot</dt>
+          <dd>
+            {p.snapshotFrom === "none"
+              ? "not loaded (comparison only)"
+              : p.digestMatchesSnapshot
+                ? `matches ${p.snapshotFrom}`
+                : `differs from ${p.snapshotFrom} (comparison only; expected when V3 metadata drifts)`}
+          </dd>
+        </dl>
+      </div>
+    );
   return (
     <div className="v3facts small" role="status">
-      <Tag tone="warn">V3 facts: snapshot + live metadata</Tag>
+      <Tag tone="warn">V3 facts: snapshot + live metadata (fallback)</Tag>
       <dl className="kv small">
         <dt>Node</dt>
         <dd>

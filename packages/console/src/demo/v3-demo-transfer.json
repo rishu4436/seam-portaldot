@@ -31,16 +31,10 @@
   },
   "policy": {
     "version": "seam/policy/v1",
-    "allowedCapabilities": [
-      "Assets.transfer_keep_alive"
-    ],
-    "allowedAssets": [
-      "806707"
-    ],
+    "allowedCapabilities": ["Assets.transfer_keep_alive"],
+    "allowedAssets": ["806707"],
     "allowedContracts": [],
-    "allowedRecipients": [
-      "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
-    ],
+    "allowedRecipients": ["5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"],
     "maxAmountPerAsset": {
       "806707": "10",
       "*": "0"
@@ -48,9 +42,7 @@
     "maxNativeValue": "0",
     "maxFee": "5000000000000",
     "maxSteps": 1,
-    "allowedModes": [
-      "atomic_verified"
-    ],
+    "allowedModes": ["atomic_verified"],
     "requireHumanApproval": true,
     "maxApprovalSeconds": 300,
     "requireSignedDryRun": true,

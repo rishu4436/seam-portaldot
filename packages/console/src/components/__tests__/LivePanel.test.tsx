@@ -102,10 +102,13 @@ function mockRpc() {
     vi.fn(async (_u: string, init: { body: string }) => {
       const b = JSON.parse(init.body) as { id: number; method: string; params: unknown[] };
       calls.push(b.method);
-      return new Response(JSON.stringify({ jsonrpc: "2.0", id: b.id, result: rpc(b.method, b.params) }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ jsonrpc: "2.0", id: b.id, result: rpc(b.method, b.params) }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
     }),
   );
 }
@@ -177,7 +180,9 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     mockExtension(BAD_SIG);
     renderPanel();
     press();
-    await waitFor(() => expect(screen.getByText(/Signed bytes differ from the approved request/)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText(/Signed bytes differ from the approved request/)).toBeTruthy(),
+    );
     expect(screen.getByText(/bad_signature/)).toBeTruthy();
     expect(submitted).toHaveLength(0);
     expect(calls).not.toContain("author_submitExtrinsic");

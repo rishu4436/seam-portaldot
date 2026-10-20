@@ -500,29 +500,31 @@ export default function App() {
                 <span>1 unit of test asset 806707, strict policy</span>
               </button>
             </>
-          ) : real
-              ? TC_SCENARIOS.map((s) => (
-                  <button
-                    key={s.id}
-                    aria-pressed={scenario === s.id}
-                    className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                    onClick={() => reset(s.id)}
-                  >
-                    <b>{s.label}</b>
-                    <span>{s.hint}</span>
-                  </button>
-                ))
-              : SCENARIOS.map((s) => (
-                  <button
-                    key={s.id}
-                    aria-pressed={scenario === s.id}
-                    className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                    onClick={() => reset(s.id)}
-                  >
-                    <b>{s.label}</b>
-                    <span>{s.hint}</span>
-                  </button>
-                ))}
+          ) : real ? (
+            TC_SCENARIOS.map((s) => (
+              <button
+                key={s.id}
+                aria-pressed={scenario === s.id}
+                className={`scenbtn ${scenario === s.id ? "on" : ""}`}
+                onClick={() => reset(s.id)}
+              >
+                <b>{s.label}</b>
+                <span>{s.hint}</span>
+              </button>
+            ))
+          ) : (
+            SCENARIOS.map((s) => (
+              <button
+                key={s.id}
+                aria-pressed={scenario === s.id}
+                className={`scenbtn ${scenario === s.id ? "on" : ""}`}
+                onClick={() => reset(s.id)}
+              >
+                <b>{s.label}</b>
+                <span>{s.hint}</span>
+              </button>
+            ))
+          )}
         </div>
       </aside>
 
