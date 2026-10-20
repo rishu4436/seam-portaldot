@@ -6,6 +6,7 @@ import {
 } from "@seam/compiler";
 import type { NftsRuntime } from "./outcomes.js";
 import { perStepOfBatch } from "./flow.js";
+import { reviveAddressOf, type OriginalAccountRead } from "./deploy-outcomes.js";
 import {
   checkReceipt,
   receiptShapeProblem,
@@ -36,6 +37,12 @@ export interface ReceiptChainReader {
    * transaction version and ss58 prefix must equal the node's. Without it a pinned runtime is not used.
    */
   runtimeFingerprint?(): Promise<RuntimeFingerprint | null>;
+  /**
+   * Read-only `Revive.OriginalAccount(h160)` at block `at` (finalized head when omitted): the AccountId32 the H160 maps
+   * to, or null when it is unmapped. Throws when the value cannot be read or decoded. Used for revive.map_account steps;
+   * without it, or when it throws, such a step is `unknown`, never verified and never failed.
+   */
+  originalAccount?(h160: string, at?: Hex): Promise<Hex | null>;
 }
 
 /** The fields a pinned runtime must share with the live node. Only `metadataHash` (storage-default drift) may differ. */
@@ -297,14 +304,63 @@ export async function verifyReceiptLive(
           events: tx.events,
           ...(stepCall !== undefined ? { callHex: stepCall } : {}),
         };
+        // revive.map_account: the mapping is proven only by a live Revive.OriginalAccount read from the node. A read
+        // supplied by the caller in `effects` is never used here. No reader method, a failing read or an undecodable
+        // value leaves the step unknown.
+        let effect = opts.effects?.[s.actionId];
+        let mapReadMissing: string | undefined;
+        if ((planStep.kind as string) === "revive.map_account") {
+          if (effect?.originalAccount) {
+            const { originalAccount: _ignored, ...rest } = effect;
+            effect = rest;
+          }
+          const h160 = reviveAddressOf(plan.signer.publicKey);
+          if (!h160)
+            mapReadMissing = "the plan's signer is not an AccountId32, so its H160 is not known";
+          else if (!reader.originalAccount)
+            mapReadMissing = "the reader cannot read Revive.OriginalAccount";
+          else {
+            try {
+              const got = await reader.originalAccount(h160, s.block.hash);
+              if (got !== null && (typeof got !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(got)))
+                mapReadMissing = "the Revive.OriginalAccount value could not be decoded";
+              else {
+                const read: OriginalAccountRead = { h160, accountId: got };
+                effect = { ...(effect ?? {}), originalAccount: read };
+              }
+            } catch (e) {
+              mapReadMissing = `the Revive.OriginalAccount read failed (${(e as Error).message})`;
+            }
+          }
+        }
         const again = verifyStep(
           planStep,
           plan.signer.publicKey,
           outcome,
-          opts.effects?.[s.actionId],
+          effect,
           undefined,
           runtime,
         );
+        if (mapReadMissing && again.verification !== "not_verified") {
+          notes.push(
+            `${s.actionId}: ${mapReadMissing}, so the mapping cannot be proven from the chain; it is unknown, not failed.`,
+          );
+          flag();
+          mark("unknown");
+          continue;
+        }
+        if (
+          (planStep.kind as string) === "revive.map_account" &&
+          again.verification === "verified" &&
+          s.verification !== "verified"
+        ) {
+          notes.push(
+            `${s.actionId}: Revive.OriginalAccount now maps to the signer, but the receipt says ${s.verification}, so it is not chain_verified.`,
+          );
+          flag();
+          mark("unknown");
+          continue;
+        }
         const needsRuntime = [
           "nfts.mint",
           "revive.call",
@@ -376,6 +432,22 @@ export async function createChainReader(
     async runtimeFingerprint() {
       return ((facts as { fingerprint?: RuntimeFingerprint } | null)?.fingerprint ??
         null) as RuntimeFingerprint | null;
+    },
+    async originalAccount(h160, at) {
+      // Revive.OriginalAccount: StorageMap<Identity, H160, AccountId32>, so the key is
+      // twox128("Revive") ++ twox128("OriginalAccount") ++ the raw 20 H160 bytes.
+      if (!/^0x[0-9a-fA-F]{40}$/.test(h160)) throw new Error(`not an H160: ${h160}`);
+      const { xxhashAsHex } = await import("@polkadot/util-crypto");
+      const key =
+        xxhashAsHex("Revive", 128) +
+        xxhashAsHex("OriginalAccount", 128).slice(2) +
+        h160.slice(2).toLowerCase();
+      const block = at ?? (await call<string>("chain_getFinalizedHead", []));
+      const v = await call<string | null>("state_getStorage", [key, block]);
+      if (v === null || v === undefined) return null;
+      if (typeof v !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(v))
+        throw new Error("Revive.OriginalAccount value is not a 32-byte AccountId");
+      return v.toLowerCase() as Hex;
     },
     async finalizedNumber() {
       const head = await call<string>("chain_getFinalizedHead", []);
