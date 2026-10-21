@@ -110,7 +110,6 @@ export function planDigest(plan: Plan): Hex {
 }
 
 const isUint = (s: string | undefined): s is string => typeof s === "string" && /^\d+$/.test(s);
-const hex2 = (n: number) => n.toString(16).padStart(2, "0");
 
 function forContract<T>(map: Record<string, T> | undefined, contract: string): T | undefined {
   if (!map) return undefined;
@@ -196,6 +195,8 @@ export function evaluatePolicy({
       block("signer_match", "Blocked: the plan's signer is not the signer named in the Manifest.");
   }
 
+  // Call bytes are NOT checked here: decodedArgs are what this engine reads. The bytes are proven against a fresh
+  // compile of the Manifest by createApproval / checkBeforeSubmit when given manifest + liveFacts (verifyPlan).
   // Runtime: the plan must be for the runtime we see now, and the facts must be self-consistent.
   const factsDigest = fingerprintDigest(facts.fingerprint);
   if (factsDigest !== facts.fingerprintDigest)
@@ -297,17 +298,8 @@ export function evaluatePolicy({
         `Blocked: the step's call index doesn't match ${step.capability} on this runtime.`,
         id,
       );
-    else if (
-      !step.encodedCall ||
-      !step.encodedCall
-        .toLowerCase()
-        .startsWith("0x" + hex2(step.palletIndex!) + hex2(step.callIndex!))
-    ) {
-      block(
-        "call_index",
-        `Blocked: the encoded call doesn't start with ${step.capability}'s index.`,
-        id,
-      );
+    else if (!step.encodedCall) {
+      block("call_index", `Blocked: the step has no encoded call to sign.`, id);
     } else pass("capability", `${step.capability} is observed and allowed`, id);
 
     if (isDeployKind(step.kind as string))

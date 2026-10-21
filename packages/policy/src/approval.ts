@@ -10,6 +10,8 @@ import type {
   SigningEnvelope,
 } from "./types.js";
 import { digest } from "./digest.js";
+import { verifyPlan, computeManifestDigest } from "@seam/compiler/browser";
+import type { Manifest, RuntimeFacts } from "./types.js";
 import { checkRuntimeLock, fingerprintDigest, type LockResult } from "./runtimeLock.js";
 import {
   type Policy,
@@ -57,6 +59,16 @@ export interface ApprovalInput {
   now: Date;
   /** Must be true to approve a plan that has a modeDowngrade (atomic requested, sequential delivered). */
   acknowledgedDowngrade?: boolean;
+  /**
+   * Optional: the Manifest and the live runtime facts. When both are given, the plan is recompiled from the Manifest on
+   * these facts (@seam/compiler verifyPlan) and every call byte must match; facts carried inside the plan are ignored.
+   */
+  manifest?: Manifest;
+  liveFacts?: RuntimeFacts;
+  /** Passed to verifyPlan's compile. Defaults to plan.mode === "atomic_unverified". */
+  allowAtomicUnverified?: boolean;
+  /** createApproval only: refuse unless manifest + liveFacts are given and verifyPlan passes. */
+  requirePlanVerified?: boolean;
 }
 
 const COVERS = [
@@ -105,6 +117,33 @@ function buildBinding(i: Omit<ApprovalInput, "now">, expiresAt: string): Approva
   };
 }
 
+type VerifyResult = ReturnType<typeof verifyPlan>;
+function runVerifyPlan(
+  manifest: Manifest,
+  plan: Plan,
+  liveFacts: RuntimeFacts,
+  allowAtomicUnverified: boolean | undefined,
+  signedCalls?: string[],
+): VerifyResult {
+  try {
+    return verifyPlan(manifest as never, plan as never, liveFacts as never, {
+      allowAtomicUnverified: allowAtomicUnverified ?? plan.mode === "atomic_unverified",
+      ...(signedCalls ? { signedCalls } : {}),
+    });
+  } catch (e) {
+    return {
+      ok: false,
+      issues: [
+        {
+          code: "COMPILE_FAILED",
+          stepIndex: null,
+          message: e instanceof Error ? e.message : String(e),
+        },
+      ],
+    };
+  }
+}
+
 export type ApprovalOutcome = { ok: true; approval: BoundApproval } | { ok: false; reason: string };
 
 /** Creates an approval only for an allowed, fully consistent plan. Expiry is the earlier of the envelope's and the policy's limit. */
@@ -128,6 +167,25 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
     };
   if (planDigest(plan) !== plan.planDigest)
     return { ok: false, reason: "Can't approve: the plan was changed after it was compiled." };
+  if (input.requirePlanVerified && (!input.manifest || !input.liveFacts))
+    return {
+      ok: false,
+      reason:
+        "Can't approve: the Manifest and live runtime facts are needed to check the call bytes.",
+    };
+  if (input.manifest && input.liveFacts) {
+    if (computeManifestDigest(input.manifest as never) !== input.manifestDigest)
+      return {
+        ok: false,
+        reason: "Can't approve: the Manifest doesn't match the approved Manifest digest.",
+      };
+    const vr = runVerifyPlan(input.manifest, plan, input.liveFacts, input.allowAtomicUnverified);
+    if (!vr.ok)
+      return {
+        ok: false,
+        reason: `Can't approve: the plan's call bytes are not what the Manifest compiles to on the live runtime (${vr.issues.map((x) => x.code).join(", ")}).`,
+      };
+  }
   if (policyResult.policyDigest !== policyDigest(policy))
     return {
       ok: false,
@@ -396,6 +454,12 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
    * A result that is not self-consistent (allowed without every rule passing, or for another policy) is ALWAYS blocked.
    */
   requireEvaluatedPolicyResult?: boolean;
+  /**
+   * Live send (real chain): currentBlockNumber, currentAccountNonce, manifest, liveFacts and signedCalls (one per call
+   * of callsToSign(plan)) become REQUIRED; each missing one blocks with its own code. Without manifest + liveFacts,
+   * call bytes are only compared with the plan itself, which an edited plan with a recomputed digest passes.
+   */
+  live?: boolean;
   now: Date;
   store: ApprovalStore;
 }
@@ -403,7 +467,7 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
 export interface SubmitCheck {
   ok: boolean;
   /** Why it was blocked. Empty when ok. */
-  reasons: { code: string; message: string }[];
+  reasons: { code: string; message: string; issues?: unknown[] }[];
   /** Checks that passed, in the order they ran, so recordings can show what was verified. Stable codes. */
   passed: { code: string; detail: string }[];
   /**
@@ -789,6 +853,66 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
         ? "the dry run of the signed transaction(s) succeeded"
         : `the dry run of signed step ${i + 1} succeeded`,
     );
+  }
+
+  // Live mode: everything needed to prove the bytes and the send is current must be present (fail closed).
+  if (input.live) {
+    const need = (missing: boolean, code: string, what: string) => {
+      if (missing)
+        reasons.push({ code, message: `Blocked: a live send needs ${what}, and it wasn't given.` });
+    };
+    need(input.currentBlockNumber === undefined, "live_block_missing", "the current block number");
+    need(
+      input.currentAccountNonce === undefined,
+      "live_nonce_missing",
+      "the signer's current account nonce",
+    );
+    need(!input.manifest, "live_manifest_missing", "the Manifest");
+    need(!input.liveFacts, "live_facts_missing", "the live runtime facts");
+    need(
+      !Array.isArray(input.signedCalls) || input.signedCalls.length !== callsToSign(plan).length,
+      "live_signed_calls_missing",
+      "the signed call bytes, one per call to sign",
+    );
+  }
+  if (input.manifest) {
+    const md = computeManifestDigest(input.manifest as never);
+    if (md !== approval.binding.manifestDigest || md !== input.manifestDigest)
+      reasons.push({
+        code: "manifest_digest_mismatch",
+        message: "Blocked: the Manifest given doesn't match the Manifest digest that was approved.",
+      });
+  }
+  if (input.liveFacts) {
+    if (
+      fingerprintDigest(input.liveFacts.fingerprint) !== fingerprintDigest(input.currentFingerprint)
+    )
+      reasons.push({
+        code: "live_facts_mismatch",
+        message: "Blocked: the live facts are not the runtime the lock was checked against.",
+      });
+  }
+  if (input.manifest && input.liveFacts) {
+    const vr = runVerifyPlan(
+      input.manifest,
+      plan,
+      input.liveFacts,
+      input.allowAtomicUnverified,
+      signed,
+    );
+    if (!vr.ok)
+      reasons.push({
+        code: "plan_bytes_mismatch",
+        message: `Blocked: the plan or signed call bytes are not what the Manifest compiles to on the live runtime (${vr.issues
+          .map((x) => x.code)
+          .join(", ")}).`,
+        issues: vr.issues,
+      });
+    else
+      ok(
+        "plan_bytes_verified",
+        "a fresh compile of the Manifest on the live runtime matches every call byte",
+      );
   }
 
   return { ok: reasons.length === 0, reasons, passed, runtimeLock: lock };

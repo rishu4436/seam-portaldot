@@ -412,9 +412,15 @@ describe("SEAM-017: deny-by-default across every action type", () => {
           ),
         ).toBe(true);
       });
-      it("blocks encoded bytes that do not start with the capability's index", () => {
+      // The pre-sign prefix check was removed (Anchor, P0-02 plan-bytes gate): a prefix match proved little, since an
+      // edited plan keeps the right prefix. Call bytes are now proven byte for byte against a fresh compile of the
+      // Manifest by createApproval / checkBeforeSubmit (verifyPlan), see test/plan-bytes-gate.test.ts.
+      it("does not judge call bytes pre-sign (no prefix check); a step with no bytes still blocks", () => {
         const s = { ...step(), encodedCall: "0xffff00" as Hex };
-        expect(bad(evalWith(s).result, "call_index")).toBe(true);
+        expect(bad(evalWith(s).result, "call_index")).toBe(false);
+        expect(bad(evalWith({ ...step(), encodedCall: undefined }).result, "call_index")).toBe(
+          true,
+        );
       });
       it("blocks an unavailable step and a missing preflight", () => {
         expect(bad(evalWith({ ...step(), status: "unavailable" }).result, "step_available")).toBe(
