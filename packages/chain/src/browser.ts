@@ -81,3 +81,5 @@ export type { Estimate, PreflightResult, PreflightStep } from "./types.js";
 // Signing envelope (the one @seam/policy's gate and approval take) and block time from metadata: same functions as node.
 export { blockTimeFromFacts, buildSigningEnvelope, type SigningEnvelopeInput } from "./envelope.js";
 export type { SigningEnvelope } from "./types.js";
+// Reconcile by tx hash after an uncertain submit: scans blocks fromBlock..toBlock, found / not_found / unknown. Read-only.
+export { lookupTxByHash, type TxLookupByHash, type LookupTxByHashOptions } from "./lookup-core.js";
