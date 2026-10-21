@@ -75,10 +75,29 @@ Run the test with `npm test -w @seam/policy`.
 
 ## Known gaps not fixed here
 
-- **decodedArgs vs encodedCall:** the policy checks `step.decodedArgs`, but the wallet signs `step.encodedCall`. Only the
-  pallet/call index prefix of `encodedCall` is checked. Someone who can edit the plan and recompute its digest could make
-  the decoded recipient look allowed while the bytes pay someone else. Recommended fix: when a manifest is given,
-  recompile it with `@seam/compiler` and require the same plan digest, or decode `encodedCall` and compare it field by field.
-  This needs the compiler owner (Forge) to agree.
-- Mortality and account-nonce checks only run when the caller passes `currentBlockNumber` / `currentAccountNonce`.
+- ~~decodedArgs vs encodedCall~~ **closed** by the plan-bytes gate (below) when `manifest` + `liveFacts` are given.
+- Outside live mode, mortality and account-nonce checks only run when the caller passes `currentBlockNumber` / `currentAccountNonce`.
 - Signature validity is the trusted decoder's job (`@seam/chain`). Here it is tested at the gate with a stub decoder.
+
+## Plan-bytes gate and live mode (`bot3/plan-bytes-gate`)
+
+The policy engine reads `decodedArgs`, but the wallet signs `encodedCall`. The old pre-sign check compared only the
+pallet/call index prefix of `encodedCall`. It has been **removed**, because an edited plan keeps the right prefix. In its place:
+
+- `createApproval({ ..., manifest, liveFacts })` recompiles the Manifest on the live facts (`verifyPlan` from
+  `@seam/compiler/browser`) and refuses unless every step body and call byte matches, and the Manifest digest matches.
+  `requirePlanVerified: true` refuses when either input is missing.
+- `checkBeforeSubmit` does the same check, and also checks the signed calls, whenever `manifest` + `liveFacts` are given
+  (`plan_bytes_mismatch`, with the compiler's `issues`). It also checks `manifest_digest_mismatch`, and `live_facts_mismatch`
+  when `liveFacts` isn't the runtime that the lock compared (`currentFingerprint`). Facts carried inside a plan are never used.
+- `live: true` makes `currentBlockNumber`, `currentAccountNonce`, `manifest`, `liveFacts` and `signedCalls` (one per
+  `callsToSign(plan)` entry) required. Each missing one blocks: `live_block_missing`, `live_nonce_missing`,
+  `live_manifest_missing`, `live_facts_missing`, `live_signed_calls_missing`.
+- **Non-live mode (e.g. SDK replay) without manifest + liveFacts: call bytes are unchecked against the Manifest.** The
+  signed calls are still compared with the plan's own `callsToSign`, but a plan edited with a recomputed digest passes that.
+  Use live mode for real sends.
+- `gatePolicy` / `evaluatePolicy` don't run `verifyPlan`. The recorded console demo plan
+  (`console/src/demo/v3-demo-transfer.json`) no longer matches a fresh compile body-for-body (`PLAN_BODY_MISMATCH`), so the
+  check is placed at approval and submit.
+
+Tests: `packages/policy/test/plan-bytes-gate.test.ts`.
