@@ -268,6 +268,9 @@ export class Seam {
         preflight: p.preflight,
         policy: p.policy,
         policyResult: p.policyResult,
+        // Lets the gate re-run evaluatePolicy and reject a policyResult it did not produce (policy 40fa358). Strict mode
+        // (requireEvaluatedPolicyResult) is left off by default; the sdk suite, incl. the recorded V3 replay, passes with it on.
+        policyEvaluation: { facts: p.facts },
         approval: p.approval,
         preparedFingerprint: p.facts.fingerprint,
         currentFingerprint: await this.chain.readFingerprint(),
