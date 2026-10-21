@@ -17,5 +17,6 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run build
+      - run: npm run docs:quickstart-check
       - run: npm test
       - run: npm run smoke:pack
