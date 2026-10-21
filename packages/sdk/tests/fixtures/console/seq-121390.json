@@ -1,0 +1,383 @@
+{
+  "receiptKind": "seam/console-live-receipt/v1",
+  "mode": "sequential",
+  "result": "verified",
+  "resultBasis": "overallResult (@seam/policy/browser) over the per-step verifyStep verdicts: verified only if every step is finalized and verified, partial if any step did not run; not chain_verified",
+  "approvalHash": "0x8a933ad63a8f7f335c8b4a36281445140f180957c98c804b174a403533a990b5",
+  "approvalInputs": {
+    "manifestDigest": "0xc12da6a1d50d399433bd48eb97bc2488ee0bbda0e190e0a4aa6119c4ca1f36ab",
+    "plan": {
+      "planVersion": 1,
+      "manifestDigest": "0xc12da6a1d50d399433bd48eb97bc2488ee0bbda0e190e0a4aa6119c4ca1f36ab",
+      "fingerprintDigest": "0x60f0e387e9cf0a4bbeb9f3bc56d77d53eae023d5c31685d620fd0ca3e0f32303",
+      "signer": {
+        "type": "ss58",
+        "value": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+        "publicKey": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b"
+      },
+      "mode": "sequential",
+      "modeReason": "The manifest asks for sequential execution.",
+      "steps": [
+        {
+          "actionId": "step1",
+          "kind": "assets.transfer",
+          "capability": "Assets.transfer_keep_alive",
+          "palletIndex": 39,
+          "callIndex": 9,
+          "decodedArgs": {
+            "assetId": "806707",
+            "amount": "1",
+            "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+            "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+          },
+          "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+          "status": "ok"
+        },
+        {
+          "actionId": "step2",
+          "kind": "assets.transfer",
+          "capability": "Assets.transfer_keep_alive",
+          "palletIndex": 39,
+          "callIndex": 9,
+          "decodedArgs": {
+            "assetId": "806707",
+            "amount": "1",
+            "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+            "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+          },
+          "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+          "status": "ok"
+        }
+      ],
+      "planDigest": "0xcc65466679d0d2f98f7b3b06f9e5f7ac55b1cda92bdd33309a3f9a7f1ea41146"
+    },
+    "envelope": {
+      "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "nonce": 4,
+      "mortalityBlocks": 64,
+      "checkpoint": {
+        "number": 121375,
+        "hash": "0x67e18d65d90baf4046e74494e0a2e6dd5e6fc90a006a5629748ee4537f11b160"
+      },
+      "expiresAt": "2026-10-20T19:27:24.870Z"
+    },
+    "preflight": {
+      "steps": [
+        {
+          "actionId": "step1",
+          "weight": {
+            "value": "1037211000"
+          },
+          "fee": {
+            "value": "1470873901887"
+          },
+          "storageDeposit": {
+            "unknown": true
+          },
+          "proofSize": {
+            "value": "18392"
+          },
+          "dryRun": "unknown",
+          "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime; simulation coverage: asset_existence_check (only that the asset exists; not balances, permissions or state changed by other steps)"
+        },
+        {
+          "actionId": "step2",
+          "weight": {
+            "value": "1037211000"
+          },
+          "fee": {
+            "value": "1470873901887"
+          },
+          "storageDeposit": {
+            "unknown": true
+          },
+          "proofSize": {
+            "value": "18392"
+          },
+          "dryRun": "unknown",
+          "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime; simulation coverage: asset_existence_check (only that the asset exists; not balances, permissions or state changed by other steps)"
+        }
+      ],
+      "totalFee": {
+        "value": "2941747803774"
+      }
+    },
+    "policy": {
+      "version": "seam/policy/v1",
+      "allowedCapabilities": [
+        "Assets.transfer_keep_alive"
+      ],
+      "allowedAssets": [
+        "806707"
+      ],
+      "allowedContracts": [],
+      "allowedRecipients": [
+        "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+      ],
+      "maxAmountPerAsset": {
+        "806707": "1",
+        "*": "0"
+      },
+      "maxNativeValue": "0",
+      "maxFee": "3677184773860",
+      "maxSteps": 2,
+      "allowedModes": [
+        "sequential"
+      ],
+      "requireHumanApproval": true,
+      "maxApprovalSeconds": 300,
+      "requireSignedDryRun": true,
+      "allowUnknown": {
+        "storageDeposit": true,
+        "dryRun": true
+      }
+    },
+    "policyResult": {
+      "allowed": true,
+      "rules": [
+        {
+          "rule": "plan_integrity",
+          "outcome": "pass",
+          "reason": "plan digest matches its contents"
+        },
+        {
+          "rule": "runtime_match",
+          "outcome": "pass",
+          "reason": "plan was compiled against the current runtime"
+        },
+        {
+          "rule": "mode_allowed",
+          "outcome": "pass",
+          "reason": "execution mode sequential is allowed"
+        },
+        {
+          "rule": "capability",
+          "outcome": "pass",
+          "reason": "Assets.transfer_keep_alive is observed and allowed",
+          "actionId": "step1"
+        },
+        {
+          "rule": "asset_allowed",
+          "outcome": "pass",
+          "reason": "asset 806707 is allowed",
+          "actionId": "step1"
+        },
+        {
+          "rule": "recipient_allowed",
+          "outcome": "pass",
+          "reason": "recipient is allowed",
+          "actionId": "step1"
+        },
+        {
+          "rule": "amount_limit",
+          "outcome": "pass",
+          "reason": "amount 1 is within the limit of 1",
+          "actionId": "step1"
+        },
+        {
+          "rule": "capability",
+          "outcome": "pass",
+          "reason": "Assets.transfer_keep_alive is observed and allowed",
+          "actionId": "step2"
+        },
+        {
+          "rule": "asset_allowed",
+          "outcome": "pass",
+          "reason": "asset 806707 is allowed",
+          "actionId": "step2"
+        },
+        {
+          "rule": "recipient_allowed",
+          "outcome": "pass",
+          "reason": "recipient is allowed",
+          "actionId": "step2"
+        },
+        {
+          "rule": "amount_limit",
+          "outcome": "pass",
+          "reason": "amount 1 is within the limit of 1",
+          "actionId": "step2"
+        },
+        {
+          "rule": "weight_limit",
+          "outcome": "pass",
+          "reason": "weight 1037211000 is within limits",
+          "actionId": "step1"
+        },
+        {
+          "rule": "storage_limit",
+          "outcome": "pass",
+          "reason": "storage deposit is unknown (allowed by policy, weaker proof)",
+          "actionId": "step1",
+          "weak": true
+        },
+        {
+          "rule": "dry_run",
+          "outcome": "pass",
+          "reason": "The dry run result is unknown. (allowed by policy, weaker proof)",
+          "actionId": "step1",
+          "weak": true
+        },
+        {
+          "rule": "weight_limit",
+          "outcome": "pass",
+          "reason": "weight 1037211000 is within limits",
+          "actionId": "step2"
+        },
+        {
+          "rule": "storage_limit",
+          "outcome": "pass",
+          "reason": "storage deposit is unknown (allowed by policy, weaker proof)",
+          "actionId": "step2",
+          "weak": true
+        },
+        {
+          "rule": "dry_run",
+          "outcome": "pass",
+          "reason": "The dry run result is unknown. (allowed by policy, weaker proof)",
+          "actionId": "step2",
+          "weak": true
+        },
+        {
+          "rule": "fee_limit",
+          "outcome": "pass",
+          "reason": "total fee 2941747803774 is within limits"
+        }
+      ],
+      "policyDigest": "0xa5ee07ad2a554c303eeee782e5a1e84bbd808457c44cdde5a065d502cefd35bf",
+      "weakProof": [
+        "storage_limit:step1",
+        "dry_run:step1",
+        "storage_limit:step2",
+        "dry_run:step2"
+      ]
+    },
+    "fingerprint": {
+      "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "specName": "portaldot-v3",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataHash": "0x66e056e6c2589f860f954f2ebf8854354f0e5fa5d96ff5f4b30e8a3cfe30addb",
+      "ss58Prefix": 42,
+      "tokenSymbol": "tPOT",
+      "tokenDecimals": 14,
+      "typesBundleHash": null
+    },
+    "now": "2026-10-20T19:21:06.870Z"
+  },
+  "planDigest": "0xcc65466679d0d2f98f7b3b06f9e5f7ac55b1cda92bdd33309a3f9a7f1ea41146",
+  "manifestDigest": "0xc12da6a1d50d399433bd48eb97bc2488ee0bbda0e190e0a4aa6119c4ca1f36ab",
+  "fingerprintDigest": "0x60f0e387e9cf0a4bbeb9f3bc56d77d53eae023d5c31685d620fd0ca3e0f32303",
+  "plan": {
+    "planVersion": 1,
+    "manifestDigest": "0xc12da6a1d50d399433bd48eb97bc2488ee0bbda0e190e0a4aa6119c4ca1f36ab",
+    "fingerprintDigest": "0x60f0e387e9cf0a4bbeb9f3bc56d77d53eae023d5c31685d620fd0ca3e0f32303",
+    "signer": {
+      "type": "ss58",
+      "value": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "publicKey": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b"
+    },
+    "mode": "sequential",
+    "modeReason": "The manifest asks for sequential execution.",
+    "steps": [
+      {
+        "actionId": "step1",
+        "kind": "assets.transfer",
+        "capability": "Assets.transfer_keep_alive",
+        "palletIndex": 39,
+        "callIndex": 9,
+        "decodedArgs": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+          "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+        },
+        "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "status": "ok"
+      },
+      {
+        "actionId": "step2",
+        "kind": "assets.transfer",
+        "capability": "Assets.transfer_keep_alive",
+        "palletIndex": 39,
+        "callIndex": 9,
+        "decodedArgs": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+          "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+        },
+        "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "status": "ok"
+      }
+    ],
+    "planDigest": "0xcc65466679d0d2f98f7b3b06f9e5f7ac55b1cda92bdd33309a3f9a7f1ea41146"
+  },
+  "steps": [
+    {
+      "index": 0,
+      "actionId": "step1",
+      "sent": true,
+      "sendIndex": 0,
+      "status": "finalized",
+      "txHash": "0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1",
+      "block": {
+        "number": 121390,
+        "hash": "0xc151311fd7ed56735c715cd815277e790b0434a77ba64216e444518b5a79948f"
+      },
+      "extrinsicIndex": 1,
+      "fee": "1470873880829",
+      "event": {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "assetId": "806707",
+        "from": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "to": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+        "amount": "1"
+      },
+      "verification": "verified",
+      "reason": "Transfer confirmed: asset, amount and account all match the plan.",
+      "runtimeLock": {
+        "ok": true,
+        "changed": [],
+        "reason": "runtime unchanged since the plan was prepared",
+        "lockBasis": "raw",
+        "code": "runtime_unchanged"
+      }
+    },
+    {
+      "index": 1,
+      "actionId": "step2",
+      "sent": true,
+      "sendIndex": 1,
+      "status": "finalized",
+      "txHash": "0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926",
+      "block": {
+        "number": 121394,
+        "hash": "0xe536bf47c351882b4b39689f0d941ce38de8982e4506ad9880209d0e4e6dd036"
+      },
+      "extrinsicIndex": 1,
+      "fee": "1470873873177",
+      "event": {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "assetId": "806707",
+        "from": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "to": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+        "amount": "1"
+      },
+      "verification": "verified",
+      "reason": "Transfer confirmed: asset, amount and account all match the plan.",
+      "runtimeLock": {
+        "ok": true,
+        "changed": [],
+        "reason": "runtime unchanged since the plan was prepared",
+        "lockBasis": "raw",
+        "code": "runtime_unchanged"
+      }
+    }
+  ],
+  "partialRun": false,
+  "stoppedAt": null,
+  "stopReason": null
+}

@@ -9,6 +9,12 @@ import { receiptIntegrity, receiptShapeProblem, type Receipt } from "./receipt.j
 import { classifyError, classifyReceipt, EXIT, SeamCode } from "./codes.js";
 import { diffRuntimes, explainDrift } from "./drift.js";
 import { createChainReader, verifyReceiptLive } from "./verify-live.js";
+import {
+  explainConsoleVerification,
+  isConsoleReceipt,
+  verifyConsoleReceiptLive,
+  verifyConsoleReceiptOffline,
+} from "./console-receipt.js";
 import { explainManifestIssues, explainPlan, explainPolicy, explainReceipt } from "./explain.js";
 import { factsFromSnapshot } from "./offline.js";
 import { parseAbiFlags, parseRuntimeFlag, parseTokenFlag, pickReceipt } from "./cliargs.js";
@@ -211,7 +217,39 @@ async function main() {
         "--runtime",
       ])[1];
       if (!rf) throw new Error("missing receipt file");
-      const picked = pickReceipt(read(rf), rf);
+      const raw = read(rf);
+      if (isConsoleReceipt(raw)) {
+        // A console receipt (single-step or sequential): its own checks, never weaker than for SDK receipts.
+        const ep = flag("--endpoint");
+        const v = ep
+          ? await verifyConsoleReceiptLive(raw, await createChainReader(ep, await loadFacts()))
+          : verifyConsoleReceiptOffline(raw);
+        const code =
+          v.status === "failed"
+            ? ep
+              ? SeamCode.ChainVerifyFailed
+              : SeamCode.IntegrityFailed
+            : v.status === "unknown"
+              ? SeamCode.ChainVerifyUnknown
+              : v.status === "chain_verified"
+                ? SeamCode.ChainVerified
+                : SeamCode.IntegrityChecked;
+        const claimed =
+          v.claimedResult === "verified"
+            ? SeamCode.Verified
+            : v.claimedResult === "partial"
+              ? SeamCode.Partial
+              : SeamCode.NotVerified;
+        const head = `Receipt status: ${v.status}${ep ? ` (live, read from ${ep})` : " (offline: the file is self-consistent; this is not on-chain proof, use --endpoint)"}.`;
+        out(
+          `${head}\n${explainConsoleVerification(v)}`,
+          { status: v.status, consoleReceipt: v, outcome: { code: claimed } },
+          code,
+        );
+        // Checks passed only says the receipt is consistent (or matches the chain); its own claimed outcome decides the exit code.
+        process.exit(EXIT[code] !== 0 ? EXIT[code] : EXIT[claimed]);
+      }
+      const picked = pickReceipt(raw, rf);
       const r = picked.receipt as Receipt;
       const source = picked.field
         ? `- note: ${rf} is a run record; checking its "${picked.field}".`
