@@ -11,6 +11,12 @@ Run types:
 
 **Verification** names an independent read-only verification file (`*verification.json`) that lists the hash, with its verdict. `none` means the hash appears only in run records written by the run itself; that is not independent verification. Nothing on V3 counts as V3-verified without a verification file. No hash here is a mainnet transaction.
 
+Pending merge (not on this branch, not counted below):
+
+- `evidence/testnet-v3/recorded-replay-102671-1792553452393.{json,md}`: #102671 atomic batch_all: recorded run, replayed read-only. Pending merge (7dfca89 (bot4/recorded-replay)).
+- `evidence/testnet-v3/recorded-replay-102665-1792553452393.{json,md}`: #102665 rollback probe (ExtrinsicFailed assets.BalanceLow, no inner events): recorded run, replayed read-only. Pending merge (7dfca89 (bot4/recorded-replay)).
+- `evidence/testnet-v3/dryrun-capability-*`: V3 system_dryRun capability on signed bytes. Pending merge (33fcca7 (bot4/browser-dryrun)).
+
 Totals: 87 hashes; 57 devnode (local, recorded); 4 not sent (signed dry run only); 26 live (V3, sent; recorded).
 
 | #   | tx hash                                                              | block   | network                                           | what                                                                        | run type                       | verification (verdict)                                                 | evidence files                                                                                                                                                                                   |

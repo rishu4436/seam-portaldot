@@ -1,7 +1,22 @@
 # Manifest Builder
 
-How the console's Manifest Builder works on `main` at `dbe8e3b`, and the browser-safe APIs it is meant to sit on.
-Everything below is read from the code and tests at that commit. Parts that are **not wired yet** are listed at the end.
+How the console's Manifest Builder works, first written against `main` at `dbe8e3b`, with the section below updated
+for `main` at `8cf10d0`. Parts that were **not wired** at `dbe8e3b` are listed at the end with their current state.
+
+## Update for `8cf10d0`
+
+- **Kind availability with a cause** (Forge `8cf10d0`): `supportedKinds(facts)` decides each of the 7 kinds from the live
+  runtime's own metadata only. An unsupported kind always carries `cause` (`KindReasonCode`): `NO_OBSERVED_V3_METADATA`,
+  `V3_ARG_SHAPE_MISMATCH`, `CAPABILITY_NOT_OBSERVED`, `CAPABILITY_UNKNOWN`, `CAPABILITY_NO_INDEX`,
+  `CAPABILITY_ORIGIN_MISMATCH`, `UNFILLABLE_CALL_ARGS` or `NO_ENCODER`, plus a plain `reason`. `reasonCode` is still set
+  only for the two step-level codes `compile()` also uses. On the real V3 testnet (spec 3002) all 7 kinds are supported
+  (`evidence/testnet-v3/capabilities-1792508589179.json`). The console's `actionSupport` reads `supportedKinds`.
+- **Manifest JSON round-trip** (Forge `8cf10d0`): `serializeManifest(manifest)` writes strict canonical JSON and
+  `parseManifest(text)` reads it back (`packages/compiler/src/manifest-io.ts`, also in `@seam/compiler/browser`); tests in
+  `compiler/tests/manifest-io.test.ts` check that a round trip keeps the Manifest digest. The console's import still uses
+  its own `parseManifestJson` (`console/src/lib/manifestbuilder.ts`).
+- **Wired since `dbe8e3b`:** the builder compiles with `@seam/compiler/browser`, a real browser preflight feeds the policy
+  gate, and builder plans reach LIVE signing (see [BUILD_STATE.md](BUILD_STATE.md)).
 
 ## Console flow (`packages/console/src/components/ManifestBuilder.tsx`, Pixel `39b2bf6`)
 
@@ -46,7 +61,7 @@ checkManifest(manifest, facts, options?): ManifestCheck   // never throws a Seam
 ```
 
 - `KindAvailability` is `{ kind, capability, supported: true, palletIndex, callIndex }` or
-  `{ kind, capability, supported: false, reason, reasonCode? }`.
+  `{ kind, capability, supported: false, reason, reasonCode?, cause }` (`cause` since `8cf10d0`).
 - `ArgFieldType` is one of `amount`, `id`, `accountAddress`, `contractAddress`, `hexBytes`, `weight`, `salt`, `json`.
   `argFields` is derived from the compiler's own `ARG_SCHEMA`, required fields first.
 - `ManifestCheck` is `{ ok, issues: CompileIssue[], unavailable: { step, actionId, reason, reasonCode? }[], plan? }`.
@@ -117,7 +132,7 @@ The call bytes equal the committed demo plan, but the plan digest does not: the 
 `metadataHash` than the facts the demo plan was compiled from, and the digest binds the fingerprint. The layout hash is
 the same (layout hash v2 blanks `Revive.EthBlockBuilderIR`).
 
-## Not wired yet on `dbe8e3b`
+## Not wired yet on `dbe8e3b` (historical; all four are wired on `7a551e3`, see the update above)
 
 - **Compiler in the console.** No `compile` prop is passed, so the builder does not compile. It also does not use
   `argFields`, `checkManifest`, `supportedKinds` or `readLiveCapabilities` yet; it uses its own `FORM_FIELDS` and
