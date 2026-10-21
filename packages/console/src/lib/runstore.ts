@@ -74,8 +74,8 @@ export interface KV {
 
 /**
  * Tx-hash lookup for reconciliation: Chainsmith's lookupTxByHash(rpc, { txHash, fromBlock, toBlock?, maxBlocks? })
- * from @seam/chain/browser, bound to an RPC. TODO(Chainsmith): wire it in the app once it is on main; until then no
- * lookup is wired and reconciliation reports "reconcile unavailable". Nothing is faked.
+ * from @seam/chain/browser, bound to an RPC (chainTxLookup). Run only when the user asks to reconcile (the LIVE panel
+ * contacts nothing on its own). Nothing is faked.
  * not_found means "not seen in that range" only: never proof the tx didn't land, so the step stays uncertain and is
  * never re-sent.
  */
@@ -333,4 +333,22 @@ export function browserKV(): KV | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The real reconcile lookup: @seam/chain/browser lookupTxByHash over the given RPC, from the era birth block (the
+ * envelope checkpoint) recorded with the run. Without a recorded birth block it answers unknown; it never guesses one.
+ */
+export function chainTxLookup(
+  send: (method: string, params: unknown[]) => Promise<unknown>,
+): TxLookup {
+  return async (q) => {
+    if (q.fromBlock === undefined)
+      return { status: "unknown", reason: "no era birth block was recorded for this run" };
+    const { lookupTxByHash } = await import("@seam/chain/browser");
+    return (await lookupTxByHash(send as never, {
+      txHash: q.txHash as `0x${string}`,
+      fromBlock: q.fromBlock,
+    })) as Awaited<ReturnType<TxLookup>>;
+  };
 }
