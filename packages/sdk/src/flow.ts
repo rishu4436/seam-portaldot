@@ -176,8 +176,18 @@ export class Seam {
     policyResult: PolicyResult;
     facts: RuntimeFacts;
     now?: Date;
+    /**
+     * Optional. When given, createApproval recompiles it on `liveFacts` (default: `facts`, never facts carried in the
+     * plan) with @seam/compiler verifyPlan and refuses unless every call byte matches (plan-bytes binding).
+     */
+    manifest?: Manifest;
+    liveFacts?: RuntimeFacts;
+    /** Refuse unless `manifest` is given and the bytes verify. Use for genuinely live flows. */
+    requirePlanVerified?: boolean;
   }) {
     return createApproval({
+      ...(p.manifest ? { manifest: p.manifest, liveFacts: p.liveFacts ?? p.facts } : {}),
+      ...(p.requirePlanVerified ? { requirePlanVerified: true } : {}),
       manifestDigest: p.plan.manifestDigest,
       plan: p.plan,
       envelope: p.envelope,
@@ -216,6 +226,23 @@ export class Seam {
      */
     verdicts?: Record<string, OutcomeVerdict>;
     onStep?: (e: StepEvent) => void;
+    /**
+     * Optional plan-bytes binding (policy 4dd5e1a). When given, every gate check recompiles the Manifest on
+     * `liveFacts` (default: `facts`, the facts the caller discovered, never facts carried in the plan) and blocks with
+     * plan_bytes_mismatch unless the plan and the signed call bytes match exactly. `liveFacts` must be the runtime the
+     * lock reads (readFingerprint), else live_facts_mismatch. Omitted (e.g. recorded-JSON replay): bytes are not
+     * checked against a Manifest.
+     */
+    manifest?: Manifest;
+    liveFacts?: RuntimeFacts;
+    /**
+     * Genuinely live send: turns on checkBeforeSubmit live mode, where the Manifest, live facts, signed calls, current
+     * block and account nonce are all required (each missing one blocks). Read fresh before every gate check.
+     */
+    live?: {
+      currentBlockNumber: () => number | Promise<number>;
+      currentAccountNonce: () => number | Promise<number>;
+    };
   }): Promise<RunResult> {
     const now = p.now ?? (() => new Date());
     const calls = callsToSign(p.plan).filter((c): c is Hex => !!c);
@@ -281,6 +308,14 @@ export class Seam {
         signedDryRun,
         sendIndex,
         previousSteps,
+        ...(p.manifest ? { manifest: p.manifest, liveFacts: p.liveFacts ?? p.facts } : {}),
+        ...(p.live
+          ? {
+              live: true,
+              currentBlockNumber: await p.live.currentBlockNumber(),
+              currentAccountNonce: await p.live.currentAccountNonce(),
+            }
+          : {}),
         now: now(),
         store: this.store,
       });
