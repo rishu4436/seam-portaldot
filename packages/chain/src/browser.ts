@@ -83,3 +83,17 @@ export { blockTimeFromFacts, buildSigningEnvelope, type SigningEnvelopeInput } f
 export type { SigningEnvelope } from "./types.js";
 // Reconcile by tx hash after an uncertain submit: scans blocks fromBlock..toBlock, found / not_found / unknown. Read-only.
 export { lookupTxByHash, type TxLookupByHash, type LookupTxByHashOptions } from "./lookup-core.js";
+// Wallet events: watch an injected extension for disconnect, account switch or wrong network before signing.
+export {
+  watchSigner,
+  publicKeyOf,
+  sameSigner,
+  SignerNotReadyError,
+  type SignerState,
+  type SignerStatus,
+  type SignerWatch,
+  type WatchSignerOptions,
+  type InjectedAccountLike,
+  type InjectedExtensionLike,
+  type ExtensionSource,
+} from "./wallet-events.js";
