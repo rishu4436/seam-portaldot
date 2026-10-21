@@ -80,3 +80,17 @@ export type { Estimate, PreflightResult, PreflightStep } from "./types.js";
 // Signing envelope (the one @seam/policy's gate and approval take) and block time from metadata: same functions as node.
 export { blockTimeFromFacts, buildSigningEnvelope, type SigningEnvelopeInput } from "./envelope.js";
 export type { SigningEnvelope } from "./types.js";
+// Wallet events: watch an injected extension for disconnect, account switch or wrong network before signing.
+export {
+  watchSigner,
+  publicKeyOf,
+  sameSigner,
+  SignerNotReadyError,
+  type SignerState,
+  type SignerStatus,
+  type SignerWatch,
+  type WatchSignerOptions,
+  type InjectedAccountLike,
+  type InjectedExtensionLike,
+  type ExtensionSource,
+} from "./wallet-events.js";
