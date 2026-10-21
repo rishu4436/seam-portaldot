@@ -247,12 +247,12 @@ Open http://localhost:5173 and pick **LIVE V3** in the mode switch.
 
 ## 8. Honest status and close (0:40)
 
-Say: "On the V3 testnet we've verified signing, dry runs and fees, Assets, Nfts, sequential and atomic SEAM plans, `batch_all` rollback, one EVM contract deploy and a SEAM-planned `revive.call`, 18 finalized transactions in all. Not verified on V3 yet: a `revive.call` effect without an emitted event (that stays unknown), the contract deposit refund (not possible on this runtime, EIP-6780), a deploy through policy, a fresh account mapping, ink!/PolkaVM, cross-VM, and a real browser-extension signature. Everything is in `evidence/testnet-v3`, and the table in the README says the same."
+Say: "On the V3 testnet we've verified signing, signed dry runs at the gate, and fees, Assets, Nfts, sequential and atomic SEAM plans, `batch_all` rollback, one EVM contract deploy and a SEAM-planned `revive.call`, 18 finalized transactions in the funded run, plus later console runs signed with the polkadot.js extension, including a 2-step sequential plan at blocks 121390 and 121394, verified independently. Not verified on V3 yet: a `revive.call` effect without an emitted event (that stays unknown), the contract deposit refund (not possible on this runtime, EIP-6780), a deploy through policy, a fresh account mapping, ink!/PolkaVM, and cross-VM atomicity. Everything is in `evidence/testnet-v3`, and the table in the README says the same."
 
 ## Facts to have ready if asked
 
 - Chain: `wss://test-node-v3.portaldot.dev`, `portaldot-v3` spec 3002, tx version 2, token tPOT. A test network, not mainnet. Mainnet was only ever read (snapshot at block 2,721,455).
-- Signer: a disposable test wallet whose keystore is outside the repo. All signatures came from a local keystore signer, **not** a browser extension.
-- The deploy (`0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2`, #102843) was signed through SEAM's signing path and a signed dry run, but it is a setup step **outside** policy: the compiler has no instantiate action.
+- Signer of the 18-tx funded run: a disposable test wallet whose keystore is outside the repo, signing through a local keystore signer. Later runs (#118310, #119634, #119996, #120936, #121390/#121394) came from the seam-demo account through the polkadot.js extension (team report; the verification files prove the chain record, not which signer software was used).
+- The deploy (`0xad39bce1a24072a76c4164b35828b1af8a508b1b6ebb107c96fe0515d33aacb2`, #102843) was signed through SEAM's signing path and a signed dry run, but it is a setup step **outside** policy. (The compiler has since gained a policy-checked `revive.instantiate_with_code` kind; no deploy through it has run on V3.)
 - `Revive.map_account` (`0x7577717d1dba2f0d4148e8a023e76e997d697b736a6f1f0817fa6b846b0b1812`, #102233) dispatched, but the account was already auto-mapped, so it is **not** a fresh mapping.
 - Throwaway local dev chain proof: `npm run test:e2e` (~15 s, needs network the first time to download the node binary) runs sequential, rollback and atomic flows end to end. Show the result, don't run it inside the 5 minutes.

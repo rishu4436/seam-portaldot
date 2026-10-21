@@ -1,33 +1,42 @@
 flowchart TB
-  M["Manifest<br/>(JSON, deterministic digest)<br/><i>sdk: parseManifest</i>"]
-  D["Runtime discovery<br/>(live node or snapshot)<br/><i>chain: discover</i>"]
-  F["Fingerprint + lock<br/>(runtime must not change)<br/><i>chain / policy: checkRuntimeLock</i>"]
-  C{"Compiler<br/><i>compiler: compile</i>"}
-  A1["atomic_verified<br/>batch_all, rollback proven"]
-  A2["atomic_unverified<br/>opt-in only, default policy refuses"]
-  A3["sequential<br/>one tx per step (default)"]
-  A4["unavailable<br/>nothing can run"]
-  P["Preflight<br/>fees, weight, dry run<br/><i>chain: preflight</i>"]
-  PO["Policy + approval<br/>allowed messages, pinned ABI hashes,<br/>approval hash<br/><i>policy: evaluatePolicy, createApproval</i>"]
-  W["Wallet signing<br/>external signer / extension<br/>SEAM never holds keys<br/><i>chain: buildSigningRequests</i>"]
-  G["Per-step gate<br/>checkBeforeSubmit<br/><i>policy</i>"]
-  S["Submit + finalization<br/><i>chain: submitAndWatch</i>"]
-  V["Verification<br/>events must match the plan<br/><i>sdk: buildReceipt</i>"]
-  R["Execution Receipt<br/>verified / partial / not_verified<br/><i>sdk: seam verify</i>"]
-  CON["Console (React + Vite)<br/>replays recorded runs, no live node"]
-  EV[("evidence/devnode<br/>local test chain recordings")]
-  SETUP["Contract deploy<br/>UNCHECKED SETUP STEP<br/>outside the plan, not policy-evaluated"]
+  subgraph PKG["Packages (import direction: compiler <- policy <- chain <- sdk; console uses the */browser entries)"]
+    direction LR
+    PC["@seam/compiler<br/>compile, supportedKinds,<br/>computePlanDigest, rebindPlan"]
+    PP["@seam/policy (+ /browser)<br/>evaluatePolicy, assertPolicyAllows,<br/>createApproval, checkRuntimeLock,<br/>checkBeforeSubmit"]
+    PH["@seam/chain (+ /browser)<br/>discover, preflight, buildSigningRequests,<br/>signedExtrinsicDecoder, submitAndWatch"]
+    PS["@seam/sdk (+ /browser) and seam CLI<br/>parseManifest, Seam.execute, buildReceipt,<br/>verifyStep, seam verify"]
+    PU["packages/console<br/>React + Vite, LIVE V3 / recorded / offline"]
+    PP --> PC
+    PH --> PC
+    PS --> PC
+    PS --> PP
+    PS -. "optional, for --endpoint" .-> PH
+    PU --> PC
+    PU --> PP
+    PU --> PH
+    PU --> PS
+  end
 
-  M --> D --> F --> C
-  C --> A1 & A2 & A3 & A4
-  A1 & A2 & A3 --> P --> PO --> W --> G --> S --> V --> R
-  A4 -. "stop, reason shown" .-> R
-  G -. "blocked: no send" .-> R
-  SETUP -.-> S
-  EV --> CON
-  R -. "recorded into" .-> EV
+  M["Manifest (JSON, manifestDigest)<br/><i>sdk parseManifest / console builder</i>"]
+  D["Runtime facts + fingerprint<br/>live node (read-only) or snapshot<br/><i>chain discover / factsFromChainInputs</i>"]
+  C{"compile<br/><i>@seam/compiler</i>"}
+  PL["Plan + planDigest<br/>atomic_verified / atomic_unverified /<br/>sequential / unavailable"]
+  P["Preflight<br/>fees (payment_queryInfo), asset balance + minBalance,<br/>pre-sign dry run (may be unknown = weaker proof)<br/><i>@seam/chain preflight</i>"]
+  PO["Policy gate + approval<br/>allow-lists, caps, modes, expiry;<br/>approvalHash binds plan, policy, preflight, envelope<br/><i>@seam/policy assertPolicyAllows, createApproval</i>"]
+  W["Wallet signing<br/>polkadot.js extension (console) or external signer (SDK);<br/>nonce n+i per step; SEAM never holds keys<br/><i>@seam/chain buildSigningRequests</i>"]
+  G["Submit gate (per step)<br/>signed bytes decoded = approved calls,<br/>runtime lock (raw or layout_hash), signed dry run,<br/>single use, earlier steps verified<br/><i>@seam/policy checkBeforeSubmit</i>"]
+  S["Submit + finalization<br/><i>@seam/chain submitAndWatch</i>"]
+  CH[("Portaldot chain<br/>V3 testnet (spec 3002) or local dev node")]
+  R["Receipt<br/>per-step tx, block, fee, events, nonce + nonceSource,<br/>approvalInputs, runtimeLock<br/><i>sdk buildReceipt / verifyStep; console receipts</i>"]
+  V["Verify<br/>offline: integrity, planDigest, approvalHash<br/>--endpoint: read-only chain re-check<br/><i>seam verify, independent scripts -> evidence/</i>"]
 
-  classDef warn fill:#fff3cd,stroke:#b58900,color:#000;
-  classDef store fill:#e8eefc,stroke:#4a6fa5,color:#000;
-  class SETUP warn;
-  class EV,CON store;
+  M --> C
+  D --> C
+  C --> PL --> P --> PO --> W --> G
+  G -- "allowed" --> S --> CH
+  G -. "blocked: nothing sent" .-> R
+  CH --> R --> V
+  V -. "reads" .-> CH
+
+  classDef pkg fill:#e8eefc,stroke:#4a6fa5,color:#000;
+  class PC,PP,PH,PS,PU pkg;

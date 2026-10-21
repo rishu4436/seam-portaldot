@@ -223,7 +223,7 @@ The compiler encodes these two actions only when the target runtime's metadata r
 
 ## Outcome verifiers for `revive.instantiate_with_code` and `revive.map_account` (V3 spec 3002 only)
 
-These are the receipt side of two action kinds the compiler is still adding (policy reads the same `decodedArgs`: `codeHash`, `value`, `gasLimit`, `proofSize`, `storageDepositLimit`; `account` for map_account). **Deploy through policy is NOT V3-verified**: no SEAM-planned deploy or mapping has run on V3 yet. The verifiers were checked only against the earlier setup transactions recorded in `evidence/testnet-v3`.
+These are the receipt side of two compiler action kinds (merged in `4d480b4`; policy reads the same `decodedArgs`: `codeHash`, `value`, `gasLimit`, `proofSize`, `storageDepositLimit`; `account` for map_account). **Deploy through policy is NOT V3-verified**: no SEAM-planned deploy or mapping has run on V3 yet. The verifiers were checked only against the earlier setup transactions recorded in `evidence/testnet-v3`.
 
 What the evidence shows:
 - `Revive.Instantiated(deployer: H160, contract: H160)` (argTypes `["H160","H160"]`) is emitted by `instantiate_with_code`. Example: tx `0xad39bce1…acb2` (#102843) has `Revive.Instantiated(0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec, 0x86b9cc2d456eed16a6872e1d5646f606a59cd95b)`. The deployer is the signer's mapped H160 (`reviveAddressOf`: keccak256(AccountId32)[12..], or the first 20 bytes for an `0xEE`-suffixed account). **The event carries no code hash.**

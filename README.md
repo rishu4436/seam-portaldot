@@ -37,13 +37,13 @@ Hosted Portaldot V3 testnet, `portaldot-v3` spec 3002, 18 finalized transactions
 
 | Verified on V3 (with evidence) | Example tx | Not verified on V3 |
 |---|---|---|
-| SEAM signing path, signed dry run, fee estimate (every tx) | all 18 | A `revive.call` effect without an emitted event: stays `unknown` (V3 has no per-call Revive event) |
+| SEAM signing path and fee estimate (every tx); signed dry run recorded for the direct calls and at the submit gate of the plan runs (the plans' pre-sign preflight reports the dry run `unknown`) | all 18 | A `revive.call` effect without an emitted event: stays `unknown` (V3 has no per-call Revive event) |
 | Assets: create, mint, transfer | `0x5a3fcfe8…0ea4` #102529 | A deposit refund for a deployed contract (not possible on this runtime, EIP-6780) |
 | Nfts: create, mint, `Nfts.Issued` shape | `0x9ea5ff6b…8f75` #102327 | A contract deploy through policy (the deploy was a setup step, outside policy) |
 | SEAM sequential plan, receipt verified | `0x67015f59…971a` #102653, `0x5adae6e9…44da` #102657 | A fresh account mapping (the signer was already auto-mapped) |
 | `batch_all` rollback (gate blocked; test-only bypass rolled back) | `0xd1662231…da80` #102665 | ink! contracts and the PolkaVM path |
 | SEAM atomic plan (`atomic_verified`), receipt verified | `0x6be1232e…f355` #102671 | Cross-VM atomicity |
-| EVM contract deploy (`Revive.instantiate_with_code`) | `0xad39bce1…acb2` #102843 | A real browser-extension signature (a local keystore signer was used) |
+| EVM contract deploy (`Revive.instantiate_with_code`) | `0xad39bce1…acb2` #102843 | (Later runs, below, were signed through the polkadot.js extension) |
 | SEAM-compiled `revive.call`; receipt `verified` only with an expected `ContractEmitted` | `0xec917338…7482` #102853 | Preflight simulation coverage for `nfts.mint` (`unobserved` by design) |
 
 Elsewhere: local runs on a `substrate-contracts-node` dev chain and a local Portaldot dev node (spec 1002). Portaldot **mainnet was only read** (a snapshot at block 2,721,455); nothing was ever submitted to it. There are no users or transaction volume yet. The business model is a hypothesis, not a result: SEAM stays open source, and one idea to test is a hosted service for runtime-change monitoring and independent receipt verification ([RuntimeGuard scope](docs/runtimeguard.md)). No customer, price or demand has been validated.
@@ -64,12 +64,12 @@ Sending it for real goes through approval, an external wallet and a per-step gat
 ## What is built
 
 - **Manifest** format with a digest that is the same on any machine for the same Manifest.
-- **Compiler**: turns a Manifest into exact runtime calls using live (or snapshotted) metadata. Handles Assets transfer/mint, ink! `Contracts.call` (by raw data or by message name + ABI, with V13 and V14 call shapes), and says plainly when a runtime lacks something.
+- **Compiler**: turns a Manifest into exact runtime calls using live (or snapshotted) metadata. Seven action kinds: `assets.transfer`, `assets.mint`, `contracts.call` (ink!, raw data or message name + ABI), `nfts.mint`, `revive.call`, `revive.instantiate_with_code`, `revive.map_account`; `supportedKinds` says per runtime which compile and why the others don't.
 - **Plan modes**: sequential (one transaction per step) or atomic (`Utility.batch_all`, only when rollback is verified on that runtime).
 - **Policy**: allow-lists and limits (assets, recipients, contracts, selectors, message names, pinned ABI hashes, amounts, ...), runtime lock, approval binding, and the per-step submit gate. Anything not allowed, and anything that cannot be confirmed, is blocked.
 - **Chain layer**: live discovery, runtime re-check, preflight and signed dry run, external-wallet signing handoff, submit, finalization tracking.
 - **SDK + `seam` CLI**: Manifest helpers, receipts with event checks, plain-English explanations of plans, policy results, gate blocks and receipts.
-- **Console**: a web UI that walks through the flow.
+- **Console**: a web UI with a Manifest Builder and LIVE V3 signing through the polkadot.js extension (policy gate, approval, per-step submit gate, receipts), plus recorded and offline modes.
 - **Recorded runs** on the local dev chain: sequential, atomic and rollback, in [`evidence/devnode`](evidence/README.md); and on a local Portaldot dev node (spec 1002) in [`evidence/portaldot-local-node`](evidence/portaldot-local-node/README.md).
 - **Automated tests** (see below) and an end-to-end test (`npm run test:e2e`) that starts a fresh local chain.
 
@@ -143,7 +143,7 @@ This is a **local Portaldot dev node, spec 1002**: the organizers' own `portaldo
 - The contract deploy remains an **unchecked setup step**: it goes through the dry-run and gate path, but policy does not evaluate it and the compiler has no instantiate action.
 - A mainnet-built plan is blocked at the gate on this node (fingerprint differs, see above).
 - The old pallet needed an endowment above the subsistence threshold (`--endowment 2e15`); recipients were funded with 2x the existential deposit (1e14).
-- Still **PENDING**: a run signed in a real polkadot.js wallet. (The hosted V3 testnet has since been used: see the next section.)
+- This local node was never used with a browser wallet. polkadot.js-extension-signed runs exist on the hosted V3 testnet instead: see the next section.
 
 ## Portaldot V3 testnet (spec 3002): what is and isn't verified
 
@@ -173,13 +173,21 @@ In that run, SEAM's own receipt left the `nfts.mint` steps `unknown` (`unsupport
 
 - A per-call Revive effect. V3 has no event carrying a call's (dest, data, value), so a `revive.call` receipt rests on its call bytes and success, plus an expected `ContractEmitted` when one is given. No recorded receipt was produced with that check; the tests replay the recorded events.
 - A deposit refund for a deployed contract (not possible on this runtime once the contract outlives its creating transaction; `remove_code` refused with `CodeInUse`).
-- Contract deploys through policy: `instantiate_with_code` is a setup step; the compiler has no instantiate action.
+- Contract deploys through policy: the #102843 `instantiate_with_code` was a setup step outside policy. The compiler now has a `revive.instantiate_with_code` kind with a code-hash allow-list in policy, but no deploy through policy has run on V3.
 - A fresh account mapping (the signer was already auto-mapped).
 - ink! contracts, the PolkaVM path, and cross-VM atomicity. `batch_all` rollback is shown only for `assets.transfer`, `assets.mint` and `nfts.mint`.
 - Preflight simulation coverage for `nfts.mint` (still `unobserved` by design).
-- A real browser-extension signature (a local keystore signer was used).
 
-**Chain findings** (from the evidence): the metadata bytes drift between blocks without a runtime upgrade (one storage fallback, `Revive.EthBlockBuilderIR`), so a pinned raw metadata hash went stale within minutes; the node's WebSocket drops with code 1006 often. `@seam/chain` now fingerprints a stable metadata layout and has an HTTPS JSON-RPC transport (commit 2300423); that fix has not been re-checked by a new funded V3 run.
+**Later V3 runs, signed through the polkadot.js extension** (seam-demo account `5HEuRGmZ…yqKpE`, from the console; each is independently verified read-only, see [docs/evidence-manifest.md](docs/evidence-manifest.md)). The verification files prove what the chain recorded (call, signature, nonce, fee, events); that the polkadot.js extension produced the signature is the team's report, not something the chain shows.
+
+| What | tx | block | verification |
+| --- | --- | --- | --- |
+| Console demo plan `assets.transfer` | `0x8a2c8b92…a4ad` | #118310 | `demo-transfer-118310-verification.{json,md}` |
+| Manifest Builder plan `assets.transfer` | `0x74a76dcb…ed6d`, `0xf883200e…1402` | #119634, #119996 | `builder-transfer-119634-verification.*`, `builder-transfer-119996-verification.*` |
+| 2-step sequential plan, step 1 only (step 2 blocked at the gate's signed dry run, `minBalance` cause; `lockBasis` `layout_hash`) | `0x8a07ad32…4e37` | #120936 | `seq-transfer-120936-verification.*` |
+| 2-step sequential plan, both steps (nonces 4 and 5, planDigest and approvalHash recomputed, `lockBasis` `raw`) | `0xadced4b5…11a1`, `0xaea50145…1926` | #121390, #121394 | `seq-transfer-121390-verification.*` |
+
+**Chain findings** (from the evidence): the metadata bytes drift between blocks without a runtime upgrade (one storage fallback, `Revive.EthBlockBuilderIR`), so a pinned raw metadata hash went stale within minutes; the node's WebSocket drops with code 1006 often. `@seam/chain` now fingerprints a stable metadata layout and has an HTTPS JSON-RPC transport (commit 2300423). The submit-time runtime lock can pass on `lockBasis: layout_hash` when only the raw hash drifted; the #120936 run passed that way on V3, and the #121390 run passed on `raw`.
 
 **Contract deploy is an "unchecked setup step".** The demo contract deploy is signed through the dry-run and gate path, but policy does not evaluate it, and the compiler has no instantiate action. Only the compiled plan steps (such as `settle`) are covered by policy.
 
