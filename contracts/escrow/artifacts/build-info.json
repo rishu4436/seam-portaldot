@@ -1,0 +1,21 @@
+{
+  "contract": "SeamEscrow",
+  "source": "Escrow.sol",
+  "sourceKeccak256": "0xd2ce48ca4338adce6ef1d7c4891171e43e2310dae040c3b660684ead217216a9",
+  "resolc": "Solidity frontend for the revive compiler version 1.4.0+commit.ca3c770.llvm-22.1.5",
+  "solc": "Version: 0.8.30+commit.73712a01.Linux.g++",
+  "settings": {
+    "resolcOptimizer": "z",
+    "solcOptimizerRuns": 200,
+    "bytecodeHash": "none"
+  },
+  "pvm": {
+    "bytes": 11544,
+    "codeHash": "0x3bc1fe2376bfbd8bdb063ca2fa30390a1842c114e607a746579f0762e74718f9",
+    "note": "pallet-revive code hash = keccak256(blob)"
+  },
+  "evm": {
+    "initBytes": 2046,
+    "initCodeHash": "0x0e299273b76a3e6e2544181fa1a76d4e49f69d60da556b8e192e5c247576226c"
+  }
+}
