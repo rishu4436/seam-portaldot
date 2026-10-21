@@ -34,7 +34,7 @@ const get = (h) => {
     });
   return txs.get(k);
 };
-const isVerification = (rel) => /verification\.json$/.test(rel);
+const isVerification = (rel) => /verification\.json$|recorded-replay-[^/]*\.json$/.test(rel);
 
 function blockOf(o) {
   for (const k of ["block", "blockNumber"]) {
@@ -149,6 +149,37 @@ lines.push(
   "**Verification** names an independent read-only verification file (`*verification.json`) that lists the hash, with its verdict. `none` means the hash appears only in run records written by the run itself; that is not independent verification. Nothing on V3 counts as V3-verified without a verification file. No hash here is a mainnet transaction.",
 );
 lines.push("");
+// Evidence known to exist on unmerged branches. Listed only while the files are absent here; never counted as verified.
+const PENDING = [
+  [
+    "evidence/testnet-v3/recorded-replay-102671-1792553452393.{json,md}",
+    "#102671 atomic batch_all: recorded run, replayed read-only",
+    "7dfca89 (bot4/recorded-replay)",
+  ],
+  [
+    "evidence/testnet-v3/recorded-replay-102665-1792553452393.{json,md}",
+    "#102665 rollback probe (ExtrinsicFailed assets.BalanceLow, no inner events): recorded run, replayed read-only",
+    "7dfca89 (bot4/recorded-replay)",
+  ],
+  [
+    "evidence/testnet-v3/dryrun-capability-*",
+    "V3 system_dryRun capability on signed bytes",
+    "33fcca7 (bot4/browser-dryrun)",
+  ],
+].filter(
+  ([f]) =>
+    !existsSync(join(ROOT, f.replace(/\{.*\}|\*$/, "json"))) &&
+    !(
+      f.endsWith("*") &&
+      readdirSync(join(EV, "testnet-v3")).some((n) => n.startsWith("dryrun-capability-"))
+    ),
+);
+if (PENDING.length) {
+  lines.push("Pending merge (not on this branch, not counted below):");
+  lines.push("");
+  for (const [f, what, c] of PENDING) lines.push(`- \`${f}\`: ${what}. Pending merge (${c}).`);
+  lines.push("");
+}
 const counts = {};
 for (const t of rows) counts[runType(t)] = (counts[runType(t)] ?? 0) + 1;
 lines.push(

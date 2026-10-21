@@ -40,7 +40,13 @@ Two V3 findings that blocked a clean live path are addressed in `@seam/chain` (`
 | Top-up for the rerun | `0x03292211…490f` #121035 | run record `demo-topup-121035.{json,md}` (`4033b5c`), not an independent verification | 5 units of asset 806707 to seam-demo, signed by the SEAM test keystore; `budget.json` appended |
 | 2-step sequential, full | `0xadced4b5…11a1` #121390 (nonce 4), `0xaea50145…1926` #121394 (nonce 5) | `seq-transfer-121390-verification.*` (`89cdd08`) | both steps verified: signatures valid, `metadataHashMode` 0, fees equal `TransactionFeePaid`, `Assets.Transferred` present, planDigest `0xcc654666…1146` and approvalHash `0x8a933ad6…90b5` recomputed (match), lock `raw` (raw metadata hash unchanged #121375 to #121394) |
 
-Open on this path: the pre-sign preflight reports the signed dry run as `unknown` (allowed by policy, weaker proof); whether V3 `system_dryRun` can run on the assembled signed bytes in the browser path is Chainsmith's P0-04 item. Receipt re-verification of console receipts by `seam verify` is P0-05.
+Open on this path:
+
+- **Open P0: decoded fields are not yet bound to the bytes.** Policy evaluates a step's decoded fields (`decodedArgs`: asset, recipient, amount, ...), but only the call-index prefix of the step's encoded call is bound to those fields. Until Forge's step-bytes check and Sentinel's `live: true` submit mode are merged, do not read "the signed bytes equal the approved calls" as "the policy-checked fields are what was signed".
+- **Signed dry run.** V3 supports `system_dryRun` on signed bytes (`rpc_methods` lists it; the funded run's records hold signed dry runs). The pre-sign preflight reports the dry run `unknown` only because there is no signature yet. Browser-path dry-run evidence (Chainsmith `bot4/browser-dryrun` `33fcca7`) is pending merge.
+- **Gate inputs.** The gate's mortality and nonce checks run only when the caller passes those values (envelope, signed transactions); they are not always on.
+- **Recorded replays** of #102671 and #102665 (Chainsmith `bot4/recorded-replay` `7dfca89`, "recorded run, replayed read-only") are pending merge.
+- `seam verify` for console receipts (P0-05): on `bot5/verify-console-receipt`, pending merge.
 
 ## October 20 audit (Tasks 1 to 4): done on `main` at `9172f05`
 
