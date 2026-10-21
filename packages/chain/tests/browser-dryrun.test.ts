@@ -50,7 +50,9 @@ describe("browser signedDryRun (system_dryRun on the assembled signed bytes)", (
 
   it("a real signature that the node rejects is failed, never ok", async () => {
     const { xs } = await signed();
-    const bad = (xs[0]!.slice(0, 120) + (xs[0]![120] === "0" ? "1" : "0") + xs[0]!.slice(121)) as `0x${string}`;
+    const bad = (xs[0]!.slice(0, 120) +
+      (xs[0]![120] === "0" ? "1" : "0") +
+      xs[0]!.slice(121)) as `0x${string}`;
     const r = await browser.signedDryRun(node(), facts, [bad]);
     expect(r.results[0]).not.toBe("ok");
   });

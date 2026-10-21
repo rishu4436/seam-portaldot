@@ -228,12 +228,14 @@ export class FakeNode implements RpcClient {
             if (key === storageKey(this.assetsQuery().account, a.assetId, who))
               return r(this.encodeValue("account", { balance }));
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- decorated storage entry
         const sysAccount = (decodeRuntime(this.o.facts).decorated().query as any).system.account;
         if (key.startsWith(u8aToHex(sysAccount.keyPrefix()))) {
           if (!this.o.nativeBalances) throw new Error("FakeNode: System.Account not modelled");
           for (const [who, b] of Object.entries(this.o.nativeBalances))
             if (key === storageKey(sysAccount, who)) {
               const { registry } = decodeRuntime(this.o.facts);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- codec construction
               const reg = registry as any;
               const v = reg.createTypeUnsafe(
                 reg.createLookupType(sysAccount.meta.type.asMap.value),
