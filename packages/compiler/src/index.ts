@@ -59,3 +59,11 @@ export {
   BLANKED_STORAGE_DEFAULTS,
 } from "./layout.js";
 export { rebindPlan, type RebindResult } from "./rebind.js";
+export {
+  verifyPlan,
+  assertPlanVerified,
+  type VerifyPlanCode,
+  type VerifyPlanIssue,
+  type VerifyPlanOptions,
+  type VerifyPlanResult,
+} from "./verify-plan.js";

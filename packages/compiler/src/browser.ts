@@ -32,3 +32,11 @@ export {
 export { canonicalJson, digestJson, domainHash, DOMAIN } from "./canonical.js";
 export { parseNativeAddress, parseH160, type NativeAddress } from "./address.js";
 export { rebindPlan, type RebindResult } from "./rebind.js";
+export {
+  verifyPlan,
+  assertPlanVerified,
+  type VerifyPlanCode,
+  type VerifyPlanIssue,
+  type VerifyPlanOptions,
+  type VerifyPlanResult,
+} from "./verify-plan.js";
