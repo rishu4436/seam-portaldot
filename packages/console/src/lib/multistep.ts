@@ -11,6 +11,7 @@ import { usageKey, type ApprovalStore } from "@seam/policy/browser";
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "./policygate";
 import type { StepOutcome } from "@seam/sdk/browser";
 import { atomicStepReceipts, callOfSigned, verifyPlanStep } from "./stepverify";
+import type { RunStore } from "./runstore";
 import {
   preSign,
   preSubmit,
@@ -134,6 +135,11 @@ export async function runPlanSteps(args: {
   holder?: SignedHolder;
   /** Aborted when the run is cancelled or the panel unmounts: nothing more is sent and the bytes are dropped. */
   signal?: AbortSignal;
+  /**
+   * Persisted non-secret run state (lib/runstore.ts): phase, step statuses, tx hashes, nonces, blocks and the
+   * single-flight send guard keyed by approvalHash + step index. Optional; never receives signed bytes.
+   */
+  runStore?: RunStore;
   /** Injectable only for tests; the app always uses the real gates. */
   gates?: {
     preSign: typeof preSign;
@@ -189,6 +195,20 @@ export async function runPlanSteps(args: {
     holder.clear();
     const target = steps[i];
     if (target) Object.assign(target, { status, message: msg });
+    if (bound.approval && args.runStore) {
+      const rs = args.runStore;
+      const h = bound.approval.hash;
+      for (const s of steps) {
+        const cur = rs.run(h)?.steps.find((x) => x.index === s.index);
+        // Never downgrade a step that has a tx hash; an unsent signed step can't be resumed (bytes are dropped).
+        if (cur?.txHash) continue;
+        rs.updateStep(h, s.index, {
+          status: s === target ? status : "not_sent",
+          note: s === target ? msg.slice(0, 300) : "not sent",
+        });
+      }
+      rs.updateStep(h, i, {}, status);
+    }
     for (const s of steps.slice(i + 1))
       if (s.status === "not_run")
         s.message = `Not run: step ${i + 1} (${target?.actionId ?? "?"}) stopped the plan.`;
@@ -226,6 +246,19 @@ export async function runPlanSteps(args: {
       now: preSigned.approvedAt,
     },
   };
+  args.runStore?.upsertRun({
+    approvalHash: hash,
+    planDigest: (args.input.plan as { planDigest?: string }).planDigest,
+    mode: plan.mode,
+    phase: "approved",
+    fromBlock: args.ctx.checkpointNumber,
+    steps: steps.map((s) => ({
+      index: s.index,
+      actionId: s.actionId,
+      status: "pending",
+      updatedAt: new Date().toISOString(),
+    })),
+  });
   // ONE envelope for the whole plan (Chainsmith's buildSigningEnvelope in preSign): same checkpoint and short mortality
   // for every step; only the nonce moves (n + i). Its expiresAt is checked again before every send.
   const expiresAt = Date.parse(
@@ -254,7 +287,16 @@ export async function runPlanSteps(args: {
     const signedNonce = Number.isSafeInteger(decodedNonce)
       ? { nonce: decodedNonce as number, nonceSource: "decoded" as const }
       : { nonce: requested, nonceSource: "signing_request" as const };
-    for (const st of steps) if (c.actionIds.includes(st.actionId)) Object.assign(st, signedNonce);
+    for (const st of steps)
+      if (c.actionIds.includes(st.actionId)) {
+        Object.assign(st, signedNonce);
+        args.runStore?.updateStep(
+          hash,
+          st.index,
+          { status: "signed", nonce: signedNonce.nonce },
+          "signed",
+        );
+      }
   }
 
   const n = calls.value.length;
@@ -310,8 +352,41 @@ export async function runPlanSteps(args: {
     // Last look right before broadcasting: the window, and a cancel during the checks.
     if (cancelled()) return stop(i, "Cancelled. Nothing more was sent.");
     if (expired()) return stop(i, expiredMsg, pre.gate);
+    // Single-flight guard (persisted before the broadcast): a step claimed once, in any session, is never sent again.
+    if (args.runStore && !args.runStore.claimSend(hash, i))
+      return stop(
+        i,
+        "This step was already sent once (persisted send guard). It is not sent again; reconcile by its tx hash.",
+        pre.gate,
+      );
+    args.runStore?.updateStep(hash, i, { status: "submitting" }, "submitting");
     args.store.markUsed(usageKey(hash as `0x${string}`, sequential ? i : undefined));
     const r = await args.submitAndWait(i, all[i]);
+    if (r.ok && args.runStore) {
+      const o = r.value as {
+        txHash?: string;
+        status?: string;
+        block?: { number: number; hash: string };
+      };
+      const idxs = sequential ? [i] : steps.map((s) => s.index);
+      for (const k of idxs) {
+        if (o.txHash) args.runStore.recordSent(hash, k, o.txHash);
+        args.runStore.updateStep(
+          hash,
+          k,
+          {
+            status:
+              o.status === "finalized"
+                ? "finalized"
+                : o.status === "failed"
+                  ? "failed"
+                  : "submitted",
+            ...(o.block ? { block: o.block } : {}),
+          },
+          o.status === "finalized" && (!sequential || i === n - 1) ? "finalized" : "submitted",
+        );
+      }
+    }
     if (!r.ok) {
       steps[i]!.sendIndex = i;
       return stop(i, r.message, pre.gate, "failed");

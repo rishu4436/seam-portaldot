@@ -386,3 +386,35 @@ describe("LiveReceipt shows the atomic run's atomicity", () => {
     );
   });
 });
+
+describe("RecoveredRuns", () => {
+  it("shows an abandoned run plainly; it offers no way to send", async () => {
+    const { RecoveredRuns } = await import("../Modes");
+    render(
+      <RecoveredRuns
+        runs={[
+          {
+            approvalHash: "0x" + "ab".repeat(32),
+            phase: "abandoned",
+            createdAt: "t",
+            updatedAt: "t",
+            steps: [
+              {
+                index: 0,
+                actionId: "a",
+                status: "not_sent",
+                note: "signed bytes are gone",
+                updatedAt: "t",
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+    const box = screen.getByTestId("recovered-runs");
+    expect(box.textContent).toMatch(
+      /abandoned: signed but not sent; the signed bytes are gone\. Approve again\./,
+    );
+    expect(box.querySelector("button")).toBeNull();
+  });
+});
