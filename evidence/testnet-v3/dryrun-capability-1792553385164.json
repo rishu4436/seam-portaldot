@@ -1,0 +1,222 @@
+{
+  "kind": "dryrun-capability",
+  "label": "read-only replay of already-included V3 transactions through system_dryRun; nothing signed or submitted",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "readAt": "2026-10-21T03:29:53.029Z",
+  "bestBlockAtStart": 126253,
+  "runs": [
+    {
+      "block": 121390,
+      "blockHash": "0xc151311fd7ed56735c715cd815277e790b0434a77ba64216e444518b5a79948f",
+      "parentHash": "0x0fe30f2a546440e8fd4fc8233503ff204e17aaf110d69fc753c65dadd230c015",
+      "extrinsicIndex": 1,
+      "txHash": "0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1",
+      "extrinsicHex": "0x45028400e4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b011e025248ee840b493d9b348f5cb3007c12da201c111127fe12842ab5399cac4332efdff7e9e5bb9aa9391cd3a242f7554709f7d0abb3bb5baded8a3e78e72080f501100000002709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+      "specVersion": 3002,
+      "dryRuns": [
+        {
+          "label": "parent block (state before inclusion): expected ok",
+          "at": {
+            "number": 121389,
+            "hash": "0x0fe30f2a546440e8fd4fc8233503ff204e17aaf110d69fc753c65dadd230c015"
+          },
+          "result": {
+            "txHash": "0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1",
+            "outcome": "ok",
+            "detail": "dispatch ok",
+            "raw": "0x0000"
+          }
+        },
+        {
+          "label": "its own block (nonce already used): expected Stale",
+          "at": {
+            "number": 121390,
+            "hash": "0xc151311fd7ed56735c715cd815277e790b0434a77ba64216e444518b5a79948f"
+          },
+          "result": {
+            "txHash": "0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1",
+            "outcome": "failed",
+            "detail": "invalid transaction: Stale",
+            "raw": "0x010003"
+          }
+        },
+        {
+          "label": "best block (mortal era passed): expected invalid",
+          "at": {
+            "number": 126253,
+            "hash": null
+          },
+          "result": {
+            "txHash": "0xadced4b5e13e638ff3d967d4343dbfd9ea103eb62ff05a5ec3c3784e41aa11a1",
+            "outcome": "failed",
+            "detail": "invalid transaction: BadProof",
+            "raw": "0x010004"
+          }
+        }
+      ],
+      "stateCallApplyExtrinsicAtParent": "0x0000"
+    },
+    {
+      "block": 121394,
+      "blockHash": "0xe536bf47c351882b4b39689f0d941ce38de8982e4506ad9880209d0e4e6dd036",
+      "parentHash": "0x3a00e786f04b063737048c37a45c9b77960e360da562b337db9fbc9e5faed493",
+      "extrinsicIndex": 1,
+      "txHash": "0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926",
+      "extrinsicHex": "0x45028400e4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b015cbdd144324fd1294ccb03547ac7c5571445c9fd9f66149aba6ed186614d8b77c6ee9529b333629312f8cf6fdc389c82a95ad6cfb0f7c805c8dbf3e1b1e1228bf501140000002709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+      "specVersion": 3002,
+      "dryRuns": [
+        {
+          "label": "parent block (state before inclusion): expected ok",
+          "at": {
+            "number": 121393,
+            "hash": "0x3a00e786f04b063737048c37a45c9b77960e360da562b337db9fbc9e5faed493"
+          },
+          "result": {
+            "txHash": "0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926",
+            "outcome": "ok",
+            "detail": "dispatch ok",
+            "raw": "0x0000"
+          }
+        },
+        {
+          "label": "its own block (nonce already used): expected Stale",
+          "at": {
+            "number": 121394,
+            "hash": "0xe536bf47c351882b4b39689f0d941ce38de8982e4506ad9880209d0e4e6dd036"
+          },
+          "result": {
+            "txHash": "0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926",
+            "outcome": "failed",
+            "detail": "invalid transaction: Stale",
+            "raw": "0x010003"
+          }
+        },
+        {
+          "label": "best block (mortal era passed): expected invalid",
+          "at": {
+            "number": 126253,
+            "hash": null
+          },
+          "result": {
+            "txHash": "0xaea50145189eb54adf80c078dad5229a8291260975771ad384c7305884b01926",
+            "outcome": "failed",
+            "detail": "invalid transaction: BadProof",
+            "raw": "0x010004"
+          }
+        }
+      ],
+      "stateCallApplyExtrinsicAtParent": "0x0000"
+    }
+  ],
+  "rawRpc": [
+    {
+      "method": "rpc_methods",
+      "params": [],
+      "response": {
+        "dryRunMethods": [
+          "state_call",
+          "state_callAt",
+          "state_callRecorded",
+          "system_dryRun",
+          "system_dryRunAt"
+        ]
+      }
+    },
+    {
+      "method": "state_call",
+      "params": [
+        "BlockBuilder_apply_extrinsic",
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)",
+        "0x0fe30f2a546440e8fd4fc8233503ff204e17aaf110d69fc753c65dadd230c015"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000"
+      }
+    },
+    {
+      "method": "system_dryRun",
+      "params": [
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)",
+        "0x0fe30f2a546440e8fd4fc8233503ff204e17aaf110d69fc753c65dadd230c015"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000"
+      }
+    },
+    {
+      "method": "system_dryRun",
+      "params": [
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)",
+        "0xc151311fd7ed56735c715cd815277e790b0434a77ba64216e444518b5a79948f"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x010003"
+      }
+    },
+    {
+      "method": "system_dryRun",
+      "params": [
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x010004"
+      }
+    },
+    {
+      "method": "state_call",
+      "params": [
+        "BlockBuilder_apply_extrinsic",
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)",
+        "0x3a00e786f04b063737048c37a45c9b77960e360da562b337db9fbc9e5faed493"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000"
+      }
+    },
+    {
+      "method": "system_dryRun",
+      "params": [
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)",
+        "0x3a00e786f04b063737048c37a45c9b77960e360da562b337db9fbc9e5faed493"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000"
+      }
+    },
+    {
+      "method": "system_dryRun",
+      "params": [
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)",
+        "0xe536bf47c351882b4b39689f0d941ce38de8982e4506ad9880209d0e4e6dd036"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x010003"
+      }
+    },
+    {
+      "method": "system_dryRun",
+      "params": [
+        "0x45028400e4f48afd7c…(147 bytes, see extrinsicHex)"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x010004"
+      }
+    }
+  ]
+}
