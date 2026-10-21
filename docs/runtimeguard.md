@@ -20,7 +20,7 @@ Recorded A/B example: the bundled Portaldot mainnet snapshot (spec 1002) against
 `packages/sdk/tests/fixtures/devnode` (spec 100) shows the changed fields and, for instance, `Revive.call` observed only on the test chain.
 This is a comparison of recordings, not a live check and not monitoring.
 
-Known V3 caveat ([evidence](../evidence/testnet-v3/README.md)): on the hosted V3 testnet (spec 3002) the raw metadata bytes change between blocks without a runtime upgrade (one storage fallback, `Revive.EthBlockBuilderIR`). Because the fingerprint pins the raw metadata hash, the gate reports `runtime_changed` there even when spec, transaction version and every type are unchanged. A normalized fingerprint is needed in `@seam/chain`; until then a `runtime_changed` on V3 may be this drift, not an upgrade.
+Known V3 caveat ([evidence](../evidence/testnet-v3/README.md)): on the hosted V3 testnet (spec 3002) the raw metadata bytes change between blocks without a runtime upgrade (one storage fallback, `Revive.EthBlockBuilderIR`). The submit-time lock (`checkRuntimeLock`, `@seam/policy`) therefore reports a `lockBasis`: `raw` when every field is identical, or `layout_hash` when only `metadataHash` drifted, both metadata blobs were given and their layout hash (storage defaults blanked) is equal. Any other change still fails closed with `runtime_changed`. Both bases have been seen on V3: `layout_hash` at #120936 and `raw` at #121390/#121394 (verification files in `evidence/testnet-v3/`). `seam drift` still compares the raw fingerprint, so it reports this drift.
 
 ## What it is not (roadmap, not delivered)
 

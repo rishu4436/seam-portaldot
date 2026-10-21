@@ -129,7 +129,7 @@ Both attempts were rebuilt from the chain by signer and nonce (`--step find`). T
 - **A fresh account mapping**, meaning an account that was not already auto-mapped.
 - **Contracts (ink!) on V3**, the PolkaVM path, and cross-VM atomicity.
 - **The SEAM preflight `simulation coverage` for `nfts.mint`.** It still says `unobserved`, by design, because the code does not upgrade it from evidence yet.
-- **A real browser-extension signature.** All signatures here came from a local keystore signer closure.
+- **A browser-extension signature in this run.** All signatures in this 2026-10-19 run came from a local keystore signer closure. Later runs were signed through the polkadot.js extension: see "Later runs" below.
 
 ## V3 findings that need code changes (chain layer)
 
@@ -145,6 +145,22 @@ Both attempts were rebuilt from the chain by signer and nonce (`--step find`). T
    - The node closes the WebSocket with code 1006 every few calls, often on the 1.1 MB metadata.
    - The run used `packages/chain/scripts/http-rpc-client.mjs`: an `RpcClient` over JSON-RPC HTTP at the same host, with polling in place of subscriptions.
    - SEAM still decodes every byte with the pinned runtime.
+
+## Later runs (index)
+
+These files are added after the funded run above. Each verification is a read-only re-check against the V3 node; it proves what the chain recorded, not which signer software produced the signature. Full list of hashes: [`docs/evidence-manifest.md`](../../docs/evidence-manifest.md).
+
+| Block | What | Files |
+|---|---|---|
+| #118070 | seam-demo account funding (`utility.batchAll`) | `demo-funding-118070-verification.json` |
+| #118310 | console demo plan `assets.transfer`, signed via polkadot.js extension (team report) | `demo-transfer-118310-verification.{json,md}` |
+| #119634, #119996 | Manifest Builder plan `assets.transfer` | `builder-transfer-119634-verification.*`, `builder-transfer-119996-verification.*` |
+| #120936 | 2-step sequential plan, step 1 only; step 2 `not_run` (signed dry run failed, `minBalance` cause); runtime lock `layout_hash` | `seq-transfer-120936-verification.*` |
+| #121035 | seam-demo asset top-up (5 units of 806707) for the rerun; a run record, not an independent verification | `demo-topup-121035.{json,md}`, `budget.json` |
+| #121390, #121394 | 2-step sequential plan, both steps verified (nonces 4, 5; planDigest and approvalHash recomputed; runtime lock `raw`) | `seq-transfer-121390-verification.*` |
+| (read-only) | live capabilities, preflight, binding check, metadata drift log | `capabilities-*.json`, `preflight-1792509095721.json`, `v3-binding-check.json`, `metadata-drift-spec3002-1792519271634.json` |
+
+No new rollback run has been recorded on V3. #102665 (overdraw, `assets.BalanceLow`) stays the record of the rollback probe; the devnode rollback demo now fails on an `assets.mint` supply overflow instead (commit `2a445a6`), because the preflight balance check would block an overdraw before signing.
 
 ## Files
 

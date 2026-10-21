@@ -1,7 +1,7 @@
 # SEAM security gates and trust boundaries
 
-What each gate checks, and, just as important, what it does not prove. This is a description of the code at baseline
-`a3bc52b` plus known gaps; it is not a formal audit. Gaps below are tracked in [BUILD_STATE.md](BUILD_STATE.md).
+What each gate checks, and, just as important, what it does not prove. This describes the code on `main` at `7a551e3`
+(first written at baseline `a3bc52b`); it is not a formal security audit. Gaps below are tracked in [BUILD_STATE.md](BUILD_STATE.md).
 
 ## Pipeline
 
@@ -13,14 +13,14 @@ send gate (per step) → submit → receipt. Each stage can refuse; none can be 
 | Gate | Checks | Does not prove |
 |------|--------|----------------|
 | Manifest validation | Shape, digest of the Manifest, known action kinds | That the intent is wise, or that the signer owns the assets |
-| Compiler | Encodes steps from runtime metadata; picks a plan mode with a stated reason; refuses unsupported kinds (`revive.call`, `nfts.mint` are unavailable) | That the pinned metadata matches the live chain now; compiler output is only as good as the snapshot it was given |
-| Runtime lock | Plan's runtime fingerprint (genesis, spec, metadata hash) equals the node's at submit time | Behaviour of a runtime with the same fingerprint. Fingerprint omits state version and runtime API surface (SEAM-011). Caller-declared token properties are declared, not observed |
-| Policy | Deny-by-default rules on the compiled plan (allowed assets, recipients, amounts, selectors, ABI hash, limits) | Anything the rules do not cover. Coverage across all action types is still being hardened (SEAM-017). Policy never sees contract deploy |
+| Compiler | Encodes steps from runtime metadata; picks a plan mode with a stated reason; knows seven kinds (`assets.transfer`, `assets.mint`, `contracts.call`, `nfts.mint`, `revive.call`, `revive.instantiate_with_code`, `revive.map_account`); `supportedKinds(facts)` marks each one unsupported, with a reason, when the runtime's own metadata lacks the call or its shape (`NO_OBSERVED_V3_METADATA`, `V3_ARG_SHAPE_MISMATCH`). On V3 spec 3002 all seven are supported (`evidence/testnet-v3/capabilities-1792508589179.json`) | That the pinned metadata matches the live chain now; compiler output is only as good as the snapshot it was given |
+| Runtime lock | Plan's runtime fingerprint (genesis, spec, metadata hash) equals the node's at submit time (`lockBasis: raw`), or only the raw metadata hash drifted and the metadata layout hash of both blobs is equal (`lockBasis: layout_hash`) | Behaviour of a runtime with the same fingerprint. Fingerprint omits state version and runtime API surface (SEAM-011). Caller-declared token properties are declared, not observed |
+| Policy | Deny-by-default rules on the compiled plan (allowed assets, recipients, amounts, selectors, ABI hash, limits) | Anything the rules do not cover. Rule coverage is example-tested, not property-tested (SEAM-017). Policy sees `revive.instantiate_with_code` (code-hash allow-list, deposit caps) but never a setup-script deploy |
 | Preflight / dry-run | Per-step estimates; a signed dry-run when available | Whole-plan outcome. Per-step estimates do not prove aggregate state transitions, and a pre-sign estimate is weaker than a signed dry-run (SEAM-018) |
-| Approval | A human or caller approval is bound to a plan and used at most once per store | Durability: the default store is in memory, lost on restart, and marked used *before* submit, so a failed broadcast can burn an approval (SEAM-005) |
-| Signing request / signature | Substrate payload built for the plan; signature verified on assembly | That the signed bytes equal the approved request on every path. A custom wallet adapter's own `signedCall` is not authoritative (SEAM-001) |
+| Approval | A human or caller approval is bound to a plan and used at most once per store | Durability unless `FileApprovalStore` is used; the default store is in memory (SEAM-005). An uncertain broadcast leaves the approval `uncertain`, not reusable |
+| Signing request / signature | Substrate payload built for the plan; signature verified on assembly | Which signer software produced the signature. The signed bytes are decoded (`signedExtrinsicDecoder`) and compared with the approved request; a wallet's own `signedCall` is never trusted (SEAM-001) |
 | Send gate | Per-step checks including signed-bytes match, signed dry-run and runtime lock | Chain inclusion or effect; it only authorizes sending |
-| Sequential continuation | Stops before the next step if the previous one is not acceptable | At baseline an unverified or merely included step could let the flow continue (SEAM-002); treat dependent sequential runs as unsafe until fixed |
+| Sequential continuation | Stops before the next step if the previous one is not acceptable | `canRunNextStep` requires every earlier step finalized and verified (SEAM-002). A step's later effects on shared state are not re-simulated beyond its own preflight |
 | Receipt | Records tx hash, block, events and per-step verification | See below |
 
 ## Browser policy flow
@@ -66,11 +66,11 @@ dry run: a failed one blocks (`signed_dry_run_failed`), and when the policy sets
 one blocks (`signed_dry_run_missing`). Without `requireSignedDryRun`, a send with no signed dry run passes as
 `signed_dry_run_not_checked` (weaker proof).
 
-**Console status on `dbe8e3b`.** The console does not import `@seam/policy/browser` yet; Pixel is wiring it in front of
-the signer. The Risk limits view (`console/src/lib/limits.ts`) only displays the policy and never authorizes anything.
-The wallet demo's Approve button is still enabled by the console's own `checkWalletDemoPolicy` pre-check
-(`console/src/lib/walletdemo.ts`), which is not the policy engine and does not check the plan mode. The console does not
-call `checkBeforeSubmit` either. Browser preflight is not exported yet, so once wired the gate will block with `PREFLIGHT_UNKNOWN`.
+**Console status on `7a551e3`.** The console calls `assertPolicyAllows` (`console/src/lib/policygate.ts`) right before
+the wallet, with a real browser preflight from `@seam/chain/browser`; `createApproval` binds the approval
+(`console/src/lib/signflow.ts`); after signing it re-preflights the signed bytes and calls `checkBeforeSubmit`, and records
+the gate's `runtimeLock` (with `lockBasis`) in the receipt. The Risk limits view (`console/src/lib/limits.ts`) only displays
+the policy.
 
 ## LIVE multi-step signing (console, Pixel `fc91363` on `bot1/live-multistep`)
 
@@ -89,25 +89,31 @@ Accepted limits:
 - (b) JavaScript can't securely wipe strings. `clear()` overwrites the slots and drops the references, but copies may stay in memory until garbage collection.
 - (c) If step 1 dispatches but fails, it has still used nonce `n`. Step 2's signed bytes stay valid on chain until their mortality runs out, and anyone holding them could submit them. The short mortality is what limits this.
 
-No multi-step plan has been run on V3 with this code.
+On V3 this code ran the 2-step sequential plan #121390/#121394 (both steps verified, `evidence/testnet-v3/seq-transfer-121390-verification.md`); an earlier attempt stopped after step 1 at #120936 when step 2's signed dry run failed (`seq-transfer-120936-verification.md`). Sequential receipts record each step's `nonce` with `nonceSource`: `decoded` (read from the signed bytes) or `signing_request` (the `n + i` the wallet was asked to sign). `signing_request` is only a claim; the on-chain nonce is the proof, and a verifier must fail on any difference. The nonce is receipt metadata, outside `approvalInputs` and the plan digest.
 
 ## Known limits, stated plainly
 
-- **Receipt hash is integrity only.** `seam verify` recomputes an unkeyed digest of the receipt JSON. Anyone who edits a receipt
-  can recompute it. A matching digest means the file is self-consistent, not that the transaction exists, is final,
-  was signed by the stated account, or had the stated outcome. Independent chain verification is not built yet (SEAM-003).
+- **Receipt hash is integrity only.** Offline `seam verify` recomputes an unkeyed digest of the receipt JSON. Anyone who edits a
+  receipt can recompute it. Only `seam verify --endpoint` (a read-only chain re-check, SEAM-003) or an independent
+  verification file in `evidence/` shows that the transaction exists, is final, was signed by the stated account and had the
+  stated outcome.
 - **Contract deploy is an unchecked setup step.** The demo contract deploy is signed and dry-run through SEAM's signing path,
   but it is outside the Manifest/Policy trust boundary: no Manifest describes it, policy does not evaluate it, and there is
-  no receipt. Production-facing execute paths must not expose it.
+  no receipt. Execute paths must not expose it. (The compiler's `revive.instantiate_with_code` kind is different: it is a plan
+  step under policy; no deploy through it has run on V3.)
 - **`atomic_verified` depends on proof provenance.** Metadata shows `Utility.batch_all` exists, not that cross-surface effects
-  roll back. At baseline a caller-set `'verified'` value can select `atomic_verified`, and an atomic preference can fall
-  back to sequential with only a note (SEAM-012, 013). A local-chain rollback result is not evidence for V3.
-- **Event verification coverage is narrow.** Verifiers exist for native assets and the legacy `Contracts` pallet only. A
-  generic `ContractEmitted` event from the right address is counted as verified at baseline even if it is unrelated to the
-  requested effect (SEAM-004). Revive and Nfts have no verifier (SEAM-010). Events are decoded by spec version at the
-  inclusion block, not by metadata hash (SEAM-015).
+  roll back. `atomic_verified` needs a rollback proof matching genesis, metadata, spec and composition, and a preferred-atomic
+  fallback needs acknowledgement (SEAM-012, 013). A local-chain rollback result is not evidence for V3. Rollback on V3 is
+  shown only by #102665 (overdraw, `assets.BalanceLow`) for `assets.transfer`/`assets.mint`/`nfts.mint`; the devnode demo now
+  fails on an `assets.mint` overflow instead (`2a445a6`), and no new rollback run has been recorded. Nothing shows cross-VM
+  atomicity.
+- **Event verification coverage is partial.** Assets, legacy `Contracts` (exact event data, SEAM-004) and `nfts.mint`
+  (`Nfts.Issued` on spec 3002) have verifiers. `revive.call` stays `unknown` unless an expected `ContractEmitted` matches,
+  because V3 has no per-call Revive event (SEAM-010). Events are decoded only when the block's metadata hash equals the
+  pinned one (SEAM-015).
 - **Account domains.** The H160-only signer path and native AccountId32 signing are not reconciled for V3 (SEAM-009).
-- **No V3 or mainnet evidence.** All recorded runs are from local nodes. Nothing here claims hosted V3 or mainnet behaviour.
+- **V3 testnet only, no mainnet.** V3 testnet runs and their independent verification files are listed in
+  [evidence-manifest.md](evidence-manifest.md). Nothing has been submitted to Portaldot mainnet; nothing here claims mainnet behaviour.
 
 ## Dependency audit (2026-10-18)
 
