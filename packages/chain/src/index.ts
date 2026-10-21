@@ -178,3 +178,12 @@ export {
   type InjectedExtensionLike,
   type ExtensionSource,
 } from "./wallet-events.js";
+
+export {
+  codeDepositUpperBound,
+  deployBudgetFit,
+  isPolkaVmBlob,
+  reviveCodeHash,
+  type BudgetFit,
+  type DeployCost,
+} from "./escrow-estimate.js";
