@@ -11,7 +11,14 @@ import type {
 } from "./types.js";
 import { digest } from "./digest.js";
 import { checkRuntimeLock, fingerprintDigest, type LockResult } from "./runtimeLock.js";
-import { type Policy, policyDigest, planDigest } from "./policy.js";
+import {
+  type Policy,
+  type PolicyInput,
+  policyDigest,
+  planDigest,
+  evaluatePolicy,
+  isEvaluatedPolicyResult,
+} from "./policy.js";
 import { normalizeAccount } from "./address.js";
 
 /** Everything an approval commits to. Change any of it and the approval no longer matches. */
@@ -109,6 +116,16 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
       "the policy check did not pass";
     return { ok: false, reason: `Can't approve: ${why}` };
   }
+  if (
+    !Array.isArray(policyResult.rules) ||
+    policyResult.rules.length === 0 ||
+    policyResult.rules.some((r) => r.outcome !== "pass")
+  )
+    return {
+      ok: false,
+      reason:
+        "Can't approve: the policy result says allowed, but its own rules don't all pass (a forged or edited result).",
+    };
   if (planDigest(plan) !== plan.planDigest)
     return { ok: false, reason: "Can't approve: the plan was changed after it was compiled." };
   if (policyResult.policyDigest !== policyDigest(policy))
@@ -357,6 +374,28 @@ export interface SubmitCheckInput extends Omit<ApprovalInput, "now" | "fingerpri
   sendIndex?: number;
   /** Sequential plans: receipt steps for every earlier step; all must have completed and verified. */
   previousSteps?: ReceiptStep[];
+  /**
+   * Optional: the chain's current best block number, read right before sending. When given, the send is blocked
+   * unless it is inside the envelope's mortality window [checkpoint.number, checkpoint.number + mortalityBlocks).
+   */
+  currentBlockNumber?: number;
+  /**
+   * Optional: the signer's current account nonce read from the chain right before sending. When given, it must equal
+   * envelope.nonce + (sendIndex ?? 0); higher means the nonce is stale (already used), lower means a gap.
+   */
+  currentAccountNonce?: number;
+  /**
+   * Needed when policyResult is not the very object evaluatePolicy returned in this process (e.g. restored from
+   * storage after a refresh): the gate re-runs evaluatePolicy with these facts (and manifest) plus this input's
+   * policy, plan and preflight, and blocks unless the re-evaluation is allowed and digests identically.
+   */
+  policyEvaluation?: Pick<PolicyInput, "facts" | "manifest">;
+  /**
+   * Block (fail closed) a policyResult that evaluatePolicy didn't return in this process unless policyEvaluation
+   * reproduces it. Off by default only so existing replay callers keep working; the console and SDK should set it.
+   * A result that is not self-consistent (allowed without every rule passing, or for another policy) is ALWAYS blocked.
+   */
+  requireEvaluatedPolicyResult?: boolean;
   now: Date;
   store: ApprovalStore;
 }
@@ -500,6 +539,55 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
         "Blocked: this plan is an atomic-to-sequential downgrade, and the approval doesn't acknowledge it.",
     });
   }
+  // The allow decision itself must be genuine (P0-02 hardening): never trust a hand-built or edited PolicyResult.
+  const pr = input.policyResult;
+  const selfConsistent =
+    !!pr &&
+    pr.allowed === true &&
+    Array.isArray(pr.rules) &&
+    pr.rules.length > 0 &&
+    pr.rules.every((r) => r.outcome === "pass") &&
+    pr.policyDigest === policyDigest(input.policy);
+  if (!selfConsistent) {
+    reasons.push({
+      code: "policy_result_forged",
+      message:
+        "Blocked: the policy result is not an allowed result for this policy (its rules or policy digest don't support it).",
+    });
+  } else if (isEvaluatedPolicyResult(pr)) {
+    // genuine: nothing more to check (no pass code, so existing passed-lists stay stable)
+  } else if (!input.policyEvaluation) {
+    if (input.requireEvaluatedPolicyResult)
+      reasons.push({
+        code: "policy_result_unverified",
+        message:
+          "Blocked: the policy result wasn't produced by the policy engine here, and no runtime facts were given to re-check it.",
+      });
+  } else {
+    let again: ReturnType<typeof evaluatePolicy> | undefined;
+    try {
+      again = evaluatePolicy({
+        policy: input.policy,
+        plan,
+        preflight: input.preflight,
+        facts: input.policyEvaluation.facts,
+        manifest: input.policyEvaluation.manifest,
+      });
+    } catch {
+      again = undefined;
+    }
+    if (
+      !again ||
+      !again.allowed ||
+      digest("seam/policy-result/v1", again) !== digest("seam/policy-result/v1", pr)
+    )
+      reasons.push({
+        code: "policy_result_forged",
+        message: "Blocked: re-running the policy does not reproduce this allowed result.",
+      });
+    else
+      ok("policy_result_reproduced", "re-running the policy reproduced this exact allowed result");
+  }
   const recomputed = buildBinding(
     { ...input, fingerprint: input.preparedFingerprint },
     approval.binding.expiresAt,
@@ -541,6 +629,49 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
   if (!lock.ok) reasons.push({ code: "runtime_changed", message: lock.reason });
   else if (lock.lockBasis === "layout_hash") ok("runtime_layout_unchanged", lock.reason);
   else ok("runtime_unchanged", "the runtime is the one the plan was prepared for");
+
+  // Mortality window and account nonce (P0-02 hardening). Fail closed on malformed input.
+  const env = input.envelope;
+  if (!Number.isSafeInteger(env.mortalityBlocks) || env.mortalityBlocks <= 0) {
+    reasons.push({
+      code: "mortality_invalid",
+      message: "Blocked: the signing envelope has no valid mortality window.",
+    });
+  } else if (input.currentBlockNumber !== undefined) {
+    const b = input.currentBlockNumber;
+    const start = env.checkpoint?.number;
+    if (!Number.isSafeInteger(b) || !Number.isSafeInteger(start)) {
+      reasons.push({
+        code: "mortality_expired",
+        message: "Blocked: the current block or the checkpoint block is not a valid block number.",
+      });
+    } else if (b < start || b >= start + env.mortalityBlocks) {
+      reasons.push({
+        code: "mortality_expired",
+        message: `Blocked: block ${b} is outside the transaction's mortality window (blocks ${start} to ${start + env.mortalityBlocks - 1}), so it can't be included.`,
+      });
+    } else ok("mortality_valid", `block ${b} is inside the mortality window`);
+  }
+  if (input.currentAccountNonce !== undefined) {
+    const want = env.nonce + (i ?? 0);
+    const have = input.currentAccountNonce;
+    if (!Number.isSafeInteger(have) || have < 0)
+      reasons.push({
+        code: "nonce_stale",
+        message: "Blocked: the account nonce read from the chain is not a valid number.",
+      });
+    else if (have > want)
+      reasons.push({
+        code: "nonce_stale",
+        message: `Blocked: the account's nonce is already ${have}, so the approved nonce ${want} was used. Approve again.`,
+      });
+    else if (have < want)
+      reasons.push({
+        code: "nonce_gap",
+        message: `Blocked: the account's nonce is ${have}, below the approved ${want}; an earlier transaction is missing.`,
+      });
+    else ok("nonce_current", `the account nonce is ${have}, as approved`);
+  }
 
   const expected = callsToSign(plan).map((c) => (c ?? "").toLowerCase());
   let signed = input.signedCalls.map((c) => c.toLowerCase());

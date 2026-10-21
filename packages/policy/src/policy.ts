@@ -138,6 +138,24 @@ export interface PolicyInput {
  * Checks a compiled plan against the policy. Each rule reports pass, block or unknown with a plain reason.
  * The result is allowed only if nothing blocks and every unknown was explicitly allowed by the policy.
  */
+/**
+ * Results produced by evaluatePolicy in this process. Not enumerable, not serialisable: a hand-built or
+ * JSON-restored PolicyResult is not in here. checkBeforeSubmit refuses an unmarked result unless it is given the
+ * inputs to re-evaluate it (policyEvaluation) and the re-evaluation reproduces it exactly.
+ */
+// Shared across copies of this module (src and dist can both be loaded, e.g. in tests or a bundled SDK).
+const REG = Symbol.for("seam.policy.evaluatedResults");
+const EVALUATED: WeakSet<object> = ((globalThis as Record<symbol, unknown>)[REG] ??=
+  new WeakSet<object>()) as WeakSet<object>;
+function markEvaluated(r: PolicyResult): PolicyResult {
+  EVALUATED.add(r);
+  return r;
+}
+/** True only for a PolicyResult object that evaluatePolicy itself returned (same object, unmodified identity). */
+export function isEvaluatedPolicyResult(r: unknown): boolean {
+  return typeof r === "object" && r !== null && EVALUATED.has(r);
+}
+
 export function evaluatePolicy({
   policy,
   plan,
@@ -196,10 +214,10 @@ export function evaluatePolicy({
       "plan_available",
       `Blocked: ${plan.modeReason}${codes.length ? ` [${codes.join(", ")}]` : ""}`,
     );
-  } else if (!policy.allowedModes.includes(plan.mode)) {
+  } else if (!Array.isArray(policy.allowedModes) || !policy.allowedModes.includes(plan.mode)) {
     block(
       "mode_allowed",
-      `Blocked: execution mode ${plan.mode} is not allowed by policy (allowed: ${policy.allowedModes.join(", ")}).`,
+      `Blocked: execution mode ${plan.mode} is not allowed by policy (allowed: ${Array.isArray(policy.allowedModes) ? policy.allowedModes.join(", ") : "none"}).`,
     );
   } else if (plan.mode === "atomic_verified" && facts.behaviour.batchAllRollback !== "verified") {
     block(
@@ -228,13 +246,28 @@ export function evaluatePolicy({
   if (plan.mode.startsWith("atomic") && !plan.outerCall)
     block("mode_allowed", "Blocked: an atomic plan has no batch call to sign.");
   if (plan.steps.length === 0) block("plan_available", "Blocked: the plan has no steps.");
-  if (policy.maxSteps !== undefined && plan.steps.length > policy.maxSteps) {
+  if (
+    policy.maxSteps !== undefined &&
+    (!Number.isSafeInteger(policy.maxSteps) || policy.maxSteps < 0)
+  ) {
+    block("max_steps", "Blocked: the policy's step limit is not a whole number of steps.");
+  } else if (policy.maxSteps !== undefined && plan.steps.length > policy.maxSteps) {
     block(
       "max_steps",
       `Blocked: the plan has ${plan.steps.length} steps, more than the limit of ${policy.maxSteps}.`,
     );
   }
 
+  const seenIds = new Set<string>();
+  for (const st of plan.steps) {
+    if (seenIds.has(st.actionId))
+      block(
+        "duplicate_step",
+        `Blocked: the plan has more than one step with id ${st.actionId}.`,
+        st.actionId,
+      );
+    seenIds.add(st.actionId);
+  }
   const limits = policy.maxAmountPerAsset;
   for (const step of plan.steps) {
     const id = step.actionId;
@@ -530,13 +563,13 @@ export function evaluatePolicy({
   const weak = rules
     .filter((r) => r.weak)
     .map((r) => (r.actionId ? `${r.rule}:${r.actionId}` : r.rule));
-  return {
+  return markEvaluated({
     allowed: rules.every((r) => r.outcome === "pass"),
     rules,
     policyDigest: policyDigest(policy),
     ...(weak.length ? { weakProof: weak } : {}),
     ...(approvalRequired.length ? { approvalRequired } : {}),
-  };
+  });
 }
 
 /** Same checks as the compiler's evaluateRollbackProof, re-done here so policy never trusts a bare 'verified' string. */
