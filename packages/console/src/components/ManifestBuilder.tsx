@@ -6,6 +6,7 @@ import {
   argFields,
   checkManifest,
   supportedKinds,
+  serializeManifest,
   type Manifest,
   type RuntimeFacts,
 } from "@seam/compiler/browser";
@@ -14,7 +15,8 @@ import {
   buildManifest,
   emptyAction,
   listWalletAccounts,
-  parseManifestJson,
+  importManifest,
+  type ManifestIssue,
   type Atomicity,
   type BuilderKind,
   type DraftAction,
@@ -23,7 +25,7 @@ import {
 } from "../lib/manifestbuilder";
 import { V3_HTTPS_RPC, type V3FactsResult } from "../lib/v3facts";
 import type { RpcTransport } from "../lib/chainclient";
-import { liveFactsStep, downloadJson } from "./Modes";
+import { liveFactsStep } from "./Modes";
 import { loadChainFns } from "../lib/signflow";
 import { BuilderPolicy, type BuilderSelection } from "./BuilderPolicy";
 import type { Plan as PolicyPlan } from "@seam/policy/browser";
@@ -41,6 +43,8 @@ export interface ActionSupport {
   supported: boolean;
   reason: string;
   reasonCode?: string;
+  /** The compiler's stable cause code for an unsupported kind (supportedKinds().cause). */
+  cause?: string;
 }
 /** Support per action from the compiler's own supportedKinds(facts). No facts, or facts it rejects, means nothing is supported. */
 export function actionSupport(facts?: Facts): ActionSupport[] {
@@ -71,8 +75,37 @@ export function actionSupport(facts?: Facts): ActionSupport[] {
           supported: false,
           reason: k.reason,
           ...("reasonCode" in k && k.reasonCode ? { reasonCode: k.reasonCode } : {}),
+          ...("cause" in k && k.cause ? { cause: k.cause } : {}),
         };
   });
+}
+
+/** Canonical Manifest JSON via the compiler's serializeManifest; a manifest it rejects is not exported. */
+export function exportManifestText(
+  m: DraftManifest,
+): { ok: true; text: string } | { ok: false; issues: ManifestIssue[] } {
+  try {
+    return { ok: true, text: serializeManifest(toCompilerManifest(m)) };
+  } catch (e) {
+    const issues = (e as { issues?: ManifestIssue[] }).issues;
+    return {
+      ok: false,
+      issues: issues?.length
+        ? issues.map((i) => ({
+            code: i.code,
+            message: i.message,
+            ...(i.path ? { path: i.path } : {}),
+          }))
+        : [{ code: "EXPORT_FAILED", message: e instanceof Error ? e.message : String(e) }],
+    };
+  }
+}
+
+function downloadText(name: string, text: string) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = name;
+  a.click();
 }
 
 /** Turns form strings into the values the compiler expects: json fields are parsed, everything else stays a string. */
@@ -144,6 +177,7 @@ export function ManifestBuilder({
   const [actions, setActions] = useState<DraftAction[]>([]);
   const [atomicity, setAtomicity] = useState<Atomicity>("preferred");
   const [importMsg, setImportMsg] = useState<string>();
+  const [issues, setIssues] = useState<ManifestIssue[]>([]);
   const [compileMsg, setCompileMsg] = useState<string>();
   const [plan, setPlan] = useState<unknown>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -197,8 +231,12 @@ export function ManifestBuilder({
   };
   const doImport = async (f?: File) => {
     if (!f) return;
-    const r = parseManifestJson(await f.text());
-    if (!r.ok) return setImportMsg(`Import refused: ${r.message}`);
+    setIssues([]);
+    const r = importManifest(await f.text(), live);
+    if (!r.ok) {
+      setIssues(r.issues);
+      return setImportMsg(`Import refused: ${r.issues.length} issue(s).`);
+    }
     setActions(r.value.actions);
     setAtomicity(r.value.atomicity);
     setPlan(undefined);
@@ -207,6 +245,16 @@ export function ManifestBuilder({
         ? "Imported. The file's signer was replaced by your connected account."
         : "Imported.",
     );
+  };
+  const doExport = () => {
+    if (!manifest) return;
+    setIssues([]);
+    const r = exportManifestText(manifest);
+    if (!r.ok) {
+      setIssues(r.issues);
+      return setImportMsg(`Export refused: ${r.issues.length} issue(s).`);
+    }
+    downloadText("seam-manifest.json", r.text);
   };
   const doCompile = async () => {
     setCompileMsg(undefined);
@@ -304,23 +352,47 @@ export function ManifestBuilder({
 
       <h4>3. Actions</h4>
       <ul className="small" aria-label="Supported actions">
-        {support.map((s) => (
-          <li key={s.kind}>
-            <button
-              className="ghost xs"
-              disabled={!s.supported}
-              title={s.reason}
-              onClick={() => {
-                setPlan(undefined);
-                setActions((xs) => [...xs, emptyAction(s.kind, xs)]);
-              }}
-            >
-              + {s.kind}
-            </button>{" "}
-            <span className="muted">{s.supported ? "supported" : `unsupported: ${s.reason}`}</span>
-          </li>
-        ))}
+        {support
+          .filter((s) => s.supported)
+          .map((s) => (
+            <li key={s.kind}>
+              <button
+                className="ghost xs"
+                title={s.reason}
+                onClick={() => {
+                  setPlan(undefined);
+                  setActions((xs) => [...xs, emptyAction(s.kind, xs)]);
+                }}
+              >
+                + {s.kind}
+              </button>{" "}
+              <span className="muted">supported</span>
+            </li>
+          ))}
       </ul>
+      {support.some((s) => !s.supported) && (
+        <details className="small">
+          <summary>
+            Not available on this runtime ({support.filter((s) => !s.supported).length})
+          </summary>
+          <ul aria-label="Unavailable actions">
+            {support
+              .filter((s) => !s.supported)
+              .map((s) => (
+                <li key={s.kind} data-kind={s.kind}>
+                  <code>{s.kind}</code>
+                  {s.cause ? (
+                    <>
+                      {" "}
+                      <code>{s.cause}</code>
+                    </>
+                  ) : null}
+                  : {s.reason}
+                </li>
+              ))}
+          </ul>
+        </details>
+      )}
       {actions.map((a, i) => {
         const f = argFields(a.kind);
         return (
@@ -399,11 +471,7 @@ export function ManifestBuilder({
         <button disabled={!!blocked} onClick={doCompile}>
           Compile against live runtime
         </button>
-        <button
-          className="ghost"
-          disabled={!manifest}
-          onClick={() => manifest && downloadJson("seam-manifest.json", manifest)}
-        >
+        <button className="ghost" disabled={!manifest} onClick={doExport}>
           Export Manifest
         </button>
         <label className="ghost small">
@@ -421,6 +489,22 @@ export function ManifestBuilder({
         <p className="small" role="status">
           {importMsg}
         </p>
+      )}
+      {issues.length > 0 && (
+        <ul className="small" aria-label="Manifest issues">
+          {issues.map((i, k) => (
+            <li key={k}>
+              <code>{i.code}</code>
+              {i.path ? (
+                <>
+                  {" "}
+                  at <code>{i.path}</code>
+                </>
+              ) : null}
+              : {i.message}
+            </li>
+          ))}
+        </ul>
       )}
       {compileMsg && (
         <p className="small" role="alert">
