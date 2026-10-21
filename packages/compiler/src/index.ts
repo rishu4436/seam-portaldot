@@ -7,8 +7,16 @@ export {
   BATCH_CAPABILITY,
   evaluateRollbackProof,
   supportedKinds,
+  validateManifestShape,
   type KindAvailability,
+  type KindReasonCode,
 } from "./compile.js";
+export {
+  serializeManifest,
+  parseManifest,
+  MANIFEST_FIELDS,
+  type ParseManifestResult,
+} from "./manifest-io.js";
 export {
   argFields,
   checkManifest,
