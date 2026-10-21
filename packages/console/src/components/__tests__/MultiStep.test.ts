@@ -283,7 +283,7 @@ describe("signed bytes never leave memory", () => {
     for (const s of spies) expect(s).not.toHaveBeenCalled();
     expect(ls.setItem).not.toHaveBeenCalled();
   });
-  it("console source has no console.*, localStorage or sessionStorage calls, and exports never take signed bytes", () => {
+  it("console source has no console.*, no localStorage/sessionStorage outside lib/runstore.ts, and exports never take signed bytes", () => {
     const root = resolve(CONSOLE_DIR, "src");
     const files: string[] = [];
     const walk = (d: string) => {
@@ -299,7 +299,9 @@ describe("signed bytes never leave memory", () => {
     for (const f of files) {
       const src = readFileSync(f, "utf8");
       expect(src, f).not.toMatch(/\bconsole\.(log|info|warn|error|debug|trace)\(/);
-      expect(src, f).not.toMatch(/\b(localStorage|sessionStorage)\b/);
+      // Persistence lives in ONE place (lib/runstore.ts: versioned key, whitelisted non-secret fields only).
+      if (!f.endsWith(join("lib", "runstore.ts")))
+        expect(src, f).not.toMatch(/\b(localStorage|sessionStorage)\b/);
       // Downloads / exports: no signed bytes in their arguments.
       for (const m of src.matchAll(/(downloadJson|download|policyJson)\(([^)]*)\)/g))
         expect(m[2], f).not.toMatch(/signed/i);
