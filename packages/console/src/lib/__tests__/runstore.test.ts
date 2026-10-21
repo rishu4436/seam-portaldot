@@ -10,6 +10,7 @@ import {
   PersistedApprovalStore,
   RUN_STORE_KEY,
   RunStore,
+  chainTxLookup,
   type KV,
   type TxLookup,
 } from "../runstore";
@@ -224,5 +225,17 @@ describe("persisted run state", () => {
     expect(r!.steps[1]!.status).toBe("submitted");
     expect(r!.phase).toBe("uncertain");
     expect(new RunStore(kv).claimSend(H, 0)).toBe(false);
+  });
+  it("chainTxLookup: the real @seam/chain/browser lookupTxByHash from the era birth block; no birth block -> unknown", async () => {
+    const send = vi.fn(async () => null);
+    const l = chainTxLookup(send);
+    expect(await l({ txHash: TX(0) })).toEqual({
+      status: "unknown",
+      reason: "no era birth block was recorded for this run",
+    });
+    expect(send).not.toHaveBeenCalled();
+    const r = await l({ txHash: TX(0), fromBlock: 120 });
+    expect(r.status).toBe("unknown"); // the node answered nothing: never not_found, never found
+    expect(send).toHaveBeenCalled();
   });
 });

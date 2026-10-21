@@ -48,6 +48,7 @@ import {
   PersistedApprovalStore,
   RunStore,
   type RunRecord,
+  chainTxLookup,
   type TxLookup,
 } from "../lib/runstore";
 import { buildSequentialReceipt } from "../lib/seqreceipt";
@@ -636,7 +637,7 @@ export function LivePanel({
 }: {
   /** Persisted non-secret run state (lib/runstore.ts). Default: browser storage via browserKV(), key RUN_STORE_KEY. */
   runStore?: RunStore;
-  /** Tx-hash lookup for reconciling recovered runs. TODO(Chainsmith): @seam/chain/browser lookupExtrinsic; none yet. */
+  /** Tx-hash lookup for reconciling recovered runs. Default: @seam/chain/browser lookupTxByHash over the V3 URL, on Reconcile only. */
   txLookup?: TxLookup;
   /**
    * Builder plans: the facts snapshot the plan was compiled with. Before signing, the re-read facts go through Forge's
@@ -686,11 +687,20 @@ export function LivePanel({
   const engineHashRef = useRef<string | undefined>(undefined);
   const [recovered, setRecovered] = useState<RunRecord[]>([]);
   useEffect(() => {
-    // After a refresh: reconcile unfinished runs by tx hash (never re-sent); signed-but-unsent ones are abandoned.
+    // After a refresh: local recovery only (nothing is contacted): signed-but-unsent runs are abandoned; runs with a
+    // tx hash wait for the user to press Reconcile, which reads the chain by hash and never re-sends.
     void runStore
-      .recover(txLookup)
+      .recover(undefined)
       .then((rs) => setRecovered(rs.filter((r) => r.phase !== "finalized")));
-  }, [runStore, txLookup]);
+  }, [runStore]);
+  const reconcile = async () => {
+    const u = v3RpcUrl(url);
+    const lookup =
+      txLookup ??
+      (u ? chainTxLookup((await import("../lib/browserChain")).transportFor(u)) : undefined);
+    const rs = await runStore.recover(lookup);
+    setRecovered(rs.filter((r) => r.phase !== "finalized"));
+  };
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
   const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
   useEffect(() => {
@@ -877,6 +887,10 @@ export function LivePanel({
               planDigest: plan?.digest,
               mode: plan?.mode,
               phase: "approved",
+              fromBlock: (
+                preSigned.approvalInput?.envelope as
+                  { checkpoint?: { number?: number } } | undefined
+              )?.checkpoint?.number,
               steps: (plan?.steps ?? []).map((st, index) => ({
                 index,
                 actionId: st.actionId,
@@ -941,7 +955,7 @@ export function LivePanel({
     <section className="grid2">
       <div className="card">
         <h3>LIVE V3</h3>
-        {recovered.length > 0 && <RecoveredRuns runs={recovered} />}
+        {recovered.length > 0 && <RecoveredRuns runs={recovered} onReconcile={reconcile} />}
         <p className="muted">
           Uses the real V3 testnet over HTTPS (read-only until you approve and sign with your own
           wallet). Nothing is contacted until you press the button. Local spec-1002 results do not
@@ -1323,10 +1337,22 @@ const defaultStepCheck = async (
 ) => (await import("../lib/stepverify")).stepEffectCheck(rpc, txHash, block, ctx);
 
 /** Runs recovered from storage after a refresh. Read-only: nothing here can send; reconciliation only reads by hash. */
-export function RecoveredRuns({ runs }: { runs: RunRecord[] }) {
+export function RecoveredRuns({
+  runs,
+  onReconcile,
+}: {
+  runs: RunRecord[];
+  /** Reads the chain by tx hash (read only). Never sends. */
+  onReconcile?: () => void;
+}) {
   return (
     <div className="small" role="group" aria-label="Recovered runs" data-testid="recovered-runs">
-      <b>Recovered runs (from this browser)</b>
+      <b>Recovered runs (from this browser)</b>{" "}
+      {onReconcile && runs.some((r) => r.steps.some((st) => st.txHash)) && (
+        <button type="button" className="ghost xs" onClick={onReconcile}>
+          Reconcile by tx hash (read only)
+        </button>
+      )}
       <ul>
         {runs.map((r) => (
           <li key={r.approvalHash} data-phase={r.phase}>
