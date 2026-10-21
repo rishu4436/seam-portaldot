@@ -43,6 +43,7 @@ import { planCall, fingerprintMatches } from "../lib/liverequest";
 import type { CompiledStepContext } from "../lib/stepverify";
 import { checkRebind } from "../lib/rebind";
 import { buildLiveReceipt } from "../lib/livereceipt";
+import { runAtomicity } from "../lib/atomicity";
 import { buildSequentialReceipt } from "../lib/seqreceipt";
 import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
 import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
@@ -526,6 +527,7 @@ export function LiveReceipt({
     engineApprovalHash,
     approvalInputs,
     compiledPlan: compiled?.plan,
+    atomicity: compiled?.atomicity,
   });
 
   return (
@@ -543,6 +545,14 @@ export function LiveReceipt({
         {/* Single source of truth: the same receipt object the download writes. */}
         <dt>Result</dt>
         <dd data-testid="receipt-result">{receipt.result}</dd>
+        {receipt.atomicity && (
+          <>
+            <dt>Atomicity</dt>
+            <dd data-testid="receipt-atomicity" title={receipt.atomicity.basis}>
+              {receipt.atomicity.status}: {receipt.atomicity.reason}
+            </dd>
+          </>
+        )}
         <dt>Live status at finalization (before the effect check, not the verdict)</dt>
         <dd data-testid="receipt-live-status">{receipt.liveStatusAtFinalization}</dd>
         <dt>Tx hash</dt>
@@ -746,6 +756,7 @@ export function LivePanel({
           setReceiptCtx({
             step: single ? cp.steps[0] : undefined,
             plan: cp,
+            ...(atomicPlan ? { atomicity: runAtomicity(cp, hostFacts) } : {}),
             signerAccountId: cp.signer.publicKey,
             runtime: (hostFacts as { fingerprint?: CompiledStepContext["runtime"] }).fingerprint,
             decode,
@@ -983,6 +994,14 @@ export function LivePanel({
                 {SIGNING_LABEL[out.signing]}
                 {out.signingCode ? ` (${out.signingCode})` : ""}
               </dd>
+              {receiptCtx?.atomicity && (
+                <>
+                  <dt>Atomicity</dt>
+                  <dd data-testid="live-atomicity" title={receiptCtx.atomicity.basis}>
+                    {receiptCtx.atomicity.status}: {receiptCtx.atomicity.reason}
+                  </dd>
+                </>
+              )}
               {out.blockDetail && (
                 <>
                   <dt>Block detail</dt>

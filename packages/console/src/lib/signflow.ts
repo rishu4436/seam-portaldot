@@ -263,6 +263,7 @@ export async function preSubmit(args: {
   }
   if (!current) return no("Could not re-read the runtime before submit, so nothing was sent.");
   const plan = pre.approvalInput.plan as { mode?: string };
+  const atomicPlan = !!plan.mode?.startsWith("atomic");
   const preparedFingerprint = (facts as { fingerprint: unknown }).fingerprint;
   const preparedMetadataHex = (facts as { source?: { metadataHex?: string } })?.source?.metadataHex;
   let check: ReturnType<typeof checkBeforeSubmit>;
@@ -280,7 +281,12 @@ export async function preSubmit(args: {
       signedExtrinsics: all,
       decodeSignedExtrinsic: chain.signedExtrinsicDecoder(facts, pre.approvalInput.envelope),
       requireTrustedDecoder: true,
-      signedDryRun: pf.steps.map((s) => s.dryRun),
+      // Atomic: ONE signed batch_all, so ONE dry run: the chain's per-transaction outcome. Its per-step dryRun stays
+      // "unknown" for atomic plans (chain preflight-core), and there is one entry per plan step, not per transaction.
+      signedDryRun:
+        atomicPlan && report?.transactions?.length
+          ? report.transactions.map((t) => t.dryRun?.outcome ?? "unknown")
+          : pf.steps.map((s) => s.dryRun),
       ...(plan.mode === "sequential"
         ? {
             sendIndex: args.sequential?.sendIndex ?? 0,

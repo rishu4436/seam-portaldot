@@ -162,6 +162,8 @@ export interface CompiledStepContext {
   decode?: (x: Hex) => unknown;
   /** Atomic plans: the compiled plan; its steps are judged per step from the one batch outcome (perStepOfBatch). */
   plan?: unknown;
+  /** Atomic plans: atomicity of the run (lib/atomicity.ts runAtomicity), decided before signing from the facts. */
+  atomicity?: import("./atomicity").RunAtomicity;
 }
 
 export const PER_STEP_FROM_BATCH = "per-step from batch outcome";

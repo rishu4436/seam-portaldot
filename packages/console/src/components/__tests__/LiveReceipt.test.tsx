@@ -358,3 +358,31 @@ describe("MultiStepPanel shows the signed dry-run block detail", () => {
     );
   });
 });
+
+describe("LiveReceipt shows the atomic run's atomicity", () => {
+  it("atomic_unverified is shown with its reason, and is in the receipt", async () => {
+    const atomicity = {
+      status: "atomic_unverified" as const,
+      reason:
+        "The plan compiled as atomic_unverified: rollback on failure is not proven for this runtime.",
+      basis: "compiled plan mode",
+    };
+    render(
+      <LiveReceipt
+        out={out}
+        plan={plan}
+        rpc={rpc}
+        effectCheck={vi.fn().mockResolvedValue({ verdict: "not_verified", reason: "x" })}
+        compiled={{
+          step: undefined,
+          signerAccountId: "0x01",
+          plan: { mode: "atomic_unverified", steps: [] },
+          atomicity,
+        }}
+      />,
+    );
+    expect(screen.getByTestId("receipt-atomicity").textContent).toBe(
+      `atomic_unverified: ${atomicity.reason}`,
+    );
+  });
+});

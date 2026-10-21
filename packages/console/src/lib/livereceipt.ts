@@ -54,6 +54,8 @@ export interface ConsoleLiveReceipt {
   runtimeLock?: import("./signflow").RuntimeLockInfo;
   /** Submit-gate block detail (signed dry run) as reported; omitted when none. */
   blockDetail?: import("./signflow").BlockDetail;
+  /** Atomic (batch_all) runs only: atomic_unverified unless the rollback proof matches (lib/atomicity.ts). */
+  atomicity?: import("./atomicity").RunAtomicity;
 }
 
 export function buildLiveReceipt(a: {
@@ -68,6 +70,7 @@ export function buildLiveReceipt(a: {
   compiledPlan?: unknown;
   /** preSign's approvalInput plus its `now` (ISO). */
   approvalInputs?: Record<string, unknown> & { now: string };
+  atomicity?: import("./atomicity").RunAtomicity;
 }): ConsoleLiveReceipt {
   const { out, plan, effect } = a;
   const steps = (effect?.steps ?? []).map((s) => ({ ...s }));
@@ -106,5 +109,6 @@ export function buildLiveReceipt(a: {
       : "no verifyStep verdict",
     ...(out.runtimeLock ? { runtimeLock: { ...out.runtimeLock } } : {}),
     ...(out.blockDetail ? { blockDetail: structuredClone(out.blockDetail) } : {}),
+    ...(a.atomicity ? { atomicity: { ...a.atomicity } } : {}),
   };
 }
