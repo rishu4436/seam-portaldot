@@ -436,7 +436,7 @@ function validateAction(
     : { action, values, encodeValues };
 }
 
-function validateManifestShape(m: unknown, issues: CompileIssue[]): m is Manifest {
+export function validateManifestShape(m: unknown, issues: CompileIssue[]): m is Manifest {
   if (!isObject(m)) {
     issues.push({ code: "MANIFEST_INVALID", message: "manifest must be an object" });
     return false;
@@ -1300,8 +1300,31 @@ export type KindAvailability =
       capability: string;
       supported: false;
       reason: string;
+      /** Set only for the step-level codes compile() also uses (unchanged, so existing consumers keep working). */
       reasonCode?: StepReasonCode;
+      /** Always set: one stable code per cause, so a builder can show and test the reason without parsing text. */
+      cause: KindReasonCode;
     };
+
+/**
+ * Why a kind is not offered. Superset of StepReasonCode; used only by supportedKinds() (plan steps and their
+ * digests are unchanged).
+ * - NO_OBSERVED_V3_METADATA: the runtime's own metadata has no such call; SEAM never uses a pinned/static layout.
+ * - V3_ARG_SHAPE_MISMATCH: the call exists but its argument shape is not the verified V3 shape.
+ * - CAPABILITY_NOT_OBSERVED: the pallet or call is not in this runtime's metadata.
+ * - CAPABILITY_UNKNOWN: discovery did not finish reading it, so it is not assumed.
+ * - CAPABILITY_NO_INDEX / CAPABILITY_ORIGIN_MISMATCH: the facts are inconsistent with the metadata.
+ * - UNFILLABLE_CALL_ARGS: the call takes arguments SEAM cannot fill.
+ * - NO_ENCODER: SEAM has no encoder for the call.
+ */
+export type KindReasonCode =
+  | StepReasonCode
+  | "CAPABILITY_NOT_OBSERVED"
+  | "CAPABILITY_UNKNOWN"
+  | "CAPABILITY_NO_INDEX"
+  | "CAPABILITY_ORIGIN_MISMATCH"
+  | "UNFILLABLE_CALL_ARGS"
+  | "NO_ENCODER";
 
 /**
  * For a live action picker: which SEAM kinds this runtime can compile, from its own metadata only.
@@ -1315,25 +1338,32 @@ export function supportedKinds(facts: RuntimeFacts): KindAvailability[] {
   return (Object.keys(KIND_TO_CAPABILITY) as ActionKind[]).map((kind) => {
     const capability = KIND_TO_CAPABILITY[kind];
     const cap = facts.capabilities[capability];
-    const no = (reason: string, reasonCode?: StepReasonCode): KindAvailability =>
-      reasonCode
-        ? { kind, capability, supported: false, reason, reasonCode }
-        : { kind, capability, supported: false, reason };
+    const no = (reason: string, cause: KindReasonCode): KindAvailability =>
+      cause === "NO_OBSERVED_V3_METADATA" || cause === "V3_ARG_SHAPE_MISMATCH"
+        ? { kind, capability, supported: false, reason, reasonCode: cause, cause }
+        : { kind, capability, supported: false, reason, cause };
     if (NO_V3_METADATA_KINDS.has(kind) && !v3Observed(rt, capability, cap))
       return no(
         `this runtime's metadata has no ${capability} call (runtime spec ${spec}), so SEAM does not guess the call layout`,
         "NO_OBSERVED_V3_METADATA",
       );
     if (!cap || cap.status === "not_observed")
-      return no(`${capability} is not on this runtime (spec ${spec})`);
+      return no(`${capability} is not on this runtime (spec ${spec})`, "CAPABILITY_NOT_OBSERVED");
     if (cap.status === "unknown")
-      return no(`${capability} could not be confirmed on this runtime (spec ${spec})`);
+      return no(
+        `${capability} could not be confirmed on this runtime (spec ${spec})`,
+        "CAPABILITY_UNKNOWN",
+      );
     if (!Number.isInteger(cap.palletIndex) || !Number.isInteger(cap.callIndex))
-      return no(`${capability} is observed but has no pallet/call index`);
+      return no(`${capability} is observed but has no pallet/call index`, "CAPABILITY_NO_INDEX");
     const mismatch = capabilityOrigin(rt, capability, cap);
-    if (mismatch) return no(mismatch);
+    if (mismatch) return no(mismatch, "CAPABILITY_ORIGIN_MISMATCH");
     const pre = staticCallCheck(rt, kind, cap);
-    if (pre) return no(pre.reason, pre.reasonCode);
+    if (pre)
+      return no(
+        pre.reason,
+        pre.reasonCode ?? (ARG_BINDINGS[kind] ? "UNFILLABLE_CALL_ARGS" : "NO_ENCODER"),
+      );
     return {
       kind,
       capability,
