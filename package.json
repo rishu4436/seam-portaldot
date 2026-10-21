@@ -19,7 +19,8 @@
     "format": "prettier --write packages eslint.config.mjs",
     "format:check": "prettier --check packages eslint.config.mjs .prettierrc.json",
     "example:consumer": "node examples/consumer/index.mjs",
-    "evidence:manifest": "node scripts/evidence-manifest.mjs"
+    "evidence:manifest": "node scripts/evidence-manifest.mjs",
+    "docs:quickstart-check": "node scripts/quickstart-check.mjs"
   },
   "license": "Apache-2.0",
   "devDependencies": {
