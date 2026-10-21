@@ -2,6 +2,8 @@
 
 The developer-facing part of SEAM: Manifest helpers, execution receipts, plain-English explanations, the end-to-end flow, and the `seam` CLI. Built on `@seam/compiler` and `@seam/policy`. The chain side plugs in through `ChainAdapter`, which `@seam/chain` implements.
 
+Install, quickstart, the generated API reference, the supported-runtimes matrix and the security limitations are in [`docs/sdk.md`](../../docs/sdk.md). Not published: every package stays `private: true`.
+
 ## Manifest
 
 - `parseManifest(jsonOrObject)` checks the shape and returns `{ ok, manifest, digest }` or a list of `{ path, message }` issues.
@@ -68,4 +70,4 @@ Offline commands use the bundled Portaldot mainnet snapshot (spec 1002, block 2,
 
 ## Tests
 
-`npm test` runs 29 offline tests against the real snapshot metadata. They cover Manifest validation, receipt verification (attack cases 9 and 11), explanations, and the full flow with a fake chain and wallet (approval reuse, runtime change, a tampered signature, a failed or unknown signed dry run, stopping after a failure).
+`npm test` runs offline tests against the real snapshot metadata. They cover Manifest validation, receipt verification (attack cases 9 and 11), explanations, and the full flow with a fake chain and wallet (approval reuse, runtime change, a tampered signature, a failed or unknown signed dry run, stopping after a failure).

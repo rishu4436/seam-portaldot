@@ -9,7 +9,7 @@ cd "$ROOT"
 npm run build >/dev/null
 mkdir "$TMP/tgz"
 for p in compiler policy sdk; do npm pack -w "@seam/$p" --pack-destination "$TMP/tgz" >/dev/null; done
-APP="$TMP/app"; mkdir "$APP"; cp examples/consumer/index.mjs examples/consumer/package.json "$APP/"
+APP="$TMP/app"; mkdir "$APP"; cp -r examples/consumer/index.mjs examples/consumer/package.json examples/consumer/fixtures "$APP/"
 cd "$APP"
 node -e '
 const fs=require("fs"),d=process.argv[1];const p=JSON.parse(fs.readFileSync("package.json"));
@@ -21,6 +21,8 @@ npm install --no-audit --no-fund --loglevel=error
 out="$(node index.mjs)"; echo "$out"
 echo "$out" | grep -q "Plan for 1 step"
 echo "$out" | grep -q "outcome: partial"
+echo "$out" | grep -q "recorded receipt: checkReceipt=true"
+echo "$out" | grep -q "tampered receipt: checkReceipt=false"
 cat "$ROOT/docs/examples/demo-manifest.json" > m.json
 ./node_modules/.bin/seam digest m.json | grep -q "Manifest is valid"
 # no repo path may leak into the installed app

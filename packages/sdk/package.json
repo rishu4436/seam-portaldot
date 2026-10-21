@@ -16,11 +16,14 @@
     "./browser": {
       "types": "./dist/browser.d.ts",
       "import": "./dist/browser.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
-    "fixtures"
+    "fixtures",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -39,5 +42,13 @@
     "typescript": "^5.9.3",
     "vitest": "^2.1.9",
     "esbuild": "^0.21.5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rishu4436/seam-portaldot.git",
+    "directory": "packages/sdk"
   }
 }
