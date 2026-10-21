@@ -1,3 +1,4 @@
+import { parseManifest } from "@seam/compiler/browser";
 // Manifest Builder state: wallet accounts, the draft Manifest and JSON import/export. Pure helpers, no RPC and no signing.
 // Form fields come from the compiler's argFields(); the compiler stays the authority on argument validation and encoding.
 import type { InjectedWeb3 } from "./extensionsigner";
@@ -139,4 +140,36 @@ export function emptyAction(kind: BuilderKind, existing: DraftAction[]): DraftAc
   let n = existing.length + 1;
   while (existing.some((a) => a.id === `step${n}`)) n++;
   return { id: `step${n}`, kind, args: {} };
+}
+
+export interface ManifestIssue {
+  code: string;
+  message: string;
+  path?: string;
+}
+
+/**
+ * Imports a Manifest file with the compiler's strict parseManifest(text, facts): every problem comes back as
+ * issues[] (code, message, path). With live facts it also runs compile()'s full check. Only an accepted file is
+ * turned into the builder's draft form.
+ */
+export function importManifest(
+  text: string,
+  facts?: unknown,
+):
+  | { ok: true; value: { signer?: string; actions: DraftAction[]; atomicity: Atomicity } }
+  | { ok: false; issues: ManifestIssue[] } {
+  const r = parseManifest(text, facts as never);
+  if (!r.ok)
+    return {
+      ok: false,
+      issues: r.issues.map((i) => ({
+        code: i.code,
+        message: i.message,
+        ...((i as { path?: string }).path ? { path: (i as { path?: string }).path } : {}),
+      })),
+    };
+  const d = parseManifestJson(text);
+  if (!d.ok) return { ok: false, issues: [{ code: "BUILDER_UNSUPPORTED", message: d.message }] };
+  return { ok: true, value: d.value };
 }
