@@ -35,10 +35,22 @@ export async function dryRunOne(
       detail: `system_dryRun unavailable: ${(e as Error).message.slice(0, 200)}`,
     };
   }
+  // Fail closed on the answer itself: polkadot.js decodes null and "0x" to the default Ok(Ok(())), so anything that is
+  // not non-empty hex, or does not decode to exactly its own length, is unknown, never a passing dry run.
+  if (typeof raw !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(raw)) {
+    return {
+      txHash,
+      outcome: "unknown",
+      detail: `malformed system_dryRun answer (not non-empty hex): ${JSON.stringify(raw)?.slice(0, 80)}`,
+    };
+  }
   const { registry } = decodeRuntime(facts);
   let res: any;
   try {
     res = registry.createType("ApplyExtrinsicResult", raw);
+    const len = (raw.length - 2) / 2;
+    if (res.encodedLength !== len || res.toHex() !== raw.toLowerCase())
+      throw new Error(`decoded ${res.encodedLength} of ${len} bytes`);
   } catch (e) {
     return {
       txHash,
@@ -80,4 +92,20 @@ export async function dryRunOne(
       raw,
     };
   return { txHash, outcome: "ok", detail: "dispatch ok", raw };
+}
+
+/**
+ * system_dryRun of each assembled signed extrinsic, in order, over any RpcClient (the browser entry wraps a plain send).
+ * `results` goes straight into @seam/policy checkBeforeSubmit({ signedDryRun }). Read-only: it never submits.
+ */
+export async function signedDryRunWithClient(
+  client: RpcClient,
+  facts: RuntimeFacts,
+  signedExtrinsics: Hex[],
+  opts: { at?: Hex } = {},
+): Promise<{ results: SignedDryRun[]; details: SignedDryRunDetail[]; at?: Hex }> {
+  const details: SignedDryRunDetail[] = [];
+  for (const [i, x] of signedExtrinsics.entries())
+    details.push(await dryRunOne(client, facts, x, i, opts.at));
+  return { results: details.map((d) => d.outcome), details, ...(opts.at ? { at: opts.at } : {}) };
 }

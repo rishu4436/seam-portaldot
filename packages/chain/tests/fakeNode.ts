@@ -44,6 +44,8 @@ export interface FakeNodeOptions {
   /** These RPC methods throw (simulates an unreachable / broken node). */
   failRpc?: string[];
   /** Chain advances by this many empty blocks via advance(). */
+  /** system_dryRun answers this instead (e.g. null, "0x", a truncated or padded result) to test fail-closed decoding. */
+  dryRunAnswer?: (hex: string) => unknown;
 }
 
 interface FakeBlock {
@@ -195,7 +197,9 @@ export class FakeNode implements RpcClient {
       case "payment_queryFeeDetails":
         throw new Error("Method not found");
       case "system_dryRun":
-        return r(this.dryRun(String(params[0])));
+        return r(
+          this.o.dryRunAnswer ? this.o.dryRunAnswer(String(params[0])) : this.dryRun(String(params[0])),
+        );
       case "contracts_call":
         return r(
           this.o.contractsCall ?? {

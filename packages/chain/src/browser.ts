@@ -63,7 +63,8 @@ export {
 } from "./live-capabilities.js";
 export { clientFromSend, type RpcSend, type RpcClient } from "./rpc-core.js";
 // Preflight: one implementation with the node entry (preflightWithClient), over a plain send. Read-only.
-export { preflight, preflightReport } from "./preflight-browser.js";
+export { preflight, preflightReport, signedDryRun } from "./preflight-browser.js";
+export { dryRunOne, type SignedDryRunDetail } from "./dryrun-core.js";
 export {
   preflightWithClient,
   fakeSignedExtrinsic,
