@@ -164,3 +164,17 @@ export { clientFromSend, type RpcSend } from "./rpc-core.js";
 export { preflightWithClient, type PreflightCoreOptions } from "./preflight-core.js";
 export { preflightReport as preflightReportFromSend } from "./preflight-browser.js";
 export { buildSigningEnvelope, type SigningEnvelopeInput } from "./envelope.js";
+// Wallet events: watch an injected extension for disconnect, account switch or wrong network before signing.
+export {
+  watchSigner,
+  publicKeyOf,
+  sameSigner,
+  SignerNotReadyError,
+  type SignerState,
+  type SignerStatus,
+  type SignerWatch,
+  type WatchSignerOptions,
+  type InjectedAccountLike,
+  type InjectedExtensionLike,
+  type ExtensionSource,
+} from "./wallet-events.js";
