@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- raw JSON-RPC answers and polkadot.js codecs */
 // Read-only: replays already-included V3 signed extrinsics through system_dryRun at their parent block (should be ok),
 // at their own block (stale) and at the best block, with SEAM's own mapping (dryRunOne). Never signs or submits.
 // Usage: npx vite-node packages/chain/scripts/v3-dryrun-replay.ts -- <out.json> <block>:<txHash> ...
