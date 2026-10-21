@@ -46,6 +46,11 @@ export interface FakeNodeOptions {
   /** Chain advances by this many empty blocks via advance(). */
   /** system_dryRun answers this instead (e.g. null, "0x", a truncated or padded result) to test fail-closed decoding. */
   dryRunAnswer?: (hex: string) => unknown;
+  /**
+   * System.Account per SS58 (free/reserved/frozen). Accounts not listed have no entry (null). Without this option
+   * every System.Account read throws, so the native balance check stays unknown (as before it existed).
+   */
+  nativeBalances?: Record<string, { free: bigint; reserved?: bigint; frozen?: bigint }>;
 }
 
 interface FakeBlock {
@@ -198,7 +203,9 @@ export class FakeNode implements RpcClient {
         throw new Error("Method not found");
       case "system_dryRun":
         return r(
-          this.o.dryRunAnswer ? this.o.dryRunAnswer(String(params[0])) : this.dryRun(String(params[0])),
+          this.o.dryRunAnswer
+            ? this.o.dryRunAnswer(String(params[0]))
+            : this.dryRun(String(params[0])),
         );
       case "contracts_call":
         return r(
@@ -220,6 +227,33 @@ export class FakeNode implements RpcClient {
           for (const [who, balance] of Object.entries(a.accounts))
             if (key === storageKey(this.assetsQuery().account, a.assetId, who))
               return r(this.encodeValue("account", { balance }));
+        }
+        const sysAccount = (decodeRuntime(this.o.facts).decorated().query as any).system.account;
+        if (key.startsWith(u8aToHex(sysAccount.keyPrefix()))) {
+          if (!this.o.nativeBalances) throw new Error("FakeNode: System.Account not modelled");
+          for (const [who, b] of Object.entries(this.o.nativeBalances))
+            if (key === storageKey(sysAccount, who)) {
+              const { registry } = decodeRuntime(this.o.facts);
+              const reg = registry as any;
+              const v = reg.createTypeUnsafe(
+                reg.createLookupType(sysAccount.meta.type.asMap.value),
+                [
+                  {
+                    nonce: 0,
+                    providers: 1,
+                    data: {
+                      free: b.free,
+                      reserved: b.reserved ?? 0n,
+                      frozen: b.frozen ?? 0n,
+                      miscFrozen: b.frozen ?? 0n,
+                      feeFrozen: b.frozen ?? 0n,
+                    },
+                  },
+                ],
+              );
+              return r(u8aToHex(v.toU8a()));
+            }
+          return r(null);
         }
         for (const id of this.o.existingAssets ?? [])
           if (key === this.assetKey(id)) return r("0x00");

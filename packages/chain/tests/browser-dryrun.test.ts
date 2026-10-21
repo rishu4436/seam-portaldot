@@ -108,4 +108,14 @@ describe("browser signedDryRun (system_dryRun on the assembled signed bytes)", (
     await browser.signedDryRun(n, facts, [xs[0]!], { at: CHECKPOINT.hash as `0x${string}` });
     expect(n.log.find((l) => l.method === "system_dryRun")!.params[1]).toBe(CHECKPOINT.hash);
   });
+
+  it("the preflight report records each signed dry run: outcome, detail, raw result and block", async () => {
+    const { plan, xs } = await signed();
+    const n = node({ failCall: () => ({ index: 50, error: 0 }) });
+    const r = await browser.preflightReport(n, plan, facts, { signedExtrinsics: xs, nonce: 0 });
+    const d = r.transactions[0]!.dryRun!;
+    expect(d).toMatchObject({ outcome: "failed", raw: "0x0001033200" });
+    expect(d.detail).toMatch(/^system_dryRun: dispatch failed/);
+    expect(d.at).toEqual({ number: r.atBlock.number, hash: r.atBlock.hash });
+  });
 });

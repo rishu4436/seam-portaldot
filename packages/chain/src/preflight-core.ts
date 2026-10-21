@@ -39,7 +39,14 @@ export interface PreflightTxDetail {
   /** payment_queryFeeDetails, when the node returns it. */
   feeDetails?: unknown;
   /** system_dryRun result (only with real signed extrinsics). */
-  dryRun?: { outcome: "ok" | "failed" | "unknown"; detail: string };
+  dryRun?: {
+    outcome: "ok" | "failed" | "unknown";
+    detail: string;
+    /** Raw ApplyExtrinsicResult hex from system_dryRun, when the node answered (absent when unavailable or malformed). */
+    raw?: Hex;
+    /** The block the dry run ran at. */
+    at?: { number: number; hash: Hex };
+  };
   error?: string;
 }
 
@@ -493,6 +500,79 @@ async function assetBalanceFailures(
   return out;
 }
 
+/**
+ * Native tPOT check before signing (mirrors the asset minBalance check): the signer's System.Account free balance at
+ * the preflight block, less each transaction's node-quoted fee (payment_queryInfo partialFee; atomic: one fee for the
+ * batch) and each step's native `value`, in plan order. The fee is withdrawn with Preservation::Preserve, so the
+ * signer must keep at least max(existential deposit, frozen - reserved) afterwards. A step that would go below it is
+ * reported as a failure. Only failures are reported: a pass never makes a step 'ok'. Any fee, value, balance or ED
+ * that cannot be read leaves every step as it was (unknown).
+ */
+async function nativeBalanceFailures(
+  client: RpcClient,
+  facts: RuntimeFacts,
+  plan: Plan,
+  signerSs58: string,
+  at: Hex,
+  transactions: PreflightTxDetail[],
+  atomic: boolean,
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  try {
+    const d = decodeRuntime(facts).decorated() as unknown as {
+      query?: { system?: { account?: StorageEntryLoose } };
+      consts?: { balances?: { existentialDeposit?: { toBigInt(): bigint } } };
+    };
+    const ed = d.consts?.balances?.existentialDeposit?.toBigInt();
+    const entry = d.query?.system?.account;
+    if (ed === undefined || !entry) return out;
+    const acct = (await readStorageValue(client, facts, entry, [signerSs58], at)) as unknown as {
+      data?: Record<string, { toBigInt(): bigint } | undefined>;
+    } | null;
+    // No System.Account entry: the account holds nothing.
+    const data = acct === null ? {} : acct.data;
+    if (!data) return out;
+    const free = acct === null ? 0n : data.free?.toBigInt();
+    if (free === undefined) return out;
+    const frozen = data.frozen?.toBigInt() ?? data.miscFrozen?.toBigInt() ?? 0n;
+    const reserved = data.reserved?.toBigInt() ?? 0n;
+    const locked = frozen > reserved ? frozen - reserved : 0n;
+    const keep = locked > ed ? locked : ed;
+    const fees: bigint[] = [];
+    for (const t of atomic ? transactions.slice(0, 1) : transactions) {
+      if (!t.queryInfo) return out;
+      fees.push(BigInt(t.queryInfo.partialFee));
+    }
+    const valueKinds = new Set(["contracts.call", "revive.call", "revive.instantiate_with_code"]);
+    let balance = free;
+    for (const [i, s] of plan.steps.entries()) {
+      let spend = 0n;
+      if (atomic ? i === 0 : true) {
+        const f = fees[atomic ? 0 : i];
+        if (f === undefined) return out;
+        spend += f;
+      }
+      if (valueKinds.has(s.kind)) {
+        const v = s.decodedArgs.value;
+        if (v === undefined || !/^\d+$/.test(String(v))) return out;
+        spend += BigInt(v);
+      }
+      const remaining = balance - spend;
+      if (remaining < keep) {
+        out.set(
+          s.actionId,
+          `native balance check: step ${i + 1} needs ${spend} (fee${valueKinds.has(s.kind) ? " + value" : ""}) but ${signerSs58} (the signer) would keep ${remaining < 0n ? 0n : remaining} of ${balance}, below the ${keep === ed ? `existential deposit ${ed}` : `frozen amount ${keep}`} it must keep`,
+        );
+        break;
+      }
+      balance = remaining;
+    }
+  } catch {
+    return new Map();
+  }
+  return out;
+}
+
 type DecoratedLoose = {
   tx?: { revive?: { mapAccount?: unknown } };
   query?: { revive?: { originalAccount?: Parameters<typeof storageKey>[0] } };
@@ -741,7 +821,12 @@ export async function preflightWithClient(
       }
       if (opts.signedExtrinsics?.[i]) {
         const d = await dryRunOne(client, facts, ext, i, atBlock.hash);
-        detail.dryRun = { outcome: d.outcome, detail: `system_dryRun: ${d.detail}` };
+        detail.dryRun = {
+          outcome: d.outcome,
+          detail: `system_dryRun: ${d.detail}`,
+          ...(d.raw ? { raw: d.raw } : {}),
+          at: { number: atBlock.number, hash: atBlock.hash },
+        };
       }
       transactions.push(detail);
     }
@@ -772,6 +857,17 @@ export async function preflightWithClient(
     const balanceFailures = opts.signedExtrinsics
       ? new Map<string, string>()
       : await assetBalanceFailures(client, facts, plan, signerSs58, atBlock.hash);
+    const nativeFailures = opts.signedExtrinsics
+      ? new Map<string, string>()
+      : await nativeBalanceFailures(
+          client,
+          facts,
+          plan,
+          signerSs58,
+          atBlock.hash,
+          transactions,
+          atomic,
+        );
     const contractDryRuns: Record<string, unknown> = {};
     const v3Steps: V3StepPreflight[] = [];
     const steps: PreflightStep[] = [];
@@ -804,6 +900,11 @@ export async function preflightWithClient(
           dryRun = "failed";
           notes.push(balanceNote);
         }
+      }
+      const nativeNote = nativeFailures.get(s.actionId);
+      if (nativeNote) {
+        dryRun = "failed";
+        notes.push(nativeNote);
       }
       if (tx.dryRun && dryRun !== "failed") {
         if (tx.dryRun.outcome === "failed") dryRun = "failed";
