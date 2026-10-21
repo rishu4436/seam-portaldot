@@ -1,0 +1,108 @@
+{
+  "receiptKind": "seam/console-live-receipt/v1",
+  "result": "verified",
+  "liveStatus": "unverified",
+  "txHash": "0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402",
+  "block": {
+    "number": 119996,
+    "hash": "0x43326f29394dfad70747ff790d31e07ca068695279552c7083c42c02065f0edb"
+  },
+  "planDigest": "0x11b3a4cc1141136fbed62bd7a64e37ee3a2fea90bdfb7461e9fe490a68eca71a",
+  "manifestDigest": "0x04b35bfbfc2845fd2ef75e6f989af7a7906976fe08c52f8db34bc091ab779075",
+  "fingerprintDigest": "0x837a6a0daf2988cd65a9bdc62d468b35b699816efeb23cf7e4d7a404267dfc86",
+  "approvalHash": "0x1402610bbaf050bfa1a6340665ea8649328a3a1383eaa13a4da6ff14d6519ef2",
+  "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+  "fee": "1470876553970",
+  "feeBasis": "actual fee: TransactionPayment.TransactionFeePaid of this extrinsic",
+  "feeEstimate": "1470876594312",
+  "plan": {
+    "planVersion": 1,
+    "manifestDigest": "0x04b35bfbfc2845fd2ef75e6f989af7a7906976fe08c52f8db34bc091ab779075",
+    "fingerprintDigest": "0x837a6a0daf2988cd65a9bdc62d468b35b699816efeb23cf7e4d7a404267dfc86",
+    "signer": {
+      "type": "ss58",
+      "value": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "publicKey": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b"
+    },
+    "mode": "sequential",
+    "modeReason": "Atomic execution was requested but is not available: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+    "steps": [
+      {
+        "actionId": "step1",
+        "kind": "assets.transfer",
+        "capability": "Assets.transfer_keep_alive",
+        "palletIndex": 39,
+        "callIndex": 9,
+        "decodedArgs": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+          "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+        },
+        "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "status": "ok"
+      }
+    ],
+    "planDigest": "0x11b3a4cc1141136fbed62bd7a64e37ee3a2fea90bdfb7461e9fe490a68eca71a"
+  },
+  "coverage": "extrinsic_finalized",
+  "effect": {
+    "verdict": "effect_proven",
+    "extrinsicIndex": 1,
+    "event": {
+      "pallet": "Assets",
+      "name": "Transferred",
+      "assetId": "806707",
+      "from": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+      "to": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172",
+      "amount": "1"
+    },
+    "reason": "Transfer confirmed: asset, amount and account all match the plan.",
+    "steps": [
+      {
+        "actionId": "step1",
+        "status": "finalized",
+        "txHash": "0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402",
+        "block": {
+          "number": 119996,
+          "hash": "0x43326f29394dfad70747ff790d31e07ca068695279552c7083c42c02065f0edb"
+        },
+        "events": [
+          "Balances.Withdraw(0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b, 1470876553970)",
+          "Assets.Transferred(806707, 0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 1)",
+          "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1470876553970)",
+          "TransactionPayment.TransactionFeePaid(0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b, 1470876553970, 0)",
+          "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+        ],
+        "verification": "verified",
+        "coverage": "effect_proven",
+        "reason": "Transfer confirmed: asset, amount and account all match the plan."
+      }
+    ],
+    "feePaid": "1470876553970",
+    "checkedAt": "2026-10-20T17:02:42.071Z"
+  },
+  "steps": [
+    {
+      "actionId": "step1",
+      "status": "finalized",
+      "txHash": "0xf883200e66da02360137d5a82f8f2700bcf75473429c25beece1fdbc7da31402",
+      "block": {
+        "number": 119996,
+        "hash": "0x43326f29394dfad70747ff790d31e07ca068695279552c7083c42c02065f0edb"
+      },
+      "events": [
+        "Balances.Withdraw(0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b, 1470876553970)",
+        "Assets.Transferred(806707, 0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b, 0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172, 1)",
+        "Balances.Deposit(0x6d6f646c70792f74727372790000000000000000000000000000000000000000, 1470876553970)",
+        "TransactionPayment.TransactionFeePaid(0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b, 1470876553970, 0)",
+        "System.ExtrinsicSuccess({\"weight\":{\"refTime\":1145368000,\"proofSize\":18392},\"class\":\"Normal\",\"paysFee\":\"Yes\"})"
+      ],
+      "verification": "verified",
+      "coverage": "effect_proven",
+      "reason": "Transfer confirmed: asset, amount and account all match the plan."
+    }
+  ],
+  "verification": "effect_proven",
+  "verificationBasis": "verifyStep (@seam/sdk/browser) on the extrinsic's events read back from its finalized block; not chain_verified (that needs the Node verifyReceiptLive re-read)"
+}

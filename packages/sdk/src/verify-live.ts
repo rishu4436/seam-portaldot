@@ -32,7 +32,14 @@ export interface ReceiptChainReader {
   readTx(
     blockHash: Hex,
     txHash: Hex,
-  ): Promise<{ extrinsicIndex: number; signer?: Hex; callHex?: Hex; events: ChainEvent[] } | null>;
+  ): Promise<{
+    extrinsicIndex: number;
+    signer?: Hex;
+    callHex?: Hex;
+    /** The nonce decoded from the extrinsic's own signed bytes, when readable. */
+    nonce?: number;
+    events: ChainEvent[];
+  } | null>;
   /**
    * The node's own runtime fingerprint, read live. Needed to use a pinned `runtime`: its genesis, spec name, spec version,
    * transaction version and ss58 prefix must equal the node's. Without it a pinned runtime is not used.
@@ -470,16 +477,23 @@ export async function createChainReader(
         (x: string) => chain.extrinsicHash(x) === txHash.toLowerCase(),
       );
       if (idx < 0) return null;
-      let signer: Hex | undefined, callHex: Hex | undefined;
+      let signer: Hex | undefined, callHex: Hex | undefined, nonce: number | undefined;
       try {
         const sc = chain.extractSignedCall(block.block.extrinsics[idx]!, facts);
         signer = sc.signer.accountId;
         callHex = sc.callHex;
+        nonce = Number.isInteger(sc.nonce) ? sc.nonce : undefined;
       } catch {
         /* unsigned or undecodable: left undefined, reported as unknown */
       }
       const inc = await chain.readEvents(endpoint, blockHash, idx, facts);
-      return { extrinsicIndex: idx, signer, callHex, events: inc.events.map(chain.toChainEvent) };
+      return {
+        extrinsicIndex: idx,
+        signer,
+        callHex,
+        nonce,
+        events: inc.events.map(chain.toChainEvent),
+      };
     },
   };
 }
