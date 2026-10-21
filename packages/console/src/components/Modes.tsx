@@ -43,6 +43,13 @@ import { planCall, fingerprintMatches } from "../lib/liverequest";
 import type { CompiledStepContext } from "../lib/stepverify";
 import { checkRebind } from "../lib/rebind";
 import { buildLiveReceipt } from "../lib/livereceipt";
+import {
+  browserKV,
+  PersistedApprovalStore,
+  RunStore,
+  type RunRecord,
+  type TxLookup,
+} from "../lib/runstore";
 import { buildSequentialReceipt } from "../lib/seqreceipt";
 import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
 import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
@@ -624,7 +631,13 @@ export function LivePanel({
   chainLoader = loadChainFns,
   gates = { preSign, preSubmit },
   rebind,
+  runStore: runStoreProp,
+  txLookup,
 }: {
+  /** Persisted non-secret run state (lib/runstore.ts). Default: browser storage via browserKV(), key RUN_STORE_KEY. */
+  runStore?: RunStore;
+  /** Tx-hash lookup for reconciling recovered runs. TODO(Chainsmith): @seam/chain/browser lookupExtrinsic; none yet. */
+  txLookup?: TxLookup;
   /**
    * Builder plans: the facts snapshot the plan was compiled with. Before signing, the re-read facts go through Forge's
    * rebindPlan; a rebound plan is handed back (new digest, approval discarded) and nothing is signed; RUNTIME_CHANGED blocks.
@@ -667,8 +680,17 @@ export function LivePanel({
   // Cancels a multi-step run when the panel unmounts or the plan changes; the run then drops its signed bytes.
   const abort = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => abort.current?.abort(), []);
-  // Single-use approvals, as the policy engine tracks them. Lives as long as the panel.
-  const store = useRef(newApprovalStore());
+  // Persisted non-secret run state and single-use approvals (survive a refresh; never signed bytes).
+  const runStore = useRef(runStoreProp ?? new RunStore(browserKV())).current;
+  const store = useRef(new PersistedApprovalStore(runStore));
+  const engineHashRef = useRef<string | undefined>(undefined);
+  const [recovered, setRecovered] = useState<RunRecord[]>([]);
+  useEffect(() => {
+    // After a refresh: reconcile unfinished runs by tx hash (never re-sent); signed-but-unsent ones are abandoned.
+    void runStore
+      .recover(txLookup)
+      .then((rs) => setRecovered(rs.filter((r) => r.phase !== "finalized")));
+  }, [runStore, txLookup]);
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
   const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
   useEffect(() => {
@@ -769,6 +791,7 @@ export function LivePanel({
               input: policyInput,
               chainLoader,
               store: store.current,
+              runStore,
               now,
               factsStep,
               acknowledgedDowngrade,
@@ -841,12 +864,41 @@ export function LivePanel({
           if (!pre.res.ok) return pre.res;
           const preSigned = pre.res.value;
           setEngineApproval((preSigned.approval as { hash?: string } | undefined)?.hash);
+          engineHashRef.current = (preSigned.approval as { hash?: string } | undefined)?.hash;
           setApprovalInputs(
             preSigned.approvalInput
               ? { ...preSigned.approvalInput, now: preSigned.approvedAt }
               : undefined,
           );
-          deps.beforeSubmit = async (signedTx) =>
+          const runHash = (preSigned.approval as { hash?: string } | undefined)?.hash;
+          if (runHash)
+            runStore.upsertRun({
+              approvalHash: runHash,
+              planDigest: plan?.digest,
+              mode: plan?.mode,
+              phase: "approved",
+              steps: (plan?.steps ?? []).map((st, index) => ({
+                index,
+                actionId: st.actionId,
+                status: "pending",
+                updatedAt: new Date().toISOString(),
+              })),
+            });
+          deps.beforeSubmit = async (signedTx, request) => {
+            const g = await gateSubmit(signedTx, request);
+            // Single-flight guard (persisted before the broadcast): one send per approval, in any session.
+            if (g.ok && runHash && !runStore.claimSend(runHash, 0))
+              return {
+                ok: false as const,
+                reason: "unavailable" as const,
+                message:
+                  "Blocked at submit (already_sent): this approval was already sent once (persisted send guard). Not sent again.",
+              };
+            if (g.ok && runHash)
+              runStore.updateStep(runHash, 0, { status: "submitting" }, "submitting");
+            return g;
+          };
+          const gateSubmit = async (signedTx: string, _request: unknown) =>
             gates.preSubmit({
               chain: chainFns,
               send: rpc,
@@ -864,6 +916,21 @@ export function LivePanel({
         };
       }
       const res = await runLive(url, undefined, deps);
+      const runHash = (store.current && engineHashRef.current) || undefined;
+      if (runHash && res.submitted && res.txHash) {
+        for (const r of runStore.run(runHash)?.steps ?? []) {
+          runStore.recordSent(runHash, r.index, res.txHash);
+          runStore.updateStep(
+            runHash,
+            r.index,
+            {
+              status: res.txState === "finalized" ? "finalized" : "submitted",
+              ...(res.block ? { block: res.block } : {}),
+            },
+            res.txState === "finalized" ? "finalized" : "submitted",
+          );
+        }
+      }
       if (res.submitted && approval) setSpent((x) => [...x, approval.hash]);
       setOut(res);
     } finally {
@@ -874,6 +941,7 @@ export function LivePanel({
     <section className="grid2">
       <div className="card">
         <h3>LIVE V3</h3>
+        {recovered.length > 0 && <RecoveredRuns runs={recovered} />}
         <p className="muted">
           Uses the real V3 testnet over HTTPS (read-only until you approve and sign with your own
           wallet). Nothing is contacted until you press the button. Local spec-1002 results do not
@@ -1152,6 +1220,7 @@ async function runMultiStepLive(a: {
   input: PolicyGateInput;
   chainLoader: () => Promise<ChainFns>;
   store: ReturnType<typeof newApprovalStore>;
+  runStore?: RunStore;
   now: () => number;
   factsStep: (rpc: RpcTransport) => Promise<V3FactsResult>;
   acknowledgedDowngrade?: boolean;
@@ -1184,6 +1253,7 @@ async function runMultiStepLive(a: {
     ctx: ctx.value,
     now: () => new Date(a.now()),
     store: a.store,
+    runStore: a.runStore,
     acknowledgedDowngrade: a.acknowledgedDowngrade,
     signal: a.signal,
     freshFingerprint: async () => {
@@ -1251,3 +1321,30 @@ const defaultStepCheck = async (
   block: { number: number; hash: string },
   ctx: CompiledStepContext,
 ) => (await import("../lib/stepverify")).stepEffectCheck(rpc, txHash, block, ctx);
+
+/** Runs recovered from storage after a refresh. Read-only: nothing here can send; reconciliation only reads by hash. */
+export function RecoveredRuns({ runs }: { runs: RunRecord[] }) {
+  return (
+    <div className="small" role="group" aria-label="Recovered runs" data-testid="recovered-runs">
+      <b>Recovered runs (from this browser)</b>
+      <ul>
+        {runs.map((r) => (
+          <li key={r.approvalHash} data-phase={r.phase}>
+            <code>{r.approvalHash.slice(0, 10)}…</code> {r.phase}
+            {r.phase === "abandoned" &&
+              ": signed but not sent; the signed bytes are gone. Approve again."}
+            <ul>
+              {r.steps.map((s) => (
+                <li key={s.index}>
+                  {s.actionId}: {s.status}
+                  {s.txHash ? ` (${s.txHash.slice(0, 10)}…)` : ""}
+                  {s.note ? ` — ${s.note}` : ""}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
