@@ -1,0 +1,239 @@
+{
+  "label": "recorded run, replayed read-only",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "readAt": "2026-10-21T03:30:58.846Z",
+  "txHash": "0x6be1232e17cee41f0376d91b5638ae3f2f9909f4d0f2d15cd633422a339cf355",
+  "block": {
+    "number": 102671,
+    "hash": "0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b",
+    "parentHash": "0xd9ff008802cc90583e3966c37475e575dc0816df3043049064248a90444d37bc",
+    "finalized": true,
+    "finalizedHead": 126262
+  },
+  "runtime": {
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "metadataReadAt": "parent block",
+    "metadataHash": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340"
+  },
+  "extrinsicIndex": 1,
+  "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "nonce": 14,
+  "tip": "0",
+  "era": {
+    "mortal": true,
+    "period": 64,
+    "phase": 11,
+    "hex": "0xb500"
+  },
+  "eraBirthBlock": 102667,
+  "eraBirthHash": "0x96b0940e7ca39115097845724ce58c616cb05b20ad6d2cb3f4a09de897989459",
+  "metadataHashMode": 0,
+  "signatureValid": true,
+  "signatureGenesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "call": {
+    "hex": "0x0102082706ce3c31000034d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a1c2f0300000000030000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700",
+    "name": "utility.batchAll",
+    "innerCalls": [
+      "assets.mint",
+      "nfts.mint"
+    ],
+    "decoded": {
+      "args": {
+        "calls": [
+          {
+            "args": {
+              "id": "806,707",
+              "beneficiary": {
+                "Id": "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v"
+              },
+              "amount": "7"
+            },
+            "method": "mint",
+            "section": "assets"
+          },
+          {
+            "args": {
+              "collection": "0",
+              "item": "3",
+              "mint_to": {
+                "Id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+              },
+              "witness_data": null
+            },
+            "method": "mint",
+            "section": "nfts"
+          }
+        ]
+      },
+      "method": "batchAll",
+      "section": "utility"
+    }
+  },
+  "success": true,
+  "dispatchError": null,
+  "feePaid": {
+    "who": "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "actualFee": "1941197884278",
+    "tip": "0"
+  },
+  "events": [
+    {
+      "eventIndex": 1,
+      "pallet": "Balances",
+      "name": "Withdraw",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "1941197884278"
+      ]
+    },
+    {
+      "eventIndex": 2,
+      "pallet": "Assets",
+      "name": "Issued",
+      "args": [
+        "806707",
+        "0x34d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a",
+        "7"
+      ]
+    },
+    {
+      "eventIndex": 3,
+      "pallet": "Utility",
+      "name": "ItemCompleted",
+      "args": []
+    },
+    {
+      "eventIndex": 4,
+      "pallet": "Balances",
+      "name": "Reserved",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "10000000000000"
+      ]
+    },
+    {
+      "eventIndex": 5,
+      "pallet": "Nfts",
+      "name": "Issued",
+      "args": [
+        "0",
+        "3",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467"
+      ]
+    },
+    {
+      "eventIndex": 6,
+      "pallet": "Utility",
+      "name": "ItemCompleted",
+      "args": []
+    },
+    {
+      "eventIndex": 7,
+      "pallet": "Utility",
+      "name": "BatchCompleted",
+      "args": []
+    },
+    {
+      "eventIndex": 8,
+      "pallet": "Balances",
+      "name": "Deposit",
+      "args": [
+        "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+        "1941197884278"
+      ]
+    },
+    {
+      "eventIndex": 9,
+      "pallet": "TransactionPayment",
+      "name": "TransactionFeePaid",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "1941197884278",
+        "0"
+      ]
+    },
+    {
+      "eventIndex": 10,
+      "pallet": "System",
+      "name": "ExtrinsicSuccess",
+      "args": [
+        "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":24182,\"refTime\":1516762526}}"
+      ]
+    }
+  ],
+  "state": {
+    "native": {
+      "parent": {
+        "free": "0x000000000000000001623bd023d1f7ef",
+        "reserved": 230000000000000,
+        "frozen": 0,
+        "flags": "0x80000000000000000000000000000000"
+      },
+      "block": {
+        "free": "0x0000000000000000016230f3dcf64c79",
+        "reserved": 240000000000000,
+        "frozen": 0,
+        "flags": "0x80000000000000000000000000000000"
+      }
+    },
+    "assetSupply": {
+      "parent": 1000000000,
+      "block": 1000000007
+    },
+    "assetAccounts": {
+      "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1": {
+        "parent": 999997500,
+        "block": 999997500
+      },
+      "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v": {
+        "parent": null,
+        "block": 7
+      }
+    }
+  },
+  "rpcReads": 22,
+  "checks": [
+    {
+      "name": "block canonical and finalized",
+      "ok": true,
+      "detail": "#102671 0xaa5658730de4e827bc4224ce481e8f391348cbf12ad2e5811e55005a71a1396b, finalized head #126262"
+    },
+    {
+      "name": "signature valid (CheckMetadataHash mode 0)",
+      "ok": true,
+      "detail": "era birth #102667, genesis 0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
+    },
+    {
+      "name": "call is utility.batchAll",
+      "ok": true,
+      "detail": "assets.mint, nfts.mint"
+    },
+    {
+      "name": "fee from TransactionFeePaid",
+      "ok": true,
+      "detail": "1941197884278 (tip 0)"
+    },
+    {
+      "name": "ExtrinsicSuccess + BatchCompleted",
+      "ok": true,
+      "detail": "Balances.Withdraw, Assets.Issued, Utility.ItemCompleted, Balances.Reserved, Nfts.Issued, Utility.ItemCompleted, Utility.BatchCompleted, Balances.Deposit, TransactionPayment.TransactionFeePaid, System.ExtrinsicSuccess"
+    },
+    {
+      "name": "two ItemCompleted (mint, nfts.mint)",
+      "ok": true,
+      "detail": "Assets.Issued, Nfts.Issued"
+    },
+    {
+      "name": "asset 806707 supply +7 (mint applied)",
+      "ok": true,
+      "detail": "1000000000 → 1000000007"
+    },
+    {
+      "name": "signer native: free -= fee + reserved delta (NFT deposit)",
+      "ok": true,
+      "detail": "free −11941197884278, reserved +10000000000000, fee 1941197884278"
+    }
+  ],
+  "verdict": "verified (recorded run, replayed read-only)"
+}

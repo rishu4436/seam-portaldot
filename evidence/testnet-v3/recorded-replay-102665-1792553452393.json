@@ -1,0 +1,226 @@
+{
+  "label": "recorded run, replayed read-only",
+  "endpoint": "https://test-node-v3.portaldot.dev",
+  "readAt": "2026-10-21T03:31:05.662Z",
+  "txHash": "0xd16622312a942d519e3d246ef46d2c677050c09e787883f7c7c1ffc6595bda80",
+  "block": {
+    "number": 102665,
+    "hash": "0xd1aab7bba1eabe4822b7af169a62ba7e364eb4ccbdb587d6f8dfed68c3cdb753",
+    "parentHash": "0xbe5ebdec7227f32cac24c0c055c653eb25782163809eebb56af2a28382aee6e6",
+    "finalized": true,
+    "finalizedHead": 126263
+  },
+  "runtime": {
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "metadataReadAt": "parent block",
+    "metadataHash": "0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340"
+  },
+  "extrinsicIndex": 1,
+  "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+  "nonce": 13,
+  "tip": "0",
+  "era": {
+    "mortal": true,
+    "period": 64,
+    "phase": 5,
+    "hex": "0x5500"
+  },
+  "eraBirthBlock": 102661,
+  "eraBirthHash": "0x7baf64ffaf97301f20f5517fea67e54b87d8ca5b4bc29ab01a585fc655aa4e55",
+  "metadataHashMode": 0,
+  "signatureValid": true,
+  "signatureGenesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "call": {
+    "hex": "0x0102102709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172142706ce3c31000034d696e14118a847a2e039a4a839dac910cfd577a34c16f22fd2762c48312c0a0c2f0300000000030000000080270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467002709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb1720f00404c948b3203",
+    "name": "utility.batchAll",
+    "innerCalls": [
+      "assets.transferKeepAlive",
+      "assets.mint",
+      "nfts.mint",
+      "assets.transferKeepAlive"
+    ],
+    "decoded": {
+      "args": {
+        "calls": [
+          {
+            "args": {
+              "id": "806,707",
+              "target": {
+                "Id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+              },
+              "amount": "5"
+            },
+            "method": "transferKeepAlive",
+            "section": "assets"
+          },
+          {
+            "args": {
+              "id": "806,707",
+              "beneficiary": {
+                "Id": "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v"
+              },
+              "amount": "3"
+            },
+            "method": "mint",
+            "section": "assets"
+          },
+          {
+            "args": {
+              "collection": "0",
+              "item": "3",
+              "mint_to": {
+                "Id": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1"
+              },
+              "witness_data": null
+            },
+            "method": "mint",
+            "section": "nfts"
+          },
+          {
+            "args": {
+              "id": "806,707",
+              "target": {
+                "Id": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+              },
+              "amount": "900,000,000,000,000"
+            },
+            "method": "transferKeepAlive",
+            "section": "assets"
+          }
+        ]
+      },
+      "method": "batchAll",
+      "section": "utility"
+    }
+  },
+  "success": false,
+  "dispatchError": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.",
+  "feePaid": {
+    "who": "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "actualFee": "2812048810584",
+    "tip": "0"
+  },
+  "events": [
+    {
+      "eventIndex": 1,
+      "pallet": "Balances",
+      "name": "Withdraw",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "2812048810584"
+      ]
+    },
+    {
+      "eventIndex": 2,
+      "pallet": "Balances",
+      "name": "Deposit",
+      "args": [
+        "0x6d6f646c70792f74727372790000000000000000000000000000000000000000",
+        "2812048810584"
+      ]
+    },
+    {
+      "eventIndex": 3,
+      "pallet": "TransactionPayment",
+      "name": "TransactionFeePaid",
+      "args": [
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "2812048810584",
+        "0"
+      ]
+    },
+    {
+      "eventIndex": 4,
+      "pallet": "System",
+      "name": "ExtrinsicFailed",
+      "args": [
+        "{\"module\":{\"error\":\"0x00000000\",\"index\":39}}",
+        "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":36598,\"refTime\":2616651052}}"
+      ]
+    }
+  ],
+  "state": {
+    "native": {
+      "parent": {
+        "free": "0x000000000000000001623e5edefd9a47",
+        "reserved": 230000000000000,
+        "frozen": 0,
+        "flags": "0x80000000000000000000000000000000"
+      },
+      "block": {
+        "free": "0x000000000000000001623bd023d1f7ef",
+        "reserved": 230000000000000,
+        "frozen": 0,
+        "flags": "0x80000000000000000000000000000000"
+      }
+    },
+    "assetSupply": {
+      "parent": 1000000000,
+      "block": 1000000000
+    },
+    "assetAccounts": {
+      "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1": {
+        "parent": 999997500,
+        "block": 999997500
+      },
+      "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB": {
+        "parent": 2500,
+        "block": 2500
+      },
+      "5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v": {
+        "parent": null,
+        "block": null
+      }
+    }
+  },
+  "rpcReads": 24,
+  "checks": [
+    {
+      "name": "block canonical and finalized",
+      "ok": true,
+      "detail": "#102665 0xd1aab7bba1eabe4822b7af169a62ba7e364eb4ccbdb587d6f8dfed68c3cdb753, finalized head #126263"
+    },
+    {
+      "name": "signature valid (CheckMetadataHash mode 0)",
+      "ok": true,
+      "detail": "era birth #102661, genesis 0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
+    },
+    {
+      "name": "call is utility.batchAll",
+      "ok": true,
+      "detail": "assets.transferKeepAlive, assets.mint, nfts.mint, assets.transferKeepAlive"
+    },
+    {
+      "name": "fee from TransactionFeePaid",
+      "ok": true,
+      "detail": "2812048810584 (tip 0)"
+    },
+    {
+      "name": "ExtrinsicFailed with the exact dispatch error, no BatchCompleted/ItemCompleted",
+      "ok": true,
+      "detail": "assets.BalanceLow: Account balance must be greater than or equal to the transfer amount.; events Balances.Withdraw, Balances.Deposit, TransactionPayment.TransactionFeePaid, System.ExtrinsicFailed"
+    },
+    {
+      "name": "no inner effects (no Assets/Nfts events)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "asset 806707 supply unchanged",
+      "ok": true,
+      "detail": "1000000000 → 1000000000"
+    },
+    {
+      "name": "every asset account in the call unchanged",
+      "ok": true,
+      "detail": "{\"5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1\":{\"parent\":999997500,\"block\":999997500},\"5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB\":{\"parent\":2500,\"block\":2500},\"5DFz6NsQPrHU61VWJJxaEjBKYd3ND4bDJzNMcKrLcqCihi3v\":{\"parent\":null,\"block\":null}}"
+    },
+    {
+      "name": "signer native: only the fee left, reserved unchanged",
+      "ok": true,
+      "detail": "free −2812048810584, reserved +0, fee 2812048810584"
+    }
+  ],
+  "verdict": "expected_dispatch_failure verified: rolled back (recorded run, replayed read-only)"
+}
