@@ -70,14 +70,14 @@ Notes per template:
 |                                       | `CONTRACT_NOT_ALLOWED`                                                              | The contract is not in `allowedContracts`.                                                                                 |
 |                                       | `PLAN_MODE_NOT_ALLOWED`                                                             | The plan's mode (e.g. `atomic_unverified`) is not in `allowedModes`.                                                       |
 |                                       | `DEPLOY_CODE_HASH_NOT_ALLOWED` (and the other `DEPLOY_*`)                           | `checkDeployStep`: code hash not allow-listed, value not 0, or a cap missing / exceeded.                                   |
-|                                       | `PLAN_BYTES_MISMATCH`                                                               | Pre-sign `verifyPlan`: the plan's call bytes are not what the Manifest compiles to on the live facts (Sentinel `a74ad38`). |
+|                                       | `PLAN_BYTES_MISMATCH`                                                               | Pre-sign `verifyPlan`: the plan's call bytes are not what the Manifest compiles to on the live facts (Sentinel `b1a60a4`). |
 | `verifyPlan(...).issues[].code`       | `STEP_BYTES_MISMATCH`, `STEP_BODY_MISMATCH`, `PLAN_BODY_MISMATCH`                   | An edited plan: step call bytes, step body or plan body differ from a fresh compile.                                       |
 |                                       | `OUTER_CALL_MISMATCH`                                                               | Atomic only: the Utility.batch_all outer call differs.                                                                     |
 | `createApproval(requirePlanVerified)` | `ok: false`, reason "the plan's call bytes are not what the Manifest compiles to …" | Approval is refused for an edited plan, even with a recomputed digest.                                                     |
 
-`PLAN_BYTES_MISMATCH` appears only when the built `@seam/policy` includes Sentinel's pre-sign check (`a74ad38`). On a
-build without it, the gate has no bytes check (the example says so), and the edited plan is refused by `verifyPlan` and
-`createApproval`. The test accepts both and asserts `PLAN_BYTES_MISMATCH` whenever the build has the check.
+`PLAN_BYTES_MISMATCH` comes from Sentinel's pre-sign check (on main as `b1a60a4`, originally `a74ad38`); every example
+hits it for the edited plan. The test also tolerates an older `@seam/policy` build without the check, where the edited plan
+is still refused by `verifyPlan` and `createApproval`.
 
 ## Honest limits
 
