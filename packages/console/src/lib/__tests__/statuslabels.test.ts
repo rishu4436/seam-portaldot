@@ -84,4 +84,12 @@ describe("status labels", () => {
     expect(proofRows({ signingCode: "signed_dry_run_failed" }, "live")[2]!.label).toBe("failed");
     expect(proofRows({ txState: "rejected" }, "recorded")[3]!.label).toBe("failed");
   });
+  it("proof sizes in the unsigned-sim row; unknown is never shown as 0", () => {
+    const r = proofRows({ simulation: "contract_dry_run" }, "live", {
+      proofSize: { dryRunProofSize: { value: "12998" }, callInfoProofSize: { unknown: true } },
+    });
+    expect(r[1]!.detail).toContain("Proof size: dry run 12998, call info unknown.");
+    expect(r[1]!.detail).not.toMatch(/call info 0/);
+    expect(proofRows(undefined, "live")[1]!.detail).not.toMatch(/Proof size/);
+  });
 });

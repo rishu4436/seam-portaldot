@@ -1,6 +1,7 @@
 // One vocabulary for what a result is, so nothing is ever shown stronger than it is. Simulated is never called live;
 // recorded is never called live; unknown stays unknown; verified needs a verifier's result, not just finality.
 import type { LiveOutcome } from "./live";
+import { proofSizeText, type ProofSizeField } from "./signflow";
 
 export type EvidenceLabel =
   "simulated" | "recorded" | "live" | "finalized" | "verified" | "unknown" | "failed" | "uncertain";
@@ -69,6 +70,8 @@ export function proofRows(
   extra: {
     unsignedSim?: "ok" | "failed" | "unknown";
     signedDryRun?: "ok" | "failed" | "unknown";
+    /** Revive steps: preflight dryRunProofSize / callInfoProofSize, each { value } or { unknown: true }. */
+    proofSize?: { dryRunProofSize?: ProofSizeField; callInfoProofSize?: ProofSizeField };
   } = {},
 ): ProofRow[] {
   const cap = (l: EvidenceLabel): EvidenceLabel =>
@@ -126,9 +129,10 @@ export function proofRows(
         : o?.status === "uncertain"
           ? ["uncertain", "The effect couldn't be confirmed either way."]
           : ["unknown", "The effect was not checked."];
+  const ps = extra.proofSize ? proofSizeText(extra.proofSize) : undefined;
   return [
     row("fee_estimate", ...fee),
-    row("unsigned_sim", ...unsigned),
+    row("unsigned_sim", unsigned[0], ps ? `${unsigned[1]} ${ps}` : unsigned[1]),
     row("signed_dry_run", ...signed),
     row("dispatch_result", ...dispatch),
     row("verified_effect", ...effect),
