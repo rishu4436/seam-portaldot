@@ -216,6 +216,12 @@ The CLI stops before signing. To run a plan for real, use the SDK flow (`Seam.pr
 npm run smoke:pack # setup
 ```
 
+The seven action templates each have an offline example (fill, compile on V3 spec 3002, policy gate, `verifyPlan`, and the documented errors). See [templates.md](templates.md):
+
+```bash
+npm run -s examples:templates # exit 0
+```
+
 ## Checking this guide
 
 ```bash
