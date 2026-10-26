@@ -1,0 +1,86 @@
+{
+  "label": "fresh compile, not a recorded run",
+  "note": "Offline compile of the V3 wallet demo manifest on the committed spec 3002 metadata with factsFromMetadata (no rollback proof injected). Nothing was signed or sent. Regenerate with `node packages/compiler/scripts/gen-fresh-fixture.mjs`; rebuild facts with factsFromMetadata(factsInput).",
+  "sources": {
+    "metadata": "evidence/v3-discovery/portaldot-v3-spec3002-metadata.hex",
+    "metadataSha256": "0x639f8d3911d52df33d89948cd6106ebad47200976a52adf734e12012b44ce202",
+    "metadataHash": "0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9",
+    "metadataLayoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+    "manifest": "packages/console/src/demo/v3-demo-transfer.json#manifest",
+    "compilerBase": "74235fc"
+  },
+  "factsInput": {
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "tokenSymbol": "tPOT",
+    "tokenDecimals": 14
+  },
+  "manifest": {
+    "version": 1,
+    "chain": {
+      "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "specVersion": 3002
+    },
+    "signer": {
+      "type": "ss58",
+      "value": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE"
+    },
+    "actions": [
+      {
+        "id": "pay",
+        "kind": "assets.transfer",
+        "args": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+        },
+        "preferredMode": "atomic"
+      }
+    ]
+  },
+  "fingerprint": {
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "specName": "portaldot-v3",
+    "specVersion": 3002,
+    "transactionVersion": 2,
+    "metadataHash": "0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9",
+    "ss58Prefix": 42,
+    "tokenSymbol": "tPOT",
+    "tokenDecimals": 14,
+    "typesBundleHash": null
+  },
+  "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+  "plan": {
+    "planVersion": 1,
+    "manifestDigest": "0xcfe96e46df2ec807ca69b9d027e9f4e234f182f3c0b54da95f0fc4d97b4b6a0d",
+    "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+    "signer": {
+      "type": "ss58",
+      "value": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "publicKey": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b"
+    },
+    "mode": "sequential",
+    "modeReason": "Atomic execution was requested but is not available: Utility.batch_all exists but its rollback on failure is not verified (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+    "steps": [
+      {
+        "actionId": "pay",
+        "kind": "assets.transfer",
+        "capability": "Assets.transfer_keep_alive",
+        "palletIndex": 39,
+        "callIndex": 9,
+        "decodedArgs": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+          "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+        },
+        "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "status": "ok"
+      }
+    ],
+    "planDigest": "0x73f68cfd798b8ff54ea3150c654737fde3ebb22f321e40156244eed47378a368"
+  },
+  "planDigest": "0x73f68cfd798b8ff54ea3150c654737fde3ebb22f321e40156244eed47378a368",
+  "callsToSign": [
+    "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204"
+  ]
+}
