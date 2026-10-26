@@ -5,6 +5,7 @@
 // "verified" only when every step is finalized and verified; "partial" when any step did not run (a stopped run);
 // otherwise "not_verified". Never chain_verified. A step that was never sent has the SDK's status "not_run".
 // No signed bytes: only read-back outcomes (txHash, block, decoded events) are used.
+import { sealReceipt, type EvidenceCoverage } from "./receiptintegrity";
 import { overallResult } from "@seam/policy/browser";
 import type { MultiStepResult } from "./multistep";
 import { feePaidOf, matchedEvent } from "./stepverify";
@@ -52,6 +53,12 @@ export interface SequentialReceipt {
   /** 0-based index of the step that stopped the run, or null. */
   stoppedAt: number | null;
   stopReason: string | null;
+  /** policyDigest(approvalInputs.policy) (@seam/policy); null when no policy was bound. */
+  policyDigest: string | null;
+  evidenceCoverage: EvidenceCoverage;
+  integrityAlgo: string;
+  /** Hash over every other field (see integrityAlgo). No signed bytes, no metadata. */
+  integrityHash: string;
 }
 
 export function buildSequentialReceipt(r: MultiStepResult): SequentialReceipt {
@@ -99,9 +106,10 @@ export function buildSequentialReceipt(r: MultiStepResult): SequentialReceipt {
   );
   const partialRun = steps.some((s) => !s.sent);
   const stopped = r.stoppedAt !== undefined ? r.stoppedAt : null;
-  return {
-    receiptKind: "seam/console-live-receipt/v1",
-    mode: "sequential",
+  const sentSteps = steps.filter((s) => s.sent);
+  const body = {
+    receiptKind: "seam/console-live-receipt/v1" as const,
+    mode: "sequential" as const,
     result,
     resultBasis:
       "overallResult (@seam/policy/browser) over the per-step verifyStep verdicts: verified only if every step is finalized and verified, partial if any step did not run; not chain_verified",
@@ -116,4 +124,18 @@ export function buildSequentialReceipt(r: MultiStepResult): SequentialReceipt {
     stoppedAt: stopped,
     stopReason: r.ok ? null : r.message,
   };
+  return sealReceipt(body, {
+    feeEstimate: "unknown",
+    signedDryRun: sentSteps.length ? "reported" : "unknown",
+    dispatchResult: !sentSteps.length
+      ? "unknown"
+      : sentSteps.every((s) => s.status === "finalized")
+        ? "reported"
+        : sentSteps.some((s) => s.status === "failed")
+          ? "failed"
+          : "unknown",
+    verifiedEffect: result === "verified" ? "proven" : "unknown",
+    basis:
+      "reported = as the node/gate returned it in this run; proven = verifyStep verified every step; unknown = not checked. Not chain_verified.",
+  });
 }

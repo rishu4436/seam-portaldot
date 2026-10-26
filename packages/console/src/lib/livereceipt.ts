@@ -9,6 +9,7 @@ import type { SdkReceiptStep } from "@seam/sdk/browser";
 import type { EffectVerdict } from "./effectcheck";
 import type { LiveOutcome } from "./live";
 import type { Approval, Plan } from "./types";
+import { sealReceipt, type CoverageLevel, type EvidenceCoverage } from "./receiptintegrity";
 
 export type ReceiptResult = "verified" | "partial" | "not_verified";
 
@@ -56,6 +57,12 @@ export interface ConsoleLiveReceipt {
   blockDetail?: import("./signflow").BlockDetail;
   /** Atomic (batch_all) runs only: atomic_unverified unless the rollback proof matches (lib/atomicity.ts). */
   atomicity?: import("./atomicity").RunAtomicity;
+  /** policyDigest(approvalInputs.policy) (@seam/policy); null when no policy was bound. */
+  policyDigest: string | null;
+  evidenceCoverage: EvidenceCoverage;
+  integrityAlgo: string;
+  /** Hash over every other field (see integrityAlgo). No signed bytes, no metadata. */
+  integrityHash: string;
 }
 
 export function buildLiveReceipt(a: {
@@ -77,8 +84,8 @@ export function buildLiveReceipt(a: {
   // Every step must be verified by verifyStep; a transfer-only legacy check (no steps) never makes the result verified.
   const result: ReceiptResult =
     effect?.verdict === "effect_proven" && steps.length ? overallResult(steps) : "not_verified";
-  return {
-    receiptKind: "seam/console-live-receipt/v1",
+  const body = {
+    receiptKind: "seam/console-live-receipt/v1" as const,
     result,
     liveStatusAtFinalization: out.status,
     liveStatusNote:
@@ -103,7 +110,9 @@ export function buildLiveReceipt(a: {
       reason: a.checked ? "not checked yet" : "no effect check for this plan",
     },
     steps,
-    verification: result === "verified" ? "effect_proven" : "unverified",
+    verification: (result === "verified"
+      ? "effect_proven"
+      : "unverified") as ConsoleLiveReceipt["verification"],
     verificationBasis: steps.length
       ? "verifyStep (@seam/sdk/browser) on the extrinsic's events read back from its finalized block; not chain_verified (that needs the Node verifyReceiptLive re-read)"
       : "no verifyStep verdict",
@@ -111,4 +120,19 @@ export function buildLiveReceipt(a: {
     ...(out.blockDetail ? { blockDetail: structuredClone(out.blockDetail) } : {}),
     ...(a.atomicity ? { atomicity: { ...a.atomicity } } : {}),
   };
+  const lvl = (b: boolean | undefined): CoverageLevel => (b ? "reported" : "unknown");
+  return sealReceipt(body, {
+    feeEstimate: lvl(!!out.fee),
+    // Sent only after checkBeforeSubmit passed, which needs the signed dry run to be ok.
+    signedDryRun: out.submitted ? "reported" : out.blockDetail ? "failed" : "unknown",
+    dispatchResult:
+      out.txState === "finalized"
+        ? "reported"
+        : out.txState === "failed" || out.txState === "rejected"
+          ? "failed"
+          : "unknown",
+    verifiedEffect: result === "verified" ? "proven" : "unknown",
+    basis:
+      "reported = as the node/gate returned it in this run; proven = verifyStep checked the effect from the finalized block's events; unknown = not checked. Not chain_verified.",
+  });
 }
