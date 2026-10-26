@@ -43,6 +43,8 @@ export interface PolicyRuleResult {
   weak?: boolean;
   /** Stable machine-readable code, set by rules that have one (e.g. deploy rules). */
   code?: string;
+  /** plan_bytes only: the compiler's verifyPlan issues (code, stepIndex, expected, actual, message). */
+  issues?: unknown[];
 }
 export interface PolicyResult {
   allowed: boolean;
