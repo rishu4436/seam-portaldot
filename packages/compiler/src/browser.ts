@@ -40,3 +40,14 @@ export {
   type VerifyPlanOptions,
   type VerifyPlanResult,
 } from "./verify-plan.js";
+export {
+  listTemplates,
+  instantiateTemplate,
+  templateSkeleton,
+  PLACEHOLDER,
+  type TemplateId,
+  type TemplateInfo,
+  type TemplateParam,
+  type TemplateParams,
+  type InstantiateResult,
+} from "./templates.js";
