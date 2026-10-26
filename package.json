@@ -19,6 +19,7 @@
     "format": "prettier --write packages eslint.config.mjs",
     "format:check": "prettier --check packages eslint.config.mjs .prettierrc.json",
     "example:consumer": "node examples/consumer/index.mjs",
+    "examples:templates": "node examples/templates/index.mjs",
     "evidence:manifest": "node scripts/evidence-manifest.mjs",
     "docs:quickstart-check": "node scripts/quickstart-check.mjs"
   },
