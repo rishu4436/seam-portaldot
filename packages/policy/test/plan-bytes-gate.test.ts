@@ -141,10 +141,20 @@ describe("honest plans pass on V3 spec 3002", () => {
 });
 
 describe("forged plans and bytes are blocked", () => {
-  it("edited plan paying Charlie passes the policy (decodedArgs say Bob) ...", () => {
+  it("edited plan paying Charlie: passes only the legacy gate (no liveFacts); BLOCKED pre-sign once liveFacts is given", () => {
     const p = forgedToCharlie();
-    const g = gatePolicy({ policy, plan: p, facts, preflight: H.preflight(p) });
-    expect(g.allowed).toBe(true); // the engine reads decodedArgs; this is why the bytes gate exists
+    const legacy = gatePolicy({ policy, plan: p, facts, preflight: H.preflight(p) });
+    expect(legacy.allowed).toBe(true); // engine reads decodedArgs; without the Manifest it can't see the bytes
+    const g = gatePolicy({
+      policy,
+      plan: p,
+      facts,
+      preflight: H.preflight(p),
+      manifest: transfer,
+      liveFacts: facts,
+    });
+    expect(g.allowed).toBe(false);
+    expect(g.blockedBy.map((b) => b.code)).toEqual(["PLAN_BYTES_MISMATCH"]);
   });
   it("... but createApproval refuses it when given manifest + liveFacts", () => {
     const a = approve(transfer, forgedToCharlie(), true);
