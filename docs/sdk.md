@@ -67,10 +67,15 @@ See [`packages/sdk/README.md`](../packages/sdk/README.md) for the flow, receipts
 
 ## Security limitations
 
-- **Plan-bytes binding is OPEN.** Today the policy checks a step's decoded fields, but only the call-index prefix is
-  compared to the signed bytes, so an edited plan with a recomputed digest could show an allowed recipient while the
-  bytes pay someone else. The fix (Forge's `verifyPlan`, `e724040`, plus Sentinel's gate wiring) is not merged. This
-  stays open until both are on main.
+- **Plan-bytes binding is CLOSED** (Forge's `verifyPlan`, `1021d28`, plus Sentinel's gate, `50d2911`). Given a
+  Manifest and live facts, `createApproval` and `checkBeforeSubmit` recompile the Manifest on the live runtime and block
+  on any byte difference in a step, the atomic outer call or the signed calls (`plan_bytes_mismatch`). Facts carried
+  inside a plan are never used. Remaining limits:
+  - The pre-sign `verifyPlan` check is in progress (Forge's fresh compiled fixture, then Sentinel's pre-sign gate).
+  - In non-live mode without `manifest` and `liveFacts` (e.g. replaying a recorded JSON run), call bytes are not checked
+    against a Manifest.
+  - The console must pass `live: true` on every real submit.
+  - In the SDK flow, `manifest`, `liveFacts` and `live` are optional. Callers that omit them get no byte binding.
 - **Mortality and nonce checks run only when passed.** The submit gate checks them only if the caller gives
   `currentBlockNumber` and `currentAccountNonce`.
 - **Strict policy mode is opt-in** (`requireEvaluatedPolicyResult: true`). By default a recorded policy result is accepted
@@ -80,6 +85,18 @@ See [`packages/sdk/README.md`](../packages/sdk/README.md) for the flow, receipts
 - **No audit. Not production-ready. No mainnet support. No cross-VM atomicity.** Atomic mode covers `Utility.batch_all`
   within one runtime only.
 - The approval store is in memory only. SEAM never holds keys; the user's wallet signs.
+
+## Plan-bytes inputs in the SDK flow
+
+`Seam.approve` and `Seam.execute` take optional inputs that turn on plan-bytes binding:
+
+| method    | input                                                | effect                                                                                                                                                 |
+| --------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `approve` | `manifest?: Manifest`                                | `createApproval` recompiles it with `verifyPlan` and refuses unless every call byte matches.                                                           |
+| `approve` | `liveFacts?: RuntimeFacts`                           | Facts to recompile on. Default: the `facts` you pass (never facts carried in the plan).                                                                |
+| `approve` | `requirePlanVerified?: true`                         | Refuse unless `manifest` is given and the bytes verify. Use for live flows.                                                                            |
+| `execute` | `manifest?`, `liveFacts?`                            | Every submit check recompiles and blocks with `plan_bytes_mismatch`; `liveFacts` must be the runtime the lock reads, else `live_facts_mismatch`.       |
+| `execute` | `live?: { currentBlockNumber, currentAccountNonce }` | Live mode: the Manifest, live facts, signed calls, block and nonce are all required (each missing one blocks). Both are read fresh before every check. |
 
 ## API reference
 

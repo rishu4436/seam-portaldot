@@ -227,7 +227,7 @@ export class Seam {
     verdicts?: Record<string, OutcomeVerdict>;
     onStep?: (e: StepEvent) => void;
     /**
-     * Optional plan-bytes binding (policy 4dd5e1a). When given, every gate check recompiles the Manifest on
+     * Optional plan-bytes binding (policy 50d2911). When given, every gate check recompiles the Manifest on
      * `liveFacts` (default: `facts`, the facts the caller discovered, never facts carried in the plan) and blocks with
      * plan_bytes_mismatch unless the plan and the signed call bytes match exactly. `liveFacts` must be the runtime the
      * lock reads (readFingerprint), else live_facts_mismatch. Omitted (e.g. recorded-JSON replay): bytes are not
