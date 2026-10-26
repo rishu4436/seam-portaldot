@@ -29,6 +29,7 @@ import {
   type PreflightResult,
   type SigningEnvelope,
 } from "@seam/policy";
+import { explainPolicy } from "@seam/policy/browser";
 
 const root = (p: string) => fileURLToPath(new URL(`../../../${p}`, import.meta.url));
 const v3Hex = readFileSync(
@@ -167,7 +168,8 @@ const preflightFor = (plan: Plan): PreflightResult => ({
   steps: plan.steps.map((s) => ({
     actionId: s.actionId,
     weight: { value: "1000" },
-    proofSize: { value: "1000" },
+    // Dry-run (weight_required) proof size: non-zero and inside every template's cap.
+    dryRunProofSize: { value: "1000" },
     fee: { value: "1000" },
     storageDeposit: { value: "0" },
     dryRun: "ok" as const,
@@ -387,14 +389,37 @@ it("live gate: missing signed calls and extrinsics blocks with live_signed_calls
   expect(codesOf(r)).toContain("live_signed_calls_missing");
 });
 
-// ---- restricted-deploy: proof_size 0 / missing must count as UNKNOWN (Sentinel's deploy rule), never as a pass ----
-// deploy.ts proofSize "0" is fixed by Sentinel's 66b29c8 (not on this base yet). Remaining GAP: packages/policy/src/policy.ts proof_size_limit skips the preflight estimate whenever the step
-// has its own decodedArgs.proofSize, so a preflight proofSize of 0 or missing is never looked at. Written as it.fails
-// until the policy fix (bot3/presign-fixture) lands; flip to it() then.
-describe("restricted-deploy with proof_size 0 or missing", () => {
+// ---- Proof size on V3 (Sentinel's final rule, 1b98a8a): an explicit non-zero step cap is required; dryRunProofSize
+// must fit the cap (0 / unknown / missing is unknown, never a bound); callInfoProofSize (query_call_info = cap +
+// overhead) must exceed the cap; requireMeasuredProofSize needs callInfoProofSize. Synthetic preflight numbers.
+const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
+type PfStep = PreflightResult["steps"][number];
+function proofEval(
+  id: "revive-call" | "restricted-deploy",
+  step: Partial<PfStep> & Record<string, unknown> = {},
+  params: Record<string, string> = {},
+  extra: { requireMeasuredProofSize?: boolean } = {},
+) {
+  const c = CASES[id];
+  const r = instantiateTemplate(id, { ...c.params, ...params }, facts);
+  if (!r.ok) throw new Error(`${id}: ${JSON.stringify(r.issues)}`);
+  const plan = compile(r.manifest, facts);
+  const preflight = preflightFor(plan);
+  preflight.steps = preflight.steps.map((x) => {
+    const o = { ...x, ...step } as Record<string, unknown>;
+    for (const k of Object.keys(step)) if (step[k] === undefined) delete o[k];
+    return o as unknown as PfStep;
+  });
+  const policy = definePolicy(c.policy(r.codeHash));
+  return evaluatePolicy({ policy, plan, facts, preflight, manifest: r.manifest, ...extra });
+}
+const hasCode = (res: { rules: { code?: string; outcome: string }[] }, code: string) =>
+  res.rules.some((x) => x.outcome === "block" && x.code === code);
+const CAP = { "revive-call": 1000000n, "restricted-deploy": 200000n } as const;
+
+describe("restricted-deploy: manifest proof size", () => {
   const deployCase = CASES["restricted-deploy"];
-  // Enabled once 66b29c8 (Sentinel, bot3/presign-fixture) merges: proofSize "0" -> DEPLOY_PROOF_SIZE_UNKNOWN.
-  it.fails("a manifest proofSize of 0 is blocked as DEPLOY_PROOF_SIZE_UNKNOWN", () => {
+  it("a manifest proofSize of 0 is blocked as DEPLOY_PROOF_SIZE_UNKNOWN", () => {
     const res = gate("restricted-deploy", { ...deployParams, proofSize: "0" }, deployCase.policy);
     expect(res.allowed).toBe(false);
     expect(
@@ -427,19 +452,84 @@ describe("restricted-deploy with proof_size 0 or missing", () => {
       ),
     ).toBe(true);
   });
-  for (const [what, proofSize] of [
+});
+
+describe("revive-call: manifest proof size cap", () => {
+  it("a cap of 0 blocks with CALL_PROOF_SIZE_UNKNOWN", () =>
+    expect(
+      hasCode(proofEval("revive-call", {}, { proofSize: "0" }), "CALL_PROOF_SIZE_UNKNOWN"),
+    ).toBe(true));
+  it("a missing cap blocks with CALL_GAS_LIMIT_MISSING", () => {
+    const r = instantiateTemplate("revive-call", CASES["revive-call"].params, facts);
+    if (!r.ok) throw new Error("instantiate");
+    const plan = compile(r.manifest, facts);
+    const edited = clone(plan);
+    delete edited.steps[0].decodedArgs.proofSize;
+    const res = evaluatePolicy({
+      policy: definePolicy(CASES["revive-call"].policy()),
+      plan: edited,
+      facts,
+      preflight: preflightFor(plan),
+    });
+    expect(hasCode(res, "CALL_GAS_LIMIT_MISSING")).toBe(true);
+  });
+});
+
+describe.each(["revive-call", "restricted-deploy"] as const)("%s: preflight proof sizes", (id) => {
+  const cap = CAP[id];
+  for (const [what, dry] of [
     ["0", { value: "0" }],
+    ["unknown", { unknown: true }],
     ["missing", undefined],
   ] as const) {
-    it.fails(`a preflight proof_size ${what} is treated as unknown and blocked`, () => {
-      const r = instantiateTemplate("restricted-deploy", deployParams, facts);
-      if (!r.ok) throw new Error("instantiate");
-      const plan = compile(r.manifest, facts);
-      const preflight = preflightFor(plan);
-      preflight.steps = preflight.steps.map((s) => ({ ...s, proofSize: proofSize as never }));
-      const policy = definePolicy({ ...deployCase.policy(r.codeHash), maxProofSize: "200000" });
-      const res = evaluatePolicy({ policy, plan, facts, preflight, manifest: r.manifest });
-      expect(res.allowed).toBe(false);
+    it(`dryRunProofSize ${what} with a valid cap is allowed, and explained as unknown`, () => {
+      const res = proofEval(id, { dryRunProofSize: dry as never });
+      expect(res.allowed, JSON.stringify(res.rules.filter((x) => x.outcome !== "pass"))).toBe(true);
+      const ex = explainPolicy(res).filter((x) => JSON.stringify(x).includes("proof_size"));
+      expect(JSON.stringify(ex)).toMatch(/dry-run proof size is unknown/);
     });
   }
+  it("dryRunProofSize above the cap blocks with PROOF_SIZE_ESTIMATE_OVER_LIMIT", () =>
+    expect(
+      hasCode(
+        proofEval(id, { dryRunProofSize: { value: String(cap + 1n) } }),
+        "PROOF_SIZE_ESTIMATE_OVER_LIMIT",
+      ),
+    ).toBe(true));
+  for (const v of [cap, cap - 1n])
+    it(`callInfoProofSize ${v} (at or under the cap) blocks with PROOF_SIZE_CALL_INFO_MISMATCH`, () =>
+      expect(
+        hasCode(
+          proofEval(id, { callInfoProofSize: { value: String(v) } }),
+          "PROOF_SIZE_CALL_INFO_MISMATCH",
+        ),
+      ).toBe(true));
+  it("requireMeasuredProofSize without callInfoProofSize blocks with PROOF_SIZE_CALL_INFO_MISSING", () =>
+    expect(
+      hasCode(
+        proofEval(id, {}, {}, { requireMeasuredProofSize: true }),
+        "PROOF_SIZE_CALL_INFO_MISSING",
+      ),
+    ).toBe(true));
+  it("requireMeasuredProofSize with callInfoProofSize above the cap passes", () => {
+    const res = proofEval(
+      id,
+      { callInfoProofSize: { value: String(cap + 7725n) } },
+      {},
+      { requireMeasuredProofSize: true },
+    );
+    expect(res.allowed, JSON.stringify(res.rules.filter((x) => x.outcome !== "pass"))).toBe(true);
+  });
+  it("legacy proofSize alone, with strict mode on, still blocks with PROOF_SIZE_CALL_INFO_MISSING", () =>
+    expect(
+      hasCode(
+        proofEval(
+          id,
+          { dryRunProofSize: undefined, proofSize: { value: String(cap + 7725n) } },
+          {},
+          { requireMeasuredProofSize: true },
+        ),
+        "PROOF_SIZE_CALL_INFO_MISSING",
+      ),
+    ).toBe(true));
 });
