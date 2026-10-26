@@ -113,14 +113,20 @@ function runType(t) {
   return "devnode (local, recorded)";
 }
 
-const rows = [...txs.values()].sort((a, b) => {
-  const na = network(a),
-    nb = network(b);
-  if (na !== nb) return na < nb ? 1 : -1;
-  const ba = Math.min(...a.blocks, Infinity),
-    bb = Math.min(...b.blocks, Infinity);
-  return ba - bb || (a.hash < b.hash ? -1 : 1);
-});
+// Hashes only ever seen inside a signed dry run were never broadcast. They are not listed as transactions; their
+// files are listed in the "DRY RUN ONLY (nothing sent)" section instead (no tx hash column there).
+const dryOnlyFiles = new Set();
+for (const t of txs.values()) if (t.dryRunOnly) for (const f of t.files) dryOnlyFiles.add(f);
+const rows = [...txs.values()]
+  .filter((t) => !t.dryRunOnly)
+  .sort((a, b) => {
+    const na = network(a),
+      nb = network(b);
+    if (na !== nb) return na < nb ? 1 : -1;
+    const ba = Math.min(...a.blocks, Infinity),
+      bb = Math.min(...b.blocks, Infinity);
+    return ba - bb || (a.hash < b.hash ? -1 : 1);
+  });
 
 const cell = (s) => String(s).replace(/\|/g, "\\|");
 const lines = [];
@@ -142,7 +148,7 @@ lines.push(
   "- **devnode (local, recorded)**: a disposable local chain on the build machine. Not V3, not mainnet.",
 );
 lines.push(
-  "- **not sent (signed dry run only)**: the hash of signed bytes that were only dry-run; nothing was broadcast.",
+  "- **not sent**: signed or unsigned dry runs and estimates; nothing was broadcast. These are not in the transaction table; see **DRY RUN ONLY (nothing sent)** below.",
 );
 lines.push("");
 lines.push(
@@ -215,6 +221,117 @@ rows.forEach((t, i) => {
   );
 });
 lines.push("");
+
+// ---- DRY RUN ONLY (nothing sent) ----
+const dryJson = new Map(); // rel -> parsed JSON
+for (const f of files) {
+  const rel = relative(ROOT, f);
+  const j = JSON.parse(readFileSync(f, "utf8"));
+  const isDry =
+    dryOnlyFiles.has(rel) ||
+    /dry-?run/i.test(f.split("/").pop()) ||
+    (typeof j.kind === "string" && /dry-?run/i.test(j.kind)) ||
+    (typeof j.label === "string" && /^DRY RUN ONLY/i.test(j.label)) ||
+    (typeof j.outcome === "string" && /^not sent/i.test(j.outcome));
+  if (isDry) dryJson.set(rel, j);
+}
+const num = (v) => (Number.isInteger(v) ? v : undefined);
+function dryBlock(j) {
+  const b = blockOf(j);
+  const parts = [];
+  if (b !== undefined) parts.push(`#${b}`);
+  else if (num(j.checkpoint?.number) !== undefined)
+    parts.push(`#${j.checkpoint.number} (checkpoint)`);
+  else if (num(j.bestBlockAtStart) !== undefined) parts.push(`best #${j.bestBlockAtStart}`);
+  else if (num(j.stateBefore?.block) !== undefined)
+    parts.push(`#${j.stateBefore.block} (state before)`);
+  if (Array.isArray(j.runs)) {
+    const rb = j.runs.map((r) => num(r?.block)).filter((x) => x !== undefined);
+    if (rb.length) parts.push(`replays of ${rb.map((x) => `#${x}`).join(", ")}`);
+  }
+  return parts.join("; ") || "unknown";
+}
+function dryRuntime(rel, j) {
+  const net = rel.startsWith("evidence/testnet-v3/")
+    ? "Portaldot V3 testnet"
+    : rel.startsWith("evidence/portaldot-local-node/")
+      ? "local Portaldot dev node"
+      : rel.startsWith("evidence/devnode/")
+        ? "local substrate-contracts-node (devnode)"
+        : "unknown network";
+  const specs = new Set();
+  if (num(j.specVersion) !== undefined) specs.add(j.specVersion);
+  if (Array.isArray(j.runs))
+    for (const r of j.runs) if (num(r?.specVersion) !== undefined) specs.add(r.specVersion);
+  return `${net}; spec ${specs.size ? [...specs].join(", ") : "unknown"}`;
+}
+function dryEstimate(j) {
+  const out = [];
+  if (Array.isArray(j.results))
+    for (const r of j.results)
+      if (typeof r?.totalFmt === "string")
+        out.push(`${r.variant?.id ?? "unknown"}: total ${r.totalFmt}`);
+  const fit = j.budget?.fit;
+  if (fit && typeof fit === "object")
+    for (const [k, v] of Object.entries(fit))
+      if (typeof v?.total?.tPOT === "string") out.push(`${k}: total ${v.total.tPOT}`);
+  if (typeof j.estimatedFeeTpot === "string") out.push(`fee ${j.estimatedFeeTpot} tPOT`);
+  if (typeof j.expectedDeposit === "string")
+    out.push(`expected deposit ${j.expectedDeposit} planck`);
+  return out.join("<br>") || "unknown";
+}
+function dryOrigin(j) {
+  const out = new Set();
+  for (const k of ["origin", "signer"]) if (typeof j[k] === "string") out.add(`${k} \`${j[k]}\``);
+  if (j.accounts && typeof j.accounts === "object")
+    for (const [k, v] of Object.entries(j.accounts))
+      if (typeof v?.address === "string") out.add(`${k} \`${v.address}\``);
+  if (typeof j.budgetAccount?.address === "string")
+    out.add(`budgetAccount \`${j.budgetAccount.address}\``);
+  if (typeof j.plan?.signer?.value === "string") out.add(`signer \`${j.plan.signer.value}\``);
+  return [...out].join("<br>") || "unknown";
+}
+function dryOutcome(j) {
+  if (typeof j.outcome === "string") return j.outcome;
+  if (typeof j.signedDryRun?.result === "string") return `signed dry run: ${j.signedDryRun.result}`;
+  if (typeof j.label === "string")
+    return j.label.length > 90 ? j.label.slice(0, 87) + "..." : j.label;
+  return "unknown";
+}
+const dryRows = [...dryJson.keys()].sort().map((rel) => {
+  const j = dryJson.get(rel);
+  return [
+    `\`${rel.replace("evidence/", "")}\``,
+    dryBlock(j),
+    dryRuntime(rel, j),
+    typeof j.kind === "string" ? j.kind : "unknown",
+    dryEstimate(j),
+    dryOrigin(j),
+    dryOutcome(j),
+  ];
+});
+const dryLines = [];
+dryLines.push("## DRY RUN ONLY (nothing sent)");
+dryLines.push("");
+dryLines.push(
+  "Evidence files that record only dry runs, estimates or read-only replays. Nothing in these rows was broadcast, so there is no transaction-hash column. A file is listed if its name, `kind` or `label` marks it as a dry run, its top-level `outcome` says it was not sent, or it holds a hash seen only inside a signed dry run. Values are copied from the JSON as written; a value the file does not record is `unknown`.",
+);
+dryLines.push("");
+dryLines.push(`Totals: ${dryRows.length} dry-run-only files.`);
+dryLines.push("");
+dryLines.push(
+  "| # | file | block | network / spec | kind | estimated (as written) | origin / signer (as recorded) | outcome / label |",
+);
+dryLines.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
+dryRows.forEach((r, i) => dryLines.push(`| ${i + 1} | ${r.map(cell).join(" | ")} |`));
+dryLines.push("");
+const dryText = dryLines.join("\n");
+// This section never carries a tx hash or claims verification.
+if (/verif/i.test(dryText))
+  throw new Error("DRY RUN ONLY section must not contain the word verified");
+if (/0x[0-9a-fA-F]{64}(?![0-9a-fA-F])/.test(dryText.replace(/`5[1-9A-HJ-NP-Za-km-z]{47}`/g, "")))
+  throw new Error("DRY RUN ONLY section must not contain a 32-byte hash");
+lines.push(...dryLines);
 // Formatted with the repo's prettier so the committed file passes `prettier --check`.
 const prettier = await import("prettier");
 const md = await prettier.format(lines.join("\n"), {

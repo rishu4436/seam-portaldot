@@ -1,5 +1,7 @@
 // Sequential 2-step LIVE receipt: the real engine (preSign -> createApproval, policy gate) on a compiled 2-step plan with
 // the recorded V3 preflight; signing, the submit gate and sending are fakes (no keys, no wallet, nothing broadcast).
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -11,7 +13,10 @@ import { runPlanSteps } from "../multistep";
 import { runPolicyGate } from "../policygate";
 import { buildSequentialReceipt } from "../seqreceipt";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
 const demo = json("packages/console/src/demo/v3-demo-transfer.json");
 const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");

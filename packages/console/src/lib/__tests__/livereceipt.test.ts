@@ -1,6 +1,8 @@
 // @vitest-environment node
 // The downloadable LIVE receipt carries verifyStep's per-step verdicts and an SDK-schema result. Built from REAL V3 records
 // (evidence/testnet-v3/runs: the sequential run's "pay" assets.transfer #102653, the atomic batch #102671); offline.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -10,8 +12,11 @@ import { effectFromOutcome, PER_STEP_FROM_BATCH, stepVerdicts } from "../stepver
 import type { EffectVerdict } from "../effectcheck";
 import type { LiveOutcome } from "../live";
 
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
 const rec = (f: string) =>
-  JSON.parse(readFileSync(resolve(process.cwd(), "../../evidence/testnet-v3/runs", f), "utf8"));
+  JSON.parse(readFileSync(resolve(CONSOLE_DIR, "../../evidence/testnet-v3/runs", f), "utf8"));
 const SEQ = rec("plan-sequential-1792411270138.json");
 const ATOMIC = rec("plan-atomic-1792411355057.json");
 const strip = (o: {
@@ -126,14 +131,14 @@ describe("builder transfer #119634 (Chainsmith fb95dac read-only verification)",
   // Chain data straight from Chainsmith's evidence on main; the fixture only holds the old receipt's values.
   const chain = JSON.parse(
     readFileSync(
-      resolve(process.cwd(), "../../evidence/testnet-v3/builder-transfer-119634-verification.json"),
+      resolve(CONSOLE_DIR, "../../evidence/testnet-v3/builder-transfer-119634-verification.json"),
       "utf8",
     ),
   ).chain;
   const F = {
     ...JSON.parse(
       readFileSync(
-        resolve(process.cwd(), "src/lib/__tests__/fixtures/builder-transfer-119634.json"),
+        resolve(CONSOLE_DIR, "src/lib/__tests__/fixtures/builder-transfer-119634.json"),
         "utf8",
       ),
     ),
@@ -144,7 +149,7 @@ describe("builder transfer #119634 (Chainsmith fb95dac read-only verification)",
     events: chain.events,
   };
   const demo = JSON.parse(
-    readFileSync(resolve(process.cwd(), "src/demo/v3-demo-transfer.json"), "utf8"),
+    readFileSync(resolve(CONSOLE_DIR, "src/demo/v3-demo-transfer.json"), "utf8"),
   );
   // Same transfer as the demo plan's step (asset 806707, amount 1, same recipient); signer is the builder account.
   const signerAccountId = F.events.find((e: { name: string }) => e.name === "Transferred").args[1];

@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // Manifest Builder with a fake extension and facts built from the committed real V3 spec 3002 metadata. No real chain, wallet or keystore.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
@@ -8,6 +10,9 @@ import { factsFromMetadata } from "@seam/compiler/browser";
 import { ManifestBuilder, actionSupport } from "../ManifestBuilder";
 import { buildManifest, parseManifestJson } from "../../lib/manifestbuilder";
 import type { V3FactsResult } from "../../lib/v3facts";
+
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 afterEach(cleanup);
 const ALICE = "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE";
@@ -20,7 +25,7 @@ const injected = () => ({
   },
 });
 // Tests run from packages/console.
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const demo = JSON.parse(
   readFileSync(root("packages/console/src/demo/v3-demo-transfer.json"), "utf8"),
 );

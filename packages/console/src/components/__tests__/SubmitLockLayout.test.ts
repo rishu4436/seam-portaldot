@@ -5,6 +5,8 @@
 // fixture; the mode-1 case is that same extrinsic with only its mode byte set to 1, as read back by the real decoder.
 // The live drift (Revive.EthBlockBuilderIR default) is synthesized with Chainsmith's metadata mutators.
 // No wallet, no keys, nothing signed or sent; only the preflight RPC is stubbed.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -16,7 +18,10 @@ import { newApprovalStore, preSign, preSubmit, type ChainFns } from "../../lib/s
 import { buildLiveReceipt } from "../../lib/livereceipt";
 import { buildSequentialReceipt } from "../../lib/seqreceipt";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
 const demo = json("packages/console/src/demo/v3-demo-transfer.json");
 const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");

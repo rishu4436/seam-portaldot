@@ -1,6 +1,8 @@
 // @vitest-environment node
 // Facts snapshot + Forge's rebindPlan, before approve and before sign. Offline on the committed real V3 spec 3002
 // metadata; the raw-metadata drift is made with the chain package's metadata mutator (same as Forge's tests).
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -8,7 +10,10 @@ import { compile, factsFromMetadata } from "@seam/compiler/browser";
 import { withFallback } from "../../../../chain/tests/metadataMutate";
 import { approveWithRebind, checkRebind } from "../rebind";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const v3Hex = readFileSync(
   root("evidence/v3-discovery/portaldot-v3-spec3002-metadata.hex"),
   "utf8",

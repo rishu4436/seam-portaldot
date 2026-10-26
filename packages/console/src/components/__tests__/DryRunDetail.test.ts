@@ -2,6 +2,8 @@
 // Submit blocked by signed_dry_run_failed: the console shows and records the dry-run detail exactly as @seam/chain's
 // preflightReport returned it (checkBeforeSubmit reports only the code). Real @seam/policy gate, real V3 spec 3002
 // facts; the chain's preflightReport is stubbed with the exact detail strings its dryRunOne produces. Nothing is signed.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -18,7 +20,10 @@ import {
 import { buildLiveReceipt } from "../../lib/livereceipt";
 import { buildSequentialReceipt } from "../../lib/seqreceipt";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
 const demo = json("packages/console/src/demo/v3-demo-transfer.json");
 const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");

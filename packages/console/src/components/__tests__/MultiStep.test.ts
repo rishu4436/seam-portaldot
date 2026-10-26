@@ -1,11 +1,16 @@
 // @vitest-environment node
 // Multi-step LIVE orchestration (lib/multistep.ts) with fakes for the gates, signer and submit: nothing is signed or sent.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { newApprovalStore } from "../../lib/signflow";
 import { callsToSignOf, runPlanSteps, SignedHolder } from "../../lib/multistep";
 import { planCall } from "../../lib/liverequest";
+
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 const step = (id: string, hex: string) => ({
   actionId: id,
@@ -279,7 +284,7 @@ describe("signed bytes never leave memory", () => {
     expect(ls.setItem).not.toHaveBeenCalled();
   });
   it("console source has no console.*, localStorage or sessionStorage calls, and exports never take signed bytes", () => {
-    const root = resolve(process.cwd(), "src");
+    const root = resolve(CONSOLE_DIR, "src");
     const files: string[] = [];
     const walk = (d: string) => {
       for (const f of readdirSync(d)) {

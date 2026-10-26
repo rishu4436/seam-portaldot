@@ -2,6 +2,8 @@
 // preSign / preSubmit with the REAL @seam/policy engine, the real demo plan, the sequential demo policy, facts from the
 // committed V3 spec 3002 metadata and the real live V3 preflight result recorded by Chainsmith
 // (evidence/testnet-v3/preflight-1792509095721.json). Only the chain calls are stubbed; nothing is signed or sent.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -15,7 +17,10 @@ import {
   type ChainFns,
 } from "../../lib/signflow";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
 const demo = json("packages/console/src/demo/v3-demo-transfer.json");
 const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");

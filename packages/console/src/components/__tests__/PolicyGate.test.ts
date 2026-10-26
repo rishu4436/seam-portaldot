@@ -1,13 +1,18 @@
 // @vitest-environment node
 // The real @seam/policy/browser gate on the real demo plan, the sequential demo policy and facts from the committed
 // V3 spec 3002 metadata. No preflight producer is exported to the browser yet, so the honest result is blocked.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { factsFromMetadata } from "@seam/compiler/browser";
 import { runPolicyGate } from "../../lib/policygate";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const demo = JSON.parse(
   readFileSync(root("packages/console/src/demo/v3-demo-transfer.json"), "utf8"),
 );

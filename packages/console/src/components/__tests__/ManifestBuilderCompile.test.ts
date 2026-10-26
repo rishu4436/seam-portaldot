@@ -1,6 +1,8 @@
 // @vitest-environment node
 // Browser compiler wiring on the committed real V3 spec 3002 metadata. Node environment: jsdom's
 // Uint8Array differs from the one @polkadot/util-crypto checks, which breaks SS58 checksums there.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -8,8 +10,11 @@ import { factsFromMetadata } from "@seam/compiler/browser";
 import { browserCompile } from "../ManifestBuilder";
 import { buildManifest } from "../../lib/manifestbuilder";
 
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
 const ALICE = "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE";
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const demo = JSON.parse(
   readFileSync(root("packages/console/src/demo/v3-demo-transfer.json"), "utf8"),
 );
