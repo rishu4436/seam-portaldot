@@ -80,7 +80,10 @@ function verify(r: unknown) {
     stdout = (e as { stdout: string }).stdout; // non-zero exit: the receipt claims not_verified
   }
   const out = JSON.parse(stdout) as {
-    consoleReceipt: { status: string; checks: { check: string; status: string; detail: string }[] };
+    consoleReceipt: {
+      status: string;
+      checks: { check: string; status: string; code?: string; detail: string }[];
+    };
   };
   const by = (c: string) => out.consoleReceipt.checks.filter((x) => x.check === c);
   return { out, by };
@@ -120,7 +123,7 @@ describe("console receipt integrity", () => {
     expect(integrityHashOf(sealed as never)).toBe(sealed.integrityHash);
   });
 
-  it("main's seam verify CLI checks the real receipt: approval hash and policyDigest pass; integrity fields are seen", async () => {
+  it("seam verify CLI checks the real receipt: approval hash, policyDigest, integrity_hash_match and coverage_states_valid pass", async () => {
     const r = await realReceipt();
     const text = JSON.stringify(r);
     expect(text).not.toMatch(/metadataHex|signedTx|signedExtrinsics/);
@@ -128,9 +131,11 @@ describe("console receipt integrity", () => {
     expect(out.consoleReceipt.status).toBe("integrity_checked");
     expect(by("approval_hash")[0]!.status).toBe("pass");
     expect(by("policy_digest")[0]!.status).toBe("pass");
-    // main's CLI sees integrityHash and evidenceCoverage but does not re-derive them yet (reported as not_checked).
-    expect(by("integrity_hash")[0]!.detail).toMatch(/integrityHash/);
-    expect(by("evidence_coverage")[0]!.detail).toMatch(/present/);
+    // seam verify recomputes integrityHash (CONSOLE_INTEGRITY_ALGO) and checks the coverage states.
+    expect(by("integrity_hash")[0]!.status).toBe("pass");
+    expect(by("integrity_hash")[0]!.code).toBe("integrity_hash_match");
+    expect(by("evidence_coverage")[0]!.status).toBe("pass");
+    expect(by("evidence_coverage")[0]!.code).toBe("coverage_states_valid");
   });
 
   it("a tampered policyDigest fails main's seam verify", async () => {
