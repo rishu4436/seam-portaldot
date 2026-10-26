@@ -1,0 +1,63 @@
+{
+  "source": "EscrowMin.sol",
+  "sourceKeccak256": "0xd0376583f4ea96fc0d04bafc9391ba4e32b319d049637326b07bc1e5ad8cd4a7",
+  "solc": "Version: 0.8.30+commit.73712a01.Linux.g++",
+  "settings": {
+    "bytecodeHash": "none",
+    "appendCBOR": false
+  },
+  "variants": [
+    {
+      "id": "SeamEscrowMin-r1",
+      "contract": "SeamEscrowMin",
+      "solcOptimizerRuns": 1,
+      "initBytes": 1096,
+      "initKeccak": "0x1ee8a5d339d78dbedb33043c060c7df54ecbe3ca9ea088821a366003eb732d74",
+      "runtimeBytes": 1068,
+      "runtimeKeccak": "0x8d511c4863a323e2af5a369e5d00f46e8e849acf5c932c024c58100ec482227c",
+      "runtimeHasImmutables": false,
+      "constructorArgs": "none"
+    },
+    {
+      "id": "SeamEscrowOne-r1",
+      "contract": "SeamEscrowOne",
+      "solcOptimizerRuns": 1,
+      "initBytes": 794,
+      "initKeccak": "0x4a1d59c39db3985f3cde74cfb0fe2357665f3fc0fd88491561a5601cf77547ab",
+      "runtimeBytes": 589,
+      "runtimeKeccak": "0x016031efb2e28af5ee08c65733a57e8d389dbae55ea2759bc8a2972b074281d2",
+      "runtimeHasImmutables": true,
+      "constructorArgs": "(address payee, uint256 releaseBlock) ABI-encoded after init code"
+    },
+    {
+      "id": "SeamEscrowMin-r200",
+      "contract": "SeamEscrowMin",
+      "solcOptimizerRuns": 200,
+      "initBytes": 1124,
+      "initKeccak": "0x981dc9a2379642479f36a25fa31508812d8a6e7877953f902f380002f17d7594",
+      "runtimeBytes": 1096,
+      "runtimeKeccak": "0x3fe0a89d75845c46608245a46f95dcffdbf8ccf67dd03ac514e33e608a56ff7d",
+      "runtimeHasImmutables": false,
+      "constructorArgs": "none"
+    },
+    {
+      "id": "SeamEscrowOne-r200",
+      "contract": "SeamEscrowOne",
+      "solcOptimizerRuns": 200,
+      "initBytes": 799,
+      "initKeccak": "0xd8d3608da2056ee1855a7d3b57c2a8e6da407913c5a7d5711de7bf0cfa184c0b",
+      "runtimeBytes": 594,
+      "runtimeKeccak": "0x0417f4b0dc431c8a6bfd620e4c7b2725ec668c1d8002abe86b3f0a3c266bb6ba",
+      "runtimeHasImmutables": true,
+      "constructorArgs": "(address payee, uint256 releaseBlock) ABI-encoded after init code"
+    },
+    {
+      "id": "Floor-stop",
+      "contract": "hand-minimal (runtime 0x00 = STOP; NOT an escrow, floor probe only)",
+      "initBytes": 13,
+      "initKeccak": "0x5fd875ef7d60f65991512743b1cdf42b8d3116d2e91e85f05d2482819c20b4e7",
+      "runtimeBytes": 1,
+      "runtimeKeccak": "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a"
+    }
+  ]
+}
