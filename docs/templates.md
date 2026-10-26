@@ -56,9 +56,14 @@ Notes per template:
 - **restricted-deploy** additionally runs `checkDeployStep` (code-hash allow-list, value 0, storage-deposit, gas and
   proof-size caps; value 1 gives `DEPLOY_VALUE_NOT_ALLOWED`). **No deploy happens**: the code is an 8-byte test blob and
   there is no budget.
-  **Known gap:** the team rule is that a `proof_size` of 0 (what every V3 dry run so far returned) counts as
-  **unknown**, never as a passed limit. Today `checkDeployStep` does **not** enforce that: a proofSize of `"0"` passes
-  its cap check (the example prints this). Sentinel's fix is pending; until it merges, no deploy may rely on it.
+- **Proof size (revive-call and restricted-deploy).** V3 spec 3002 doesn't meter proof_size on instantiate, so a
+  dry run's 0 is **unknown**, never a bound. Every Revive step needs its own non-zero `proofSize` cap: a cap of `"0"`
+  blocks with `DEPLOY_PROOF_SIZE_UNKNOWN` / `CALL_PROOF_SIZE_UNKNOWN` (the deploy example shows this). The examples'
+  synthetic preflight puts the dry-run estimate in `dryRunProofSize` (it must fit the cap) and, for strict mode, a
+  `callInfoProofSize` (the `query_call_info` total, which must be above the cap). With `requireMeasuredProofSize: true`,
+  which real testnet deploys and calls use, a missing `callInfoProofSize` blocks with `PROOF_SIZE_CALL_INFO_MISSING`;
+  both examples print the blocked and the passing case. The callInfo values (cap + 7,725 for the call, cap + 6,823 for
+  the deploy) are example data shaped like Chainsmith's dry-run-only measurements, not readings; re-measure at signing.
 
 ## Error codes
 
@@ -71,6 +76,10 @@ Notes per template:
 |                                       | `PLAN_MODE_NOT_ALLOWED`                                                             | The plan's mode (e.g. `atomic_unverified`) is not in `allowedModes`.                                                       |
 |                                       | `DEPLOY_CODE_HASH_NOT_ALLOWED` (and the other `DEPLOY_*`)                           | `checkDeployStep`: code hash not allow-listed, value not 0, or a cap missing / exceeded.                                   |
 |                                       | `PLAN_BYTES_MISMATCH`                                                               | Pre-sign `verifyPlan`: the plan's call bytes are not what the Manifest compiles to on the live facts (Sentinel `b1a60a4`). |
+|                                       | `DEPLOY_PROOF_SIZE_UNKNOWN`, `CALL_PROOF_SIZE_UNKNOWN`                              | A Revive step's proof size cap is `"0"`: unknown, never a bound.                                                           |
+|                                       | `PROOF_SIZE_ESTIMATE_OVER_LIMIT`                                                    | A non-zero `dryRunProofSize` is above the step's cap.                                                                      |
+|                                       | `PROOF_SIZE_CALL_INFO_MISMATCH`                                                     | `callInfoProofSize` (query_call_info total) is not above the cap.                                                          |
+|                                       | `PROOF_SIZE_CALL_INFO_MISSING`                                                      | Strict mode (`requireMeasuredProofSize: true`) and no measured `callInfoProofSize`.                                        |
 | `verifyPlan(...).issues[].code`       | `STEP_BYTES_MISMATCH`, `STEP_BODY_MISMATCH`, `PLAN_BODY_MISMATCH`                   | An edited plan: step call bytes, step body or plan body differ from a fresh compile.                                       |
 |                                       | `OUTER_CALL_MISMATCH`                                                               | Atomic only: the Utility.batch_all outer call differs.                                                                     |
 | `createApproval(requirePlanVerified)` | `ok: false`, reason "the plan's call bytes are not what the Manifest compiles to …" | Approval is refused for an edited plan, even with a recomputed digest.                                                     |
@@ -90,6 +99,5 @@ is still refused by `verifyPlan` and `createApproval`.
   from these templates. There is no live run of two transfers in one batch, and the **revive-call and restricted-deploy
   templates are not live-run** by these examples (the contract address and code are made up).
 - **Dev accounts** are public test keys. Never fund them on a real network.
-- `checkDeployStep` passes proof_size 0 today (known gap, Sentinel's fix pending).
 - The console's pre-sign `gatePolicy` call with `requirePlanVerified: true` is `bot1/gate-hardening` (Pixel); these
   examples call the same function from Node.

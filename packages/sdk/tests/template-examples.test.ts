@@ -91,6 +91,18 @@ it("restricted-deploy goes through checkDeployStep and is never deployed", () =>
   expect(d.codeHash).toMatch(/^0x[0-9a-f]{64}$/);
   expect(d.deployRules.every((x: string) => x.endsWith(":pass"))).toBe(true);
   expect(d.valueNonZeroCodes).toContain("DEPLOY_VALUE_NOT_ALLOWED");
-  // Reports what checkDeployStep returns for proof_size 0 today (a known gap until Sentinel's fix lands).
-  expect(Array.isArray(d.proofSizeZero.checkDeployStepOutcomes)).toBe(true);
+  // A proof size cap of "0" is unknown, never a bound.
+  expect(d.proofSizeZero.allowed).toBe(false);
+  expect(d.proofSizeZero.codes).toContain("DEPLOY_PROOF_SIZE_UNKNOWN");
 });
+
+it.each(["revive-call", "restricted-deploy"])(
+  "%s strict proof size: blocks without a measured query_call_info total, passes with one above the cap",
+  (id) => {
+    const s = byId[id].strictProofSize;
+    expect(s.withoutCallInfo.allowed).toBe(false);
+    expect(s.withoutCallInfo.codes).toContain("PROOF_SIZE_CALL_INFO_MISSING");
+    expect(s.withCallInfo.allowed).toBe(true);
+    expect(s.withCallInfo.codes).toEqual([]);
+  },
+);
