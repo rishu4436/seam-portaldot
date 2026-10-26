@@ -17,6 +17,21 @@ const plan = walletDemoPlan();
 const facts = walletDemoFacts();
 const fp = walletDemo.fingerprint;
 const SIGNER = plan.signer;
+// The demo signer string does not decode as SS58, so the real watchSigner refuses it (fail closed). These panel tests
+// cover the later steps, so the wallet watch is a ready stand-in here; walletwatch.test.ts covers the real one.
+vi.mock("../../lib/walletwatch", async (orig) => {
+  const m = await orig<typeof import("../../lib/walletwatch")>();
+  const state = { status: "ready" as const, expectedPublicKey: "0x00", seq: 1 };
+  return {
+    ...m,
+    openSignerWatch: async () => ({
+      current: () => state,
+      assertReadyToSign: async () => state,
+      stop: () => undefined,
+    }),
+  };
+});
+
 const GOOD_SIG = "0x" + "ab".repeat(64);
 const BAD_SIG = "0x" + "cd".repeat(64);
 const HEAD = "0x" + "11".repeat(32);
@@ -127,7 +142,10 @@ function mockExtension(signature: string, accounts = [SIGNER]) {
   (globalThis as { injectedWeb3?: unknown }).injectedWeb3 = {
     "polkadot-js": {
       enable: vi.fn(async () => ({
-        accounts: { get: async () => accounts.map((address) => ({ address })) },
+        accounts: {
+          get: async () => accounts.map((address) => ({ address })),
+          subscribe: () => () => undefined,
+        },
         signer: { signPayload },
       })),
     },
@@ -310,6 +328,47 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     renderPanel();
     press();
     await waitFor(() => expect(screen.getByText(/No wallet extension found/)).toBeTruthy());
+    expect(submitted).toHaveLength(0);
+  });
+
+  it("wallet watch not ready: Sign stays disabled, state shown in plain words, nothing signed or sent, watch stopped", async () => {
+    const sign = mockExtension(GOOD_SIG);
+    const stop = vi.fn();
+    const state = {
+      status: "account_switched" as const,
+      reason: "first account changed",
+      expectedPublicKey: "0x00",
+      seq: 2,
+    };
+    const { SignerNotReadyError } = await import("@seam/chain/browser");
+    render(
+      <LivePanel
+        plan={plan}
+        facts={facts}
+        approval={approveWalletDemo(plan)}
+        hostLoader={async () => fakeHost()}
+        factsStep={factsOk}
+        policyInput={{ policy: {}, plan: walletDemo.plan, manifest: walletDemo.manifest }}
+        chainLoader={fakeChain}
+        gates={passGates as never}
+        signerWatchLoader={async () => ({
+          current: () => state,
+          assertReadyToSign: async () => {
+            throw new SignerNotReadyError(state);
+          },
+          stop,
+        })}
+      />,
+    );
+    press();
+    await waitFor(() => expect(stop).toHaveBeenCalled());
+    expect(screen.getByTestId("signer-status").getAttribute("data-status")).toBe(
+      "account_switched",
+    );
+    expect(screen.getByTestId("signer-status").textContent).toMatch(
+      /switched to a different account/,
+    );
+    expect(sign).not.toHaveBeenCalled();
     expect(submitted).toHaveLength(0);
   });
 

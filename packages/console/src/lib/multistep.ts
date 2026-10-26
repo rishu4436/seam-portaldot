@@ -8,6 +8,7 @@
 //    mark used, submit, wait for inclusion and finality. Any block or non-final step stops every remaining step.
 // Nothing here talks to a wallet itself: sign and submitAndWait are injected (the LivePanel wires the extension signer).
 import { usageKey, type ApprovalStore } from "@seam/policy/browser";
+import { readyOrStop, type SignerWatch } from "./walletwatch";
 import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "./policygate";
 import type { StepOutcome } from "@seam/sdk/browser";
 import { atomicStepReceipts, callOfSigned, verifyPlanStep } from "./stepverify";
@@ -104,6 +105,11 @@ export function callsToSignOf(plan: PlanLike): Res<{ actionIds: string[]; callHe
 }
 
 export async function runPlanSteps(args: {
+  /**
+   * Wallet watch (Chainsmith's watchSigner): assertReadyToSign runs before each step's signPayload and again before each
+   * submit. Not ready: the run stops and nothing is broadcast. The caller stops the watch.
+   */
+  watch?: Pick<SignerWatch, "assertReadyToSign">;
   chain: ChainFns;
   send: Send;
   input: PolicyGateInput;
@@ -238,6 +244,10 @@ export async function runPlanSteps(args: {
   // Sign every call in order (nonce n + i). One request for an atomic plan.
   for (const [i, c] of calls.value.entries()) {
     if (cancelled()) return stop(i, "Cancelled. Nothing more was signed or sent.");
+    if (args.watch) {
+      const w = await readyOrStop(args.watch, "sign");
+      if (!w.ok) return stop(i, w.message, pre.gate);
+    }
     signRequests++;
     const requested = args.ctx.nonce + i;
     const s = await args.sign(i, c, requested);
@@ -310,6 +320,10 @@ export async function runPlanSteps(args: {
     // Last look right before broadcasting: the window, and a cancel during the checks.
     if (cancelled()) return stop(i, "Cancelled. Nothing more was sent.");
     if (expired()) return stop(i, expiredMsg, pre.gate);
+    if (args.watch) {
+      const w = await readyOrStop(args.watch, "submit");
+      if (!w.ok) return stop(i, w.message, pre.gate);
+    }
     args.store.markUsed(usageKey(hash as `0x${string}`, sequential ? i : undefined));
     const r = await args.submitAndWait(i, all[i]);
     if (!r.ok) {
