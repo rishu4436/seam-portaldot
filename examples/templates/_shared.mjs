@@ -49,11 +49,20 @@ export const DEV = {
 };
 
 // SYNTHETIC preflight and signing envelope: example data, not chain readings. Nothing is dry-run on a node here.
-const preflightFor = (plan) => ({
+// Revive steps (revive.call, deploy) carry the dry-run estimate as dryRunProofSize (Revive's weight_required), never
+// as the legacy proofSize, which policy reads as payment_queryInfo call info (cap + overhead). Pass callInfoProofSize
+// to add a measured query_call_info total, which is what requireMeasuredProofSize needs.
+const isRevive = (s) => typeof s.capability === "string" && s.capability.startsWith("Revive.");
+const preflightFor = (plan, { callInfoProofSize } = {}) => ({
   steps: plan.steps.map((s) => ({
     actionId: s.actionId,
     weight: { value: "1000" },
-    proofSize: { value: "1000" },
+    ...(isRevive(s)
+      ? {
+          dryRunProofSize: { value: "1000" },
+          ...(callInfoProofSize ? { callInfoProofSize: { value: callInfoProofSize } } : {}),
+        }
+      : { proofSize: { value: "1000" } }),
     fee: { value: "1000" },
     storageDeposit: { value: "0" },
     dryRun: "ok",
@@ -69,8 +78,35 @@ const envelope = {
   expiresAt: "2026-10-20T10:30:00Z",
 };
 
+/**
+ * Strict proof-size mode (requireMeasuredProofSize: true), as any real testnet deploy or revive.call runs it.
+ * Without a measured callInfoProofSize the gate blocks (PROOF_SIZE_CALL_INFO_MISSING); with one strictly above the
+ * step cap it passes. The callInfo value here is SYNTHETIC example data, not a chain reading.
+ */
+export function strictProofSize(g, facts, callInfoProofSize) {
+  const run = (pf) =>
+    gatePolicy(
+      {
+        policy: g.policy,
+        plan: g.plan,
+        facts,
+        preflight: pf,
+        manifest: g.manifest,
+        liveFacts: facts,
+      },
+      { envelope, now: NOW, requirePlanVerified: true, requireMeasuredProofSize: true },
+    );
+  const missing = run(preflightFor(g.plan));
+  const measured = run(preflightFor(g.plan, { callInfoProofSize }));
+  return {
+    callInfoProofSize,
+    withoutCallInfo: { allowed: missing.allowed, codes: codesOf(missing) },
+    withCallInfo: { allowed: measured.allowed, codes: codesOf(measured) },
+  };
+}
+
 // Stable codes from gatePolicy's blockedBy (e.g. RECIPIENT_NOT_ALLOWED, PLAN_BYTES_MISMATCH).
-const codesOf = (gr) => [...new Set(gr.blockedBy.map((x) => x.code))];
+export const codesOf = (gr) => [...new Set(gr.blockedBy.map((x) => x.code))];
 
 // The pre-sign gate the console uses before the wallet opens. requirePlanVerified: true makes it fail closed on
 // call bytes when the policy build has Sentinel's pre-sign verifyPlan (a74ad38); older builds ignore the option.

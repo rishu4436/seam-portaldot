@@ -1,10 +1,10 @@
 // restricted-deploy: Revive.instantiate_with_code with value 0 and explicit caps, checked by checkDeployStep.
 // NO deploy happens: the code is an 8-byte test blob, there is no budget, and nothing is signed.
-// Known gap: the team rule says proof_size 0 (what the V3 dry runs return) is UNKNOWN. checkDeployStep does not
-// enforce that yet (Sentinel's fix is pending); this example prints what it returns today.
+// Proof size: V3 does not meter proof_size on instantiate, so the deploy needs its own non-zero cap. A cap of "0" is
+// unknown and blocks (DEPLOY_PROOF_SIZE_UNKNOWN); strict mode also needs a measured query_call_info total.
 import { instantiateTemplate } from "@seam/compiler";
 import { checkDeployStep } from "@seam/policy";
-import { DEV, isMain, runTemplate } from "./_shared.mjs";
+import { DEV, codesOf, isMain, runTemplate, strictProofSize } from "./_shared.mjs";
 
 const caps = {
   maxStorageDepositLimit: "10000000000000",
@@ -31,22 +31,22 @@ export const spec = {
   policy: policyFor(CODE_HASH),
   block: { what: "different code (hash not allow-listed)", params: { code: "0x50564d00cafebabe" } },
   edit: { storageDepositLimit: "9000000000000" },
-  extra: ({ g, log, gate }) => {
+  extra: ({ g, facts, log, gate }) => {
     const step = g.plan.steps[0];
     const rules = checkDeployStep(step, g.policy.deploy, g.plan.signer.publicKey);
     const deployRules = rules.map((r) => `${r.rule}:${r.outcome}`);
     log(`checkDeployStep: ${deployRules.join(" ")}`);
-    // proof_size 0, as every V3 dry run so far reported it. checkDeployStep alone treats "0" as a number that fits
-    // under the cap, so the example applies the team rule on top: 0 is unknown and the deploy is blocked.
+    // A proof size cap of "0" is unknown, never a bound: the gate blocks it.
     const zero = gate({ ...params, proofSize: "0" }, policyFor(CODE_HASH));
-    const zeroRules = checkDeployStep(
-      zero.plan.steps[0],
-      zero.policy.deploy,
-      zero.plan.signer.publicKey,
-    );
-    const proofRule = zeroRules.filter((r) => r.rule === "deploy_gas_limit").map((r) => r.outcome);
+    const zeroCodes = codesOf(zero.gr);
+    log(`[error] proof size cap "0": allowed=${zero.gr.allowed} codes=${zeroCodes.join(",")}`);
+    // Strict mode: cap 200,000, so a measured query_call_info total must be above it (example: cap + 6,823).
+    const strict = strictProofSize(g, facts, "206823");
     log(
-      `proof_size 0: checkDeployStep returns ${proofRule.join(",")} today (KNOWN GAP: should be unknown/blocked; Sentinel's fix pending)`,
+      `[strict] requireMeasuredProofSize, no callInfoProofSize: allowed=${strict.withoutCallInfo.allowed} codes=${strict.withoutCallInfo.codes.join(",")}`,
+    );
+    log(
+      `[strict] with callInfoProofSize ${strict.callInfoProofSize} (> cap): allowed=${strict.withCallInfo.allowed}`,
     );
     const wrongValue = checkDeployStep(
       { ...step, decodedArgs: { ...step.decodedArgs, value: "1" } },
@@ -56,10 +56,8 @@ export const spec = {
     return {
       codeHash: step.decodedArgs.codeHash,
       deployRules,
-      proofSizeZero: {
-        checkDeployStepOutcomes: proofRule,
-        knownGap: proofRule.every((x) => x === "pass"),
-      },
+      proofSizeZero: { allowed: zero.gr.allowed, codes: zeroCodes },
+      strictProofSize: strict,
       valueNonZeroCodes: wrongValue.filter((r) => r.outcome === "block").map((r) => r.code),
       deployed: false,
     };

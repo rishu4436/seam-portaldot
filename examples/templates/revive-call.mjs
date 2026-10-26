@@ -1,6 +1,6 @@
 // revive-call: call a pallet-revive contract with explicit limits. The contract address is made up; nothing
 // is called, dry-run or signed. Offline.
-import { DEV, isMain, runTemplate } from "./_shared.mjs";
+import { DEV, isMain, runTemplate, strictProofSize } from "./_shared.mjs";
 
 const limits = {
   maxNativeValue: "0",
@@ -26,6 +26,17 @@ export const spec = {
   },
   block: { what: "wrong contract (not allow-listed)", params: { contract: DEV.OTHER_CONTRACT } },
   edit: { data: "0xdeadbeef" },
+  extra: ({ g, facts, log }) => {
+    // Strict mode: the cap is 1,000,000, so a measured query_call_info total must be above it (example: cap + 7,725).
+    const strict = strictProofSize(g, facts, "1007725");
+    log(
+      `[strict] requireMeasuredProofSize, no callInfoProofSize: allowed=${strict.withoutCallInfo.allowed} codes=${strict.withoutCallInfo.codes.join(",")}`,
+    );
+    log(
+      `[strict] with callInfoProofSize ${strict.callInfoProofSize} (> cap): allowed=${strict.withCallInfo.allowed}`,
+    );
+    return { strictProofSize: strict };
+  },
   summary: (o) =>
     `call test contract ${DEV.TEST_CONTRACT} with selector 0x12345678, ${o.mode}, value 0`,
 };
