@@ -13,6 +13,9 @@ import type { StepOutcome } from "@seam/sdk/browser";
 import { atomicStepReceipts, callOfSigned, verifyPlanStep } from "./stepverify";
 import type { RunStore } from "./runstore";
 import {
+  blockCodeText,
+  type LiveCompile,
+  type LiveReads,
   preSign,
   preSubmit,
   type ChainFns,
@@ -104,7 +107,39 @@ export function callsToSignOf(plan: PlanLike): Res<{ actionIds: string[]; callHe
   };
 }
 
-export async function runPlanSteps(args: {
+export async function runPlanSteps(a0: RunPlanArgs): Promise<MultiStepResult> {
+  if (!a0.live) return runPlanStepsInner(a0);
+  // Live V3: the plan is compiled fresh from the Manifest on the live facts; a stored plan is never signed.
+  let fresh: unknown;
+  try {
+    fresh = a0.live.compile(a0.live.manifest, a0.facts);
+  } catch (e) {
+    return {
+      ok: false,
+      signRequests: 0,
+      steps: [],
+      stoppedAt: 0,
+      message: `Stopped at step 1: ${blockCodeText("LIVE_COMPILE_FAILED")} (${e instanceof Error ? e.message : String(e)})`,
+    };
+  }
+  const stored = (a0.input.plan as { planDigest?: string } | undefined)?.planDigest;
+  if (a0.input.plan !== undefined && stored !== (fresh as { planDigest?: string }).planDigest)
+    return {
+      ok: false,
+      signRequests: 0,
+      steps: [],
+      stoppedAt: 0,
+      message: `Stopped at step 1: ${blockCodeText("STORED_PLAN_REFUSED")} Nothing was signed.`,
+    };
+  return runPlanStepsInner({
+    ...a0,
+    input: { ...a0.input, plan: fresh, manifest: a0.live.manifest, facts: a0.facts },
+  });
+}
+
+export interface RunPlanArgs {
+  /** Live V3: compile fresh from the Manifest (never a stored plan) and run the gates in live mode. */
+  live?: LiveCompile & LiveReads;
   chain: ChainFns;
   send: Send;
   input: PolicyGateInput;
@@ -146,7 +181,9 @@ export async function runPlanSteps(args: {
     preSubmit: typeof preSubmit;
     policyGate: typeof runPolicyGate;
   };
-}): Promise<MultiStepResult> {
+}
+
+async function runPlanStepsInner(args: RunPlanArgs): Promise<MultiStepResult> {
   const G = args.gates ?? { preSign, preSubmit, policyGate: runPolicyGate };
   const runtime = (args.facts as { fingerprint?: { specName?: string; specVersion?: number } })
     ?.fingerprint;
@@ -235,6 +272,7 @@ export async function runPlanSteps(args: {
     ctx: args.ctx,
     now: args.now(),
     acknowledgedDowngrade: args.acknowledgedDowngrade,
+    ...(args.live ? { live: { manifest: args.live.manifest, compile: args.live.compile } } : {}),
   });
   if (!pre.res.ok) return stop(0, pre.res.message, pre.gate);
   const preSigned = pre.res.value;
@@ -337,6 +375,7 @@ export async function runPlanSteps(args: {
       now: args.now(),
       store: args.store,
       freshFingerprint: args.freshFingerprint,
+      ...(args.live ? { liveReads: args.live } : {}),
       ...(sequential
         ? { sequential: { signedExtrinsics: all, sendIndex: i, previousSteps: [...receipts] } }
         : {}),

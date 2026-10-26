@@ -1,4 +1,6 @@
 import {
+  liveReadsFor,
+  loadLiveCompile,
   loadChainFns,
   blockDetailText,
   lockBasisText,
@@ -644,11 +646,17 @@ export function LivePanel({
   rebind,
   runStore: runStoreProp,
   txLookup,
+  liveCompileLoader = loadLiveCompile,
 }: {
   /** Persisted non-secret run state (lib/runstore.ts). Default: browser storage via browserKV(), key RUN_STORE_KEY. */
   runStore?: RunStore;
   /** Tx-hash lookup for reconciling recovered runs. Default: @seam/chain/browser lookupTxByHash over the V3 URL, on Reconcile only. */
   txLookup?: TxLookup;
+  /**
+   * Injectable only for tests whose stub facts can't be compiled; the app always compiles fresh with
+   * @seam/compiler/browser. The stored-plan guard and createApproval(requirePlanVerified) still apply.
+   */
+  liveCompileLoader?: typeof loadLiveCompile;
   /**
    * Builder plans: the facts snapshot the plan was compiled with. Before signing, the re-read facts go through Forge's
    * rebindPlan; a rebound plan is handed back (new digest, approval discarded) and nothing is signed; RUNTIME_CHANGED blocks.
@@ -816,6 +824,7 @@ export function LivePanel({
               now,
               factsStep,
               acknowledgedDowngrade,
+              live: true,
             }),
           );
           return;
@@ -880,6 +889,7 @@ export function LivePanel({
             now: new Date(now()),
             acknowledgedDowngrade,
             gate: policyGate,
+            live: await liveCompileLoader(policyInput?.manifest),
           });
           if (pre.gate) setGate(pre.gate);
           if (!pre.res.ok) return pre.res;
@@ -936,6 +946,7 @@ export function LivePanel({
                 const r = await factsStep(rpc);
                 return r.ok ? freshRead(r.facts) : undefined;
               },
+              liveReads: liveReadsFor(rpc as never, call.value.signer),
             });
           return req;
         };
@@ -1258,6 +1269,8 @@ async function runMultiStepLive(a: {
   factsStep: (rpc: RpcTransport) => Promise<V3FactsResult>;
   acknowledgedDowngrade?: boolean;
   signal: AbortSignal;
+  /** Live V3: compile fresh from the Manifest, gates in live mode (never a stored plan). */
+  live?: boolean;
 }): Promise<MultiStepResult> {
   const blocked = (message: string): MultiStepResult => ({
     ok: false,
@@ -1277,7 +1290,14 @@ async function runMultiStepLive(a: {
   if (!ctx.ok) return blocked(ctx.message);
   const client = a.b.createBrowserChainClient(a.rpc, { extrinsicHash: host.extrinsicHash });
   const wallet = a.b.createExtensionSigner({ assemble: (sig, _p, req) => host.assemble(sig, req) });
+  const live = a.live
+    ? {
+        ...(await loadLiveCompile(a.input.manifest)),
+        ...liveReadsFor(a.rpc as never, a.signer),
+      }
+    : undefined;
   return runPlanSteps({
+    ...(live ? { live } : {}),
     chain: await a.chainLoader(),
     send: a.rpc as never,
     input: a.input,
