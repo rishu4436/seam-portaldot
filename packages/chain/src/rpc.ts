@@ -20,10 +20,27 @@ export interface ConnectOptions {
 export async function connect(url: string, opts: ConnectOptions = {}): Promise<WsProvider> {
   const provider = new WsProvider(url, false, {}, opts.requestTimeoutMs ?? 60_000);
   let timer: NodeJS.Timeout | undefined;
+  // Before the first open, fail fast on the provider's first 'error' / 'disconnected' (e.g. ECONNREFUSED) instead
+  // of waiting out the timeout while WsProvider retries. The listeners are removed once connected, so after a
+  // successful connect WsProvider's own auto-reconnect is unchanged. The timeout stays as a fallback.
+  const offs: (() => void)[] = [];
   try {
-    await provider.connect();
+    const earlyFailure = new Promise<never>((_, reject) => {
+      const fail = (kind: string) => (err?: unknown) =>
+        reject(
+          new SeamChainError(
+            "CONNECT_FAILED",
+            `could not connect to ${url}: ${kind}${err instanceof Error && err.message ? ` (${err.message})` : ""} before the connection was ready`,
+          ),
+        );
+      offs.push(provider.on("error", fail("connection error")));
+      offs.push(provider.on("disconnected", fail("disconnected")));
+    });
+    earlyFailure.catch(() => undefined);
+    await Promise.race([provider.connect(), earlyFailure]);
     await Promise.race([
       provider.isReady,
+      earlyFailure,
       new Promise((_, reject) => {
         timer = setTimeout(
           () =>
@@ -47,6 +64,7 @@ export async function connect(url: string, opts: ConnectOptions = {}): Promise<W
     );
   } finally {
     if (timer) clearTimeout(timer);
+    for (const off of offs) off();
   }
 }
 
