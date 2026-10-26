@@ -45,6 +45,7 @@ export type DeployReasonCode =
   | "DEPLOY_GAS_CAP_MISSING"
   | "DEPLOY_GAS_LIMIT_MISSING"
   | "DEPLOY_GAS_LIMIT_OVER_CAP"
+  | "DEPLOY_PROOF_SIZE_UNKNOWN"
   | "MAP_ACCOUNT_NOT_SIGNER";
 
 const isUint = (s: unknown): s is string => typeof s === "string" && /^\d+$/.test(s);
@@ -174,14 +175,23 @@ export function checkDeployStep(
     "DEPLOY_GAS_LIMIT_MISSING",
     "DEPLOY_GAS_LIMIT_OVER_CAP",
   );
-  bounded(
-    "deploy_gas_limit",
-    "proof size limit",
-    d.proofSize,
-    deploy?.maxProofSize,
-    "DEPLOY_GAS_CAP_MISSING",
-    "DEPLOY_GAS_LIMIT_MISSING",
-    "DEPLOY_GAS_LIMIT_OVER_CAP",
-  );
+  // proof_size 0 is what V3 dry runs report when the PoV part isn't measured (refTime set, proofSize 0). A zero
+  // bound is never a real limit for a deploy, so it counts as unknown and blocks (fail closed).
+  if (d.proofSize === "0" || (typeof d.proofSize === "string" && /^0+$/.test(d.proofSize)))
+    block(
+      "deploy_gas_limit",
+      "DEPLOY_PROOF_SIZE_UNKNOWN",
+      "the proof size limit is 0, which means the proof size (PoV) part of the weight is unknown, so the deploy can't be bounded.",
+    );
+  else
+    bounded(
+      "deploy_gas_limit",
+      "proof size limit",
+      d.proofSize,
+      deploy?.maxProofSize,
+      "DEPLOY_GAS_CAP_MISSING",
+      "DEPLOY_GAS_LIMIT_MISSING",
+      "DEPLOY_GAS_LIMIT_OVER_CAP",
+    );
   return out;
 }

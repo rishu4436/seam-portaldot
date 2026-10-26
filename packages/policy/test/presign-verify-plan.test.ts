@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { compile, factsFromMetadata } from "@seam/compiler/browser";
 import {
+  callsToSign,
   definePolicy,
   evaluatePolicy,
   type Manifest,
@@ -19,11 +20,18 @@ import {
 } from "../src/browser.js";
 import * as H from "./helpers.js";
 
-// TODO(fixture): swap to Forge's fresh V3 fixture from bot2/fresh-v3-fixture once it lands on main
-// (not on origin as of 2026-10-26). Only FIXTURE and v3() need to change; every test compiles fresh from it.
-const FIXTURE = "evidence/v3-discovery/portaldot-v3-spec3002-metadata.hex";
-const root = (p: string) => fileURLToPath(new URL(`../../../${p}`, import.meta.url));
-const V3 = readFileSync(root(FIXTURE), "utf8").trim();
+// Forge's fresh V3 fixture (bot2/fresh-v3-fixture a745260): a FRESH compile on spec 3002, not a recorded run.
+// Sequential, one assets.transfer. Single/atomic variants below still compile in-test (the fixture has none).
+const read = (p: string) => readFileSync(root(p), "utf8").trim();
+const fx = JSON.parse(
+  readFileSync(new URL("../../compiler/fixtures/v3-fresh-transfer.json", import.meta.url), "utf8"),
+);
+const root = (p: string) => fileURLToPath(new URL(`../../../${p.split("#")[0]}`, import.meta.url));
+const V3 = read(fx.sources.metadata);
+const fxFacts = factsFromMetadata({
+  metadataHex: V3,
+  ...fx.factsInput,
+} as never) as unknown as RuntimeFacts;
 const v3 = (genesis = "0x" + "11".repeat(32)): RuntimeFacts =>
   factsFromMetadata({
     metadataHex: V3,
@@ -82,6 +90,46 @@ function forgedToCharlie(): Plan {
   p.steps[0].encodedCall = compileM(man([pay(H.CHARLIE)])).steps[0].encodedCall;
   return redigest(p);
 }
+
+describe("Forge's fresh V3 fixture", () => {
+  const plan = fx.plan as Plan;
+  const manifest = fx.manifest as Manifest;
+  const [{ args }] = manifest.actions as { args: { assetId: string; recipient: string } }[];
+  const fxPolicy = definePolicy({
+    allowedAssets: [args.assetId],
+    allowedRecipients: [args.recipient],
+    maxAmountPerAsset: { "*": "10000" },
+    maxFee: "10000000000",
+  });
+  const fxInput = (p: Plan) => ({
+    policy: fxPolicy,
+    plan: p,
+    facts: fxFacts,
+    preflight: H.preflight(p),
+    manifest,
+    liveFacts: fxFacts,
+  });
+  it("is what it says: digest and callsToSign match the plan", () => {
+    expect(fx.plan.planDigest).toBe(fx.planDigest);
+    expect(callsToSign(plan)).toEqual(fx.callsToSign);
+    expect(fxFacts.fingerprintDigest).toBe(fx.fingerprintDigest);
+  });
+  it("passes the strict gate", () => {
+    const g = gatePolicy(fxInput(plan), strict);
+    expect(g.allowed, JSON.stringify(g.blockedBy)).toBe(true);
+    expect(g.explanations.find((e) => e.rule === "plan_bytes")?.status).toBe("pass");
+  });
+  it("forged Charlie variant of the fixture (bytes pay Charlie, digest recomputed) blocks PLAN_BYTES_MISMATCH", () => {
+    const evilM = clone(manifest) as J;
+    evilM.actions[0].args.recipient = H.CHARLIE;
+    const evil = compile(evilM, fxFacts as never) as unknown as Plan;
+    const p: J = clone(plan);
+    p.steps[0].encodedCall = evil.steps[0].encodedCall;
+    const g = gatePolicy(fxInput(redigest(p)), strict);
+    expect(g.allowed).toBe(false);
+    expect(g.blockedBy.map((b) => b.code)).toEqual(["PLAN_BYTES_MISMATCH"]);
+  });
+});
 
 describe("honest fresh plans pass the strict pre-sign gate", () => {
   for (const [name, m, o] of [
