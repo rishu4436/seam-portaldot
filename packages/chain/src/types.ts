@@ -25,6 +25,19 @@ export interface PreflightStep {
    * type (bot3/policy-file 71daa3b); @seam/chain always sets it.
    */
   proofSize?: Estimate;
+  /**
+   * Revive steps only (revive.call, revive.instantiate_with_code); omitted for every other kind.
+   * Revive's weight_required.proof_size from a ReviveApi_call / ReviveApi_instantiate dry run (state_call) at the
+   * preflight block, signer as origin, gas and deposit limits None. Unknown when the node gave no answer, or when
+   * the answer is 0 (V3 spec 3002 does not meter proof size for instantiate, so 0 is "not metered", never a bound).
+   */
+  dryRunProofSize?: Estimate;
+  /**
+   * Revive steps only; omitted for every other kind. Total proof_size of TransactionPaymentCallApi_query_call_info
+   * for the step's encoded call (the step's explicit proof cap plus the static extrinsic overhead). Unknown when
+   * the node gave no answer.
+   */
+  callInfoProofSize?: Estimate;
   dryRun: "ok" | "failed" | "unknown";
   note?: string;
 }

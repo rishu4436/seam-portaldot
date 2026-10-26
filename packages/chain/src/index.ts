@@ -161,7 +161,12 @@ export {
   type LiveCapabilities,
 } from "./live-capabilities.js";
 export { clientFromSend, type RpcSend } from "./rpc-core.js";
-export { preflightWithClient, type PreflightCoreOptions } from "./preflight-core.js";
+export {
+  preflightWithClient,
+  reviveProofSizes,
+  REVIVE_PROOF_KINDS,
+  type PreflightCoreOptions,
+} from "./preflight-core.js";
 export { preflightReport as preflightReportFromSend } from "./preflight-browser.js";
 export { buildSigningEnvelope, type SigningEnvelopeInput } from "./envelope.js";
 // Wallet events: watch an injected extension for disconnect, account switch or wrong network before signing.

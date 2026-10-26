@@ -132,7 +132,10 @@ describe("SYNTHETIC V3-shaped metadata: encoded revive.call and nfts.mint", () =
       reviveApi: "listed",
       simulation: { attempted: true, via: ["payment_queryInfo"] },
     });
-    expect(node.log.some((c) => c.method === "state_call")).toBe(false); // ReviveApi_call never used
+    // state_call is used only for the proof-size reads (ReviveApi_call, query_call_info), never as evidence.
+    expect(
+      node.log.filter((c) => c.method === "state_call").map((c) => (c.params as string[])[0]),
+    ).toEqual(["ReviveApi_call", "TransactionPaymentCallApi_query_call_info"]);
     expect(r.v3!.accountMapping).toMatchObject({ status: "unknown", mapAccountInMetadata: true });
   });
   it("runtime without payment_queryInfo: no estimate, attempted false, no throw", async () => {

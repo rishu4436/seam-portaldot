@@ -8,6 +8,7 @@ import { callsForSigning } from "./signing.js";
 import { dryRunOne } from "./dryrun-core.js";
 import { runtimeApiId } from "./api-id.js";
 import type { BlockRef, Estimate, PreflightResult, PreflightStep } from "./types.js";
+import { decodeWeightV2Prefix } from "./revive-weight.js";
 
 /** Preflight options shared by the node and browser entries (no connection settings). */
 export interface PreflightCoreOptions {
@@ -741,6 +742,109 @@ async function preflightUnavailable(
   };
 }
 
+/** Revive step kinds that get dryRunProofSize / callInfoProofSize. */
+export const REVIVE_PROOF_KINDS: readonly string[] = [
+  "revive.call",
+  "revive.instantiate_with_code",
+];
+
+const hexBody = (h: string) => (h.startsWith("0x") ? h.slice(2) : h).toLowerCase();
+const compactHex = (n: number): string => {
+  const le = (v: number, bytes: number) =>
+    Array.from({ length: bytes }, (_, i) =>
+      ((v >>> (8 * i)) & 0xff).toString(16).padStart(2, "0"),
+    ).join("");
+  if (n < 1 << 6) return le(n << 2, 1);
+  if (n < 1 << 14) return le((n << 2) | 1, 2);
+  if (n < 2 ** 30) return le(((n << 2) | 2) >>> 0, 4);
+  throw new Error("input too long");
+};
+const bytesHex = (h: string) => compactHex(hexBody(h).length / 2) + hexBody(h);
+const u128Hex = (v: string | undefined) => {
+  let x = BigInt(v ?? "0");
+  let out = "";
+  for (let i = 0; i < 16; i++) {
+    out += (x & 0xffn).toString(16).padStart(2, "0");
+    x >>= 8n;
+  }
+  return out;
+};
+const u32Hex = (n: number) => u128Hex(String(n)).slice(0, 8);
+
+/**
+ * Read-only Revive proof sizes for one step, at the preflight block. dryRunProofSize: ReviveApi_call /
+ * ReviveApi_instantiate weight_required.proof_size (gas and deposit limits None, origin = plan signer). A 0 is
+ * UNKNOWN (not metered), never known(0); no answer is UNKNOWN. callInfoProofSize: the total proof_size of
+ * TransactionPaymentCallApi_query_call_info(call, len). Never throws; every gap is a note.
+ */
+export async function reviveProofSizes(
+  client: RpcClient,
+  step: Pick<PlanStep, "kind" | "decodedArgs" | "encodedCall">,
+  originAccountId: Hex,
+  at: Hex,
+  len: number,
+): Promise<{ dryRunProofSize: Estimate; callInfoProofSize: Estimate; notes: string[] }> {
+  const notes: string[] = [];
+  const a = step.decodedArgs;
+  let dryRunProofSize: Estimate = UNKNOWN;
+  let callInfoProofSize: Estimate = UNKNOWN;
+  const isCall = step.kind === "revive.call";
+  const apiName = isCall ? "ReviveApi_call" : "ReviveApi_instantiate";
+  try {
+    const origin = hexBody(originAccountId);
+    if (origin.length !== 64) throw new Error("signer is not a 32-byte AccountId");
+    const params = isCall
+      ? origin +
+        hexBody(a.contract ?? "") +
+        u128Hex(a.value) +
+        "00" +
+        "00" +
+        bytesHex(a.data ?? "0x")
+      : origin +
+        u128Hex(a.value) +
+        "00" +
+        "00" +
+        "00" +
+        bytesHex(a.code ?? "0x") +
+        bytesHex(a.data ?? "0x") +
+        (a.salt ? "01" + hexBody(a.salt) : "00");
+    if (isCall && hexBody(a.contract ?? "").length !== 40) throw new Error("no H160 contract");
+    const raw = await rpc<string>(client, "state_call", [apiName, `0x${params}`, at]);
+    const ps = decodeWeightV2Prefix(raw).weightRequired.proofSize;
+    if (ps === "0")
+      notes.push(
+        `dry-run proof size: unknown, ${apiName} weight_required.proof_size is 0 (not metered; not a bound)`,
+      );
+    else {
+      dryRunProofSize = known(ps);
+      notes.push(`dry-run proof size ${ps} (${apiName} weight_required.proof_size)`);
+    }
+  } catch (e) {
+    notes.push(
+      `dry-run proof size: unknown, ${apiName} gave no answer (${(e as Error).message.slice(0, 120)})`,
+    );
+  }
+  try {
+    if (!step.encodedCall) throw new Error("step has no encoded call");
+    const raw = await rpc<string>(client, "state_call", [
+      "TransactionPaymentCallApi_query_call_info",
+      `0x${hexBody(step.encodedCall)}${u32Hex(len)}`,
+      at,
+    ]);
+    // RuntimeDispatchInfo starts with weight: Weight { Compact ref_time, Compact proof_size }.
+    const ps = decodeWeightV2Prefix(raw).weightConsumed.proofSize;
+    callInfoProofSize = known(ps);
+    notes.push(
+      `call-info proof size ${ps} (query_call_info total: explicit cap + static overhead)`,
+    );
+  } catch (e) {
+    notes.push(
+      `call-info proof size: unknown, query_call_info gave no answer (${(e as Error).message.slice(0, 120)})`,
+    );
+  }
+  return { dryRunProofSize, callInfoProofSize, notes };
+}
+
 /**
  * Preflight for a compiled plan: next nonce, fee and weight from payment_queryInfo on a fake-signed
  * extrinsic per transaction, contracts_call dry runs for contracts.call steps, an asset-existence check
@@ -941,6 +1045,24 @@ export async function preflightWithClient(
         );
       if (contractProof !== undefined)
         notes.push(`contract needs proof size ${contractProof} (ContractsApi_call gas_required)`);
+      let reviveProof: { dryRunProofSize: Estimate; callInfoProofSize: Estimate } | undefined;
+      if (REVIVE_PROOF_KINDS.includes(s.kind)) {
+        const ext = s.encodedCall
+          ? fakeSignedExtrinsic(s.encodedCall, facts, plan.signer.publicKey, nonce, atBlock)
+          : "0x";
+        const r = await reviveProofSizes(
+          client,
+          s,
+          plan.signer.publicKey,
+          atBlock.hash,
+          (ext.length - 2) / 2,
+        );
+        reviveProof = {
+          dryRunProofSize: r.dryRunProofSize,
+          callInfoProofSize: r.callInfoProofSize,
+        };
+        notes.push(...r.notes);
+      }
       const batchOk = atomic && tx.dryRun?.outcome === "ok";
       const v3 = isV3Step(s);
       const basis: CoverageBasis = v3
@@ -983,7 +1105,7 @@ export async function preflightWithClient(
               (via.length
                 ? `the node answered ${via.join(" and ")}`
                 : "the node gave no estimate or dry-run") +
-              `; ${SIMULATION_LIMITS}. ReviveApi_call is never used (layout unverified)`,
+              `; ${SIMULATION_LIMITS}. ReviveApi_call / _instantiate are read only for proof sizes, never as evidence (layout unverified)`,
           },
           ...(s.kind === "revive.call" ? { reviveApi } : {}),
         });
@@ -996,6 +1118,7 @@ export async function preflightWithClient(
         fee: info ? known(info.partialFee) : UNKNOWN,
         storageDeposit: UNKNOWN,
         proofSize,
+        ...(reviveProof ?? {}),
         dryRun,
         note: notes.join("; "),
       });
