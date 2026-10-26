@@ -4,6 +4,8 @@
 // The chain outcomes (status, tx hash, block, decoded events) are the recorded ones; the gates, signer and submit are
 // fakes, so nothing is signed or sent. The records keep no signatures: the fake "signed bytes" are placeholders and
 // the fake decoder returns the recorded call bytes (signingRequests[].payload.method).
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -12,9 +14,12 @@ import { newApprovalStore } from "../../lib/signflow";
 import { runPlanSteps, SignedHolder, type ReceiptStepLike } from "../../lib/multistep";
 import { atomicStepReceipts, verifyPlanStep } from "../../lib/stepverify";
 
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
 const rec = JSON.parse(
   readFileSync(
-    resolve(process.cwd(), "../../evidence/testnet-v3/runs/plan-sequential-1792411270138.json"),
+    resolve(CONSOLE_DIR, "../../evidence/testnet-v3/runs/plan-sequential-1792411270138.json"),
     "utf8",
   ),
 );
@@ -141,7 +146,7 @@ describe("verifyStep gates the next step (real V3 records)", () => {
   describe("atomic (real V3 batch #102671, perStepOfBatch)", () => {
     const A = JSON.parse(
       readFileSync(
-        resolve(process.cwd(), "../../evidence/testnet-v3/runs/plan-atomic-1792411355057.json"),
+        resolve(CONSOLE_DIR, "../../evidence/testnet-v3/runs/plan-atomic-1792411355057.json"),
         "utf8",
       ),
     );

@@ -1,5 +1,7 @@
 // approvalHash must be recomputable from the receipt alone: rerun @seam/policy createApproval on receipt.approvalInputs.
 // Uses the demo plan and recorded V3 preflight with the real preSign; nothing is signed (no keys, no wallet).
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -10,7 +12,10 @@ import { preSign, type ChainFns } from "../signflow";
 import { buildLiveReceipt } from "../livereceipt";
 import type { LiveOutcome } from "../live";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
 const demo = json("packages/console/src/demo/v3-demo-transfer.json");
 const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");

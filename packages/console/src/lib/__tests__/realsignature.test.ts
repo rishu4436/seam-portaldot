@@ -9,6 +9,8 @@
 // Runs preSubmit end to end with the REAL @seam/policy engine and the REAL @seam/chain/browser decoder over:
 //  - a //Alice dev-key signed extrinsic (public dev key, test only; never a wallet or keystore), and
 //  - the real extension-signed V3 transfer 0x8a2c8b92…a4ad (#118310) from Chainsmith's committed fixture.
+import { fileURLToPath } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { u8aToHex } from "@polkadot/util";
@@ -23,7 +25,10 @@ import {
 import * as chainBrowser from "@seam/chain/browser";
 import { newApprovalStore, preSign, preSubmit, type ChainFns } from "../signflow";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+// Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
+const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+const root = (p: string) => resolve(CONSOLE_DIR, "../..", p);
 const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
 const demo = json("packages/console/src/demo/v3-demo-transfer.json");
 const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");
