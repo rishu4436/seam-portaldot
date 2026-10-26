@@ -96,8 +96,15 @@ pallet/call index prefix of `encodedCall`. It has been **removed**, because an e
 - **Non-live mode (e.g. SDK replay) without manifest + liveFacts: call bytes are unchecked against the Manifest.** The
   signed calls are still compared with the plan's own `callsToSign`, but a plan edited with a recomputed digest passes that.
   Use live mode for real sends.
-- `gatePolicy` / `evaluatePolicy` don't run `verifyPlan`. The recorded console demo plan
-  (`console/src/demo/v3-demo-transfer.json`) no longer matches a fresh compile body-for-body (`PLAN_BODY_MISMATCH`), so the
-  check is placed at approval and submit.
+- **Pre-sign (`bot3/presign-verify-plan`):** `gatePolicy` / `assertPolicyAllows` / `evaluatePolicy` run `verifyPlan`
+  (no signed calls) when the input carries `manifest` **and** `liveFacts`. A mismatch blocks rule `plan_bytes`, code
+  `PLAN_BYTES_MISMATCH`. The rule result and `explainPolicy` line carry Forge's `issues`, and the line reads
+  "Call bytes match the Manifest: Fail. Blocked: the plan's call bytes are not what the Manifest compiles to on the
+  live runtime (STEP_BYTES_MISMATCH at step 1)." `liveFacts` must have the same fingerprint as `facts`.
+  `requirePlanVerified: true` (a gate option, or on the engine input) blocks with the same code when either input is
+  missing. This is off by default. Inputs without `liveFacts` behave as before, so the recorded
+  `console/src/demo/v3-demo-transfer.json` (unchanged) keeps working in the layout-lock and downgrade tests.
+  It no longer matches a fresh compile body-for-body, so it must not be used with `liveFacts`.
 
-Tests: `packages/policy/test/plan-bytes-gate.test.ts`.
+Tests: `packages/policy/test/plan-bytes-gate.test.ts`, `packages/policy/test/presign-verify-plan.test.ts` (fresh
+compile from the committed spec 3002 metadata. TODO: swap to Forge's `bot2/fresh-v3-fixture` file when it lands).

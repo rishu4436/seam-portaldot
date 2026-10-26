@@ -12,6 +12,7 @@ import type {
 import { digest } from "./digest.js";
 import { checkAddressFor, normalizeAccount } from "./address.js";
 import { fingerprintDigest } from "./runtimeLock.js";
+import { verifyPlan } from "@seam/compiler/browser";
 import { checkDeployStep, isDeployKind, type DeployPolicy } from "./deploy.js";
 
 export type AllowList = "any" | string[];
@@ -131,6 +132,16 @@ export interface PolicyInput {
   preflight?: PreflightResult;
   /** When given, the plan must belong to this Manifest and its signer. */
   manifest?: Manifest;
+  /**
+   * Live runtime facts (normally the same object as `facts`). When given together with `manifest`, the Manifest is
+   * recompiled on them (@seam/compiler verifyPlan, no signed calls yet) and every step body and call byte must match:
+   * rule plan_bytes, code PLAN_BYTES_MISMATCH. Facts carried inside the plan are never used.
+   */
+  liveFacts?: RuntimeFacts;
+  /** Fail closed: block (plan_bytes) unless manifest + liveFacts are given and verifyPlan passes. Default off. */
+  requirePlanVerified?: boolean;
+  /** Passed to verifyPlan's compile. Defaults to plan.mode === "atomic_unverified". */
+  allowAtomicUnverified?: boolean;
 }
 
 /**
@@ -161,6 +172,9 @@ export function evaluatePolicy({
   facts,
   preflight,
   manifest,
+  liveFacts,
+  requirePlanVerified,
+  allowAtomicUnverified,
 }: PolicyInput): PolicyResult {
   const rules: PolicyRuleResult[] = [];
   const pass = (rule: string, reason: string, actionId?: string) =>
@@ -195,8 +209,54 @@ export function evaluatePolicy({
       block("signer_match", "Blocked: the plan's signer is not the signer named in the Manifest.");
   }
 
-  // Call bytes are NOT checked here: decodedArgs are what this engine reads. The bytes are proven against a fresh
-  // compile of the Manifest by createApproval / checkBeforeSubmit when given manifest + liveFacts (verifyPlan).
+  // Call bytes (pre-sign): only when liveFacts is passed explicitly (or required), so recorded plans used without it
+  // keep their old behaviour. The submit gate checks the signed calls again (checkBeforeSubmit).
+  if (manifest && liveFacts) {
+    let vr: ReturnType<typeof verifyPlan>;
+    try {
+      vr = verifyPlan(manifest as never, plan as never, liveFacts as never, {
+        allowAtomicUnverified: allowAtomicUnverified ?? plan.mode === "atomic_unverified",
+      });
+    } catch (e) {
+      vr = {
+        ok: false,
+        issues: [
+          {
+            code: "COMPILE_FAILED",
+            stepIndex: null,
+            message: e instanceof Error ? e.message : String(e),
+          },
+        ],
+      };
+    }
+    if (fingerprintDigest(liveFacts.fingerprint) !== fingerprintDigest(facts.fingerprint))
+      block(
+        "plan_bytes",
+        "Blocked: the live facts are not the runtime facts this policy check used.",
+      );
+    else if (!vr.ok)
+      rules.push({
+        rule: "plan_bytes",
+        outcome: "block",
+        reason: `Blocked: the plan's call bytes are not what the Manifest compiles to on the live runtime (${vr.issues
+          .map((x) => `${x.code}${x.stepIndex === null ? "" : ` at step ${x.stepIndex + 1}`}`)
+          .join(", ")})`,
+        issues: vr.issues,
+      } as PolicyRuleResult);
+    else
+      pass(
+        "plan_bytes",
+        "a fresh compile of the Manifest on the live runtime matches every call byte",
+      );
+  } else if (requirePlanVerified) {
+    block(
+      "plan_bytes",
+      `Blocked: the call bytes can't be checked because the ${!manifest ? "Manifest" : "live runtime facts"} ${
+        !manifest && !liveFacts ? "and the live runtime facts were" : "was"
+      } not given.`,
+    );
+  }
+
   // Runtime: the plan must be for the runtime we see now, and the facts must be self-consistent.
   const factsDigest = fingerprintDigest(facts.fingerprint);
   if (factsDigest !== facts.fingerprintDigest)

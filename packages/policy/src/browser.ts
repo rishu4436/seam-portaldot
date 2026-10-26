@@ -22,11 +22,14 @@ export interface RuleExplanation {
   actionId?: string;
   /** True when the rule passed only because the policy allows an unknown (weaker proof). */
   weak?: boolean;
+  /** plan_bytes: the compiler's verifyPlan issues. */
+  issues?: unknown[];
 }
 
 /** Readable title for each rule the engine can emit. Unknown rule names still get a generic title. */
 export const RULE_TITLES: Record<string, string> = {
   plan_integrity: "Plan integrity",
+  plan_bytes: "Call bytes match the Manifest",
   manifest_match: "Plan belongs to the Manifest",
   signer_match: "Signer matches the Manifest",
   runtime_match: "Plan matches the current runtime",
@@ -70,6 +73,7 @@ export const RULE_TITLES: Record<string, string> = {
 const FAIL_CODES: Record<string, string> = {
   mode_allowed: "PLAN_MODE_NOT_ALLOWED",
   plan_integrity: "PLAN_DIGEST_MISMATCH",
+  plan_bytes: "PLAN_BYTES_MISMATCH",
   manifest_match: "MANIFEST_MISMATCH",
   signer_match: "SIGNER_MISMATCH",
   runtime_match: "RUNTIME_MISMATCH",
@@ -116,6 +120,7 @@ export function explainPolicy(result: PolicyResult): RuleExplanation[] {
       message: `${title(r.rule)}${where}: ${lead}. ${reason.charAt(0).toUpperCase()}${reason.slice(1)}.`,
       ...(r.actionId ? { actionId: r.actionId } : {}),
       ...(r.weak ? { weak: true } : {}),
+      ...(r.issues ? { issues: r.issues } : {}),
     };
   });
   for (const a of result.approvalRequired ?? [])
@@ -133,6 +138,11 @@ export interface GateOptions {
   acknowledgedDowngrade?: boolean;
   /** When given, the signing window must not have expired at `now`. */
   envelope?: Pick<SigningEnvelope, "expiresAt">;
+  /**
+   * Fail closed on call bytes: block (PLAN_BYTES_MISMATCH) unless input.manifest + input.liveFacts are given and a
+   * fresh compile matches. Default off (SDK replay / recorded plans).
+   */
+  requirePlanVerified?: boolean;
   now?: Date;
 }
 export interface GateResult {
@@ -152,7 +162,9 @@ export function gatePolicy(input: PolicyInput, opts: GateOptions = {}): GateResu
   let result: PolicyResult | undefined;
   let explanations: RuleExplanation[];
   try {
-    result = evaluatePolicy(input);
+    result = evaluatePolicy(
+      opts.requirePlanVerified ? { ...input, requirePlanVerified: true } : input,
+    );
     explanations = explainPolicy(result);
   } catch (e) {
     explanations = [
