@@ -3,7 +3,7 @@
 // Nothing here trusts a field of the receipt: every claim is recomputed (plan digest, approval hash) or re-read from the
 // chain (block, tx, signer, call, nonce, events, fee). A field that is absent is reported as `not_checked`, never as a pass.
 import { computePlanDigest, type Hex, type Plan, type PlanStep } from "@seam/compiler";
-import { createApproval, policyDigest } from "@seam/policy";
+import { createApproval, digest, policyDigest } from "@seam/policy";
 import { verifyStep, type ChainEvent } from "./receipt.js";
 import type { ReceiptChainReader } from "./verify-live.js";
 
@@ -14,6 +14,8 @@ export interface ConsoleCheck {
   check: string;
   status: CheckStatus;
   detail: string;
+  /** Stable reason code, set on the integrity_hash and evidence_coverage checks. */
+  code?: string;
   /** Set on a step-level check. */
   actionId?: string;
 }
@@ -53,7 +55,7 @@ export interface ConsoleReceipt {
 }
 
 export interface ConsoleVerification {
-  /** Offline: `integrity_checked` (no check failed) or `failed`. Live: `chain_verified`, `unknown` or `failed`. */
+  /** Offline: `integrity_checked` (nothing failed or unknown), `unknown` (e.g. an unsupported integrityAlgo) or `failed`. Live: `chain_verified`, `unknown` or `failed`. */
   status: "integrity_checked" | "chain_verified" | "unknown" | "failed";
   /** What the receipt itself claims; never re-used as proof. */
   claimedResult: string | undefined;
@@ -193,7 +195,7 @@ export function verifyConsoleReceiptOffline(r: ConsoleReceipt): ConsoleVerificat
       );
   }
 
-  // 3. Fields a later console version adds. Absent = not checked; present but unknown format = not checked.
+  // 3. Fields a later console version adds. Absent = not checked; integrityHash recomputed; evidenceCoverage states checked.
   if (r.policyDigest == null) add("policy_digest", "not_checked", "absent from this receipt");
   else if (isObj(ai) && isObj(ai.policy)) {
     let pd: string | undefined;
@@ -212,22 +214,9 @@ export function verifyConsoleReceiptOffline(r: ConsoleReceipt): ConsoleVerificat
       "not_checked",
       "present, but no approvalInputs.policy to recompute it from",
     );
-  for (const f of ["integrity", "integrityHash", "receiptDigest"])
-    if (r[f] !== undefined)
-      add(
-        "integrity_hash",
-        "not_checked",
-        `"${f}" is present; its format is not known to this version of seam`,
-      );
-  if (!["integrity", "integrityHash", "receiptDigest"].some((f) => r[f] !== undefined))
-    add("integrity_hash", "not_checked", "absent from this receipt");
-  add(
-    "evidence_coverage",
-    "not_checked",
-    r.evidenceCoverage === undefined
-      ? "absent from this receipt"
-      : "present; the console's coverage claim is not re-derived offline",
-  );
+  const push = (c: ConsoleCheck) => void checks.push(c);
+  checkIntegrityHash(r, push);
+  checkEvidenceCoverage(r, push);
 
   // 4. Steps: shape and nonce claims.
   const steps = consoleSteps(r);
@@ -291,12 +280,146 @@ export function verifyConsoleReceiptOffline(r: ConsoleReceipt): ConsoleVerificat
       );
   }
   const failed = checks.some((c) => c.status === "fail");
+  const unknown = checks.some((c) => c.status === "unknown");
   return {
-    status: failed ? "failed" : "integrity_checked",
+    status: failed ? "failed" : unknown ? "unknown" : "integrity_checked",
     claimedResult: r.result,
     kind: kindOf(r),
     checks,
   };
+}
+
+/** The console's integrity domain and algorithm string (packages/console/src/lib/receiptintegrity.ts, bot1/receipt-integrity). */
+export const CONSOLE_INTEGRITY_DOMAIN = "seam/console-receipt-integrity/v1";
+export const CONSOLE_INTEGRITY_ALGO =
+  "blake2b-256(utf8('seam/console-receipt-integrity/v1') || 0x00 || canonicalJson(receipt without integrityHash and integrityAlgo)) via @seam/policy digest()";
+/** Keys the console drops (at any depth) before hashing; a receipt should never carry them. */
+export const CONSOLE_SECRET_KEYS = [
+  "signedTx",
+  "signedExtrinsic",
+  "signedExtrinsics",
+  "signedBytes",
+  "signature",
+  "metadataHex",
+  "preparedMetadataHex",
+  "currentMetadataHex",
+] as const;
+export const COVERAGE_KEYS = [
+  "feeEstimate",
+  "signedDryRun",
+  "dispatchResult",
+  "verifiedEffect",
+] as const;
+export const COVERAGE_LEVELS = ["proven", "reported", "unknown", "failed"] as const;
+
+function stripSecrets(v: unknown, found: string[]): unknown {
+  if (Array.isArray(v)) return v.map((x) => stripSecrets(x, found));
+  if (isObj(v)) {
+    const o: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(v)) {
+      if ((CONSOLE_SECRET_KEYS as readonly string[]).includes(k)) found.push(k);
+      else if (x !== undefined) o[k] = stripSecrets(x, found);
+    }
+    return o;
+  }
+  return v;
+}
+
+/** Recomputes a console receipt's integrityHash exactly as the console seals it. */
+export function consoleIntegrityHash(r: ConsoleReceipt): Hex {
+  const { integrityHash: _h, integrityAlgo: _a, ...rest } = r;
+  return digest(CONSOLE_INTEGRITY_DOMAIN, stripSecrets(rest, [])) as Hex;
+}
+
+function checkIntegrityHash(r: ConsoleReceipt, add0: (c: ConsoleCheck) => void): void {
+  const add = (status: CheckStatus, code: string, detail: string) =>
+    add0({ check: "integrity_hash", status, detail, code });
+  const found: string[] = [];
+  stripSecrets(r, found);
+  if (found.length)
+    add0({
+      check: "secret_fields",
+      status: "fail",
+      code: "secret_field_present",
+      detail: `the receipt carries ${[...new Set(found)].join(", ")}; a console receipt never does (and they are outside the integrity hash)`,
+    });
+  if (r.integrityHash === undefined) {
+    const legacy = ["integrity", "receiptDigest"].filter((f) => r[f] !== undefined);
+    if (legacy.length)
+      add(
+        "not_checked",
+        "integrity_format_unknown",
+        `"${legacy.join('", "')}" is present; its format is not known to this version of seam`,
+      );
+    else if (r.integrityAlgo !== undefined)
+      add("unknown", "integrity_hash_missing", "integrityAlgo is present but integrityHash is not");
+    else add("not_checked", "integrity_not_present", "absent from this receipt");
+    return;
+  }
+  if (r.integrityAlgo !== CONSOLE_INTEGRITY_ALGO) {
+    add(
+      "unknown",
+      "integrity_algo_unsupported",
+      `integrityAlgo ${JSON.stringify(r.integrityAlgo ?? null)} is not one this version of seam can recompute; integrityHash not checked`,
+    );
+    return;
+  }
+  if (typeof r.integrityHash !== "string" || !HASH.test(r.integrityHash)) {
+    add("fail", "integrity_hash_malformed", "integrityHash is not a 32-byte 0x hex string");
+    return;
+  }
+  let d: string;
+  try {
+    d = consoleIntegrityHash(r);
+  } catch (e) {
+    add(
+      "fail",
+      "integrity_hash_uncomputable",
+      `the receipt cannot be canonicalised: ${(e as Error).message}`,
+    );
+    return;
+  }
+  if (lc(d) !== lc(r.integrityHash))
+    add(
+      "fail",
+      "integrity_hash_mismatch",
+      `receipt integrityHash ${r.integrityHash} != recomputed ${d}: the receipt was edited after it was sealed`,
+    );
+  else
+    add(
+      "pass",
+      "integrity_hash_match",
+      `recomputed ${d} over ${CONSOLE_INTEGRITY_DOMAIN}, equal to the receipt's`,
+    );
+}
+
+function checkEvidenceCoverage(r: ConsoleReceipt, add0: (c: ConsoleCheck) => void): void {
+  const add = (status: CheckStatus, code: string, detail: string) =>
+    add0({ check: "evidence_coverage", status, detail, code });
+  const c = r.evidenceCoverage;
+  if (c === undefined)
+    return add("not_checked", "coverage_not_present", "absent from this receipt");
+  if (!isObj(c)) return add("fail", "coverage_invalid", "evidenceCoverage is not an object");
+  const bad: string[] = [];
+  for (const k of COVERAGE_KEYS) {
+    const v = c[k];
+    if (v === undefined) bad.push(`${k} missing`);
+    else if (!(COVERAGE_LEVELS as readonly unknown[]).includes(v))
+      bad.push(`${k}=${JSON.stringify(v)} is not one of ${COVERAGE_LEVELS.join("|")}`);
+  }
+  if (typeof c.basis !== "string" || !c.basis.trim()) bad.push("basis missing");
+  if (bad.length) return add("fail", "coverage_invalid_state", bad.join("; "));
+  if (c.verifiedEffect === "proven" && r.result !== "verified")
+    return add(
+      "fail",
+      "coverage_overclaims",
+      `verifiedEffect is proven but the receipt's result is ${String(r.result)}`,
+    );
+  add(
+    "pass",
+    "coverage_states_valid",
+    `states as the console recorded them (claims, not re-derived offline): ${COVERAGE_KEYS.map((k) => `${k}=${String(c[k])}`).join(", ")}`,
+  );
 }
 
 const parseEvent = (e: ChainEvent | string): ChainEvent => e as ChainEvent;

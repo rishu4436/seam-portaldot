@@ -50,6 +50,7 @@ Open on this path:
 - **Gate inputs.** The gate's mortality and nonce checks run only when the caller passes those values (envelope, signed transactions); they are not always on.
 - **Recorded replays** of #102671 and #102665 (Chainsmith `bot4/recorded-replay` `7dfca89`, "recorded run, replayed read-only") are pending merge.
 - `seam verify` for console receipts (P0-05): on `bot5/verify-console-receipt`, pending merge.
+- `seam verify` recomputes a console receipt's `integrityHash` (domain `seam/console-receipt-integrity/v1`, the console's algorithm string; mismatch = `integrity_hash_mismatch`, exit 5; unsupported `integrityAlgo` = unknown, exit 6) and checks the four `evidenceCoverage` states (`proven|reported|unknown|failed`; states are claims, not re-derived): on `bot5/receipt-integrity-verify`, pending merge.
 
 ## October 20 audit (Tasks 1 to 4): done on `main` at `9172f05`
 

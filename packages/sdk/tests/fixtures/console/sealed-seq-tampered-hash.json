@@ -1,0 +1,252 @@
+{
+  "receiptKind": "seam/console-live-receipt/v1",
+  "mode": "sequential",
+  "result": "partial",
+  "resultBasis": "overallResult (@seam/policy/browser) over the per-step verifyStep verdicts: verified only if every step is finalized and verified, partial if any step did not run; not chain_verified",
+  "approvalHash": "0x5e5000d3345dede9cf67701d5cb04f6216c7de2454790d9ee0b65d0147a3b185",
+  "approvalInputs": {
+    "manifestDigest": "0xcfe96e46df2ec807ca69b9d027e9f4e234f182f3c0b54da95f0fc4d97b4b6a0d",
+    "plan": {
+      "planVersion": 1,
+      "manifestDigest": "0xcfe96e46df2ec807ca69b9d027e9f4e234f182f3c0b54da95f0fc4d97b4b6a0d",
+      "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+      "signer": {
+        "type": "ss58",
+        "value": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+        "publicKey": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b"
+      },
+      "mode": "sequential",
+      "modeReason": "Atomic execution was requested but is not available: Utility.batch_all rollback is claimed verified but the rollback proof is rejected: metadataHash 0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 is not this runtime's (0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9) (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+      "steps": [
+        {
+          "actionId": "pay",
+          "kind": "assets.transfer",
+          "capability": "Assets.transfer_keep_alive",
+          "palletIndex": 39,
+          "callIndex": 9,
+          "decodedArgs": {
+            "assetId": "806707",
+            "amount": "1",
+            "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+            "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+          },
+          "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+          "status": "ok"
+        }
+      ],
+      "planDigest": "0x5eda2d74a9e793025e1ad8dcb6c3ada83571fd2fb0217b62a335696d765246eb"
+    },
+    "envelope": {
+      "signer": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "nonce": 0,
+      "mortalityBlocks": 64,
+      "checkpoint": {
+        "number": 118892,
+        "hash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "expiresAt": "2026-10-26T12:06:18.000Z"
+    },
+    "preflight": {
+      "steps": [
+        {
+          "actionId": "pay",
+          "weight": {
+            "value": "1037211000"
+          },
+          "fee": {
+            "value": "1470878675697"
+          },
+          "storageDeposit": {
+            "unknown": true
+          },
+          "proofSize": {
+            "value": "18392"
+          },
+          "dryRun": "unknown",
+          "note": "no dry run: needs the real signed transaction (system_dryRun rejects a fake signature); storage deposit: not reported by this runtime; simulation coverage: asset_existence_check (only that the asset exists; not balances, permissions or state changed by other steps)"
+        }
+      ],
+      "totalFee": {
+        "value": "1470878675697"
+      }
+    },
+    "policy": {
+      "version": "seam/policy/v1",
+      "allowedCapabilities": [
+        "Assets.transfer_keep_alive"
+      ],
+      "allowedAssets": [
+        "806707"
+      ],
+      "allowedContracts": [],
+      "allowedRecipients": [
+        "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB"
+      ],
+      "maxAmountPerAsset": {
+        "806707": "10",
+        "*": "0"
+      },
+      "maxNativeValue": "0",
+      "maxFee": "5000000000000",
+      "maxSteps": 1,
+      "allowedModes": [
+        "sequential"
+      ],
+      "requireHumanApproval": true,
+      "maxApprovalSeconds": 300,
+      "requireSignedDryRun": true,
+      "allowUnknown": {
+        "storageDeposit": true,
+        "dryRun": true
+      }
+    },
+    "policyResult": {
+      "allowed": true,
+      "rules": [
+        {
+          "rule": "plan_integrity",
+          "outcome": "pass",
+          "reason": "plan digest matches its contents"
+        },
+        {
+          "rule": "runtime_match",
+          "outcome": "pass",
+          "reason": "plan was compiled against the current runtime"
+        },
+        {
+          "rule": "mode_allowed",
+          "outcome": "pass",
+          "reason": "execution mode sequential is allowed"
+        },
+        {
+          "rule": "capability",
+          "outcome": "pass",
+          "reason": "Assets.transfer_keep_alive is observed and allowed",
+          "actionId": "pay"
+        },
+        {
+          "rule": "asset_allowed",
+          "outcome": "pass",
+          "reason": "asset 806707 is allowed",
+          "actionId": "pay"
+        },
+        {
+          "rule": "recipient_allowed",
+          "outcome": "pass",
+          "reason": "recipient is allowed",
+          "actionId": "pay"
+        },
+        {
+          "rule": "amount_limit",
+          "outcome": "pass",
+          "reason": "amount 1 is within the limit of 10",
+          "actionId": "pay"
+        },
+        {
+          "rule": "weight_limit",
+          "outcome": "pass",
+          "reason": "weight 1037211000 is within limits",
+          "actionId": "pay"
+        },
+        {
+          "rule": "storage_limit",
+          "outcome": "pass",
+          "reason": "storage deposit is unknown (allowed by policy, weaker proof)",
+          "actionId": "pay",
+          "weak": true
+        },
+        {
+          "rule": "dry_run",
+          "outcome": "pass",
+          "reason": "The dry run result is unknown. (allowed by policy, weaker proof)",
+          "actionId": "pay",
+          "weak": true
+        },
+        {
+          "rule": "fee_limit",
+          "outcome": "pass",
+          "reason": "total fee 1470878675697 is within limits"
+        }
+      ],
+      "policyDigest": "0xb17b42515b629c083f0ea9f79a5b793073f4046f4761e912dff6c38c558822cb",
+      "weakProof": [
+        "storage_limit:pay",
+        "dry_run:pay"
+      ]
+    },
+    "fingerprint": {
+      "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "specName": "portaldot-v3",
+      "specVersion": 3002,
+      "transactionVersion": 2,
+      "metadataHash": "0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9",
+      "ss58Prefix": 42,
+      "tokenSymbol": "tPOT",
+      "tokenDecimals": 14,
+      "typesBundleHash": null
+    },
+    "now": "2026-10-26T12:00:00.000Z"
+  },
+  "planDigest": "0x5eda2d74a9e793025e1ad8dcb6c3ada83571fd2fb0217b62a335696d765246eb",
+  "manifestDigest": "0xcfe96e46df2ec807ca69b9d027e9f4e234f182f3c0b54da95f0fc4d97b4b6a0d",
+  "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+  "plan": {
+    "planVersion": 1,
+    "manifestDigest": "0xcfe96e46df2ec807ca69b9d027e9f4e234f182f3c0b54da95f0fc4d97b4b6a0d",
+    "fingerprintDigest": "0x79c7f78c534543ad06ec9749399e533b3b83a737b272677ff79de3fb533e1934",
+    "signer": {
+      "type": "ss58",
+      "value": "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE",
+      "publicKey": "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b"
+    },
+    "mode": "sequential",
+    "modeReason": "Atomic execution was requested but is not available: Utility.batch_all rollback is claimed verified but the rollback proof is rejected: metadataHash 0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 is not this runtime's (0x1840e6c65c3346d94ce6816b16b881a58a5804eec6a91a44314cc30420bb1ba9) (set allowAtomicUnverified to batch anyway). Steps run one after another; a failure stops later steps.",
+    "steps": [
+      {
+        "actionId": "pay",
+        "kind": "assets.transfer",
+        "capability": "Assets.transfer_keep_alive",
+        "palletIndex": 39,
+        "callIndex": 9,
+        "decodedArgs": {
+          "assetId": "806707",
+          "amount": "1",
+          "recipient": "5EkVZovjHsUQ2YLa2CnaVND8259u5c9h8eBtmRVweBpBVHXB",
+          "recipientAccountId": "0x76d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb172"
+        },
+        "encodedCall": "0x2709ce3c31000076d0e8b40899d424129b4ec688f889b3ce5cb12cadfa72c8898f4cb25d7cb17204",
+        "status": "ok"
+      }
+    ],
+    "planDigest": "0x5eda2d74a9e793025e1ad8dcb6c3ada83571fd2fb0217b62a335696d765246eb"
+  },
+  "steps": [
+    {
+      "index": 0,
+      "actionId": "pay",
+      "sent": false,
+      "sendIndex": null,
+      "status": "not_run",
+      "txHash": null,
+      "block": null,
+      "extrinsicIndex": null,
+      "fee": null,
+      "event": {},
+      "verification": "unknown",
+      "reason": "Not run."
+    }
+  ],
+  "partialRun": true,
+  "stoppedAt": 0,
+  "stopReason": "Stopped at step 1: test run, nothing signed.",
+  "policyDigest": "0xb17b42515b629c083f0ea9f79a5b793073f4046f4761e912dff6c38c558822cb",
+  "evidenceCoverage": {
+    "feeEstimate": "unknown",
+    "signedDryRun": "unknown",
+    "dispatchResult": "unknown",
+    "verifiedEffect": "unknown",
+    "basis": "reported = as the node/gate returned it in this run; proven = verifyStep verified every step; unknown = not checked. Not chain_verified."
+  },
+  "integrityAlgo": "blake2b-256(utf8('seam/console-receipt-integrity/v1') || 0x00 || canonicalJson(receipt without integrityHash and integrityAlgo)) via @seam/policy digest()",
+  "integrityHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+}

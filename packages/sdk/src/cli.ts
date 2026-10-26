@@ -240,7 +240,14 @@ async function main() {
             : v.claimedResult === "partial"
               ? SeamCode.Partial
               : SeamCode.NotVerified;
-        const head = `Receipt status: ${v.status}${ep ? ` (live, read from ${ep})` : " (offline: the file is self-consistent; this is not on-chain proof, use --endpoint)"}.`;
+        const nFail = v.checks.filter((c) => c.status === "fail").length;
+        const offlineNote =
+          v.status === "failed"
+            ? ` (offline: ${nFail} check(s) FAILED; do not trust this file)`
+            : v.status === "unknown"
+              ? " (offline: some checks could not be done, see unknown below; this is not on-chain proof)"
+              : " (offline: the file is self-consistent; this is not on-chain proof, use --endpoint)";
+        const head = `Receipt status: ${v.status}${ep ? ` (live, read from ${ep})` : offlineNote}.`;
         out(
           `${head}\n${explainConsoleVerification(v)}`,
           { status: v.status, consoleReceipt: v, outcome: { code: claimed } },
