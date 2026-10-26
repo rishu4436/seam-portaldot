@@ -56,6 +56,14 @@ import {
 } from "../lib/runstore";
 import { buildSequentialReceipt } from "../lib/seqreceipt";
 import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
+import {
+  canSign,
+  openSignerWatch,
+  readyOrStop,
+  signerStateText,
+  type SignerState,
+  type SignerWatch,
+} from "../lib/walletwatch";
 import { loadLiveHost, hasChainFacts, type LiveHost } from "../lib/host";
 import {
   V3_HTTPS_RPC,
@@ -647,6 +655,7 @@ export function LivePanel({
   runStore: runStoreProp,
   txLookup,
   liveCompileLoader = loadLiveCompile,
+  signerWatchLoader = openSignerWatch,
 }: {
   /** Persisted non-secret run state (lib/runstore.ts). Default: browser storage via browserKV(), key RUN_STORE_KEY. */
   runStore?: RunStore;
@@ -657,6 +666,8 @@ export function LivePanel({
    * @seam/compiler/browser. The stored-plan guard and createApproval(requirePlanVerified) still apply.
    */
   liveCompileLoader?: typeof loadLiveCompile;
+  /** Injectable only for tests; the app always uses Chainsmith's watchSigner on the injected extension. */
+  signerWatchLoader?: typeof openSignerWatch;
   /**
    * Builder plans: the facts snapshot the plan was compiled with. Before signing, the re-read facts go through Forge's
    * rebindPlan; a rebound plan is handed back (new digest, approval discarded) and nothing is signed; RUNTIME_CHANGED blocks.
@@ -688,6 +699,9 @@ export function LivePanel({
   const [attempts, setAttempts] = useState(3);
   // Approval hashes already sent with. An approval is single use, so a second send with it is blocked here too.
   const [spent, setSpent] = useState<string[]>([]);
+  // Wallet watch for this run: Sign stays disabled unless its status is `ready`; stopped at the end of every run.
+  const [signerState, setSignerState] = useState<SignerState>();
+  const watchRef = useRef<SignerWatch | undefined>(undefined);
   const ok = !!v3RpcUrl(url);
   const [receiptRpc, setReceiptRpc] = useState<RpcTransport>();
   const [gate, setGate] = useState<GateOutcome>();
@@ -780,6 +794,29 @@ export function LivePanel({
           }
         }
         const host = await hostLoader(hostFacts);
+        const genesisOf = (f: unknown) =>
+          (f as { fingerprint?: { genesisHash?: string } } | undefined)?.fingerprint?.genesisHash;
+        // The plan's chain: the live facts' genesis, else the facts the plan was prepared with. The watch also
+        // checks the node's chain_getBlockHash(0) against it.
+        const genesis = genesisOf(hostFacts) ?? genesisOf(facts);
+        watchRef.current?.stop();
+        watchRef.current = undefined;
+        let watchErr: string | undefined;
+        if (plan?.signer && genesis) {
+          try {
+            watchRef.current = await signerWatchLoader({
+              expectedAddress: plan.signer,
+              expectedGenesisHash: genesis,
+              rpc: rpc as never,
+              onChange: setSignerState,
+            });
+            setSignerState(watchRef.current.current());
+          } catch (e) {
+            watchRef.current = undefined;
+            watchErr = e instanceof Error ? e.message : String(e);
+          }
+        } else watchErr = "no signer or genesis hash for this plan";
+        const watch = watchRef.current;
         // Single-call receipt: verifyStep on the compiled step with the V3 runtime (any step kind).
         const cp = policyInput?.plan as
           { mode?: string; steps?: unknown[]; signer?: { publicKey?: string } } | undefined;
@@ -825,6 +862,8 @@ export function LivePanel({
               factsStep,
               acknowledgedDowngrade,
               live: true,
+              watch,
+              watchErr,
             }),
           );
           return;
@@ -858,6 +897,15 @@ export function LivePanel({
         deps.prepare = async (fp) => {
           if (!call.ok || gateMsg)
             return { ok: false, reason: "unavailable", message: gateMsg ?? "No request." };
+          // Sign is disabled unless the wallet watch says ready (fresh reads right before the wallet is asked).
+          if (!watch)
+            return {
+              ok: false,
+              reason: "unavailable",
+              message: `The wallet watch could not start (${watchErr ?? "unknown"}), so signing is disabled. Nothing was signed.`,
+            };
+          const w = await readyOrStop(watch, "sign");
+          if (!w.ok) return { ok: false, reason: "unavailable", message: w.message };
           if (!host)
             return {
               ok: false,
@@ -933,8 +981,12 @@ export function LivePanel({
               runStore.updateStep(runHash, 0, { status: "submitting" }, "submitting");
             return g;
           };
-          const gateSubmit = async (signedTx: string, _request: unknown) =>
-            gates.preSubmit({
+          const gateSubmit = async (signedTx: string, _request: unknown) => {
+            // Wallet watch: fresh reads right before submit; not ready -> nothing is sent.
+            const w = await readyOrStop(watch, "submit");
+            if (!w.ok)
+              return { ok: false as const, reason: "unavailable" as const, message: w.message };
+            return gates.preSubmit({
               chain: chainFns,
               send: rpc,
               pre: preSigned,
@@ -948,6 +1000,7 @@ export function LivePanel({
               },
               liveReads: liveReadsFor(rpc as never, call.value.signer),
             });
+          };
           return req;
         };
       }
@@ -970,6 +1023,8 @@ export function LivePanel({
       if (res.submitted && approval) setSpent((x) => [...x, approval.hash]);
       setOut(res);
     } finally {
+      watchRef.current?.stop();
+      watchRef.current = undefined;
       setBusy(false);
     }
   };
@@ -978,6 +1033,15 @@ export function LivePanel({
       <div className="card">
         <h3>LIVE V3</h3>
         {recovered.length > 0 && <RecoveredRuns runs={recovered} onReconcile={reconcile} />}
+        {signerState && (
+          <p
+            className={canSign(signerState) ? "ok" : "muted"}
+            data-testid="signer-status"
+            data-status={signerState.status}
+          >
+            {signerStateText(signerState)}
+          </p>
+        )}
         <p className="muted">
           Uses the real V3 testnet over HTTPS (read-only until you approve and sign with your own
           wallet). Nothing is contacted until you press the button. Local spec-1002 results do not
@@ -1271,6 +1335,8 @@ async function runMultiStepLive(a: {
   signal: AbortSignal;
   /** Live V3: compile fresh from the Manifest, gates in live mode (never a stored plan). */
   live?: boolean;
+  watch?: SignerWatch;
+  watchErr?: string;
 }): Promise<MultiStepResult> {
   const blocked = (message: string): MultiStepResult => ({
     ok: false,
@@ -1290,6 +1356,10 @@ async function runMultiStepLive(a: {
   if (!ctx.ok) return blocked(ctx.message);
   const client = a.b.createBrowserChainClient(a.rpc, { extrinsicHash: host.extrinsicHash });
   const wallet = a.b.createExtensionSigner({ assemble: (sig, _p, req) => host.assemble(sig, req) });
+  if (!a.watch)
+    return blocked(
+      `The wallet watch could not start (${a.watchErr ?? "unknown"}), so signing is disabled. Nothing was signed.`,
+    );
   const live = a.live
     ? {
         ...(await loadLiveCompile(a.input.manifest)),
@@ -1297,6 +1367,7 @@ async function runMultiStepLive(a: {
       }
     : undefined;
   return runPlanSteps({
+    watch: a.watch,
     ...(live ? { live } : {}),
     chain: await a.chainLoader(),
     send: a.rpc as never,
