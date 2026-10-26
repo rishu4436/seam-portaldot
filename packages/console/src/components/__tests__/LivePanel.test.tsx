@@ -363,6 +363,8 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
         policyInput={{ policy: {}, plan: walletDemo.plan, manifest: walletDemo.manifest }}
         policyGate={gate}
         chainLoader={fakeChain}
+        // stub facts can't be compiled; this compile returns the plan unchanged so the gate is reached
+        liveCompileLoader={async (m) => ({ manifest: m, compile: () => walletDemo.plan })}
       />,
     );
     press();

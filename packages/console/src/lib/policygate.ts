@@ -17,6 +17,8 @@ export interface PolicyGateInput {
   manifest?: unknown;
   /** The chain package's full PreflightResult. A fee estimate alone is not one; leave it out and the gate blocks. */
   preflight?: unknown;
+  /** Live: the live runtime facts the Manifest is recompiled on (pre-sign PLAN_BYTES_MISMATCH check). */
+  liveFacts?: unknown;
 }
 export type GateOutcome =
   | { ok: true; explanations: RuleExplanation[]; result?: GateResult["result"] }
@@ -31,7 +33,13 @@ export function envelopeOf(request: unknown): { expiresAt: string } | undefined 
 
 export function runPolicyGate(
   input: PolicyGateInput | undefined,
-  opts: { request?: unknown; acknowledgedDowngrade?: boolean; now?: Date } = {},
+  opts: {
+    request?: unknown;
+    acknowledgedDowngrade?: boolean;
+    now?: Date;
+    /** Live: block (PLAN_BYTES_MISMATCH) unless manifest + liveFacts are given and the call bytes match. */
+    requirePlanVerified?: boolean;
+  } = {},
 ): GateOutcome {
   if (!input?.policy)
     return {
@@ -42,11 +50,15 @@ export function runPolicyGate(
     };
   try {
     const envelope = envelopeOf(opts.request);
-    const g: GateResult = assertPolicyAllows(input as never, {
-      ...(envelope ? { envelope } : {}),
-      ...(opts.acknowledgedDowngrade ? { acknowledgedDowngrade: true } : {}),
-      ...(opts.now ? { now: opts.now } : {}),
-    });
+    const g: GateResult = assertPolicyAllows(
+      input as never,
+      {
+        ...(envelope ? { envelope } : {}),
+        ...(opts.acknowledgedDowngrade ? { acknowledgedDowngrade: true } : {}),
+        ...(opts.now ? { now: opts.now } : {}),
+        ...(opts.requirePlanVerified ? { requirePlanVerified: true } : {}),
+      } as never,
+    );
     return { ok: true, explanations: g.explanations, result: g.result };
   } catch (e) {
     if (e instanceof PolicyBlockedError)
