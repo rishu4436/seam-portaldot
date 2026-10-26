@@ -1,5 +1,5 @@
 /**
- * Plan-bytes binding through the SDK flow (policy 4dd5e1a + compiler verifyPlan 1021d28): when the caller passes the
+ * Plan-bytes binding through the SDK flow (policy 50d2911 + compiler verifyPlan 1021d28): when the caller passes the
  * Manifest, Seam.approve / Seam.execute recompile it on the live facts and refuse a plan whose bytes differ, even if
  * the attacker recomputed the plan digest and left decodedArgs honest.
  */
