@@ -39,6 +39,8 @@ export function runPolicyGate(
     now?: Date;
     /** Live: block (PLAN_BYTES_MISMATCH) unless manifest + liveFacts are given and the call bytes match. */
     requirePlanVerified?: boolean;
+    /** Live Revive path: block revive.call / deploy steps without a measured call-info proof size. */
+    requireMeasuredProofSize?: boolean;
   } = {},
 ): GateOutcome {
   if (!input?.policy)
@@ -57,6 +59,7 @@ export function runPolicyGate(
         ...(opts.acknowledgedDowngrade ? { acknowledgedDowngrade: true } : {}),
         ...(opts.now ? { now: opts.now } : {}),
         ...(opts.requirePlanVerified ? { requirePlanVerified: true } : {}),
+        ...(opts.requireMeasuredProofSize ? { requireMeasuredProofSize: true } : {}),
       } as never,
     );
     return { ok: true, explanations: g.explanations, result: g.result };

@@ -9,6 +9,7 @@ import { compile, factsFromMetadata } from "@seam/compiler/browser";
 import { blockTimeFromFacts, buildSigningEnvelope } from "@seam/chain/browser";
 import {
   BLOCK_CODE_TEXT,
+  proofSizeText,
   blockCodeText,
   liveReadsFor,
   newApprovalStore,
@@ -194,6 +195,8 @@ describe("live gate hardening", () => {
       "CALL_PROOF_SIZE_UNKNOWN",
       "PROOF_SIZE_CALL_INFO_MISMATCH",
       "PROOF_SIZE_CALL_INFO_MISSING",
+      "CALL_GAS_LIMIT_MISSING",
+      "PROOF_SIZE_ESTIMATE_OVER_LIMIT",
     ]) {
       expect(BLOCK_CODE_TEXT[code], code).toBeTruthy();
       expect(blockCodeText(code)).toBe(`${code}: ${BLOCK_CODE_TEXT[code]}`);
@@ -213,6 +216,41 @@ describe("live gate hardening", () => {
     }, "5Grw");
     expect(await bad.readBlockNumber()).toBeUndefined();
     expect(await bad.readAccountNonce()).toBeUndefined();
+  });
+});
+
+describe("live Revive proof size", () => {
+  it("the live pre-sign gate gets requireMeasuredProofSize and requirePlanVerified", async () => {
+    const gate = vi.fn(() => ({
+      ok: false as const,
+      codes: ["PROOF_SIZE_CALL_INFO_MISSING"],
+      explanations: [],
+      message: "x",
+    }));
+    const r = await preSign({
+      ...base,
+      chain: chain(),
+      input: { policy: seq.policy, plan: undefined, manifest: demo.manifest },
+      live: liveCompile,
+      gate,
+    });
+    expect((gate.mock.calls[0] as unknown[])[1]).toMatchObject({
+      requireMeasuredProofSize: true,
+      requirePlanVerified: true,
+    });
+    expect(!r.res.ok && r.res.message).toContain(BLOCK_CODE_TEXT.PROOF_SIZE_CALL_INFO_MISSING);
+  });
+  it("both proof sizes shown; unknown is never shown as 0", () => {
+    expect(
+      proofSizeText({
+        dryRunProofSize: { value: "12998" },
+        callInfoProofSize: { value: "1007725" },
+      }),
+    ).toBe("Proof size: dry run 12998, call info 1007725.");
+    expect(
+      proofSizeText({ dryRunProofSize: { unknown: true }, callInfoProofSize: undefined }),
+    ).toBe("Proof size: dry run unknown, call info unknown.");
+    expect(proofSizeText({})).toBeUndefined();
   });
 });
 

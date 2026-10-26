@@ -171,6 +171,10 @@ export const BLOCK_CODE_TEXT: Record<string, string> = {
   PROOF_SIZE_CALL_INFO_MISMATCH:
     "The proof size in the call info doesn't match what the dry run reported, so it is blocked.",
   PROOF_SIZE_CALL_INFO_MISSING: "The call info has no proof size, so it is blocked.",
+  CALL_GAS_LIMIT_MISSING:
+    "The contract call has no explicit gas and weight limit, so it is blocked.",
+  PROOF_SIZE_ESTIMATE_OVER_LIMIT:
+    "The dry run's proof size is over the step's proof-size cap, so it is blocked.",
   policy_result_reproduced: "Re-running the policy reproduced this exact allowed result.",
 };
 
@@ -269,7 +273,8 @@ export async function preSign(args: {
       request: { envelope },
       acknowledgedDowngrade: args.acknowledgedDowngrade,
       now,
-      ...(args.live ? { requirePlanVerified: true } : {}),
+      // Live: revive.call and deploy steps need a measured proof size (PROOF_SIZE_CALL_INFO_MISSING otherwise).
+      ...(args.live ? { requirePlanVerified: true, requireMeasuredProofSize: true } : {}),
     },
   );
   if (!gate.ok)
@@ -549,4 +554,22 @@ export async function loadLiveCompile(manifest: unknown): Promise<LiveCompile> {
     compile: (m: unknown, f: unknown) => unknown;
   };
   return { manifest, compile: (m, f) => c.compile(m, f) };
+}
+
+/** A preflight proof size: { value } (a real number, may be 0 only if measured) or { unknown: true }. */
+export type ProofSizeField = { value: string } | { unknown: true } | undefined;
+
+/** Plain words for one proof size. An unknown or missing value is "unknown", never shown as 0. */
+export function proofSizeValueText(f: ProofSizeField): string {
+  return f && "value" in f && typeof f.value === "string" ? f.value : "unknown";
+}
+
+/** Both proof sizes of a preflight step (Revive steps only), in plain words. undefined for non-Revive steps. */
+export function proofSizeText(step: {
+  dryRunProofSize?: ProofSizeField;
+  callInfoProofSize?: ProofSizeField;
+}): string | undefined {
+  if (!step || (step.dryRunProofSize === undefined && step.callInfoProofSize === undefined))
+    return undefined;
+  return `Proof size: dry run ${proofSizeValueText(step.dryRunProofSize)}, call info ${proofSizeValueText(step.callInfoProofSize)}.`;
 }
