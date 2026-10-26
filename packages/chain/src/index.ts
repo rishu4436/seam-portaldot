@@ -187,3 +187,9 @@ export {
   type BudgetFit,
   type DeployCost,
 } from "./escrow-estimate.js";
+export {
+  decodeWeightV2Prefix,
+  reviveWeightBound,
+  type ReviveWeightBound,
+  type WeightV2,
+} from "./revive-weight.js";

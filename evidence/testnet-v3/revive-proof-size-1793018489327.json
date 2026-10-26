@@ -1,0 +1,1605 @@
+{
+  "kind": "DRY RUN ONLY \u2014 nothing signed, submitted or deployed; no signature bytes built",
+  "at": {
+    "block": 203373,
+    "hash": "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176",
+    "specVersion": 3002
+  },
+  "signatures": {
+    "block_gas_limit": {
+      "inputs": [],
+      "output": "U256"
+    },
+    "max_extrinsic_weight_in_gas": {
+      "inputs": [],
+      "output": "U256"
+    },
+    "gas_price": {
+      "inputs": [],
+      "output": "U256"
+    },
+    "call": {
+      "inputs": [
+        "origin: AccountId32",
+        "dest: H160",
+        "value: u128",
+        "gas_limit: Option<SpWeightsWeightV2Weight>",
+        "storage_deposit_limit: Option<u128>",
+        "input_data: Bytes"
+      ],
+      "output": "{\"weightConsumed\":\"SpWeightsWeightV2Weight\",\"weightRequired\":\"SpWeightsWeightV2Weight\",\"storageDeposit\":\"PalletReviveTypesRuntimeApiTypesContractStorageDepositV1\",\"maxStorageDeposit\":\"PalletReviveTypesRuntimeApiTypesContractStorageDepositV1\",\"gasConsumed\":\"u128\",\"result\":\"Result<PalletReviveTypesRuntimeApiTypesContractExecReturnValueV1, SpRuntimeDispatchError>\"}"
+    },
+    "instantiate": {
+      "inputs": [
+        "origin: AccountId32",
+        "value: u128",
+        "gas_limit: Option<SpWeightsWeightV2Weight>",
+        "storage_deposit_limit: Option<u128>",
+        "code: {\"_enum\":{\"Upload\":\"Bytes\",\"Existing\":\"H256\"}}",
+        "data: Bytes",
+        "salt: Option<[u8;32]>"
+      ],
+      "output": "{\"weightConsumed\":\"SpWeightsWeightV2Weight\",\"weightRequired\":\"SpWeightsWeightV2Weight\",\"storageDeposit\":\"PalletReviveTypesRuntimeApiTypesContractStorageDepositV1\",\"maxStorageDeposit\":\"PalletReviveTypesRuntimeApiTypesContractStorageDepositV1\",\"gasConsumed\":\"u128\",\"result\":\"Result<PalletReviveTypesRuntimeApiTypesContractInstantiateReturnValueV1, SpRuntimeDispatchError>\"}"
+    },
+    "eth_transact": {
+      "inputs": [
+        "tx: {\"_alias\":{\"r_type\":\"r#type\"},\"accessList\":\"Option<Vec<PalletReviveTypesRuntimeApiTypesTransactionAccessListEntryV1>>\",\"authorizationList\":\"Vec<PalletReviveTypesRuntimeApiTypesTransactionAuthorizationListEntryV1>\",\"blobVersionedHashes\":\"Vec<H256>\",\"blobs\":\"Vec<Bytes>\",\"chainId\":\"Option<U256>\",\"from\":\"Option<H160>\",\"gas\":\"Option<U256>\",\"gasPrice\":\"Option<U256>\",\"input\":\"PalletReviveTypesRuntimeApiTypesTransactionInputOrDataV1\",\"maxFeePerBlobGas\":\"Option<U256>\",\"maxFeePerGas\":\"Option<U256>\",\"maxPriorityFeePerGas\":\"Option<U256>\",\"nonce\":\"Option<U256>\",\"to\":\"Option<H160>\",\"r_type\":\"Option<u8>\",\"value\":\"Option<U256>\"}"
+      ],
+      "output": "Result<PalletReviveTypesRuntimeApiTypesDryRunEthTransactInfoV1, PalletRevivePrimitivesEthTransactError>"
+    },
+    "eth_estimate_gas": {
+      "inputs": [
+        "tx: {\"_alias\":{\"r_type\":\"r#type\"},\"accessList\":\"Option<Vec<PalletReviveTypesRuntimeApiTypesTransactionAccessListEntryV1>>\",\"authorizationList\":\"Vec<PalletReviveTypesRuntimeApiTypesTransactionAuthorizationListEntryV1>\",\"blobVersionedHashes\":\"Vec<H256>\",\"blobs\":\"Vec<Bytes>\",\"chainId\":\"Option<U256>\",\"from\":\"Option<H160>\",\"gas\":\"Option<U256>\",\"gasPrice\":\"Option<U256>\",\"input\":\"PalletReviveTypesRuntimeApiTypesTransactionInputOrDataV1\",\"maxFeePerBlobGas\":\"Option<U256>\",\"maxFeePerGas\":\"Option<U256>\",\"maxPriorityFeePerGas\":\"Option<U256>\",\"nonce\":\"Option<U256>\",\"to\":\"Option<H160>\",\"r_type\":\"Option<u8>\",\"value\":\"Option<U256>\"}",
+        "config: {\"timestampOverride\":\"Option<u64>\",\"performBalanceChecks\":\"Option<bool>\",\"stateOverrides\":\"Option<PalletReviveTypesRuntimeApiTypesStateOverridesStateOverrideSetV1>\"}"
+      ],
+      "output": "Result<U256, PalletRevivePrimitivesEthTransactError>"
+    },
+    "eth_pre_dispatch_weight": {
+      "inputs": [
+        "tx: Bytes"
+      ],
+      "output": "Result<SpWeightsWeightV2Weight, PalletRevivePrimitivesEthTransactError>"
+    },
+    "upload_code": {
+      "inputs": [
+        "origin: AccountId32",
+        "code: Bytes",
+        "storage_deposit_limit: Option<u128>"
+      ],
+      "output": "Result<PalletReviveTypesRuntimeApiTypesUploadCodeUploadReturnValueV1, SpRuntimeDispatchError>"
+    }
+  },
+  "contractResultLayout": [
+    {
+      "name": "weight_consumed",
+      "type": "{\"refTime\":\"Compact<u64>\",\"proofSize\":\"Compact<u64>\"}"
+    },
+    {
+      "name": "weight_required",
+      "type": "{\"refTime\":\"Compact<u64>\",\"proofSize\":\"Compact<u64>\"}"
+    },
+    {
+      "name": "storage_deposit",
+      "type": "{\"_enum\":{\"Refund\":\"u128\",\"Charge\":\"u128\"}}"
+    },
+    {
+      "name": "max_storage_deposit",
+      "type": "{\"_enum\":{\"Refund\":\"u128\",\"Charge\":\"u128\"}}"
+    },
+    {
+      "name": "gas_consumed",
+      "type": "u128"
+    },
+    {
+      "name": "result",
+      "type": "Result<PalletReviveTypesRuntimeApiTypesContractInstantiateReturnValueV1, SpRuntimeDispatchError>"
+    }
+  ],
+  "weightV2Layout": "Weight { ref_time: Compact<u64>, proof_size: Compact<u64> } (SCALE compact, not fixed u64)",
+  "constants": {
+    "blockWeights": {
+      "baseBlock": {
+        "refTime": 431614000,
+        "proofSize": 0
+      },
+      "maxBlock": {
+        "refTime": 2000000000000,
+        "proofSize": "0xffffffffffffffff"
+      },
+      "perClass": {
+        "normal": {
+          "baseExtrinsic": {
+            "refTime": 108157000,
+            "proofSize": 0
+          },
+          "maxExtrinsic": {
+            "refTime": 1699891843000,
+            "proofSize": "0xd999999999999999"
+          },
+          "maxTotal": {
+            "refTime": 1900000000000,
+            "proofSize": "0xf333333333333332"
+          },
+          "reserved": {
+            "refTime": 0,
+            "proofSize": 0
+          }
+        },
+        "operational": {
+          "baseExtrinsic": {
+            "refTime": 108157000,
+            "proofSize": 0
+          },
+          "maxExtrinsic": {
+            "refTime": 1799891843000,
+            "proofSize": "0xe666666666666666"
+          },
+          "maxTotal": {
+            "refTime": 2000000000000,
+            "proofSize": "0xffffffffffffffff"
+          },
+          "reserved": {
+            "refTime": 100000000000,
+            "proofSize": "0x0ccccccccccccccd"
+          }
+        },
+        "mandatory": {
+          "baseExtrinsic": {
+            "refTime": 108157000,
+            "proofSize": 0
+          },
+          "maxExtrinsic": null,
+          "maxTotal": null,
+          "reserved": null
+        }
+      }
+    },
+    "reviveGasScale": 5,
+    "reviveNativeToEthRatio": 10000,
+    "reviveMaxEthExtrinsicWeight": "900000000000000000"
+  },
+  "variants": [
+    {
+      "id": "SeamEscrowOne-r1",
+      "codeBytes": 858,
+      "codeSha256": "787cfbb97a030a214b6697c6b47f687967fb738d6a9a3c99631d8f1c0a5934ea",
+      "dryRuns": {
+        "gasLimitNone": {
+          "ok": true,
+          "error": null,
+          "weightConsumed": {
+            "refTime": 5342770,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 5342770,
+            "proofSize": 0
+          },
+          "gasConsumed": "1963660255723579",
+          "storageDeposit": {
+            "charge": "0x00000000000000000014fabf8453e000"
+          },
+          "maxStorageDeposit": {
+            "charge": "0x00000000000000000014fabf8453e000"
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "5342770",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "5342770",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0xca18460100ca184601000100e05384bffa140000000000000000000100e05384bffa1400000000\u2026<676 bytes, sha256 ddc6c483840ea17debb041a6875dacdf184b94dbdc2fd1f6a7b228c3c504ba3a>"
+        },
+        "gasLimitBlockMaxExtrinsic": {
+          "limit": {
+            "refTime": "1699891843000",
+            "proofSize": "15679732462653118873"
+          },
+          "ok": true,
+          "error": null,
+          "weightConsumed": {
+            "refTime": 5342770,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 5342770,
+            "proofSize": 0
+          },
+          "gasConsumed": "1963660255723579",
+          "storageDeposit": {
+            "charge": "0x00000000000000000014fabf8453e000"
+          },
+          "maxStorageDeposit": {
+            "charge": "0x00000000000000000014fabf8453e000"
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "5342770",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "5342770",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0xca18460100ca184601000100e05384bffa140000000000000000000100e05384bffa1400000000\u2026<676 bytes, sha256 ddc6c483840ea17debb041a6875dacdf184b94dbdc2fd1f6a7b228c3c504ba3a>"
+        },
+        "tightRefTimeExactProofZero": {
+          "limit": {
+            "refTime": "5342770",
+            "proofSize": "0"
+          },
+          "ok": true,
+          "error": null,
+          "weightConsumed": {
+            "refTime": 5342770,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 5342770,
+            "proofSize": 0
+          },
+          "gasConsumed": "1963660255723579",
+          "storageDeposit": {
+            "charge": "0x00000000000000000014fabf8453e000"
+          },
+          "maxStorageDeposit": {
+            "charge": "0x00000000000000000014fabf8453e000"
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "5342770",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "5342770",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0xca18460100ca184601000100e05384bffa140000000000000000000100e05384bffa1400000000\u2026<676 bytes, sha256 ddc6c483840ea17debb041a6875dacdf184b94dbdc2fd1f6a7b228c3c504ba3a>"
+        },
+        "refTimeMinus10pctProofZero": {
+          "limit": {
+            "refTime": "4808493",
+            "proofSize": "0"
+          },
+          "ok": false,
+          "error": {
+            "Err": {
+              "Module": {
+                "index": "80",
+                "error": "0x03000000"
+              }
+            }
+          },
+          "weightConsumed": {
+            "refTime": 4808296,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 4808296,
+            "proofSize": 0
+          },
+          "gasConsumed": "480830",
+          "storageDeposit": {
+            "charge": 0
+          },
+          "maxStorageDeposit": {
+            "charge": 0
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "4808296",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "4808296",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0xa279250100a279250100010000000000000000000000000000000001000000000000000000000000000000003e56070000000000000000000000000001035003000000"
+        }
+      },
+      "minRefTimePassingWithProofZero": "5342770",
+      "proofSizeSearch": "not needed: a proof_size LIMIT of 0 already passes, so proof size is not metered by this runtime's instantiate path",
+      "bound": {
+        "known": false,
+        "refTime": "6411324",
+        "reason": "proof_size 0 in the dry run: unknown, not a passed limit"
+      },
+      "queryCallInfo": [
+        {
+          "limitUsed": {
+            "refTime": "6411324",
+            "proofSize": "0"
+          },
+          "len": 989,
+          "decoded": {
+            "weight": {
+              "refTime": 946505864,
+              "proofSize": 6823
+            },
+            "class": "Normal",
+            "partialFee": 9890677431283
+          },
+          "preDispatchProofSize": "6823",
+          "staticProofOverhead": "6823"
+        },
+        {
+          "limitUsed": {
+            "refTime": "6411324",
+            "proofSize": "1000000"
+          },
+          "len": 992,
+          "decoded": {
+            "weight": {
+              "refTime": 946505864,
+              "proofSize": 1006823
+            },
+            "class": "Normal",
+            "partialFee": 9920677431283
+          },
+          "preDispatchProofSize": "1006823",
+          "staticProofOverhead": "6823"
+        },
+        {
+          "limitUsed": {
+            "refTime": "6411324",
+            "proofSize": "15679732462653118873"
+          },
+          "len": 997,
+          "decoded": {
+            "weight": {
+              "refTime": 946505864,
+              "proofSize": "0xd99999999999b440"
+            },
+            "class": "Normal",
+            "partialFee": 10992570161159
+          },
+          "preDispatchProofSize": "15679732462653125696",
+          "staticProofOverhead": "6823"
+        }
+      ],
+      "ethEstimateGasRuntimeApi": {
+        "Ok": "1,997,782,456,654,762"
+      },
+      "ethTransactRuntimeApi": {
+        "weightRequired": {
+          "refTime": 5342770,
+          "proofSize": 0
+        },
+        "storageDeposit": "0x00000000000000000014fabf8453e000",
+        "maxStorageDeposit": "0x00000000000000000014fabf8453e000",
+        "ethGas": "0x0000000000000000000000000000000000000000000000000006fd04e6129165"
+      },
+      "ethJsonRpc": {
+        "https://test-node-v3.portaldot.dev": {
+          "eth_chainId": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          },
+          "eth_estimateGas": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          }
+        },
+        "https://test-node-v3.portaldot.dev/eth": {
+          "eth_chainId": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          },
+          "eth_estimateGas": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          }
+        }
+      }
+    },
+    {
+      "id": "Floor-stop",
+      "codeBytes": 13,
+      "codeSha256": "83893730324f3f0a9d37aa004adbbef535ad44cf901b084f94197df177a71f9b",
+      "dryRuns": {
+        "gasLimitNone": {
+          "ok": true,
+          "error": null,
+          "weightConsumed": {
+            "refTime": 663430,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 663430,
+            "proofSize": 0
+          },
+          "gasConsumed": "438541479532517",
+          "storageDeposit": {
+            "charge": 1318800000000000
+          },
+          "maxStorageDeposit": {
+            "charge": 1318800000000000
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "663430",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "663430",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0x1a7e2800001a7e2800000100a0870d71af040000000000000000000100a0870d71af04000000000000000000e5571be5d98e01000000000000000000000000000004005837065cf8ae81d14963433877a9ae2d3ddc1ae3"
+        },
+        "gasLimitBlockMaxExtrinsic": {
+          "limit": {
+            "refTime": "1699891843000",
+            "proofSize": "15679732462653118873"
+          },
+          "ok": true,
+          "error": null,
+          "weightConsumed": {
+            "refTime": 663430,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 663430,
+            "proofSize": 0
+          },
+          "gasConsumed": "438541479532517",
+          "storageDeposit": {
+            "charge": 1318800000000000
+          },
+          "maxStorageDeposit": {
+            "charge": 1318800000000000
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "663430",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "663430",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0x1a7e2800001a7e2800000100a0870d71af040000000000000000000100a0870d71af04000000000000000000e5571be5d98e01000000000000000000000000000004005837065cf8ae81d14963433877a9ae2d3ddc1ae3"
+        },
+        "tightRefTimeExactProofZero": {
+          "limit": {
+            "refTime": "663430",
+            "proofSize": "0"
+          },
+          "ok": true,
+          "error": null,
+          "weightConsumed": {
+            "refTime": 663430,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 663430,
+            "proofSize": 0
+          },
+          "gasConsumed": "438541479532517",
+          "storageDeposit": {
+            "charge": 1318800000000000
+          },
+          "maxStorageDeposit": {
+            "charge": 1318800000000000
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "663430",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "663430",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0x1a7e2800001a7e2800000100a0870d71af040000000000000000000100a0870d71af04000000000000000000e5571be5d98e01000000000000000000000000000004005837065cf8ae81d14963433877a9ae2d3ddc1ae3"
+        },
+        "refTimeMinus10pctProofZero": {
+          "limit": {
+            "refTime": "597087",
+            "proofSize": "0"
+          },
+          "ok": false,
+          "error": {
+            "Err": {
+              "Module": {
+                "index": "80",
+                "error": "0x03000000"
+              }
+            }
+          },
+          "weightConsumed": {
+            "refTime": 69714,
+            "proofSize": 0
+          },
+          "weightRequired": {
+            "refTime": 69714,
+            "proofSize": 0
+          },
+          "gasConsumed": "6972",
+          "storageDeposit": {
+            "charge": 0
+          },
+          "maxStorageDeposit": {
+            "charge": 0
+          },
+          "rawPrefixHandDecoded": {
+            "weightConsumed": {
+              "refTime": "69714",
+              "proofSize": "0"
+            },
+            "weightRequired": {
+              "refTime": "69714",
+              "proofSize": "0"
+            },
+            "bytesRead": 10
+          },
+          "raw": "0x4a410400004a41040000010000000000000000000000000000000001000000000000000000000000000000003c1b000000000000000000000000000001035003000000"
+        }
+      },
+      "minRefTimePassingWithProofZero": "663430",
+      "proofSizeSearch": "not needed: a proof_size LIMIT of 0 already passes, so proof size is not metered by this runtime's instantiate path",
+      "bound": {
+        "known": false,
+        "refTime": "796116",
+        "reason": "proof_size 0 in the dry run: unknown, not a passed limit"
+      },
+      "queryCallInfo": [
+        {
+          "limitUsed": {
+            "refTime": "796116",
+            "proofSize": "0"
+          },
+          "len": 138,
+          "decoded": {
+            "weight": {
+              "refTime": 923667866,
+              "proofSize": 6823
+            },
+            "class": "Normal",
+            "partialFee": 1380663695410
+          },
+          "preDispatchProofSize": "6823",
+          "staticProofOverhead": "6823"
+        },
+        {
+          "limitUsed": {
+            "refTime": "796116",
+            "proofSize": "1000000"
+          },
+          "len": 141,
+          "decoded": {
+            "weight": {
+              "refTime": 923667866,
+              "proofSize": 1006823
+            },
+            "class": "Normal",
+            "partialFee": 1410663695410
+          },
+          "preDispatchProofSize": "1006823",
+          "staticProofOverhead": "6823"
+        },
+        {
+          "limitUsed": {
+            "refTime": "796116",
+            "proofSize": "15679732462653118873"
+          },
+          "len": 146,
+          "decoded": {
+            "weight": {
+              "refTime": 923667866,
+              "proofSize": "0xd99999999999b440"
+            },
+            "class": "Normal",
+            "partialFee": 2482570161159
+          },
+          "preDispatchProofSize": "15679732462653125696",
+          "staticProofOverhead": "6823"
+        }
+      ],
+      "ethEstimateGasRuntimeApi": {
+        "Ok": "445,821,661,489,077"
+      },
+      "ethTransactRuntimeApi": {
+        "weightRequired": {
+          "refTime": 663430,
+          "proofSize": 0
+        },
+        "storageDeposit": 1318800000000000,
+        "maxStorageDeposit": 1318800000000000,
+        "ethGas": "0x00000000000000000000000000000000000000000000000000018f3c01bd32ea"
+      },
+      "ethJsonRpc": {
+        "https://test-node-v3.portaldot.dev": {
+          "eth_chainId": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          },
+          "eth_estimateGas": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          }
+        },
+        "https://test-node-v3.portaldot.dev/eth": {
+          "eth_chainId": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          },
+          "eth_estimateGas": {
+            "ok": false,
+            "error": "-32601: Method not found"
+          }
+        }
+      }
+    }
+  ],
+  "rpcMethods": [],
+  "blockGasLimit": "115,792,089,237,316,195,417,293,883,273,301,227,089,434,195,242,432,897,623,355,228,563,449,095,127,040",
+  "maxExtrinsicWeightInGas": "657,303,322,783,105,662,381,791,163,629,807,520,792,419,398,964,241,497,849,066,528,085,498,658,816",
+  "onChainDeploy": {
+    "block": 102843,
+    "blockHash": "0x0123735173c22926d06327d9e746459a4ab7ee5f38b6b6cae3f93443a6983ef1",
+    "extrinsicIndex": 1,
+    "events": [
+      {
+        "section": "balances",
+        "method": "Withdraw",
+        "data": [
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          1599867195209
+        ]
+      },
+      {
+        "section": "system",
+        "method": "NewAccount",
+        "data": [
+          "5F7MU3dhA8eXrray6nKH3i1sKuUkEh2mP4GgBeiXyTtfp3Ry"
+        ]
+      },
+      {
+        "section": "balances",
+        "method": "Endowed",
+        "data": [
+          "5F7MU3dhA8eXrray6nKH3i1sKuUkEh2mP4GgBeiXyTtfp3Ry",
+          10000000000000
+        ]
+      },
+      {
+        "section": "balances",
+        "method": "Minted",
+        "data": [
+          "5F7MU3dhA8eXrray6nKH3i1sKuUkEh2mP4GgBeiXyTtfp3Ry",
+          10000000000000
+        ]
+      },
+      {
+        "section": "balances",
+        "method": "TransferAndHold",
+        "data": [
+          {
+            "revive": "CodeUploadDepositReserve"
+          },
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          "5EYCAe5ijiYfhaAUBd6H9WGRTsvwFFc7GnhQkiHvBYxdvpbV",
+          498000000000000
+        ]
+      },
+      {
+        "section": "revive",
+        "method": "Instantiated",
+        "data": [
+          "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+          "0x86b9cc2d456eed16a6872e1d5646f606a59cd95b"
+        ]
+      },
+      {
+        "section": "balances",
+        "method": "TransferAndHold",
+        "data": [
+          {
+            "revive": "StorageDepositReserve"
+          },
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          "5F7MU3dhA8eXrray6nKH3i1sKuUkEh2mP4GgBeiXyTtfp3Ry",
+          914400000000000
+        ]
+      },
+      {
+        "section": "balances",
+        "method": "Deposit",
+        "data": [
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          38663924674
+        ]
+      },
+      {
+        "section": "balances",
+        "method": "Deposit",
+        "data": [
+          "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+          1561203270535
+        ]
+      },
+      {
+        "section": "transactionPayment",
+        "method": "TransactionFeePaid",
+        "data": [
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          1561203270535,
+          0
+        ]
+      },
+      {
+        "section": "system",
+        "method": "ExtrinsicSuccess",
+        "data": [
+          {
+            "weight": {
+              "refTime": 1524333644,
+              "proofSize": 19007
+            },
+            "class": "Normal",
+            "paysFee": "Yes"
+          }
+        ]
+      }
+    ]
+  },
+  "rawRpc": [
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "chain_getBlockHash",
+      "params": [
+        0
+      ],
+      "result": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "chain_getFinalizedHead",
+      "params": [],
+      "result": "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "chain_getHeader",
+      "params": [
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": {
+        "parentHash": "0x43c608fe568cf2fec119372867c45838eb5d4ed83b0c7670e4e19de538afedf3",
+        "number": "0x31a6d",
+        "stateRoot": "0x94d5b7c9bcf87e910dceb4d16d73cb86f67811067fcab4008f9984818e0f976e",
+        "extrinsicsRoot": "0x9668e0284915f77a4b2b0af5ee19da35e6d4294afd242eede1403c89f85d9395",
+        "digest": {
+          "logs": [
+            "0x0642414245b5010100000000b5e1cf1100000000b610574715aa80f2b67a3fc43bf84344541cb94324fb2872ebf6ce513f51627d5e12962876db884caea1d8f2def5c56a874e692993a863e5f0d65ff146c6a005664dea74f7eb076564b1e76b9a3dee7b59ede902dc06a6466acb371d2e660d02",
+            "0x04424545468403deaa3ee0f9a260da89b06334659f282c9f889cb35285848fbc7a4c78b686bb6c",
+            "0x05424142450101987e7ed1f2cb58db98a24af361c061f24128de7a9c635dc98e538575af82284bc78770225f505a5649727f3e702e10d460b9c1559abd9b2c062ce8094f32a98f"
+          ]
+        }
+      }
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_getRuntimeVersion",
+      "params": [
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": {
+        "specName": "portaldot-v3",
+        "implName": "portaldot-v3-node",
+        "authoringVersion": 10,
+        "specVersion": 3002,
+        "implVersion": 0,
+        "apis": [
+          [
+            "0x17a6bc0d0062aeb3",
+            1
+          ],
+          [
+            "0x18ef58a3b67ba770",
+            1
+          ],
+          [
+            "0xcbca25e39f142387",
+            2
+          ],
+          [
+            "0x687ad44ad37f03c2",
+            1
+          ],
+          [
+            "0x6ef953004ba30e59",
+            1
+          ],
+          [
+            "0xbc9d89904f5b923f",
+            1
+          ],
+          [
+            "0x8453b50b22293977",
+            1
+          ],
+          [
+            "0x68b66ba122c93fa7",
+            2
+          ],
+          [
+            "0x37c8bb1350a9a2a8",
+            4
+          ],
+          [
+            "0x8a8047a53a8277ec",
+            1
+          ],
+          [
+            "0xf3ff14d5ab527059",
+            3
+          ],
+          [
+            "0x899a250cbe84f250",
+            1
+          ],
+          [
+            "0x49eaaf1b548a0cb0",
+            6
+          ],
+          [
+            "0x91d5df18b0d2cf58",
+            3
+          ],
+          [
+            "0x6fd7c327202e4a8d",
+            1
+          ],
+          [
+            "0xab3c0572291feb8b",
+            2
+          ],
+          [
+            "0x3b1cfc440dd23f49",
+            2
+          ],
+          [
+            "0xfbc577b9d747efd6",
+            1
+          ],
+          [
+            "0x8c403e5c4a9fd442",
+            2
+          ],
+          [
+            "0xdf6acb689907609b",
+            5
+          ],
+          [
+            "0x37e397fc7c91f5e4",
+            2
+          ],
+          [
+            "0xccd9de6396c899ca",
+            1
+          ],
+          [
+            "0x40fe3ad401f8959a",
+            6
+          ],
+          [
+            "0xd2bc9897eed08f15",
+            3
+          ],
+          [
+            "0xf78b278be53f454c",
+            2
+          ],
+          [
+            "0xed99c5acb25eedf5",
+            3
+          ]
+        ],
+        "transactionVersion": 2,
+        "systemVersion": 1,
+        "stateVersion": 1
+      }
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_address",
+        "0xe4f48afd7ca6695420065b8aab70f290cce2cbd971bca87783b8295a4202db0b",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x553d36d0af8dec5704849a87f8a79689511199f1"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<913 bytes, sha256 8373e2c93c3f05e376419b765971cec3c4212018ca3c82e36e365c4382dd09fe>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xca18460100ca184601000100e05384bffa140000000000000000000100e05384bffa1400000000\u2026<676 bytes, sha256 ddc6c483840ea17debb041a6875dacdf184b94dbdc2fd1f6a7b228c3c504ba3a>"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<929 bytes, sha256 76017d83107152ee4fe7ff33abb03f0424c21ddb3a1b54c4b84cdf3d8d3fd66e>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xca18460100ca184601000100e05384bffa140000000000000000000100e05384bffa1400000000\u2026<676 bytes, sha256 ddc6c483840ea17debb041a6875dacdf184b94dbdc2fd1f6a7b228c3c504ba3a>"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 73d5cfc084f061b41ad7c70b3a94d9df936dacc13cec7ab7ef4d2d71c7567835>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xca18460100ca184601000100e05384bffa140000000000000000000100e05384bffa1400000000\u2026<676 bytes, sha256 ddc6c483840ea17debb041a6875dacdf184b94dbdc2fd1f6a7b228c3c504ba3a>"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 f90d2ae24a0ab718d7e30ee1b632a9d370c790a5f949a9e80f472ab0d3cee6b1>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xa279250100a279250100010000000000000000000000000000000001000000000000000000000000000000003e56070000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 bf8e9bb7c71d9e5b8da02dce1188211beed15998f38d0cc8a4b76128b7f7377f>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x5a75a200005a75a2000001000000000000000000000000000000000100000000000000000000000000000000bc0f040000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 77436283099d062a4affa5baf764ba82709dd30fc60b4ec7add0158d7205fdc3>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x82e5f3000082e5f3000001000000000000000000000000000000000100000000000000000000000000000000f018060000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 d5d09754915cba41ea07b426f101476e7d5c282547579aca486cdbd8f7157c2e>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x92d7f4000092d7f4000001000000000000000000000000000000000100000000000000000000000000000000fe1e060000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 d16ed483ffdbbe6ffbad9bbdbc0736adc30080c72e8e6da9d5f95832762cbf00>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x6a4b3101006a4b31010001000000000000000000000000000000000100000000000000000000000000000000e3a1070000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 797adb6ad985a99ebe7f7cc34ecfa2c487c3437d251b6c1b6f98d44f8b3bb4bc>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x12393b010012393b0100010000000000000000000000000000000001000000000000000000000000000000006ee1070000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 5ff08d8444c8273fd3d060a6792c9c25cc989a93837c20329326cf621bf23b77>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x72e540010072e540010001000000000000000000000000000000000100000000000000000000000000000000bd05080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 8abf3f02f0c1455d7beff69a8482599540fc188c2c3ad1bedd8e30532889cfb6>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x8a504201008a5042010001000000000000000000000000000000000100000000000000000000000000000000d10e080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 fa48ac74660cad08774e0680fa1fd414c4d7e75680a03f528d251fba3a4f98f3>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xa2bb430100a2bb43010001000000000000000000000000000000000100000000000000000000000000000000e417080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 309b9c476bc2710fec0ef7b145e52e43e77c0576b1a81547185d6b9a3648137c>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xba26450100ba2645010001000000000000000000000000000000000100000000000000000000000000000000f820080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 7604a3757b8994376b07bac914fdd0af343c72e129e3c8d64bf5b7ed3204be7d>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xba26450100ba2645010001000000000000000000000000000000000100000000000000000000000000000000f820080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 56e79b4d78bb94c762eb6afc88b28035c6e48985764fd269bad975a9668665f9>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xba26450100ba2645010001000000000000000000000000000000000100000000000000000000000000000000f820080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 ed71dd3f35f27b09baff2a22dd920129ce95e450027008b72335b37e55dc0595>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xba26450100ba2645010001000000000000000000000000000000000100000000000000000000000000000000f820080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670010a5d4e80000\u2026<918 bytes, sha256 80c949f7275b9d2e77b0573a49702e7fad4e1aee5939544ea34550bf0d75e129>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xba26450100ba2645010001000000000000000000000000000000000100000000000000000000000000000000f820080000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "TransactionPaymentCallApi_query_call_info",
+        "0x5003070010a5d4e8f2508701000f00c0a7087ff529690d60e060405260405161031a3803806103\u2026<887 bytes, sha256 ea58cb933e33f8b1529d9a63197d0d28c43986c6e425509d11fb146ac2c2c9dc>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x2222aae19d6a00f39b50dafe0800000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "TransactionPaymentCallApi_query_call_info",
+        "0x5003070010a5d4e8f250870102093d000f00c0a7087ff529690d60e060405260405161031a3803\u2026<890 bytes, sha256 46000a09af1557c41ef2cdda8ed31889f44ca5d98a14ca1509e9fa75ba07776f>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x2222aae19e733d0000f34774d6050900000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "TransactionPaymentCallApi_query_call_info",
+        "0x5003070010a5d4e8f25087011399999999999999d90f00c0a7087ff529690d60e0604052604051\u2026<895 bytes, sha256 2c2317234ee65db8d80c4fd4f7e72240ae55bc5c4b84f94abca592e45cbd5edb>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x2222aae11340b49999999999d90007583d68ff0900000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_address",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_eth_estimate_gas",
+        "0x00000000000181ed1dfbec067703fdca3daa7efcbeff4ba101ec000001690d60e0604052604051\u2026<932 bytes, sha256 571bdc44e0d81a8388de799b8928f49bd4a95546ee6567afcb07342647465382>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x00aadbaaf9f8180700000000000000000000000000000000000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_eth_transact",
+        "0x00000000000181ed1dfbec067703fdca3daa7efcbeff4ba101ec000001690d60e0604052604051\u2026<929 bytes, sha256 d1667edcc92da46082c4caef1b223bb877b45f3513afd6f0d3fb99160a229b27>",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x00ca1846010000e05384bffa1400000000000000000000e05384bffa1400000000000000000065\u2026<661 bytes, sha256 4da898e23b1dde96eece0dfb652b0faea9383eeaf7c41e22a70a69bee8af22ce>"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "eth_chainId",
+      "params": [],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "eth_estimateGas",
+      "params": [
+        {
+          "from": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+          "data": "0x60e060405260405161031a38038061031a8339810160408190526100229161005a565b34158061\u2026<858 bytes, sha256 787cfbb97a030a214b6697c6b47f687967fb738d6a9a3c99631d8f1c0a5934ea>",
+          "value": "0x2386f26fc10000"
+        }
+      ],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev/eth",
+      "method": "eth_chainId",
+      "params": [],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev/eth",
+      "method": "eth_estimateGas",
+      "params": [
+        {
+          "from": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+          "data": "0x60e060405260405161031a38038061031a8339810160408190526100229161005a565b34158061\u2026<858 bytes, sha256 787cfbb97a030a214b6697c6b47f687967fb738d6a9a3c99631d8f1c0a5934ea>",
+          "value": "0x2386f26fc10000"
+        }
+      ],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x1a7e2800001a7e2800000100a0870d71af040000000000000000000100a0870d71af04000000000000000000e5571be5d98e01000000000000000000000000000004005837065cf8ae81d14963433877a9ae2d3ddc1ae3"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000010bb80f73c98b011399999999999999d90000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x1a7e2800001a7e2800000100a0870d71af040000000000000000000100a0870d71af04000000000000000000e5571be5d98e01000000000000000000000000000004005837065cf8ae81d14963433877a9ae2d3ddc1ae3"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000011a7e2800000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x1a7e2800001a7e2800000100a0870d71af040000000000000000000100a0870d71af04000000000000000000e5571be5d98e01000000000000000000000000000004005837065cf8ae81d14963433877a9ae2d3ddc1ae3"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000017e712400000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x4a410400004a41040000010000000000000000000000000000000001000000000000000000000000000000003c1b000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000010e3f1400000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x4a410400004a41040000010000000000000000000000000000000001000000000000000000000000000000003c1b000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670000000000000000000000000000000001925e1e00000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x4a410400004a41040000010000000000000000000000000000000001000000000000000000000000000000003c1b000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670000000000000000000000000000000001566e2300000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x4a410400004a41040000010000000000000000000000000000000001000000000000000000000000000000003c1b000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467000000000000000000000000000000000136f62500000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xeaa7250000eaa72500000100000000000000000000000000000000010000000000000000000000000000000000f1000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670000000000000000000000000000000001263a2700000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x021327000002132700000100000000000000000000000000000000010000000000000000000000000000000014fa000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000011edc2700000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x021327000002132700000100000000000000000000000000000000010000000000000000000000000000000014fa000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000011a2d2800000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x021327000002132700000100000000000000000000000000000000010000000000000000000000000000000014fa000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a804846700000000000000000000000000000000019a552800000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x021327000002132700000100000000000000000000000000000000010000000000000000000000000000000014fa000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670000000000000000000000000000000001da692800000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x021327000002132700000100000000000000000000000000000000010000000000000000000000000000000014fa000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_instantiate",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a80484670000000000000000000000000000000001fa732800000000346001600c60003960016000f3000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x021327000002132700000100000000000000000000000000000000010000000000000000000000000000000014fa000000000000000000000000000001035003000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "TransactionPaymentCallApi_query_call_info",
+        "0x50030052973000000f00400f1be25e09346001600c60003960016000f30000008a000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x6a3638dc9d6a003218f875410100000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "TransactionPaymentCallApi_query_call_info",
+        "0x5003005297300002093d000f00400f1be25e09346001600c60003960016000f30000008d000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x6a3638dc9e733d000032c41b72480100000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "TransactionPaymentCallApi_query_call_info",
+        "0x500300529730001399999999999999d90f00400f1be25e09346001600c60003960016000f300000092000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x6a3638dc1340b49999999999d900076cb604420200000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_address",
+        "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_eth_estimate_gas",
+        "0x00000000000181ed1dfbec067703fdca3daa7efcbeff4ba101ec000001346001600c60003960016000f30000000000000000010000000000000000000000000000000000000000000000000000000000000000000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x00b527c4f178950100000000000000000000000000000000000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_eth_transact",
+        "0x00000000000181ed1dfbec067703fdca3daa7efcbeff4ba101ec000001346001600c60003960016000f30000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x001a7e28000000a0870d71af0400000000000000000000a0870d71af04000000000000000000ea32bd013c8f01000000000000000000000000000000000000000000000000000400"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "eth_chainId",
+      "params": [],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "eth_estimateGas",
+      "params": [
+        {
+          "from": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+          "data": "0x6001600c60003960016000f300",
+          "value": "0x0"
+        }
+      ],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev/eth",
+      "method": "eth_chainId",
+      "params": [],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev/eth",
+      "method": "eth_estimateGas",
+      "params": [
+        {
+          "from": "0x81ed1dfbec067703fdca3daa7efcbeff4ba101ec",
+          "data": "0x6001600c60003960016000f300",
+          "value": "0x0"
+        }
+      ],
+      "error": "-32601: Method not found"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "rpc_methods",
+      "params": [],
+      "result": {
+        "methods": [
+          "account_nextIndex",
+          "archive_v1_body",
+          "archive_v1_call",
+          "archive_v1_finalizedHeight",
+          "archive_v1_genesisHash",
+          "archive_v1_hashByHeight",
+          "archive_v1_header",
+          "archive_v1_stopStorage",
+          "archive_v1_storage",
+          "archive_v1_storageDiff",
+          "archive_v1_storageDiff_stopStorageDiff",
+          "author_hasKey",
+          "author_hasSessionKeys",
+          "author_insertKey",
+          "author_pendingExtrinsics",
+          "author_removeExtrinsic",
+          "author_rotateKeys",
+          "author_rotateKeysWithOwner",
+          "author_submitAndWatchExtrinsic",
+          "author_submitExtrinsic",
+          "author_unwatchExtrinsic",
+          "babe_epochAuthorship",
+          "beefy_getFinalizedHead",
+          "beefy_subscribeJustifications",
+          "beefy_unsubscribeJustifications",
+          "bitswap_v1_get",
+          "chainHead_v1_body",
+          "chainHead_v1_call",
+          "chainHead_v1_continue",
+          "chainHead_v1_follow",
+          "chainHead_v1_header",
+          "chainHead_v1_stopOperation",
+          "chainHead_v1_storage",
+          "chainHead_v1_unfollow",
+          "chainHead_v1_unpin",
+          "chainSpec_v1_chainName",
+          "chainSpec_v1_genesisHash",
+          "chainSpec_v1_properties",
+          "chain_getBlock",
+          "chain_getBlockHash",
+          "chain_getFinalisedHead",
+          "chain_getFinalizedHead",
+          "chain_getHead",
+          "chain_getHeader",
+          "chain_getRuntimeVersion",
+          "chain_subscribeAllHeads",
+          "chain_subscribeFinalisedHeads",
+          "chain_subscribeFinalizedHeads",
+          "chain_subscribeNewHead",
+          "chain_subscribeNewHeads",
+          "chain_subscribeRuntimeVersion",
+          "chain_unsubscribeAllHeads",
+          "chain_unsubscribeFinalisedHeads",
+          "chain_unsubscribeFinalizedHeads",
+          "chain_unsubscribeNewHead",
+          "chain_unsubscribeNewHeads",
+          "chain_unsubscribeRuntimeVersion",
+          "childstate_getKeys",
+          "childstate_getKeysPaged",
+          "childstate_getKeysPagedAt",
+          "childstate_getStorage",
+          "childstate_getStorageEntries",
+          "childstate_getStorageHash",
+          "childstate_getStorageSize",
+          "dev_getBlockStats",
+          "grandpa_proveFinality",
+          "grandpa_roundState",
+          "grandpa_subscribeJustifications",
+          "grandpa_unsubscribeJustifications",
+          "mmr_generateAncestryProof",
+          "mmr_generateProof",
+          "mmr_root",
+          "mmr_verifyProof",
+          "mmr_verifyProofStateless",
+          "offchain_localStorageClear",
+          "offchain_localStorageGet",
+          "offchain_localStorageSet",
+          "payment_queryFeeDetails",
+          "payment_queryInfo",
+          "rpc_methods",
+          "state_call",
+          "state_callAt",
+          "state_callRecorded",
+          "state_getChildReadProof",
+          "state_getKeys",
+          "state_getKeysPaged",
+          "state_getKeysPagedAt",
+          "state_getMetadata",
+          "state_getPairs",
+          "state_getReadProof",
+          "state_getRuntimeVersion",
+          "state_getStorage",
+          "state_getStorageAt",
+          "state_getStorageHash",
+          "state_getStorageHashAt",
+          "state_getStorageSize",
+          "state_getStorageSizeAt",
+          "state_queryStorage",
+          "state_queryStorageAt",
+          "state_subscribeRuntimeVersion",
+          "state_subscribeStorage",
+          "state_traceBlock",
+          "state_trieMigrationStatus",
+          "state_unsubscribeRuntimeVersion",
+          "state_unsubscribeStorage",
+          "statement_submit",
+          "statement_subscribeStatement",
+          "statement_unsubscribeStatement",
+          "subscribe_newHead",
+          "sync_state_genSyncSpec",
+          "system_accountNextIndex",
+          "system_addLogFilter",
+          "system_addReservedPeer",
+          "system_chain",
+          "system_chainType",
+          "system_dryRun",
+          "system_dryRunAt",
+          "system_health",
+          "system_localListenAddresses",
+          "system_localPeerId",
+          "system_name",
+          "system_nodeRoles",
+          "system_peers",
+          "system_properties",
+          "system_removeReservedPeer",
+          "system_reservedPeers",
+          "system_resetLogFilter",
+          "system_syncState",
+          "system_unstable_networkState",
+          "system_version",
+          "transactionWatch_v1_submitAndWatch",
+          "transactionWatch_v1_unwatch",
+          "transaction_v1_broadcast",
+          "transaction_v1_stop",
+          "unsubscribe_newHead"
+        ]
+      }
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_block_gas_limit",
+        "0x",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0xffffffffffffffff000000000000000000000000000000000000000000000000"
+    },
+    {
+      "url": "https://test-node-v3.portaldot.dev",
+      "method": "state_call",
+      "params": [
+        "ReviveApi_max_extrinsic_weight_in_gas",
+        "0x",
+        "0x226aec13813aca0f13edf2ae3f029b4341898b75c276b181ff178f49485a6176"
+      ],
+      "result": "0x0174053f47000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "generatedAtMs": 1793018489327,
+  "conclusion": {
+    "decodeBug": false,
+    "rootCauseOfZero": "Not a decode bug. ContractResultV1.weight_required is Weight{ref_time: Compact<u64>, proof_size: Compact<u64>}; the polkadot.js metadata decode and an independent hand decode of the raw SCALE bytes agree (proof_size compact byte 0x00). On V3 spec 3002 Revive's contract-execution meter does not charge proof_size: weight_required.proof_size is 0 with gas_limit None, at the block max_extrinsic, and with an explicit proof_size LIMIT of 0 the instantiate still succeeds (only ref_time triggers OutOfGas, Module 80 error 0x03). System BlockWeights has max_block.proof_size = u64::MAX (standalone chain, PoV not bounded). The old escrow-*-dryrun 0s are therefore real readings, not a bug; those files are unchanged.",
+    "measuredProofSize": "The only non-zero, measured proof_size is the extrinsic-level static weight of revive.instantiate_with_code: TransactionPaymentCallApi_query_call_info gives pre-dispatch proof_size = weight_limit.proof_size + 6,823 (today, both variants). On chain, deploy at #102843 ext 1 (checkpoint #102840) was charged ExtrinsicSuccess weight {ref_time 1,524,333,644, proof_size 19,007} with a 1,000,000 proof limit, i.e. the whole execution proof limit was refunded and only the static part was charged.",
+    "recommendedDeployLimit": "weight_limit = { ref_time: weight_required.ref_time * 1.2 (dry run), proof_size: a stated non-zero cap, e.g. 1,000,000 as in #102840 (refunded; costs ~0.0003 tPOT extra pre-dispatch fee) }, and check the whole extrinsic with query_call_info: pre-dispatch proof_size must equal cap + measured static overhead. Do NOT relax Sentinel's rule to accept 0 from weight_required; the dry run's 0 means 'not metered', which still is not a measured bound."
+  }
+}
