@@ -1,3 +1,5 @@
+import { ProofRows } from "./ProofRows";
+import { proofRows } from "../lib/statuslabels";
 import {
   loadChainFns,
   blockDetailText,
@@ -1020,6 +1022,10 @@ export function LivePanel({
                 </>
               )}
             </dl>
+            {/* Submitted only after checkBeforeSubmit passed, which requires the signed dry run to be ok. */}
+            <ProofRows
+              rows={proofRows(out, "live", { signedDryRun: out.submitted ? "ok" : undefined })}
+            />
           </>
         )}
       </div>
