@@ -108,7 +108,73 @@ export interface PreSigned {
   /** The `now` createApproval was called with (ISO); with approvalInput it reproduces approval.hash. */
   approvedAt: string;
   preflight: PreflightRes;
+  /**
+   * Live mode only: the Manifest the plan was freshly compiled from and the live facts it was compiled against. The
+   * submit gate re-checks the signed call bytes against a fresh compile of this Manifest (plan_bytes_*).
+   */
+  live?: { manifest: unknown; liveFacts: unknown };
 }
+
+/**
+ * Live mode for preSign: the plan is ALWAYS compiled fresh from the Manifest against the live facts. A stored plan
+ * (e.g. the recorded console/src/demo/v3-demo-transfer.json) is never signed: if one is passed in and it isn't exactly
+ * what the Manifest compiles to now, signing is refused (STORED_PLAN_REFUSED).
+ */
+export interface LiveCompile {
+  manifest: unknown;
+  /** @seam/compiler/browser compile(manifest, facts). */
+  compile: (manifest: unknown, facts: unknown) => unknown;
+}
+
+/** Live mode for preSubmit: fresh reads right before each send. Unknown stays undefined and blocks (live_*_missing). */
+export interface LiveReads {
+  readBlockNumber: () => Promise<number | undefined>;
+  readAccountNonce: () => Promise<number | undefined>;
+}
+
+/** Plain words for every gate block / pass code the live console can show. Unknown codes are shown as-is. */
+export const BLOCK_CODE_TEXT: Record<string, string> = {
+  STORED_PLAN_REFUSED:
+    "A stored plan was given for signing. The live console only signs a plan compiled fresh from the Manifest on the live runtime.",
+  LIVE_COMPILE_FAILED:
+    "The Manifest did not compile on the live runtime, so nothing will be signed.",
+  PLAN_BYTES_MISMATCH:
+    "The plan's call bytes are not what the Manifest compiles to on the live runtime (checked before signing).",
+  live_block_missing: "The current block number couldn't be read, so the send is blocked.",
+  live_nonce_missing:
+    "The signer's current account nonce couldn't be read, so the send is blocked.",
+  live_manifest_missing: "The Manifest wasn't given, so the call bytes can't be checked. Blocked.",
+  live_facts_missing:
+    "The live runtime facts weren't given, so the call bytes can't be checked. Blocked.",
+  live_signed_calls_missing: "Not every call to sign has signed bytes, so the send is blocked.",
+  manifest_digest_mismatch: "The Manifest doesn't match the one that was approved.",
+  live_facts_mismatch: "The runtime changed between compiling the plan and sending it.",
+  plan_bytes_mismatch:
+    "The signed call bytes are not what the Manifest compiles to on the live runtime.",
+  plan_bytes_verified:
+    "A fresh compile of the Manifest on the live runtime matches every signed call byte.",
+  mortality_expired: "The signing window (mortality) has passed. Approve and sign again.",
+  mortality_invalid: "The current block is outside the signed transaction's validity window.",
+  mortality_valid: "The current block is inside the signed transaction's validity window.",
+  nonce_stale: "The account nonce has moved past this transaction's nonce (already used).",
+  nonce_gap: "The account nonce is behind this transaction's nonce (an earlier one is missing).",
+  nonce_current: "The transaction's nonce is the account's current nonce.",
+  policy_result_forged:
+    "The policy result doesn't hold up: re-running the policy doesn't reproduce it.",
+  policy_result_unverified:
+    "The policy result wasn't produced by the policy engine here and couldn't be re-checked.",
+  DEPLOY_PROOF_SIZE_UNKNOWN:
+    "The deploy's proof size is unknown (a dry run reporting 0 is not a limit that passed), so the deploy is blocked.",
+  DEPLOY_GAS_LIMIT_MISSING: "The deploy has no explicit gas and weight limit, so it is blocked.",
+  policy_result_reproduced: "Re-running the policy reproduced this exact allowed result.",
+};
+
+/** One line per code: "code: plain words". */
+export function blockCodeText(code: string): string {
+  return `${code}: ${BLOCK_CODE_TEXT[code] ?? "no plain description; see the gate message."}`;
+}
+
+const planDigestOf = (p: unknown) => (p as { planDigest?: string } | undefined)?.planDigest;
 
 const no = (message: string): { ok: false; reason: "unavailable"; message: string } => ({
   ok: false,
@@ -132,8 +198,29 @@ export async function preSign(args: {
   now: Date;
   acknowledgedDowngrade?: boolean;
   gate?: typeof runPolicyGate;
+  /** Live V3: compile fresh from the Manifest, verify the plan bytes at approval. */
+  live?: LiveCompile;
 }): Promise<{ gate?: GateOutcome; res: Res<PreSigned> }> {
-  const { chain, send, input, facts, ctx, now } = args;
+  const { chain, send, facts, ctx, now } = args;
+  let input = args.input;
+  if (args.live) {
+    if (!input?.policy)
+      return {
+        gate: runPolicyGate(undefined),
+        res: no("No policy was provided for this plan, so nothing will be signed."),
+      };
+    if (!args.live.manifest)
+      return { res: no(`${blockCodeText("live_manifest_missing")} Nothing was signed.`) };
+    let fresh: unknown;
+    try {
+      fresh = args.live.compile(args.live.manifest, facts);
+    } catch (e) {
+      return { res: no(`${blockCodeText("LIVE_COMPILE_FAILED")} (${errMsg(e)})`) };
+    }
+    if (input.plan !== undefined && planDigestOf(input.plan) !== planDigestOf(fresh))
+      return { res: no(`${blockCodeText("STORED_PLAN_REFUSED")} Nothing was signed.`) };
+    input = { ...input, plan: fresh, manifest: args.live.manifest, facts };
+  }
   if (!input?.policy || !input.plan)
     return {
       gate: runPolicyGate(undefined),
@@ -166,13 +253,30 @@ export async function preSign(args: {
     };
   }
   const gate = (args.gate ?? runPolicyGate)(
-    { ...input, facts: input.facts ?? facts, preflight },
-    { request: { envelope }, acknowledgedDowngrade: args.acknowledgedDowngrade, now },
+    {
+      ...input,
+      facts: input.facts ?? facts,
+      preflight,
+      // Live: the gate recompiles the Manifest on the live facts (PLAN_BYTES_MISMATCH). Never the recorded plan.
+      ...(args.live ? { manifest: args.live.manifest, liveFacts: facts } : {}),
+    },
+    {
+      request: { envelope },
+      acknowledgedDowngrade: args.acknowledgedDowngrade,
+      now,
+      ...(args.live ? { requirePlanVerified: true } : {}),
+    },
   );
   if (!gate.ok)
     return {
       gate,
-      res: no(`Blocked by policy before signing (${gate.codes.join(", ")}). Nothing was signed.`),
+      res: no(
+        [
+          `Blocked by policy before signing (${gate.codes.join(", ")}).`,
+          ...gate.codes.filter((c) => BLOCK_CODE_TEXT[c]).map(blockCodeText),
+          "Nothing was signed.",
+        ].join(" "),
+      ),
     };
   const plan = input.plan as { manifestDigest: `0x${string}` };
   const fp = (facts as { fingerprint: unknown }).fingerprint;
@@ -186,7 +290,13 @@ export async function preSign(args: {
     fingerprint: fp,
     ...(args.acknowledgedDowngrade ? { acknowledgedDowngrade: true } : {}),
   };
-  const a = createApproval({ ...approvalInput, now } as never);
+  const a = createApproval({
+    ...approvalInput,
+    now,
+    ...(args.live
+      ? { manifest: args.live.manifest, liveFacts: facts, requirePlanVerified: true }
+      : {}),
+  } as never);
   if (!a.ok) return { gate, res: no(`${a.reason} Nothing was signed.`) };
   return {
     gate,
@@ -198,6 +308,7 @@ export async function preSign(args: {
         approvalInput,
         approvedAt: now.toISOString(),
         preflight,
+        ...(args.live ? { live: { manifest: args.live.manifest, liveFacts: facts } } : {}),
       },
     },
   };
@@ -231,6 +342,8 @@ export async function preSubmit(args: {
    * the index being sent, and the receipts of the earlier steps. Atomic / single-call plans leave these out.
    */
   sequential?: { signedExtrinsics: string[]; sendIndex: number; previousSteps: unknown[] };
+  /** Live V3 send: required when pre.live is set (checkBeforeSubmit live: true). */
+  liveReads?: LiveReads;
 }): Promise<
   | {
       ok: true;
@@ -244,6 +357,8 @@ export async function preSubmit(args: {
   let report: PreflightReportRes | undefined;
   let current: unknown;
   let currentMetadataHex: string | undefined;
+  let currentBlockNumber: number | undefined;
+  let currentAccountNonce: number | undefined;
   try {
     // preflightReport runs the same preflight; its .result is exactly what preflight returns, so the gate is unchanged.
     if (chain.preflightReport) {
@@ -258,6 +373,10 @@ export async function preSubmit(args: {
     const fresh = await args.freshFingerprint();
     current = fresh?.fingerprint;
     currentMetadataHex = fresh?.metadataHex;
+    if (pre.live && args.liveReads) {
+      currentBlockNumber = await args.liveReads.readBlockNumber();
+      currentAccountNonce = await args.liveReads.readAccountNonce();
+    }
   } catch (e) {
     return no(`Could not re-check the signed transaction, so it was not sent: ${errMsg(e)}`);
   }
@@ -265,6 +384,29 @@ export async function preSubmit(args: {
   const plan = pre.approvalInput.plan as { mode?: string };
   const preparedFingerprint = (facts as { fingerprint: unknown }).fingerprint;
   const preparedMetadataHex = (facts as { source?: { metadataHex?: string } })?.source?.metadataHex;
+  const decode = chain.signedExtrinsicDecoder(facts, pre.approvalInput.envelope);
+  // Live: the trusted decoder's calls (memory only). Undecodable -> left out, so live_signed_calls_missing blocks.
+  let signedCalls: string[] = [];
+  if (pre.live) {
+    try {
+      const calls = all.map((x) => (decode(x as `0x${string}`) as { call?: string } | null)?.call);
+      signedCalls = calls.every((c) => typeof c === "string") ? (calls as string[]) : [];
+    } catch {
+      signedCalls = [];
+    }
+  }
+  const liveArgs = pre.live
+    ? {
+        live: true,
+        manifest: pre.live.manifest,
+        liveFacts: pre.live.liveFacts,
+        currentBlockNumber,
+        currentAccountNonce,
+        requireEvaluatedPolicyResult: true,
+        // Lets the engine re-run the policy for a restored (not in-process) result.
+        policyEvaluation: { facts: pre.live.liveFacts, manifest: pre.live.manifest },
+      }
+    : {};
   let check: ReturnType<typeof checkBeforeSubmit>;
   try {
     check = checkBeforeSubmit({
@@ -276,9 +418,9 @@ export async function preSubmit(args: {
       // CheckMetadataHash mode comes only from the trusted decoder; the console never supplies or fakes it.
       preparedMetadataHex,
       currentMetadataHex,
-      signedCalls: [],
+      signedCalls,
       signedExtrinsics: all,
-      decodeSignedExtrinsic: chain.signedExtrinsicDecoder(facts, pre.approvalInput.envelope),
+      decodeSignedExtrinsic: decode,
       requireTrustedDecoder: true,
       signedDryRun: pf.steps.map((s) => s.dryRun),
       ...(plan.mode === "sequential"
@@ -289,6 +431,7 @@ export async function preSubmit(args: {
         : {}),
       now: args.now,
       store: args.store,
+      ...liveArgs,
     } as never);
   } catch (e) {
     return no(`The submit gate failed, so nothing was sent: ${errMsg(e)}`);
@@ -312,7 +455,7 @@ export async function preSubmit(args: {
     const extra = blockDetail ? ` ${blockDetailText(blockDetail)}` : "";
     return {
       ...no(
-        `Blocked at submit (${check.reasons.map((r) => r.code).join(", ")}): ${check.reasons.map((r) => r.message).join(" ")} Nothing was sent.${extra}`,
+        `Blocked at submit (${check.reasons.map((r) => r.code).join(", ")}): ${check.reasons.map((r) => r.message).join(" ")} In plain words: ${check.reasons.map((r) => blockCodeText(r.code)).join(" ")} Nothing was sent.${extra}`,
       ),
       ...(blockDetail ? { blockDetail } : {}),
     };
@@ -364,4 +507,35 @@ export async function engineApprovalCheck(args: {
       message: `The policy check could not run, so the plan can't be approved: ${errMsg(e)}`,
     };
   }
+}
+
+/** Read-only live reads for the submit gate. Anything unreadable stays undefined, and the gate blocks on it. */
+export function liveReadsFor(send: Send, signer: string): LiveReads {
+  return {
+    async readBlockNumber() {
+      try {
+        const h = (await send("chain_getHeader", [])) as { number?: unknown } | null;
+        const n = typeof h?.number === "string" ? Number.parseInt(h.number, 16) : h?.number;
+        return typeof n === "number" && Number.isSafeInteger(n) ? n : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    async readAccountNonce() {
+      try {
+        const n = await send("system_accountNextIndex", [signer]);
+        return typeof n === "number" && Number.isSafeInteger(n) ? n : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+  };
+}
+
+/** The live compile: @seam/compiler/browser compile, loaded on demand. */
+export async function loadLiveCompile(manifest: unknown): Promise<LiveCompile> {
+  const c = (await import("@seam/compiler/browser")) as unknown as {
+    compile: (m: unknown, f: unknown) => unknown;
+  };
+  return { manifest, compile: (m, f) => c.compile(m, f) };
 }
