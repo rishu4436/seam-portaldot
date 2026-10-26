@@ -14,6 +14,13 @@ import {
   verifyPlan,
 } from "@seam/compiler";
 import {
+  callsToSign,
+  checkBeforeSubmit,
+  checkDeployStep,
+  InMemoryApprovalStore,
+  type BoundApproval,
+  type DecodedSignedExtrinsic,
+  type Hex,
   createApproval,
   definePolicy,
   evaluatePolicy,
@@ -269,4 +276,170 @@ it("createApproval refuses a template plan whose bytes were edited (digest recom
   const out = approve(res, edited);
   expect(out.ok).toBe(false);
   expect((out as { reason: string }).reason).toMatch(/call bytes/);
+});
+
+// ---- Live submit gate (checkBeforeSubmit live: true, Sentinel's call shape from 4dd5e1a) ----
+// Synthetic: the "signed extrinsics" are opaque indices and the test decoder (metadataHashMode 0) returns the call
+// bytes for each; nothing is signed or sent.
+function liveSubmit(
+  id: TemplateId,
+  over: Record<string, unknown> = {},
+  edit?: (calls: Hex[]) => Hex[],
+) {
+  const c = CASES[id];
+  const res = gate(id, c.params, c.policy);
+  const out = approve(res);
+  if (!out.ok) throw new Error(`${id}: ${(out as { reason: string }).reason}`);
+  const { manifest, plan, policy, preflight } = res.ctx;
+  const calls = callsToSign(plan as never) as Hex[];
+  const decoded = edit ? edit(calls) : calls;
+  const xts = calls.map((_, n) => `0x${n.toString(16).padStart(2, "0")}` as Hex);
+  const decodeSignedExtrinsic = (x: Hex): DecodedSignedExtrinsic => {
+    const n = Number.parseInt(x.slice(2), 16);
+    return {
+      call: decoded[n]!,
+      signer: ALICE,
+      nonce: envelope.nonce + n,
+      genesisHash: facts.fingerprint.genesisHash as Hex,
+      signatureValid: true,
+      metadataHashMode: 0,
+    };
+  };
+  return checkBeforeSubmit({
+    manifestDigest: plan.manifestDigest,
+    plan: plan as never,
+    envelope,
+    preflight,
+    policy,
+    policyResult: res,
+    approval: (out as { approval: BoundApproval }).approval,
+    preparedFingerprint: facts.fingerprint as never,
+    currentFingerprint: facts.fingerprint as never,
+    signedCalls: calls,
+    signedExtrinsics: xts,
+    decodeSignedExtrinsic,
+    requireTrustedDecoder: true,
+    signedDryRun: calls.map(() => "ok" as const),
+    // Sequential plans send one step at a time; an atomic plan is one transaction (no sendIndex).
+    ...(plan.mode === "sequential" ? { sendIndex: 0, previousSteps: [] } : {}),
+    store: new InMemoryApprovalStore(),
+    now: NOW,
+    live: true,
+    manifest: manifest as never,
+    liveFacts: facts as never,
+    currentBlockNumber: envelope.checkpoint.number + 1,
+    currentAccountNonce: envelope.nonce,
+    requireEvaluatedPolicyResult: true,
+    policyEvaluation: { facts: facts as never, manifest: manifest as never },
+    ...over,
+  });
+}
+const codesOf = (r: { reasons: { code: string }[] }) => r.reasons.map((x) => x.code);
+
+describe.each(Object.keys(CASES) as TemplateId[])(
+  "template %s through the live submit gate (offline, synthetic chain reads)",
+  (id) => {
+    it("honest live send passes with plan_bytes_verified", () => {
+      const r = liveSubmit(id);
+      expect(r.ok, JSON.stringify(r.reasons)).toBe(true);
+      expect(r.passed.map((x) => x.code)).toContain("plan_bytes_verified");
+    });
+    it.each([
+      ["live_block_missing", { currentBlockNumber: undefined }],
+      ["live_nonce_missing", { currentAccountNonce: undefined }],
+      ["live_manifest_missing", { manifest: undefined }],
+      ["live_facts_missing", { liveFacts: undefined }],
+    ] as const)("blocks %s", (code, over) => {
+      const r = liveSubmit(id, over);
+      expect(r.ok).toBe(false);
+      expect(codesOf(r)).toContain(code);
+    });
+    it("blocks edited signed call bytes with plan_bytes_mismatch", () => {
+      const r = liveSubmit(id, {}, (calls) =>
+        calls.map((x, n) =>
+          n === 0 ? ((x.slice(0, -2) + (x.endsWith("00") ? "01" : "00")) as Hex) : x,
+        ),
+      );
+      expect(r.ok).toBe(false);
+      expect(codesOf(r)).toContain("plan_bytes_mismatch");
+    });
+    it("blocks a stale nonce with nonce_stale", () => {
+      const r = liveSubmit(id, { currentAccountNonce: envelope.nonce + 1 });
+      expect(codesOf(r)).toContain("nonce_stale");
+    });
+    it("blocks an expired mortality with mortality_expired", () => {
+      const r = liveSubmit(id, {
+        currentBlockNumber: envelope.checkpoint.number + envelope.mortalityBlocks,
+      });
+      expect(codesOf(r)).toContain("mortality_expired");
+    });
+  },
+);
+
+it("live gate: missing signed calls and extrinsics blocks with live_signed_calls_missing", () => {
+  const r = liveSubmit("asset-transfer", {
+    signedCalls: [],
+    signedExtrinsics: undefined,
+    decodeSignedExtrinsic: undefined,
+    requireTrustedDecoder: false,
+  });
+  expect(r.ok).toBe(false);
+  expect(codesOf(r)).toContain("live_signed_calls_missing");
+});
+
+// ---- restricted-deploy: proof_size 0 / missing must count as UNKNOWN (Sentinel's deploy rule), never as a pass ----
+// deploy.ts proofSize "0" is fixed by Sentinel's 66b29c8 (not on this base yet). Remaining GAP: packages/policy/src/policy.ts proof_size_limit skips the preflight estimate whenever the step
+// has its own decodedArgs.proofSize, so a preflight proofSize of 0 or missing is never looked at. Written as it.fails
+// until the policy fix (bot3/presign-fixture) lands; flip to it() then.
+describe("restricted-deploy with proof_size 0 or missing", () => {
+  const deployCase = CASES["restricted-deploy"];
+  // Enabled once 66b29c8 (Sentinel, bot3/presign-fixture) merges: proofSize "0" -> DEPLOY_PROOF_SIZE_UNKNOWN.
+  it.fails("a manifest proofSize of 0 is blocked as DEPLOY_PROOF_SIZE_UNKNOWN", () => {
+    const res = gate("restricted-deploy", { ...deployParams, proofSize: "0" }, deployCase.policy);
+    expect(res.allowed).toBe(false);
+    expect(
+      res.rules.some(
+        (x) =>
+          x.rule === "deploy_gas_limit" &&
+          x.outcome === "block" &&
+          JSON.stringify(x).includes("DEPLOY_PROOF_SIZE_UNKNOWN"),
+      ),
+    ).toBe(true);
+  });
+  it("a deploy step with no proof size blocks with DEPLOY_GAS_LIMIT_MISSING", () => {
+    const r = instantiateTemplate("restricted-deploy", deployParams, facts);
+    if (!r.ok) throw new Error("instantiate");
+    const plan = compile(r.manifest, facts);
+    const step = plan.steps[0]!;
+    const args = { ...(step.decodedArgs as Record<string, unknown>) };
+    delete args.proofSize;
+    const out = checkDeployStep(
+      { ...step, decodedArgs: args } as never,
+      deployCase.policy(r.codeHash).deploy as never,
+      plan.signer.publicKey as Hex,
+    );
+    expect(
+      out.some(
+        (x) =>
+          x.rule === "deploy_gas_limit" &&
+          x.outcome === "block" &&
+          JSON.stringify(x).includes("DEPLOY_GAS_LIMIT_MISSING"),
+      ),
+    ).toBe(true);
+  });
+  for (const [what, proofSize] of [
+    ["0", { value: "0" }],
+    ["missing", undefined],
+  ] as const) {
+    it.fails(`a preflight proof_size ${what} is treated as unknown and blocked`, () => {
+      const r = instantiateTemplate("restricted-deploy", deployParams, facts);
+      if (!r.ok) throw new Error("instantiate");
+      const plan = compile(r.manifest, facts);
+      const preflight = preflightFor(plan);
+      preflight.steps = preflight.steps.map((s) => ({ ...s, proofSize: proofSize as never }));
+      const policy = definePolicy({ ...deployCase.policy(r.codeHash), maxProofSize: "200000" });
+      const res = evaluatePolicy({ policy, plan, facts, preflight, manifest: r.manifest });
+      expect(res.allowed).toBe(false);
+    });
+  }
 });
