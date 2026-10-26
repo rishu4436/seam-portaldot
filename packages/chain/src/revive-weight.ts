@@ -101,3 +101,19 @@ export function reviveWeightBound(dryRun: DryRunLike, margin: number): ReviveWei
     marginPct: margin * 100,
   };
 }
+
+/**
+ * Static proof-size overhead of an extrinsic, from TransactionPaymentCallApi_query_call_info:
+ * total pre-dispatch proof_size minus the explicit proof_size cap that was put in the call.
+ * Throws when the cap is 0 (unknown, not a bound) or the total does not cover the cap.
+ */
+export function staticProofOverhead(
+  totalProofSize: string | number | bigint,
+  cap: string | number | bigint,
+): bigint {
+  const total = BigInt(totalProofSize);
+  const c = BigInt(cap);
+  if (c <= 0n) throw new Error("proof_size cap must be non-zero (0 means unknown, not a bound)");
+  if (total < c) throw new Error(`query_call_info proof_size ${total} is below the cap ${c}`);
+  return total - c;
+}

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decodeWeightV2Prefix, reviveWeightBound } from "../src/revive-weight.js";
+import {
+  decodeWeightV2Prefix,
+  reviveWeightBound,
+  staticProofOverhead,
+} from "../src/revive-weight.js";
 
 // Raw prefix of the real ReviveApi_instantiate answer for SeamEscrowOne-r1 on V3 spec 3002
 // (evidence/testnet-v3/revive-proof-size-1793018489327.json): two compact Weights, proof_size byte 0x00.
@@ -52,5 +56,18 @@ describe("reviveWeightBound", () => {
   });
   it("rejects a bad margin", () => {
     expect(() => reviveWeightBound({ weightRequired: { refTime: 1, proofSize: 1 } }, -1)).toThrow();
+  });
+});
+
+describe("staticProofOverhead", () => {
+  it("is total minus the explicit cap (V3 #203373 measurement: 1006823 - 1000000)", () => {
+    expect(staticProofOverhead("1006823", "1000000")).toBe(6823n);
+    expect(staticProofOverhead(1006823, 1_000_000n)).toBe(6823n);
+  });
+  it("refuses a 0 cap: 0 is unknown, not a bound", () => {
+    expect(() => staticProofOverhead(6823, 0)).toThrow(/non-zero/);
+  });
+  it("refuses a total below the cap", () => {
+    expect(() => staticProofOverhead(999_999, 1_000_000)).toThrow(/below the cap/);
   });
 });

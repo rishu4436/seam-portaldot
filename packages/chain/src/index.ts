@@ -190,6 +190,7 @@ export {
 export {
   decodeWeightV2Prefix,
   reviveWeightBound,
+  staticProofOverhead,
   type ReviveWeightBound,
   type WeightV2,
 } from "./revive-weight.js";
