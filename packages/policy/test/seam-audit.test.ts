@@ -281,7 +281,14 @@ function stepOf(kind: (typeof ALL_KINDS)[number], args: Record<string, string> =
   const [p, c] = kind === "revive.call" ? [60, 6] : [52, 3];
   const decoded =
     kind === "revive.call"
-      ? { contract: REV, value: "0", gasLimit: "5000000000", data: "0x633aa551" }
+      ? {
+          contract: REV,
+          value: "0",
+          gasLimit: "5000000000",
+          // Every compiled revive.call carries an explicit proof size cap (a missing one now blocks CALL_GAS_LIMIT_MISSING).
+          proofSize: "500",
+          data: "0x633aa551",
+        }
       : { recipient: H.BOB, assetId: "1", amount: "1" };
   return {
     actionId: "s1",

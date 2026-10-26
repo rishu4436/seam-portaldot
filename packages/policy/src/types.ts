@@ -14,6 +14,16 @@ export interface PreflightStep {
   storageDeposit: Estimate;
   /** Proof size (PoV) part of the weight, on runtimes with two-part weights. */
   proofSize?: Estimate;
+  /**
+   * Revive steps (same name and type as @seam/chain's preflight): dry-run weight_required.proof_size
+   * (ReviveApi_call / _instantiate). 0 or unknown = not metered, never a bound. Non-zero must be <= the step cap.
+   */
+  dryRunProofSize?: Estimate;
+  /**
+   * Revive steps (same as @seam/chain): total proof_size of TransactionPaymentCallApi_query_call_info, i.e. the step
+   * cap plus the static overhead. Must be strictly greater than the cap. Only this satisfies requireMeasuredProofSize.
+   */
+  callInfoProofSize?: Estimate;
   dryRun: "ok" | "failed" | "unknown";
   note?: string;
 }

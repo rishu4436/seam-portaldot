@@ -143,6 +143,8 @@ export interface GateOptions {
    * fresh compile matches. Default off (SDK replay / recorded plans).
    */
   requirePlanVerified?: boolean;
+  /** Block deploy / revive.call steps without a measured query_call_info proof size (PROOF_SIZE_CALL_INFO_MISSING). */
+  requireMeasuredProofSize?: boolean;
   now?: Date;
 }
 export interface GateResult {
@@ -162,9 +164,11 @@ export function gatePolicy(input: PolicyInput, opts: GateOptions = {}): GateResu
   let result: PolicyResult | undefined;
   let explanations: RuleExplanation[];
   try {
-    result = evaluatePolicy(
-      opts.requirePlanVerified ? { ...input, requirePlanVerified: true } : input,
-    );
+    result = evaluatePolicy({
+      ...input,
+      ...(opts.requirePlanVerified ? { requirePlanVerified: true } : {}),
+      ...(opts.requireMeasuredProofSize ? { requireMeasuredProofSize: true } : {}),
+    });
     explanations = explainPolicy(result);
   } catch (e) {
     explanations = [

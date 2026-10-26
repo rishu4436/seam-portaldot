@@ -142,6 +142,11 @@ export interface PolicyInput {
   requirePlanVerified?: boolean;
   /** Passed to verifyPlan's compile. Defaults to plan.mode === "atomic_unverified". */
   allowAtomicUnverified?: boolean;
+  /**
+   * Deploy / revive.call steps: block (PROOF_SIZE_CALL_INFO_MISSING) unless the preflight step carries a measured
+   * callInfoProofSize from TransactionPaymentCallApi_query_call_info. Default off: a missing reading is only noted.
+   */
+  requireMeasuredProofSize?: boolean;
 }
 
 /**
@@ -175,6 +180,7 @@ export function evaluatePolicy({
   liveFacts,
   requirePlanVerified,
   allowAtomicUnverified,
+  requireMeasuredProofSize,
 }: PolicyInput): PolicyResult {
   const rules: PolicyRuleResult[] = [];
   const pass = (rule: string, reason: string, actionId?: string) =>
@@ -489,7 +495,30 @@ export function evaluatePolicy({
     };
     capCheck("native_value_limit", "native value", d.value, policy.maxNativeValue);
     capCheck("gas_limit", "gas limit", d.gasLimit, policy.maxGasLimit);
-    capCheck("proof_size_limit", "proof size limit", d.proofSize, policy.maxProofSize);
+    if (step.kind === "revive.call" && (d.proofSize === undefined || d.proofSize === null))
+      rules.push({
+        rule: "proof_size_limit",
+        outcome: "block",
+        code: "CALL_GAS_LIMIT_MISSING",
+        reason:
+          "Blocked: the contract call sets no proof size limit, so its weight can't be bounded",
+        actionId: id,
+      });
+    else if (
+      step.kind === "revive.call" &&
+      typeof d.proofSize === "string" &&
+      /^0+$/.test(d.proofSize)
+    )
+      // V3 dry runs report proof_size 0 when the PoV part isn't measured: a 0 bound is unknown, never a bound.
+      rules.push({
+        rule: "proof_size_limit",
+        outcome: "block",
+        code: "CALL_PROOF_SIZE_UNKNOWN",
+        reason:
+          "Blocked: the contract call's proof size limit is 0, which means the proof size (PoV) part of its weight is unknown, so the call can't be bounded",
+        actionId: id,
+      });
+    else capCheck("proof_size_limit", "proof size limit", d.proofSize, policy.maxProofSize);
     // storageDepositLimit: null means the developer chose "no limit" (Bot 2's compiler never defaults to it).
     const sdl = (d as Record<string, string | null | undefined>).storageDepositLimit;
     if (sdl === null) {
@@ -561,11 +590,101 @@ export function evaluatePolicy({
         policy.allowUnknown.storageDeposit,
         p.actionId,
       );
-      if (policy.maxProofSize !== undefined) {
-        // A contract call's own proofSize limit already bounds what it can use (checked above), and the node's
-        // estimate for it mostly echoes that limit, so the estimate isn't checked again for those steps.
-        const own = plan.steps.find((s) => s.actionId === p.actionId)?.decodedArgs.proofSize;
-        if (own !== undefined && own !== null)
+      const pstep = plan.steps.find((s) => s.actionId === p.actionId);
+      const own = pstep?.decodedArgs.proofSize;
+      const zero = (v: unknown) => typeof v === "string" && /^0+$/.test(v);
+      // An estimate of 0 is what V3 reports when PoV isn't measured: unknown, never a passing bound.
+      const estPs: Estimate =
+        p.proofSize &&
+        !p.proofSize.unknown &&
+        p.proofSize.value !== undefined &&
+        !zero(p.proofSize.value)
+          ? p.proofSize
+          : { unknown: true };
+      if (
+        pstep &&
+        (pstep.kind === "revive.call" || pstep.kind === "revive.instantiate_with_code")
+      ) {
+        // Deploys and revive calls are bounded by their own explicit non-zero proofSize cap (validated in the step
+        // rules: CALL_* / DEPLOY_* codes). On V3 spec 3002 Revive never charges proof_size, so the dry-run estimate is
+        // 0: UNKNOWN, never a bound, never compared with a cap as if it were a measurement.
+        const capOk = isUint(own as string) && !zero(own);
+        const cap = capOk ? BigInt(own as string) : 0n;
+        const fail = (code: string, reason: string) =>
+          rules.push({
+            rule: "proof_size_limit",
+            outcome: "block",
+            code,
+            reason,
+            actionId: p.actionId,
+          });
+        // Two explicit sources, kept apart: callInfoProofSize (query_call_info: cap + overhead, must be > cap) and
+        // dryRunProofSize (weight_required: must fit the cap; 0 or missing is unknown, never a bound). The legacy
+        // preflight proofSize is always payment_queryInfo (chain preflight-core.ts); it is read as call info only
+        // when neither new field is given, and never satisfies requireMeasuredProofSize.
+        const val = (e: Estimate | undefined) =>
+          e && !e.unknown && e.value !== undefined && !zero(e.value) ? e.value : undefined;
+        const ciGiven = val(p.callInfoProofSize);
+        const dr = val(p.dryRunProofSize);
+        const newFields = p.callInfoProofSize !== undefined || p.dryRunProofSize !== undefined;
+        const legacy = !newFields && !estPs.unknown ? estPs.value : undefined;
+        const ci = ciGiven ?? legacy;
+        const drKnown = dr !== undefined;
+        if (!capOk)
+          unknown(
+            "proof_size_limit",
+            "the step has no valid proof size cap, so its proof size can't be bounded",
+            false,
+            p.actionId,
+          );
+        else if (ciGiven === undefined && requireMeasuredProofSize)
+          fail(
+            "PROOF_SIZE_CALL_INFO_MISSING",
+            "Blocked: this policy needs a measured proof size from query_call_info (callInfoProofSize) for this step, and none was given",
+          );
+        else if (ci !== undefined && (!isUint(ci) || BigInt(ci) <= cap))
+          fail(
+            "PROOF_SIZE_CALL_INFO_MISMATCH",
+            `Blocked: ${legacy !== undefined ? "the preflight proof size (read as legacy payment_queryInfo call info)" : "query_call_info"} reports proof size ${ci}, which is not more than the step's cap of ${own}`,
+          );
+        else if (drKnown && !isUint(dr))
+          block(
+            "proof_size_limit",
+            `Blocked: dry-run proof size "${dr}" is not a whole number.`,
+            p.actionId,
+          );
+        else if (drKnown && BigInt(dr!) > cap)
+          fail(
+            "PROOF_SIZE_ESTIMATE_OVER_LIMIT",
+            `Blocked: the dry run needs proof size ${dr}, more than the step's own limit of ${own}, so it would run out`,
+          );
+        else if (
+          legacy !== undefined &&
+          !newFields &&
+          policy.maxProofSize === undefined &&
+          !requireMeasuredProofSize
+        ) {
+          // Legacy reading that checks out, no policy cap: no rule, so policy results recorded before these rules
+          // (e.g. #102853 / #102862) re-evaluate identically. A failing legacy reading still blocks above.
+        } else {
+          const ciPart =
+            ci === undefined
+              ? "no query_call_info proof size, so the cap wasn't cross-checked against a measurement (limitation)"
+              : legacy !== undefined
+                ? `the preflight proof size ${ci} was read as legacy payment_queryInfo call info (recorded run): cap plus an overhead of ${BigInt(ci) - cap}`
+                : `query_call_info proof size ${ci} is the cap plus an overhead of ${BigInt(ci) - cap}`;
+          const drPart = drKnown
+            ? `dry-run proof size ${dr} fits the cap`
+            : "the dry-run proof size is unknown (0 or missing) and was not used as a bound";
+          pass(
+            "proof_size_limit",
+            `bounded by the step's own proof size cap of ${own}; ${ciPart}; ${drPart}`,
+            p.actionId,
+          );
+        }
+      } else if (policy.maxProofSize !== undefined) {
+        // Other contract calls: their own proofSize limit bounds what they can use (checked above).
+        if (own !== undefined && own !== null && !zero(own))
           pass(
             "proof_size_limit",
             `proof size is bounded by the call's own limit of ${own}`,
@@ -575,7 +694,7 @@ export function evaluatePolicy({
           est(
             "proof_size_limit",
             "proof size",
-            p.proofSize ?? { unknown: true },
+            estPs,
             policy.maxProofSize,
             policy.allowUnknown.proofSize,
             p.actionId,
