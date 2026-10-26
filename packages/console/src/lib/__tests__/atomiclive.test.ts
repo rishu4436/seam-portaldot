@@ -4,7 +4,7 @@
 // submit (nothing is broadcast). The run's receipt is atomic_unverified unless the policy's rollbackProofOk accepts the
 // facts' batch_all rollback proof. Per-step verdicts come from perStepOfBatch + verifyStep on the faked outcome.
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { u8aToHex } from "@polkadot/util";
 import { Keyring } from "@polkadot/keyring";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
@@ -16,7 +16,7 @@ import { atomicStepReceipts } from "../stepverify";
 import { buildLiveReceipt } from "../livereceipt";
 import { runAtomicity } from "../atomicity";
 
-const root = (p: string) => resolve(process.cwd(), "../..", p);
+const root = (p: string) => fileURLToPath(new URL(`../../../../../${p}`, import.meta.url));
 const json = (p: string) => JSON.parse(readFileSync(root(p), "utf8"));
 const demo = json("packages/console/src/demo/v3-demo-transfer.json");
 const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json");
