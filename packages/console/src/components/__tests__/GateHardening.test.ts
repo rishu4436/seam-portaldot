@@ -191,6 +191,9 @@ describe("live gate hardening", () => {
       "STORED_PLAN_REFUSED",
       "DEPLOY_PROOF_SIZE_UNKNOWN",
       "DEPLOY_GAS_LIMIT_MISSING",
+      "CALL_PROOF_SIZE_UNKNOWN",
+      "PROOF_SIZE_CALL_INFO_MISMATCH",
+      "PROOF_SIZE_CALL_INFO_MISSING",
     ]) {
       expect(BLOCK_CODE_TEXT[code], code).toBeTruthy();
       expect(blockCodeText(code)).toBe(`${code}: ${BLOCK_CODE_TEXT[code]}`);

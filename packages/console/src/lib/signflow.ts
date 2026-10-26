@@ -166,6 +166,11 @@ export const BLOCK_CODE_TEXT: Record<string, string> = {
   DEPLOY_PROOF_SIZE_UNKNOWN:
     "The deploy's proof size is unknown (a dry run reporting 0 is not a limit that passed), so the deploy is blocked.",
   DEPLOY_GAS_LIMIT_MISSING: "The deploy has no explicit gas and weight limit, so it is blocked.",
+  CALL_PROOF_SIZE_UNKNOWN:
+    "A call's proof size is unknown (0 or not reported is not a limit that passed), so it is blocked.",
+  PROOF_SIZE_CALL_INFO_MISMATCH:
+    "The proof size in the call info doesn't match what the dry run reported, so it is blocked.",
+  PROOF_SIZE_CALL_INFO_MISSING: "The call info has no proof size, so it is blocked.",
   policy_result_reproduced: "Re-running the policy reproduced this exact allowed result.",
 };
 
