@@ -5,12 +5,16 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-// Two static pages: the console (index.html) and the landing page (landing.html).
+// The site root is the product page. The console is console.html. landing.html stays as the same page.
 export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      input: { console: resolve(here, "index.html"), landing: resolve(here, "landing.html") },
+      input: {
+        site: resolve(here, "index.html"),
+        landing: resolve(here, "landing.html"),
+        console: resolve(here, "console.html"),
+      },
     },
   },
 });
