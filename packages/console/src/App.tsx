@@ -12,13 +12,7 @@ import { V3Evidence } from "./components/V3Evidence";
 import { WalletDemoCard } from "./components/WalletDemo";
 import { ManifestBuilder } from "./components/ManifestBuilder";
 import type { BuilderSelection } from "./components/BuilderPolicy";
-import {
-  approveWalletDemo,
-  walletDemo,
-  walletDemoFacts,
-  walletDemoPlan,
-  WALLET_DEMO_LABEL,
-} from "./lib/walletdemo";
+import { approveWalletDemo, walletDemo, walletDemoFacts, walletDemoPlan } from "./lib/walletdemo";
 import {
   RiskLimits,
   LivePanel,
@@ -503,112 +497,128 @@ export default function App() {
             <small>Execution console</small>
           </div>
         </a>
-        <nav aria-label="Steps">
-          {STEPS.map((s, i) => (
-            <button
-              key={s}
-              aria-current={i === step ? "step" : undefined}
-              className={`navstep ${i === step ? "on" : ""} ${canGo[i] ? "" : "locked"}`}
-              disabled={!canGo[i]}
-              onClick={() => setStep(i)}
-            >
-              <span className="num">{i + 1}</span>
-              {s}
-            </button>
-          ))}
-        </nav>
-        <button
-          aria-pressed={evidence}
-          className={`scenbtn src ${evidence ? "on" : ""}`}
-          style={{ marginTop: 12 }}
-          onClick={() => setEvidence(!evidence)}
-        >
-          <b>Local Portaldot node, real run</b>
-          <span>Spec 1002 evidence view</span>
-        </button>
-        <div className="scen">
-          <small>Mode</small>
-          <ModeSwitch mode={mode} onChange={setMode} />
-          {mode !== "live" && (
-            <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>
-          )}
-          {mode === "live" ? (
-            <>
-              <small style={{ marginTop: 10 }}>Live manifest</small>
+        {mode === "live" ? (
+          <>
+            <p className="sidehint">Testnet console. Do these three things, in order.</p>
+            <ol className="sidesteps">
+              <li>
+                <span>1</span>Choose a transaction
+              </li>
+              <li>
+                <span>2</span>Check the chain
+              </li>
+              <li>
+                <span>3</span>Sign in your wallet
+              </li>
+            </ol>
+          </>
+        ) : (
+          <nav aria-label="Steps">
+            {STEPS.map((s, i) => (
               <button
-                aria-pressed={walletDemoOn}
-                className={`scenbtn ${walletDemoOn ? "on" : ""}`}
-                onClick={() => {
-                  setWalletDemoOn(!walletDemoOn);
-                  setDemoApproval(undefined);
-                }}
+                key={s}
+                aria-current={i === step ? "step" : undefined}
+                className={`navstep ${i === step ? "on" : ""} ${canGo[i] ? "" : "locked"}`}
+                disabled={!canGo[i]}
+                onClick={() => setStep(i)}
               >
-                <b>{WALLET_DEMO_LABEL}</b>
-                <span>1 unit of test asset 806707, strict policy</span>
+                <span className="num">{i + 1}</span>
+                {s}
               </button>
-            </>
-          ) : real ? (
-            TC_SCENARIOS.map((s) => (
-              <button
-                key={s.id}
-                aria-pressed={scenario === s.id}
-                className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                onClick={() => reset(s.id)}
-              >
-                <b>{s.label}</b>
-                <span>{s.hint}</span>
-              </button>
-            ))
-          ) : (
-            SCENARIOS.map((s) => (
-              <button
-                key={s.id}
-                aria-pressed={scenario === s.id}
-                className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                onClick={() => reset(s.id)}
-              >
-                <b>{s.label}</b>
-                <span>{s.hint}</span>
-              </button>
-            ))
-          )}
-        </div>
+            ))}
+          </nav>
+        )}
+        <details className="advanced">
+          <summary>Recorded demos</summary>
+          <button
+            aria-pressed={evidence}
+            className={`scenbtn src ${evidence ? "on" : ""}`}
+            style={{ marginTop: 12 }}
+            onClick={() => setEvidence(!evidence)}
+          >
+            <b>Local Portaldot node, real run</b>
+            <span>Spec 1002 evidence view</span>
+          </button>
+          <div className="scen">
+            <small>Mode</small>
+            <ModeSwitch mode={mode} onChange={setMode} />
+            {mode !== "live" && (
+              <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>
+            )}
+            {mode === "live"
+              ? null
+              : real
+                ? TC_SCENARIOS.map((s) => (
+                    <button
+                      key={s.id}
+                      aria-pressed={scenario === s.id}
+                      className={`scenbtn ${scenario === s.id ? "on" : ""}`}
+                      onClick={() => reset(s.id)}
+                    >
+                      <b>{s.label}</b>
+                      <span>{s.hint}</span>
+                    </button>
+                  ))
+                : SCENARIOS.map((s) => (
+                    <button
+                      key={s.id}
+                      aria-pressed={scenario === s.id}
+                      className={`scenbtn ${scenario === s.id ? "on" : ""}`}
+                      onClick={() => reset(s.id)}
+                    >
+                      <b>{s.label}</b>
+                      <span>{s.hint}</span>
+                    </button>
+                  ))}
+          </div>
+        </details>
       </aside>
 
       <main id="main" tabIndex={-1}>
         <div className="sr" role="status" aria-live="polite">
           {mode === "live" ? "LIVE V3 mode" : `Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}
         </div>
-        <ModeBadge mode={mode} />
+        {mode !== "live" && <ModeBadge mode={mode} />}
         {mode === "live" ? (
           <>
             <header className="top">
               <div>
-                <h1>Connect</h1>
+                <h1>Send a checked transaction</h1>
                 <p className="sub">
-                  Connect your wallet, then read the Portaldot V3 testnet. SEAM never holds keys.
-                  Nothing is signed or sent until you approve a plan and confirm it in the wallet.
+                  Portaldot V3 testnet only. Choose what to send, check it, then sign in your
+                  wallet. SEAM never holds the key. A blocked check is a successful test.
                 </p>
               </div>
             </header>
-            <section className="card guide" aria-label="Volunteer test">
-              <h3>Volunteer test</h3>
-              <ol>
-                <li>Install Polkadot.js, Talisman, or SubWallet. The account prefix is 42.</li>
-                <li>Connect the wallet, connect to the node, then read live facts.</li>
-                <li>
-                  Use the 1-unit wallet demo, or build a plan and approve it only if the policy
-                  gate allows it.
-                </li>
-                <li>
-                  Confirm in the wallet. A block is a successful test. Write down the code and the
-                  screen you stopped on.
-                </li>
-              </ol>
+            <section className="card" aria-label="Choose a transaction">
+              <h3>1. Choose what to send</h3>
+              <div className="choice">
+                <button
+                  type="button"
+                  aria-pressed={!walletDemoOn}
+                  className={walletDemoOn ? "ghost" : ""}
+                  onClick={() => {
+                    setWalletDemoOn(false);
+                    setDemoApproval(undefined);
+                  }}
+                >
+                  Build your own
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={walletDemoOn}
+                  className={walletDemoOn ? "" : "ghost"}
+                  onClick={() => {
+                    setWalletDemoOn(true);
+                    setDemoApproval(undefined);
+                  }}
+                >
+                  Sample transfer
+                </button>
+              </div>
               <p className="muted small">
-                You need testnet tPOT for fees. Do not deploy a contract, and do not point this at
-                mainnet. The full guide is on the{" "}
-                <a href="./index.html#volunteers">product page</a>.
+                The sample sends 1 unit of test asset 806707. You need testnet tPOT for the fee. Do
+                not deploy a contract.
               </p>
             </section>
             {walletDemoOn && (
@@ -722,26 +732,32 @@ export default function App() {
                 {builderEngine && <PolicyGatePanel gate={builderEngine} />}
               </section>
             )}
-            <LivePanel
-              plan={walletDemoOn ? demoPlan : (builderPlan ?? plan)}
-              facts={walletDemoOn ? demoFacts : builderPlan ? builderFacts : facts}
-              approval={walletDemoOn ? demoApproval : builderPlan ? builderApproval : approval}
-              policyInput={walletDemoOn ? demoPolicyInput : builderInput}
-              rebind={
-                !walletDemoOn && builderSel
-                  ? {
-                      planFacts: builderSel.facts,
-                      onRebound: (plan, liveFacts, message) => {
-                        setBuilderSel({ ...builderSel, plan: plan as never, facts: liveFacts });
-                        setBuilderApproval(undefined);
-                        setBuilderEngine(undefined);
-                        setBuilderNote(message);
-                      },
-                    }
-                  : undefined
-              }
-            />
-            <V3Evidence />
+            <section aria-label="Check and sign">
+              <h2 className="stephead">2. Check the chain and sign</h2>
+              <LivePanel
+                plan={walletDemoOn ? demoPlan : (builderPlan ?? plan)}
+                facts={walletDemoOn ? demoFacts : builderPlan ? builderFacts : facts}
+                approval={walletDemoOn ? demoApproval : builderPlan ? builderApproval : approval}
+                policyInput={walletDemoOn ? demoPolicyInput : builderInput}
+                rebind={
+                  !walletDemoOn && builderSel
+                    ? {
+                        planFacts: builderSel.facts,
+                        onRebound: (plan, liveFacts, message) => {
+                          setBuilderSel({ ...builderSel, plan: plan as never, facts: liveFacts });
+                          setBuilderApproval(undefined);
+                          setBuilderEngine(undefined);
+                          setBuilderNote(message);
+                        },
+                      }
+                    : undefined
+                }
+              />
+            </section>
+            <details className="fold">
+              <summary>Earlier testnet evidence</summary>
+              <V3Evidence />
+            </details>
           </>
         ) : (
           <>
