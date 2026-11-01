@@ -84,7 +84,10 @@ const QUICK = [
     c: "npm run test:e2e",
     n: "Runs the whole flow on a throwaway local dev chain (not Portaldot). Downloads the node binary the first time.",
   },
-  { c: "npm run dev -w @seam/console", n: "Opens the console on http://localhost:5173." },
+  {
+    c: "npm run dev -w @seam/console",
+    n: "Opens the console on http://localhost:5173. The hosted site opens on this product page. The console is index.html.",
+  },
 ];
 
 export default function Landing() {
@@ -98,8 +101,8 @@ export default function Landing() {
         </a>
         <nav>
           <a href="#pipeline">Pipeline</a>
+          <a href="#volunteers">Test it</a>
           <a href="#blocks">What it blocks</a>
-          <a href="#local-node">Local node</a>
           <a href="#proof">Proof</a>
           <a href="#dev">Developers</a>
           <a className="btn small" href={CONSOLE}>
@@ -109,29 +112,67 @@ export default function Landing() {
       </header>
 
       <section className="hero" id="top">
-        <p className="eyebrow">Portaldot Hacker House 2026 · Modular Cloud &amp; Middleware</p>
-        <h1>
-          One Manifest in.
-          <br />A verified receipt out.
-        </h1>
-        <p className="lead">
-          SEAM is the developer execution layer for Portaldot. Describe what should happen once;
-          SEAM compiles it from the live runtime, checks it against your policy, gets it signed by
-          your own wallet, and proves what actually landed on chain.
-        </p>
-        <div className="cta">
-          <a className="btn" href={CONSOLE}>
-            Open the console
-          </a>
-          <a className="btn ghost" href={REPO}>
-            View the repo
-          </a>
+        <div>
+          <p className="eyebrow">Execution layer for Portaldot</p>
+          <h1>One Manifest in. A verified receipt out.</h1>
+          <p className="lead">
+            Write what should happen. SEAM compiles the exact calls from the chain's own metadata,
+            checks them against a policy, and asks your wallet to sign. It never holds keys. If an
+            effect cannot be proven, the receipt stays unknown.
+          </p>
+          <div className="cta">
+            <a className="btn" href={CONSOLE}>
+              Open the console
+            </a>
+            <a className="btn ghost" href="#volunteers">
+              Volunteer test guide
+            </a>
+          </div>
+          <p className="fine">
+            Hosted V3 testnet, spec 3002. Offline verify checks that a receipt was not edited. It is
+            not chain proof. <a href="#proof">See exactly what is proven.</a>
+          </p>
         </div>
-        <p className="fine">
-          Today the recorded runs are on two local chains: neither is the V3 hosted testnet or
-          mainnet, and neither proves V3 Revive. <a href="#proof">See exactly what is proven.</a>
-        </p>
+        <aside className="receipt" aria-label="Recorded local receipt, not a live balance">
+          <header>
+            <span>Recorded receipt</span>
+            <b>{seq.result}</b>
+          </header>
+          <ol>
+            {seq.steps.map((s: { actionId: string; block: { number: number }; txHash: string }) => (
+              <li key={s.actionId}>
+                <span>{s.actionId}</span>
+                <code>
+                  #{s.block.number} {short(s.txHash)}
+                </code>
+              </li>
+            ))}
+          </ol>
+          <footer>
+            Local dev-chain recording. {seq.coverage.verified} of {seq.coverage.expected} steps
+            confirmed. This card is not the V3 testnet.
+          </footer>
+        </aside>
       </section>
+
+      <div className="stats" aria-label="What has been shown">
+        <div>
+          <b>spec 3002</b>
+          <span>Hosted V3 testnet the console reads</span>
+        </div>
+        <div>
+          <b>18 txs</b>
+          <span>Finalized keystore run, with evidence files</span>
+        </div>
+        <div>
+          <b>Transfers</b>
+          <span>Extension-signed console proof so far</span>
+        </div>
+        <div>
+          <b>No keys</b>
+          <span>Your wallet signs. SEAM only prepares the call</span>
+        </div>
+      </div>
 
       <section id="pipeline">
         <h2>The pipeline</h2>
@@ -147,6 +188,82 @@ export default function Landing() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section id="volunteers">
+        <h2>Test it with five or six people</h2>
+        <p className="sec">
+          The console talks to the hosted Portaldot V3 testnet. A blocked plan is a successful
+          test. Report the block code, not only whether a transaction landed.
+        </p>
+        <ol className="vol">
+          <li>
+            <span className="n">1</span>
+            <p>
+              <b>Install a Substrate wallet.</b> Polkadot.js, Talisman, or SubWallet. Create an
+              account. Portaldot V3 uses ss58 prefix 42.
+            </p>
+          </li>
+          <li>
+            <span className="n">2</span>
+            <p>
+              <b>Open the console and connect.</b> Connect the wallet, then connect to the node.
+              The default endpoint is the hosted V3 testnet over HTTPS. Read live facts. Stop if
+              the runtime is not <code>portaldot-v3</code> spec 3002.
+            </p>
+          </li>
+          <li>
+            <span className="n">3</span>
+            <p>
+              <b>You need testnet tPOT for fees.</b> A zero balance cannot sign. Ask the team for
+              faucet funds. tPOT has no mainnet value. Do not deploy a contract: the deposit on
+              this runtime is not refunded.
+            </p>
+          </li>
+          <li>
+            <span className="n">4</span>
+            <p>
+              <b>Run the wallet demo, or build a plan.</b> The demo sends 1 unit of test asset
+              806707 under a strict policy. A custom plan is checked before the wallet opens.
+              Approve only when the gate says the plan is allowed.
+            </p>
+          </li>
+          <li>
+            <span className="n">5</span>
+            <p>
+              <b>Confirm in your wallet, then verify the receipt.</b> SEAM never sees the key.
+              Download the receipt and paste it into Verify a receipt. That check is integrity
+              only. Chain proof is a finalized transaction.
+            </p>
+          </li>
+          <li>
+            <span className="n">6</span>
+            <p>
+              <b>Write down what you saw.</b> Wallet name, the screen you stopped on, the block
+              code if one appeared, and whether the receipt downloaded. File it on{" "}
+              <a href={`${REPO}/issues`}>GitHub issues</a>.
+            </p>
+          </li>
+        </ol>
+        <div className="note-grid">
+          <article className="do">
+            <h3>Worth trying</h3>
+            <ul>
+              <li>Connect, disconnect, and connect a second account.</li>
+              <li>A plan the policy should block, such as a recipient that is not allowed.</li>
+              <li>Reject the wallet prompt and confirm nothing was sent.</li>
+              <li>Refresh during a run and see whether the approval can be reconciled.</li>
+            </ul>
+          </article>
+          <article className="dont">
+            <h3>Leave these alone</h3>
+            <ul>
+              <li>Mainnet. SEAM has only read an old snapshot. Do not point this at mainnet funds.</li>
+              <li>Contract deploy and <code>revive.instantiate_with_code</code>. The deposit stays locked.</li>
+              <li>Any plan you cannot read. Unknown is not success.</li>
+            </ul>
+          </article>
+        </div>
       </section>
 
       <section id="blocks">
@@ -181,13 +298,14 @@ export default function Landing() {
       <section id="proof">
         <h2>Proof from recorded runs</h2>
         <div className="warn">
-          <b>Two local chains were used. Neither is the V3 hosted testnet or mainnet.</b> The runs
-          below were recorded on a local <code>substrate-contracts-node</code> v0.42.0 dev chain
-          (spec 100, metadata V14) with the public dev account. Separately, the organizers' own
-          Portaldot node binary was run locally as a dev node (spec 1002); see the local node
-          section. Nothing was submitted to Portaldot mainnet (only read, from a snapshot) or to a
-          V3 hosted testnet, and no V3 testnet runs exist yet. A local spec-1002 success does not
-          prove V3 Revive behaviour.
+          <b>What is proven, and what is not.</b> The hosted Portaldot V3 testnet (spec 3002) has a
+          funded keystore run of 18 finalized transactions, plus later console runs signed with the
+          polkadot.js extension. Extension proof today is <code>assets.transfer</code> only,
+          including the 2-step sequential run at blocks #121390 and #121394. A per-call Revive
+          effect without <code>ContractEmitted</code> stays unknown. A fresh account mapping, ink!
+          on V3, and cross-VM atomicity are not proven. Mainnet was only read (snapshot at block
+          2,721,455, spec 1002). Nothing has been submitted to mainnet. The local-chain recordings
+          below are a separate dev chain and do not prove V3.
         </div>
         <div className="proofgrid">
           <article>
@@ -240,21 +358,15 @@ export default function Landing() {
           </article>
         </div>
         <p className="fine">
-          Recordings: <code>{dev.sequential.evidenceFile.split("/").pop()}</code>,{" "}
+          Local recordings: <code>{dev.sequential.evidenceFile.split("/").pop()}</code>,{" "}
           <code>{dev.atomic.evidenceFile.split("/").pop()}</code>,{" "}
-          <code>{dev.rollback.evidenceFile.split("/").pop()}</code> in{" "}
-          <a href={`${REPO}/tree/main/evidence`}>evidence/</a>. Not shown: behaviour of Portaldot's
-          V3 runtime, or a run signed in a real browser wallet.
+          <code>{dev.rollback.evidenceFile.split("/").pop()}</code>. V3 evidence, including #118310
+          and #121390/#121394, is in{" "}
+          <a href={`${REPO}/tree/main/evidence/testnet-v3`}>evidence/testnet-v3</a>. The compiler
+          encodes seven kinds when the metadata shape matches: assets transfer and mint, an ink!
+          call, an NFT mint, and Revive call, deploy, and account mapping. Fee-in-asset,{" "}
+          <code>nfts.create</code>, proxy, and multisig are not encoded.
         </p>
-        <div className="placeholder">
-          <b>PLACEHOLDER · Portaldot V3 testnet</b>
-          <p>
-            Transaction hashes and contract addresses will go here once the V3 testnet RPC and
-            faucet are available. None exist yet, and none are shown. Steps:{" "}
-            <a href={`${REPO}/blob/main/docs/testnet-checklist.md`}>docs/testnet-checklist.md</a>.
-          </p>
-          <code>testnet tx hashes: (pending)</code>
-        </div>
       </section>
 
       <section id="dev">
@@ -286,7 +398,7 @@ export default function Landing() {
       <footer>
         <div>
           <span className="logo">S</span> <b>SEAM</b>{" "}
-          <span className="muted">Built for Portaldot Hacker House 2026</span>
+          <span className="muted">Manifest in, verified receipt out. SEAM never holds keys.</span>
         </div>
         <div>
           <a href={REPO}>github.com/rishu4436/seam-portaldot</a> · <a href={CONSOLE}>Console</a>
