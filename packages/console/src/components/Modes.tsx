@@ -1033,7 +1033,7 @@ export function LivePanel({
   return (
     <section className="grid2">
       <div className="card">
-        <h3>LIVE V3</h3>
+        <h3>Chain check</h3>
         {recovered.length > 0 && <RecoveredRuns runs={recovered} onReconcile={reconcile} />}
         {signerState && (
           <p
@@ -1045,9 +1045,8 @@ export function LivePanel({
           </p>
         )}
         <p className="muted">
-          Uses the real V3 testnet over HTTPS (read-only until you approve and sign with your own
-          wallet). Nothing is contacted until you press the button. Local spec-1002 results do not
-          prove anything about V3 Revive.
+          Press Check live. The button reads the hosted V3 testnet and, if a plan is approved, asks
+          your wallet to sign. Nothing is sent if the check fails.
         </p>
         <label htmlFor="v3url">V3 RPC URL</label>
         <div className="row">
