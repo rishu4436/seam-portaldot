@@ -496,7 +496,7 @@ export default function App() {
         Skip to main content
       </a>
       <aside className="side">
-        <a className="brandlink" href="./landing.html">
+        <a className="brandlink" href="./index.html">
           <div className="logo">S</div>
           <div>
             <b>SEAM</b>
@@ -608,7 +608,7 @@ export default function App() {
               <p className="muted small">
                 You need testnet tPOT for fees. Do not deploy a contract, and do not point this at
                 mainnet. The full guide is on the{" "}
-                <a href="./landing.html#volunteers">product page</a>.
+                <a href="./index.html#volunteers">product page</a>.
               </p>
             </section>
             {walletDemoOn && (

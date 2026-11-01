@@ -3,7 +3,7 @@ import dev from "../demo/devnode.json";
 import { LocalNodeBanner, LocalNodeEvidence } from "../components/LocalNode";
 
 const REPO = "https://github.com/rishu4436/seam-portaldot";
-const CONSOLE = "./index.html";
+const CONSOLE = "./console.html";
 const short = (h: string) => `${h.slice(0, 10)}…${h.slice(-6)}`;
 
 const PIPELINE = [
@@ -86,7 +86,7 @@ const QUICK = [
   },
   {
     c: "npm run dev -w @seam/console",
-    n: "Opens the console on http://localhost:5173. The hosted site opens on this product page. The console is index.html.",
+    n: "Locally, http://localhost:5173 is this page. The console is http://localhost:5173/console.html.",
   },
 ];
 
