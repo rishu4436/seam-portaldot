@@ -496,13 +496,13 @@ export default function App() {
         Skip to main content
       </a>
       <aside className="side">
-        <div className="brand">
+        <a className="brandlink" href="./landing.html">
           <div className="logo">S</div>
           <div>
             <b>SEAM</b>
             <small>Execution console</small>
           </div>
-        </div>
+        </a>
         <nav aria-label="Steps">
           {STEPS.map((s, i) => (
             <button
@@ -582,6 +582,35 @@ export default function App() {
         <ModeBadge mode={mode} />
         {mode === "live" ? (
           <>
+            <header className="top">
+              <div>
+                <h1>Connect</h1>
+                <p className="sub">
+                  Connect your wallet, then read the Portaldot V3 testnet. SEAM never holds keys.
+                  Nothing is signed or sent until you approve a plan and confirm it in the wallet.
+                </p>
+              </div>
+            </header>
+            <section className="card guide" aria-label="Volunteer test">
+              <h3>Volunteer test</h3>
+              <ol>
+                <li>Install Polkadot.js, Talisman, or SubWallet. The account prefix is 42.</li>
+                <li>Connect the wallet, connect to the node, then read live facts.</li>
+                <li>
+                  Use the 1-unit wallet demo, or build a plan and approve it only if the policy
+                  gate allows it.
+                </li>
+                <li>
+                  Confirm in the wallet. A block is a successful test. Write down the code and the
+                  screen you stopped on.
+                </li>
+              </ol>
+              <p className="muted small">
+                You need testnet tPOT for fees. Do not deploy a contract, and do not point this at
+                mainnet. The full guide is on the{" "}
+                <a href="./landing.html#volunteers">product page</a>.
+              </p>
+            </section>
             {walletDemoOn && (
               <WalletDemoCard
                 plan={demoPlan}
@@ -764,8 +793,9 @@ export default function App() {
                   <div className="banner">
                     <b>OFFLINE DEMO.</b> Plans, policy checks, approvals and receipts are real
                     output from the SEAM compiler, policy engine and SDK, run against a saved
-                    snapshot of the Portaldot node. Transaction hashes, blocks and events are
-                    simulated until the testnet is live.
+                    snapshot. Transaction hashes, blocks and events on this screen are simulated.
+                    Live signing is the LIVE V3 mode, against the hosted testnet. This screen does
+                    not send anything.
                   </div>
                 )}
 

@@ -1,0 +1,7 @@
+{
+  "framework": null,
+  "installCommand": "npm ci --no-audit --no-fund",
+  "buildCommand": "npm run build",
+  "outputDirectory": "packages/console/dist",
+  "rewrites": [{ "source": "/", "destination": "/landing.html" }]
+}
