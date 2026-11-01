@@ -12,11 +12,12 @@ import { createExtensionSigner } from "../extensionsigner";
 import { fingerprintMatches, planCall } from "../liverequest";
 import { loadLiveHost, type LiveHost } from "../host";
 import type { Plan, RuntimeFacts } from "../types";
+import { HOSTED_V3_GENESIS, HOSTED_V3_SPEC } from "../network";
 
 // Everything here is a fake host, mock RPC and fake extension. Nothing was run against a real V3 chain.
 const URL = "wss://v3.example.invalid";
 const H = (c: string) => ("0x" + c.repeat(32)) as `0x${string}`;
-const GEN = H("ab");
+const GEN = HOSTED_V3_GENESIS;
 const plan = (o: Partial<Plan> = {}): Plan => ({
   manifestDigest: H("01"),
   fingerprintDigest: H("02"),
@@ -78,7 +79,11 @@ const rpcFor =
   async (m, p) => {
     const h: Record<string, (p: unknown[]) => unknown> = {
       chain_getBlockHash: () => GEN,
-      state_getRuntimeVersion: () => ({ specName: "m", specVersion: 9, transactionVersion: 2 }),
+      state_getRuntimeVersion: () => ({
+        specName: HOSTED_V3_SPEC,
+        specVersion: 9,
+        transactionVersion: 2,
+      }),
       system_accountNextIndex: () => 7,
       chain_getFinalizedHead: () => head,
       chain_getHeader: () => ({ number: "0x64" }),
@@ -248,7 +253,9 @@ describe("end to end with fake host, mock RPC and fake extension", () => {
   it("blocks when the live chain differs from the plan's runtime", async () => {
     const rpc = rpcFor(chainWith([]), B1, { chain_getBlockHash: () => H("cc") });
     const r = await runLive(URL, undefined, deps(rpc));
-    expect(r.status).toBe("failed");
+    expect(r.status).toBe("blocked");
+    expect(r.message).toMatch(/hosted V3 testnet/);
+    expect(r.signing).toBe("not_started");
     expect(r.submitted).toBe(false);
   });
   it("without an installed host or hasher nothing is verified", async () => {

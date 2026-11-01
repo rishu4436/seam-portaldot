@@ -3,6 +3,7 @@
 // signer) plug in through ChainClient / WalletSigner. Until one is provided every
 // call answers "unavailable" and the outcome is blocked/unknown, never success.
 import type { Coverage, Provenance, SigningStatus, SimulationBasis, TxState } from "./modes";
+import { hostedTestnetProblem } from "./network";
 
 export type Res<T> =
   | { ok: true; value: T }
@@ -167,6 +168,8 @@ export async function runLive(
         : `V3 RPC unreachable after ${o.rpcAttempts} attempt(s): ${d.message}`,
     );
   o.fingerprint = d.value;
+  const wrongNetwork = hostedTestnetProblem(d.value);
+  if (wrongNetwork) return done("blocked", wrongNetwork, { signing: "not_started" });
 
   if (deps.prepare) {
     const p = await deps.prepare(d.value);
