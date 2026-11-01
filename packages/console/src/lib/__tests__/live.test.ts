@@ -6,10 +6,11 @@ import {
   type WalletSigner,
   type SignedBindingVerifier,
 } from "../live";
+import { HOSTED_V3_GENESIS, HOSTED_V3_SPEC } from "../network";
 
 // Mock RPC and fake extension signer: used only here, never in the app bundle.
 const URL = "wss://v3.example.invalid";
-const fp = { specName: "mock", specVersion: 1 };
+const fp = { genesisHash: HOSTED_V3_GENESIS, specName: HOSTED_V3_SPEC, specVersion: 3002 };
 const chain = (o: Partial<ChainClient> = {}): ChainClient => ({
   discover: vi.fn(async () => ({ ok: true as const, value: fp })),
   preflight: vi.fn(async () => ({
@@ -64,6 +65,20 @@ describe("LIVE V3 mode", () => {
     expect(c.discover).toHaveBeenCalledTimes(3);
     expect(r.rpcAttempts).toBe(3);
     expect(r.submitted).toBe(false);
+  });
+  it("a chain that is not the hosted V3 testnet never reaches the wallet", async () => {
+    const c = chain({
+      discover: vi.fn(async () => ({
+        ok: true as const,
+        value: { genesisHash: "0x" + "11".repeat(32), specName: "portaldot", specVersion: 1002 },
+      })),
+    });
+    const s = signer();
+    const r = await runLive(URL, {}, { chain: c, signer: s, verifyBinding: bindOk });
+    expect(r.status).toBe("blocked");
+    expect(r.message).toMatch(/mainnet/);
+    expect(s.sign).not.toHaveBeenCalled();
+    expect(c.submit).not.toHaveBeenCalled();
   });
   it("wallet rejection sends nothing and is not success", async () => {
     const c = chain();

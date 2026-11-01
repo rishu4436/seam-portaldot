@@ -5,6 +5,7 @@
 // estimate only (needs the host's encoder), never a signed dry run.
 import type { ChainClient, LiveFingerprint, Res, VerifyResult } from "./live";
 import type { SigningContext } from "./host";
+import { hostedTestnetProblem } from "./network";
 
 export type RpcTransport = (method: string, params: unknown[]) => Promise<unknown>;
 export class RpcError extends Error {
@@ -295,6 +296,24 @@ export function createBrowserChainClient(rpc: RpcTransport, opts: ClientOptions 
           reason: "failed",
           message: "Signed transaction is not hex. Nothing was sent.",
         };
+      let identity;
+      try {
+        const genesis = await rpc("chain_getBlockHash", [0]);
+        const rv = (await rpc("state_getRuntimeVersion", [])) as { specName?: unknown } | null;
+        identity = {
+          genesisHash: typeof genesis === "string" ? genesis : undefined,
+          specName: typeof rv?.specName === "string" ? rv.specName : undefined,
+        };
+      } catch (e) {
+        // Nothing has been broadcast yet. A lost connection here is a failure, not an uncertain send.
+        return {
+          ok: false,
+          reason: "failed",
+          message: `Could not read the chain before sending, so nothing was sent: ${e instanceof Error ? e.message : String(e)}`,
+        };
+      }
+      const refused = hostedTestnetProblem(identity);
+      if (refused) return { ok: false, reason: "failed", message: refused };
       try {
         const h = await rpc("author_submitExtrinsic", [signed.signedTx]);
         if (!isHex(h))

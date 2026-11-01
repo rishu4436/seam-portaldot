@@ -9,6 +9,7 @@ import {
 } from "../chainclient";
 import { createExtensionSigner } from "../extensionsigner";
 import { runLive } from "../live";
+import { HOSTED_V3_GENESIS, HOSTED_V3_SPEC } from "../network";
 
 // Mock RPC and fake extension only. No real endpoint, no real keys.
 const rpcMock =
@@ -17,7 +18,7 @@ const rpcMock =
     if (!h[m]) throw new RpcError(-32601, "no method " + m);
     return h[m](p);
   };
-const GEN = "0x" + "ab".repeat(32);
+const GEN = HOSTED_V3_GENESIS;
 
 type Cb = ((e: unknown) => void) | null;
 type WsCtor = Parameters<typeof wsTransport>[1];
@@ -25,14 +26,23 @@ const J = (v: unknown) => v as never;
 describe("browser chain client against a mock RPC", () => {
   const good = rpcMock({
     chain_getBlockHash: () => GEN,
-    state_getRuntimeVersion: () => ({ specName: "mock", specVersion: 9, transactionVersion: 2 }),
+    state_getRuntimeVersion: () => ({
+      specName: HOSTED_V3_SPEC,
+      specVersion: 3002,
+      transactionVersion: 2,
+    }),
     author_submitExtrinsic: () => "0x" + "cd".repeat(32),
   });
   it("discovers genesis and runtime version without inventing a metadata hash", async () => {
     const r = await createBrowserChainClient(good).discover();
     expect(r).toEqual({
       ok: true,
-      value: { genesisHash: GEN, specName: "mock", specVersion: 9, transactionVersion: 2 },
+      value: {
+        genesisHash: GEN,
+        specName: HOSTED_V3_SPEC,
+        specVersion: 3002,
+        transactionVersion: 2,
+      },
     });
   });
   it("rejects malformed discovery replies as rpc_error", async () => {
@@ -56,10 +66,16 @@ describe("browser chain client against a mock RPC", () => {
       throw new RpcError(1010, "Invalid Transaction");
     });
     expect(await c1.submit({ signedTx: "0x12" })).toMatchObject({ ok: false, reason: "failed" });
-    const c2 = createBrowserChainClient(async () => {
-      throw new TransportError("socket closed");
+    const c2 = createBrowserChainClient(async (method) => {
+      if (method === "author_submitExtrinsic") throw new TransportError("socket closed");
+      if (method === "chain_getBlockHash") return GEN;
+      return { specName: HOSTED_V3_SPEC, specVersion: 3002, transactionVersion: 2 };
     });
     expect(await c2.submit({ signedTx: "0x12" })).toMatchObject({ ok: false, reason: "ambiguous" });
+    const c2b = createBrowserChainClient(async () => {
+      throw new TransportError("socket closed");
+    });
+    expect(await c2b.submit({ signedTx: "0x12" })).toMatchObject({ ok: false, reason: "failed" });
     const send = vi.fn();
     const c3 = createBrowserChainClient(send);
     expect(await c3.submit({ signedTx: "nothex" })).toMatchObject({ ok: false, reason: "failed" });
@@ -229,7 +245,7 @@ describe("extension signer with a fake window.injectedWeb3", () => {
       chain: createBrowserChainClient(
         rpcMock({
           chain_getBlockHash: () => GEN,
-          state_getRuntimeVersion: () => ({ specVersion: 1 }),
+          state_getRuntimeVersion: () => ({ specName: HOSTED_V3_SPEC, specVersion: 3002 }),
           author_submitExtrinsic: send,
         }),
       ),
