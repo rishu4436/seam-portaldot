@@ -4,8 +4,9 @@
 // Usage: node scripts/evidence-manifest.mjs [--check]   (--check: exit 1 if the committed file is stale)
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const EV = join(ROOT, "evidence");
 const OUT = join(ROOT, "docs", "evidence-manifest.md");
 const HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -90,7 +91,7 @@ function walkJson(o, rel, path) {
 }
 
 for (const f of files) {
-  const rel = relative(ROOT, f);
+  const rel = relative(ROOT, f).replaceAll("\\", "/");
   const j = JSON.parse(readFileSync(f, "utf8"));
   // A verification file's top-level verdict is authoritative for the txs it verifies (nested "outcome" fields can be
   // intermediate tool output, e.g. the atomic-view v3-find-tx result recorded in the #120936 file).
@@ -225,7 +226,7 @@ lines.push("");
 // ---- DRY RUN ONLY (nothing sent) ----
 const dryJson = new Map(); // rel -> parsed JSON
 for (const f of files) {
-  const rel = relative(ROOT, f);
+  const rel = relative(ROOT, f).replaceAll("\\", "/");
   const j = JSON.parse(readFileSync(f, "utf8"));
   const isDry =
     dryOnlyFiles.has(rel) ||

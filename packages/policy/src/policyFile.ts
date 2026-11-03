@@ -26,6 +26,7 @@ const UINTS = [
 const UNKNOWN_KEYS = ["fee", "weight", "storageDeposit", "dryRun", "proofSize"];
 const KNOWN = new Set<string>([
   "version",
+  "deploy",
   "base",
   ...LISTS,
   ...UINTS,
@@ -213,6 +214,30 @@ export function parsePolicy(input: unknown): ParsedPolicy {
         else if (typeof v !== "boolean")
           issues.push({ path: `allowUnknown.${k}`, message: "must be true or false" });
       }
+  }
+  if (raw.deploy !== undefined) {
+    if (!isObj(raw.deploy)) issues.push({ path: "deploy", message: "deploy must be an object" });
+    else {
+      const caps = ["maxValue", "maxStorageDepositLimit", "maxGasLimit", "maxProofSize"];
+      for (const [key, value] of Object.entries(raw.deploy)) {
+        if (key === "allowedCodeHashes") {
+          if (
+            !Array.isArray(value) ||
+            value.some((v) => typeof v !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(v))
+          )
+            issues.push({
+              path: `deploy.${key}`,
+              message: "must be a list of 32-byte hex code hashes",
+            });
+        } else if (!caps.includes(key))
+          issues.push({ path: `deploy.${key}`, message: "unknown deploy rule" });
+        else if (!isUint(value))
+          issues.push({
+            path: `deploy.${key}`,
+            message: "must be a whole number in base units, written as a string",
+          });
+      }
+    }
   }
   if (issues.length) return { ok: false, issues };
 

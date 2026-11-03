@@ -1,3 +1,5 @@
+import * as chainBrowser from "@seam/chain/browser";
+import { compile as compileManifest } from "@seam/compiler/browser";
 // Pre-sign and pre-submit gates for the LIVE flow, in the order Sentinel specified:
 //   real preflight -> policy gate -> bound approval (engine) -> wallet signs -> preflight again with the signed
 //   extrinsic (real dry run) -> checkBeforeSubmit -> submit.
@@ -193,7 +195,7 @@ const no = (message: string): { ok: false; reason: "unavailable"; message: strin
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export async function loadChainFns(): Promise<ChainFns> {
-  return (await import("@seam/chain/browser")) as unknown as ChainFns;
+  return chainBrowser as unknown as ChainFns;
 }
 
 /** Real preflight, the authoritative gate, and the engine's bound approval. Runs before the wallet is asked. */
@@ -503,6 +505,7 @@ export async function engineApprovalCheck(args: {
   input: PolicyGateInput;
   now: Date;
   gate?: typeof runPolicyGate;
+  acknowledgedDowngrade?: boolean;
 }): Promise<GateOutcome> {
   try {
     const facts = await args.readFacts();
@@ -514,7 +517,10 @@ export async function engineApprovalCheck(args: {
         message: "Live runtime facts could not be read, so the plan can't be approved.",
       };
     const preflight = await args.chain.preflight(args.send, args.input.plan, facts);
-    return (args.gate ?? runPolicyGate)({ ...args.input, facts, preflight }, { now: args.now });
+    return (args.gate ?? runPolicyGate)(
+      { ...args.input, facts, preflight },
+      { now: args.now, ...(args.acknowledgedDowngrade ? { acknowledgedDowngrade: true } : {}) },
+    );
   } catch (e) {
     return {
       ok: false,
@@ -548,12 +554,9 @@ export function liveReadsFor(send: Send, signer: string): LiveReads {
   };
 }
 
-/** The live compile: @seam/compiler/browser compile, loaded on demand. */
+/** The same compiler instance used by the builder and policy gate. */
 export async function loadLiveCompile(manifest: unknown): Promise<LiveCompile> {
-  const c = (await import("@seam/compiler/browser")) as unknown as {
-    compile: (m: unknown, f: unknown) => unknown;
-  };
-  return { manifest, compile: (m, f) => c.compile(m, f) };
+  return { manifest, compile: (m, f) => compileManifest(m as never, f as never) };
 }
 
 /** A preflight proof size: { value } (a real number, may be 0 only if measured) or { unknown: true }. */

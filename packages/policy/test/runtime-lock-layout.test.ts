@@ -3,7 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { factsFromMetadata, metadataLayoutHash as compilerLayout } from "@seam/compiler";
+import { compile, factsFromMetadata, metadataLayoutHash as compilerLayout } from "@seam/compiler";
 import { metadataLayoutHash as chainLayout } from "../../chain/src/metadata-layout.js";
 import {
   withFallback,
@@ -347,4 +347,37 @@ describe("checkBeforeSubmit with metadata blobs", () => {
       code: "runtime_unchanged",
     });
   });
+});
+
+it("strict live mode accepts prepared facts only when fresh raw blobs prove allow-listed layout drift", () => {
+  const fresh = compile(demo.manifest, facts);
+  const result = evaluatePolicy({ policy, plan: fresh, facts, preflight, manifest: demo.manifest });
+  const approved = createApproval({
+    manifestDigest: fresh.manifestDigest,
+    plan: fresh,
+    policy,
+    policyResult: result,
+    preflight,
+    envelope,
+    fingerprint: PREP,
+    now: NOW,
+    acknowledgedDowngrade: true,
+  });
+  if (!approved.ok) throw new Error(approved.reason);
+  const r = submit({
+    plan: fresh,
+    manifestDigest: fresh.manifestDigest,
+    policyResult: result,
+    approval: approved.approval,
+    live: true,
+    manifest: demo.manifest,
+    liveFacts: facts,
+    currentBlockNumber: 1,
+    currentAccountNonce: 0,
+    preparedMetadataHex: V3,
+    currentMetadataHex: DRIFT,
+  });
+  expect(r.runtimeLock?.lockBasis).toBe("layout_hash");
+  expect(codes(r)).not.toContain("live_facts_mismatch");
+  expect(r.reasons).toEqual([]);
 });

@@ -1,11 +1,11 @@
 import { identityDecoding } from "./decoding.js";
 import { describe, expect, it } from "vitest";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compile, type Hex, type Plan, type RuntimeFacts } from "@seam/compiler";
+import { compile, type Hex, type Plan } from "@seam/compiler";
 import { definePolicy, type SigningEnvelope, type SubmitCheck } from "@seam/policy";
 import {
   Seam,

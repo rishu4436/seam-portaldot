@@ -1,3 +1,5 @@
+import * as chainBrowser from "@seam/chain/browser";
+import { readExtrinsicOutcome, stepEffectCheck } from "../lib/stepverify";
 import { ProofRows } from "./ProofRows";
 import { proofRows } from "../lib/statuslabels";
 import {
@@ -89,10 +91,7 @@ export async function defaultV3Facts(rpc: RpcTransport): Promise<V3FactsResult> 
  * The snapshot-based defaultV3Facts above is kept as a labelled fallback for display/tests, not used by default.
  */
 export async function liveFactsStep(rpc: RpcTransport): Promise<V3FactsResult> {
-  const [snap, mod] = await Promise.all([
-    loadFactsSnapshot().catch(() => undefined),
-    import("@seam/chain/browser"),
-  ]);
+  const [snap, mod] = await Promise.all([loadFactsSnapshot().catch(() => undefined), chainBrowser]);
   return discoverV3LiveFacts(rpc, mod.factsFromChainInputs as unknown as FactsBuilder, {
     snapshot: snap,
   });
@@ -642,6 +641,7 @@ export function PolicyGatePanel({ gate }: { gate: GateOutcome }) {
 }
 
 export function LivePanel({
+  rpcUrl,
   plan,
   facts,
   approval,
@@ -658,8 +658,11 @@ export function LivePanel({
   txLookup,
   liveCompileLoader = loadLiveCompile,
   signerWatchLoader = openSignerWatch,
+  onBusyChange,
 }: {
+  onBusyChange?: (busy: boolean) => void;
   /** Persisted non-secret run state (lib/runstore.ts). Default: browser storage via browserKV(), key RUN_STORE_KEY. */
+  rpcUrl?: string;
   runStore?: RunStore;
   /** Tx-hash lookup for reconciling recovered runs. Default: @seam/chain/browser lookupTxByHash over the V3 URL, on Reconcile only. */
   txLookup?: TxLookup;
@@ -693,10 +696,16 @@ export function LivePanel({
   factsStep?: (rpc: RpcTransport) => Promise<V3FactsResult>;
   now?: () => number;
 } = {}) {
-  const [url, setUrl] = useState<string>(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
+  const [url, setUrl] = useState<string>(rpcUrl ?? import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
+  useEffect(() => {
+    if (rpcUrl) setUrl(rpcUrl);
+  }, [rpcUrl]);
   const [v3, setV3] = useState<V3FactsResult>();
   const [out, setOut] = useState<LiveOutcome>();
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy, onBusyChange]);
   const [dismissed, setDismissed] = useState(false);
   const [attempts, setAttempts] = useState(3);
   // Approval hashes already sent with. An approval is single use, so a second send with it is blocked here too.
@@ -720,12 +729,16 @@ export function LivePanel({
   const store = useRef(new PersistedApprovalStore(runStore));
   const engineHashRef = useRef<string | undefined>(undefined);
   const [recovered, setRecovered] = useState<RunRecord[]>([]);
+  const [recoveryProblem, setRecoveryProblem] = useState<string>();
   useEffect(() => {
     // After a refresh: local recovery only (nothing is contacted): signed-but-unsent runs are abandoned; runs with a
     // tx hash wait for the user to press Reconcile, which reads the chain by hash and never re-sends.
     void runStore
       .recover(undefined)
-      .then((rs) => setRecovered(rs.filter((r) => r.phase !== "finalized")));
+      .then((rs) => setRecovered(rs.filter((r) => r.phase !== "finalized")))
+      .catch((error: unknown) =>
+        setRecoveryProblem(error instanceof Error ? error.message : String(error)),
+      );
   }, [runStore]);
   const reconcile = async () => {
     const u = v3RpcUrl(url);
@@ -752,9 +765,12 @@ export function LivePanel({
   // injected LiveHost (planned: @seam/chain/browser); the console has no local copy, so without a host LIVE blocks before signing.
   const run = async () => {
     setBusy(true);
+    setOut(undefined);
     setDismissed(false);
     setGate(undefined);
     try {
+      const storageProblem = runStore.problem();
+      if (storageProblem) throw new Error(storageProblem);
       const u = v3RpcUrl(url);
       let deps: LiveDeps = {};
       if (u) {
@@ -972,7 +988,7 @@ export function LivePanel({
           deps.beforeSubmit = async (signedTx, request) => {
             const g = await gateSubmit(signedTx, request);
             // Single-flight guard (persisted before the broadcast): one send per approval, in any session.
-            if (g.ok && runHash && !runStore.claimSend(runHash, 0))
+            if (g.ok && runHash && !(await runStore.claimSendOnce(runHash, 0)))
               return {
                 ok: false as const,
                 reason: "unavailable" as const,
@@ -1024,6 +1040,10 @@ export function LivePanel({
       }
       if (res.submitted && approval) setSpent((x) => [...x, approval.hash]);
       setOut(res);
+    } catch (error) {
+      setRecoveryProblem(
+        `Execution stopped: ${error instanceof Error ? error.message : String(error)} Reconcile any uncertain transaction before trying another approval.`,
+      );
     } finally {
       watchRef.current?.stop();
       watchRef.current = undefined;
@@ -1034,6 +1054,11 @@ export function LivePanel({
     <section className="grid2">
       <div className="card">
         <h3>Chain check</h3>
+        {recoveryProblem && (
+          <p role="alert" className="workspace-notice">
+            {recoveryProblem}
+          </p>
+        )}
         {recovered.length > 0 && <RecoveredRuns runs={recovered} onReconcile={reconcile} />}
         {signerState && (
           <p
@@ -1058,7 +1083,7 @@ export function LivePanel({
             aria-invalid={!!url && !ok}
             aria-describedby="v3url-help"
           />
-          <button disabled={busy} onClick={run}>
+          <button disabled={busy || !!recoveryProblem} onClick={run}>
             {busy
               ? "Checking…"
               : ready
@@ -1421,7 +1446,6 @@ async function runMultiStepLive(a: {
           },
         };
       // The extrinsic's own events, read back from its block; verifyStep decides (see lib/stepverify.ts).
-      const { readExtrinsicOutcome } = await import("../lib/stepverify");
       const r = await readExtrinsicOutcome(
         a.rpc,
         step?.actionId ?? "",
@@ -1449,7 +1473,7 @@ const defaultStepCheck = async (
   txHash: string,
   block: { number: number; hash: string },
   ctx: CompiledStepContext,
-) => (await import("../lib/stepverify")).stepEffectCheck(rpc, txHash, block, ctx);
+) => stepEffectCheck(rpc, txHash, block, ctx);
 
 /** Runs recovered from storage after a refresh. Read-only: nothing here can send; reconciliation only reads by hash. */
 export function RecoveredRuns({

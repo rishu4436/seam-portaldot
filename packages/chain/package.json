@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers 1",
     "test:live": "SEAM_LIVE=1 vitest run tests/live.test.ts",
     "test:devnode": "SEAM_DEVNODE=1 vitest run tests/devnode.test.ts",
     "devnode": "scripts/devnode.sh"
@@ -39,9 +39,9 @@
     "@polkadot/keyring": "^14.0.3",
     "@seam/policy": "file:../policy",
     "@types/node": "^26.6.5",
-    "esbuild": "^0.21.5",
+    "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3",
+    "vitest": "^5.0.5",
     "ws": "8.22.0"
   }
 }

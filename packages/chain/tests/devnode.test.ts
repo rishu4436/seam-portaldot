@@ -1,3 +1,11 @@
+import type { SubmitCheckResult, ReceiptStep, PolicyRuleResult } from "@seam/policy";
+import type { SignedDryRunDetail } from "../src/index.js";
+type GateRecord = {
+  index: number;
+  phase: string;
+  check: SubmitCheckResult;
+  dryRun: SignedDryRunDetail[];
+};
 /**
  * End to end on a LOCAL substrate-contracts-node (scripts/devnode.sh start), gated on SEAM_DEVNODE=1.
  * Signs with the public //Alice dev seed: local dev chain only (lib.mjs refuses non-localhost endpoints and
@@ -37,15 +45,15 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
     // gate results are read from the SDK's onStep events, not recomputed
     expect(
       json.gateChecks
-        .filter((g: any) => g.phase === "sending")
-        .map((g: any) => [g.index, g.check.ok]),
+        .filter((g: GateRecord) => g.phase === "sending")
+        .map((g: GateRecord) => [g.index, g.check.ok]),
     ).toEqual([
       [0, true],
       [1, true],
       [2, true],
     ]);
-    for (const g of json.gateChecks.filter((x: any) => x.phase === "sending")) {
-      const codes = g.check.passed.map((p: any) => p.code);
+    for (const g of json.gateChecks.filter((x: GateRecord) => x.phase === "sending")) {
+      const codes = g.check.passed.map((p: { code: string }) => p.code);
       expect(codes).toEqual(
         expect.arrayContaining([
           "step_order",
@@ -59,7 +67,7 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
       );
       expect(g.check.reasons).toEqual([]);
     }
-    expect(json.gateChecks.filter((g: any) => g.phase === "done")).toHaveLength(3);
+    expect(json.gateChecks.filter((g: GateRecord) => g.phase === "done")).toHaveLength(3);
     // tightened policy: message name, pinned interface hash, selector; no storage-deposit cap
     expect(json.policy.allowedMessages[json.manifest.actions[1].args.contract]).toEqual(["settle"]);
     expect(json.policy.pinnedAbiHashes[json.manifest.actions[1].args.contract]).toBe(
@@ -67,24 +75,28 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
     );
     expect(json.policy.maxStorageDeposit).toBeUndefined();
     const rules = json.policyResult.rules
-      .filter((r: any) => r.outcome === "pass")
-      .map((r: any) => r.rule);
+      .filter((r: PolicyRuleResult) => r.outcome === "pass")
+      .map((r: PolicyRuleResult) => r.rule);
     expect(rules).toEqual(
       expect.arrayContaining(["message_allowed", "abi_pinned", "selector_allowed"]),
     );
     expect(JSON.stringify(json)).not.toMatch(/"signature"|\/\/Alice/);
     expect(json.policyResult.allowed).toBe(true);
-    const sent = json.gateChecks.filter((g: any) => g.phase === "sending");
-    expect(sent.map((g: any) => g.dryRun.map((d: any) => d.outcome))).toEqual([
-      ["ok"],
-      ["ok"],
-      ["ok"],
-    ]);
+    const sent = json.gateChecks.filter((g: GateRecord) => g.phase === "sending");
+    expect(sent.map((g: GateRecord) => g.dryRun.map((d: SignedDryRunDetail) => d.outcome))).toEqual(
+      [["ok"], ["ok"], ["ok"]],
+    );
     expect(json.run.receipt.result).toBe("verified");
     expect(json.receiptIntact).toBe(true);
     const steps = json.run.receipt.steps;
-    expect(steps.map((s: any) => s.status)).toEqual(["finalized", "finalized", "finalized"]);
-    expect(new Set(steps.map((s: any) => s.txHash)).size).toBe(3);
+    expect(steps.map((s: Pick<ReceiptStep, "status" | "txHash">) => s.status)).toEqual([
+      "finalized",
+      "finalized",
+      "finalized",
+    ]);
+    expect(new Set(steps.map((s: Pick<ReceiptStep, "status" | "txHash">) => s.txHash)).size).toBe(
+      3,
+    );
     expect(steps[1].events.some((e: string) => e.startsWith("Contracts.ContractEmitted("))).toBe(
       true,
     );
@@ -116,7 +128,9 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
     // Weight V2 runtime: every preflight step has a real proof size from payment_queryInfo
     for (const p of json.preflight.steps) expect(p.proofSize.value).toMatch(/^[1-9][0-9]*$/);
     expect(
-      json.preflightDetail.transactions.every((t: any) => t.queryInfo.weightVersion === 2),
+      json.preflightDetail.transactions.every(
+        (t: { queryInfo: { weightVersion: number } }) => t.queryInfo.weightVersion === 2,
+      ),
     ).toBe(true);
     // the contract call's queried proof size covers the gas_limit proof size; the contract itself needs far less
     const call = json.preflight.steps[1];
@@ -141,14 +155,16 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
     expect(json.envelope.checkpoint.hash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(json.gateChecks).toHaveLength(1);
     expect(json.gateChecks[0]).toMatchObject({ phase: "blocked", check: { ok: false } });
-    expect(json.seamGate.passed.map((p: any) => p.code)).not.toContain("signed_dry_run_ok");
-    expect(json.directSubmit.statuses.map((s: any) => s.status)).toEqual([
-      "submitted",
-      "in_block",
-      "finalized",
-    ]);
+    expect(json.seamGate.passed.map((p: { code: string }) => p.code)).not.toContain(
+      "signed_dry_run_ok",
+    );
+    expect(
+      json.directSubmit.statuses.map((s: Pick<ReceiptStep, "status" | "txHash">) => s.status),
+    ).toEqual(["submitted", "in_block", "finalized"]);
     expect(JSON.stringify(json)).not.toMatch(/"signature"|\/\/Alice/);
-    expect(json.seamGate.reasons.map((r: any) => r.code)).toEqual(["signed_dry_run_failed"]);
+    expect(json.seamGate.reasons.map((r: { code: string }) => r.code)).toEqual([
+      "signed_dry_run_failed",
+    ]);
     expect(json.directSubmit).toMatchObject({ status: "finalized", success: false });
     // ArithmeticError::Overflow from Assets.mint's checked_add on the supply (step 4), not a balance overdraft
     expect(json.directSubmit.dispatchError).toBe("Arithmetic");
@@ -164,6 +180,9 @@ describe.skipIf(!LIVE)("local dev node (SEAM_DEVNODE=1)", () => {
       expect.arrayContaining(["assets.transfer", "contracts.call", "assets.mint"]),
     );
     expect(atomic.run.receipt.result).toBe("verified");
-    expect(new Set(atomic.run.receipt.steps.map((s: any) => s.txHash)).size).toBe(1);
+    expect(
+      new Set(atomic.run.receipt.steps.map((s: Pick<ReceiptStep, "status" | "txHash">) => s.txHash))
+        .size,
+    ).toBe(1);
   }, 480_000);
 });

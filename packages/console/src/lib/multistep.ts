@@ -402,7 +402,7 @@ async function runPlanStepsInner(args: RunPlanArgs): Promise<MultiStepResult> {
     if (cancelled()) return stop(i, "Cancelled. Nothing more was sent.");
     if (expired()) return stop(i, expiredMsg, pre.gate);
     // Single-flight guard (persisted before the broadcast): a step claimed once, in any session, is never sent again.
-    if (args.runStore && !args.runStore.claimSend(hash, i))
+    if (args.runStore && !(await args.runStore.claimSendOnce(hash, i)))
       return stop(
         i,
         "This step was already sent once (persisted send guard). It is not sent again; reconcile by its tx hash.",
@@ -485,6 +485,7 @@ async function runPlanStepsInner(args: RunPlanArgs): Promise<MultiStepResult> {
           outcome: JSON.parse(holder.redact(JSON.stringify(r.value))),
         });
     }
+    // eslint-disable-next-line no-useless-assignment -- Drop the decoded call reference when this step finishes.
     callHex = undefined;
     if (sequential && i < n - 1 && !done)
       return stop(

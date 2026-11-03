@@ -40,7 +40,10 @@ async function setup() {
     node.submitted.length + node.log.filter((l) => /submit/i.test(l.method)).length;
   return { node, adapter, tx, requests, keys, sends };
 }
-const refused = (o: any, re: RegExp) => {
+const refused = (
+  o: Awaited<ReturnType<Awaited<ReturnType<typeof setup>>["adapter"]["submit"]>>,
+  re: RegExp,
+) => {
   expect(o.status).toBe("failed");
   expect(o.delivery).toBe("not_sent");
   expect(o.error).toMatch(re);

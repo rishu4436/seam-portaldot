@@ -19,7 +19,6 @@ import { snapshotFacts, snapshotInputs } from "./helpers.js";
 const status = (caps: CapabilityEntry[], item: string) => caps.find((c) => c.item === item)?.status;
 const tmp = () => mkdtempSync(join(tmpdir(), "v3disc-"));
 const script = fileURLToPath(new URL("../scripts/v3-discover.mjs", import.meta.url));
-const noNetwork = fileURLToPath(new URL("./fixtures/no-network.mjs", import.meta.url));
 /** The fixture is the mainnet spec 1002 metadata; give the fake node another genesis so discovery does not (rightly) refuse it as mainnet. */
 const nonMainnetNode = () => {
   const inputs = {
@@ -184,7 +183,11 @@ describe("scripts/v3-discover.mjs", () => {
     ]) {
       const r = spawnSync("node", [script, ...args], {
         encoding: "utf8",
-        env: { ...process.env, NODE_OPTIONS: `--import ${noNetwork}`, SEAM_ALLOW_MAINNET: "1" },
+        env: {
+          ...process.env,
+          NODE_OPTIONS: `--import "${new URL("./fixtures/no-network.mjs", import.meta.url).href}"`,
+          SEAM_ALLOW_MAINNET: "1",
+        },
       });
       expect(r.status).toBe(2);
       expect(r.stderr).toMatch(/refusing: that is the Portaldot mainnet endpoint/);
@@ -192,7 +195,10 @@ describe("scripts/v3-discover.mjs", () => {
     }
   });
   it("rejects a non-websocket URL and prints help without a network call", () => {
-    const env = { ...process.env, NODE_OPTIONS: `--import ${noNetwork}` };
+    const env = {
+      ...process.env,
+      NODE_OPTIONS: `--import "${new URL("./fixtures/no-network.mjs", import.meta.url).href}"`,
+    };
     expect(spawnSync("node", [script, "http://x"], { encoding: "utf8", env }).status).toBe(2);
     const help = execFileSync("node", [script, "ws://127.0.0.1:1", "--help"], {
       encoding: "utf8",

@@ -17,7 +17,7 @@ const facts = realFacts();
 const m = demoManifest;
 const withArg = (i: number, key: string, value: unknown): Manifest => {
   const x = m();
-  (x.actions[i]!.args as any)[key] = value;
+  (x.actions[i]!.args as unknown as Record<string, unknown>)[key] = value;
   return x;
 };
 
@@ -65,7 +65,11 @@ describe("address checks", () => {
       signer: { type: "ss58", value: ALICE },
       actions: [{ id: "r", kind: "revive.call", args: { contract: BOB, value: "0", data: "0x" } }],
     };
-    expectIssue(() => compile(x, facts), "ADDRESS_TYPE", "actions[0].args.contract");
+    expectIssue(
+      () => compile(x as unknown as Manifest, facts),
+      "ADDRESS_TYPE",
+      "actions[0].args.contract",
+    );
   });
   it("rejects a recipient using another chain prefix (Polkadot 0, Kusama 2)", () => {
     expectIssue(
@@ -117,7 +121,11 @@ describe("address checks", () => {
 describe("chain checks", () => {
   it("rejects a manifest for another genesis", () => {
     const x = { ...m(), chain: { genesisHash: `0x${"00".repeat(32)}`, specVersion: 1002 } };
-    expectIssue(() => compile(x, facts), "CHAIN_MISMATCH", "chain.genesisHash");
+    expectIssue(
+      () => compile(x as unknown as Manifest, facts),
+      "CHAIN_MISMATCH",
+      "chain.genesisHash",
+    );
   });
   it("rejects a manifest for another spec version", () => {
     expectIssue(
@@ -176,19 +184,24 @@ describe("amounts", () => {
     ).toBe("ok");
   });
   it("rejects floats anywhere else in the manifest as non-canonical", () => {
-    expectIssue(() => compile({ ...m(), note: { x: 0.5 } } as any, facts), "NOT_CANONICAL");
+    expectIssue(
+      () => compile({ ...m(), note: { x: 0.5 } } as unknown as Manifest, facts),
+      "NOT_CANONICAL",
+    );
   });
 });
 
 describe("manifest shape", () => {
   it("rejects unknown kinds, duplicate ids, unknown/missing args, and reports them all at once", () => {
-    const x: any = m();
+    const x = m() as unknown as {
+      actions: { id: string; kind: string; args: Record<string, unknown> }[];
+    };
     x.actions[0].kind = "balances.transfer";
     x.actions[1].id = "receipt";
     x.actions[2].args.amout = "1";
     delete x.actions[2].args.amount;
     try {
-      compile(x, facts);
+      compile(x as unknown as Manifest, facts);
       throw new Error("should fail");
     } catch (e) {
       expect(e).toBeInstanceOf(SeamCompileError);
@@ -198,7 +211,11 @@ describe("manifest shape", () => {
     }
   });
   it("rejects version != 1 and empty actions", () => {
-    expectIssue(() => compile({ ...m(), version: 2 } as any, facts), "MANIFEST_INVALID", "version");
+    expectIssue(
+      () => compile({ ...m(), version: 2 } as unknown as Manifest, facts),
+      "MANIFEST_INVALID",
+      "version",
+    );
     expectIssue(() => compile({ ...m(), actions: [] }, facts), "MANIFEST_INVALID", "actions");
   });
   it("rejects non-hex contract data", () => {

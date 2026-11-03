@@ -74,9 +74,9 @@ const good: StepOutcome[] = [
 ];
 
 type Step = (StepOutcome & { delivery?: string }) | "throw";
-function fake(steps: Step[], store: InMemoryApprovalStore, lookup?: any) {
+function fake(steps: Step[], store: InMemoryApprovalStore, lookup?: ChainAdapter["lookupTx"]) {
   const log = { submits: [] as string[], statesAtSubmit: [] as (string | undefined)[], key: "" };
-  const chain: any = {
+  const chain: ChainAdapter = {
     discover: async () => facts,
     readFingerprint: async () => facts.fingerprint,
     preflight: async (plan: Plan) => ({
@@ -116,7 +116,7 @@ function fake(steps: Step[], store: InMemoryApprovalStore, lookup?: any) {
 const honest: WalletSigner = {
   sign: async (calls) => calls.map((c) => ({ signedTx: c, signedCall: c })),
 };
-async function setup(steps: Step[], lookup?: any) {
+async function setup(steps: Step[], lookup?: ChainAdapter["lookupTx"]) {
   const store = new InMemoryApprovalStore();
   const { chain, log } = fake(steps, store, lookup);
   const seam = new Seam(chain, store);
@@ -180,7 +180,7 @@ describe("SEAM-005: reserve, commit, release, uncertain, reconcile, never blind 
         events: [],
         error: "1010: Invalid Transaction",
         delivery: "rejected",
-      } as any,
+      },
     ]);
     const r = await t.exec();
     expect(t.log.submits).toEqual(["pay"]);

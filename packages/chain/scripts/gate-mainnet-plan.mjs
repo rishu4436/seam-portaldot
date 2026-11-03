@@ -11,7 +11,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
-import { compile, computeManifestDigest, computeFingerprintDigest } from "@seam/compiler";
+import { compile, computeFingerprintDigest } from "@seam/compiler";
 import {
   parsePolicy,
   evaluatePolicy,

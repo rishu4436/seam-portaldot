@@ -7,3 +7,11 @@ dist/
 *keystore*.json
 *wallet*.json
 secrets/
+.vercel
+
+# TypeScript incremental caches
+*.tsbuildinfo
+seam-data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

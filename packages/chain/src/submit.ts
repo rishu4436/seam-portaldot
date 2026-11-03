@@ -209,7 +209,8 @@ export async function waitFinalized(
             client
               .unsubscribe("chain_finalizedHead", "chain_unsubscribeFinalizedHeads", subId)
               .catch(() => undefined);
-          r instanceof Error ? reject(r) : resolve(r);
+          if (r instanceof Error) reject(r);
+          else resolve(r);
         };
         const timer = setTimeout(
           () => finish({ finalized: false, block, reason: "timeout" }),
@@ -316,7 +317,8 @@ export async function submitAndWatch(
             client
               .unsubscribe("author_extrinsicUpdate", "author_unwatchExtrinsic", subId)
               .catch(() => undefined);
-          err ? reject(err) : resolve(result);
+          if (err) reject(err);
+          else resolve(result);
         };
         const timer = setTimeout(() => {
           result.timedOut = true;

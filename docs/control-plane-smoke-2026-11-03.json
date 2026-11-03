@@ -1,0 +1,63 @@
+{
+  "checkedAt": "2026-11-03T10:42:44.571Z",
+  "health": 200,
+  "cors": "https://seam-portaldot.vercel.app",
+  "upload": 201,
+  "verification": {
+    "status": "chain_verified",
+    "problems": [],
+    "notes": [
+      "The node's metadata hash differs from the pinned one (0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 vs 0xec2fde24ee70eb009c4d2423feeafbec8d4f79ee41bd1b4f83ef524edb97e57a); genesis, spec, transaction version and ss58 match, so the pinned runtime is used."
+    ],
+    "steps": [
+      {
+        "actionId": "pay",
+        "status": "chain_verified"
+      },
+      {
+        "actionId": "nft",
+        "status": "chain_verified"
+      }
+    ],
+    "checkedAt": "2026-11-03T10:42:43.161Z",
+    "endpoint": "https://test-node-v3.portaldot.dev"
+  },
+  "readerWriteDenied": 403,
+  "revokedKeyRejected": 401,
+  "scheduledMonitor": [
+    {
+      "name": "Portaldot V3 runtime",
+      "enabled": 1,
+      "intervalSeconds": 900,
+      "latest": {
+        "id": "d18896f8-0284-427c-bb7b-4bef10b881e4",
+        "status": "unchanged",
+        "detail": {
+          "current": {
+            "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+            "specName": "portaldot-v3",
+            "specVersion": 3002,
+            "transactionVersion": 2,
+            "metadataHash": "0xec2fde24ee70eb009c4d2423feeafbec8d4f79ee41bd1b4f83ef524edb97e57a",
+            "layoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+            "finalizedBlock": 304950,
+            "checkedAt": "2026-11-03T10:41:15.655Z"
+          },
+          "baseline": {
+            "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+            "specName": "portaldot-v3",
+            "specVersion": 3002,
+            "transactionVersion": 2,
+            "metadataHash": "0xec2fde24ee70eb009c4d2423feeafbec8d4f79ee41bd1b4f83ef524edb97e57a",
+            "layoutHash": "0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304",
+            "finalizedBlock": 304950,
+            "checkedAt": "2026-11-03T10:41:15.655Z"
+          },
+          "changed": [],
+          "metadataOnlyDrift": false
+        },
+        "created_at": "2026-11-03T10:41:24.623Z"
+      }
+    }
+  ]
+}

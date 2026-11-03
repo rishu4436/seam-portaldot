@@ -1,7 +1,7 @@
 // Manifest Builder: connect a wallet, pick an account and network, read live runtime facts (read-only), build a Manifest
 // with one or more actions, choose atomicity, export/import JSON and compile. Supported actions come from the live facts'
 // capabilities; the compiler is the only authority on arguments and encoding. Nothing here signs or submits.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   argFields,
   checkManifest,
@@ -29,8 +29,18 @@ import { liveFactsStep } from "./Modes";
 import { loadChainFns } from "../lib/signflow";
 import { BuilderPolicy, type BuilderSelection } from "./BuilderPolicy";
 import type { Plan as PolicyPlan } from "@seam/policy/browser";
+import { AccountReadiness } from "./AccountReadiness";
 
 type Facts = Extract<V3FactsResult, { ok: true }>["facts"];
+const ACTION_LABELS: Record<BuilderKind, string> = {
+  "assets.transfer": "Send assets",
+  "assets.mint": "Mint assets",
+  "nfts.mint": "Mint an NFT",
+  "contracts.call": "Call a Wasm contract",
+  "revive.call": "Call a Revive contract",
+  "revive.instantiate_with_code": "Deploy a Revive contract",
+  "revive.map_account": "Map your account",
+};
 export type CompileFn = (
   manifest: DraftManifest,
   facts: Facts,
@@ -159,14 +169,18 @@ export function ManifestBuilder({
   compile = browserCompile,
   onCompiled,
   onUsePolicy,
+  onInvalidate,
+  onRuntime,
 }: {
+  onInvalidate?: () => void;
+  onRuntime?: (facts: unknown) => void;
   getInjected?: Parameters<typeof listWalletAccounts>[0];
   transportFor?: (url: string) => RpcTransport;
   factsStep?: (rpc: RpcTransport) => Promise<V3FactsResult>;
   compile?: CompileFn;
   onCompiled?: (plan: unknown, manifest: DraftManifest, facts: Facts) => void;
   /** Builder plan + compiler manifest + the tightened derived policy, for the real gate, approval and signing. */
-  onUsePolicy?: (sel: BuilderSelection & { facts: Facts }) => void;
+  onUsePolicy?: (sel: BuilderSelection & { facts: Facts; rpcUrl?: string }) => void;
 }) {
   const [accounts, setAccounts] = useState<WalletAccount[]>();
   const [walletMsg, setWalletMsg] = useState<string>();
@@ -175,7 +189,7 @@ export function ManifestBuilder({
   const [facts, setFacts] = useState<V3FactsResult>();
   const [busy, setBusy] = useState(false);
   const [actions, setActions] = useState<DraftAction[]>([]);
-  const [atomicity, setAtomicity] = useState<Atomicity>("preferred");
+  const [atomicity, setAtomicity] = useState<Atomicity>("sequential");
   const [importMsg, setImportMsg] = useState<string>();
   const [issues, setIssues] = useState<ManifestIssue[]>([]);
   const [compileMsg, setCompileMsg] = useState<string>();
@@ -183,11 +197,21 @@ export function ManifestBuilder({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const live = facts?.ok ? facts.facts : undefined;
+  useEffect(() => {
+    onRuntime?.(live);
+  }, [live, onRuntime]);
+  useEffect(() => {
+    setFacts(undefined);
+  }, [url]);
   const support = useMemo(() => actionSupport(live), [live]);
   const fp = (
     live as
       { fingerprint?: { genesisHash: string; specVersion: number; specName?: string } } | undefined
   )?.fingerprint;
+  useEffect(() => {
+    setPlan(undefined);
+    onInvalidate?.();
+  }, [signer, url, live, actions, atomicity, onInvalidate]);
   const manifest =
     signer && actions.length
       ? buildManifest(
@@ -283,13 +307,18 @@ export function ManifestBuilder({
           : undefined;
 
   return (
-    <section className="card" aria-label="Manifest builder">
-      <h3>Manifest builder</h3>
-      <p className="muted small">
-        Build a plan for your own account. Reading facts is read-only; nothing is signed here.
-      </p>
+    <section className="card manifest-card" aria-label="Manifest builder">
+      <div className="section-title">
+        <span className="section-number">01</span>
+        <div>
+          <h2>Build your transaction</h2>
+          <p>Connect your wallet and choose what happens on chain.</p>
+        </div>
+      </div>
 
-      <h4>1. Wallet</h4>
+      <h4>
+        <span>1</span> Connect your wallet
+      </h4>
       <div className="row">
         <button onClick={connect}>{accounts ? "Refresh accounts" : "Connect wallet"}</button>
         {accounts && (
@@ -316,9 +345,12 @@ export function ManifestBuilder({
         </p>
       )}
 
-      <h4>2. Network</h4>
+      <h4>
+        <span>2</span> Read the network
+      </h4>
       <div className="row">
         <select
+          disabled={busy}
           aria-label="Network"
           value={url === V3_HTTPS_RPC ? "v3" : "custom"}
           onChange={(e) => setUrl(e.target.value === "v3" ? V3_HTTPS_RPC : "")}
@@ -327,6 +359,7 @@ export function ManifestBuilder({
           <option value="custom">Custom RPC URL</option>
         </select>
         <input
+          disabled={busy}
           aria-label="RPC URL"
           value={url}
           onChange={(e) => {
@@ -350,7 +383,14 @@ export function ManifestBuilder({
         </p>
       )}
 
-      <h4>3. Actions</h4>
+      <AccountReadiness
+        address={signer}
+        facts={live as unknown as RuntimeFacts | undefined}
+        rpcUrl={url}
+      />
+      <h4>
+        <span>3</span> Choose your actions
+      </h4>
       <ul className="small" aria-label="Supported actions">
         {support
           .filter((s) => s.supported)
@@ -358,19 +398,20 @@ export function ManifestBuilder({
             <li key={s.kind}>
               <button
                 className="ghost xs"
+                aria-label={`Add ${ACTION_LABELS[s.kind]}`}
                 title={s.reason}
                 onClick={() => {
                   setPlan(undefined);
                   setActions((xs) => [...xs, emptyAction(s.kind, xs)]);
                 }}
               >
-                + {s.kind}
+                + {ACTION_LABELS[s.kind]}
               </button>{" "}
               <span className="muted">supported</span>
             </li>
           ))}
       </ul>
-      {support.some((s) => !s.supported) && (
+      {live && support.some((s) => !s.supported) && (
         <details className="small">
           <summary>
             Not available on this runtime ({support.filter((s) => !s.supported).length})
@@ -393,12 +434,22 @@ export function ManifestBuilder({
           </ul>
         </details>
       )}
+      {!live && (
+        <div className="builder-empty">
+          <span>+</span>
+          <b>Start with a live network read</b>
+          <p>Available actions will appear here once the runtime has been checked.</p>
+        </div>
+      )}
+      {live && !actions.length && (
+        <p className="builder-action-hint">Choose an action above to add it to your transaction.</p>
+      )}
       {actions.map((a, i) => {
         const f = argFields(a.kind);
         return (
           <fieldset key={a.id} aria-label={`Action ${a.id}`}>
             <legend>
-              {i + 1}. {a.kind} <code>{a.id}</code>
+              {i + 1}. {ACTION_LABELS[a.kind]} <code>{a.kind}</code>
             </legend>
             {f.map((fld) => {
               const err = fieldErrors[`${a.id} ${fld.name}`];
@@ -414,6 +465,7 @@ export function ManifestBuilder({
                       update(i, { ...a, args: { ...a.args, [fld.name]: e.target.value } })
                     }
                   />
+                  <span className="field-hint">{fld.description}</span>
                   {err && (
                     <span role="alert" className="small">
                       {" "}
@@ -452,7 +504,9 @@ export function ManifestBuilder({
         );
       })}
 
-      <h4>4. Atomicity</h4>
+      <h4>
+        <span>4</span> Choose execution mode
+      </h4>
       <select
         aria-label="Atomicity"
         value={atomicity}
@@ -465,8 +519,15 @@ export function ManifestBuilder({
         <option value="required">Require atomic (unavailable if not proven)</option>
         <option value="sequential">Sequential</option>
       </select>
+      <p className="small mode-explanation">
+        {atomicity === "sequential"
+          ? "Actions run one at a time. Earlier actions can remain completed if a later action fails."
+          : "An atomic batch needs rollback proof from this runtime. Any fallback to separate transactions needs your approval."}
+      </p>
 
-      <h4>5. Compile and export</h4>
+      <h4>
+        <span>5</span> Compile your transaction
+      </h4>
       <div className="row">
         <button disabled={!!blocked} onClick={doCompile}>
           Compile against live runtime
@@ -512,8 +573,8 @@ export function ManifestBuilder({
         </p>
       )}
       {plan != null && (
-        <details open>
-          <summary>Compiled plan</summary>
+        <details>
+          <summary>Technical details · compiled plan</summary>
           <pre className="small">{JSON.stringify(plan, null, 2)}</pre>
         </details>
       )}
@@ -528,7 +589,7 @@ export function ManifestBuilder({
               const chain = await loadChainFns();
               return chain.preflight(t(url), plan, live);
             }}
-            onUse={onUsePolicy && ((sel) => onUsePolicy({ ...sel, facts: live }))}
+            onUse={onUsePolicy && ((sel) => onUsePolicy({ ...sel, facts: live, rpcUrl: url }))}
           />
         </>
       )}

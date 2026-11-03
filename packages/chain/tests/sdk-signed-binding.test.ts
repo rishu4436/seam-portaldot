@@ -37,13 +37,18 @@ describe.skipIf(!existsSync(SDK))("SEAM-001 SDK + chain adapter", () => {
     const prepared = await seam.prepare(demoManifest(), f, policy);
     const approval = seam.approve({ ...prepared, policy, facts: f, now: NOW });
     const { registry } = encodeRuntime(f);
-    const sign = (pair: any, payload: any) =>
-      u8aToHex(pair.sign(hexToU8a(signBytesOf(payload, f)), { withType: true }));
+    const sign = (
+      pair: Awaited<ReturnType<typeof devKeys>>["alice"],
+      payload: import("../src/index.js").SigningRequest["payload"],
+    ) => u8aToHex(pair.sign(hexToU8a(signBytesOf(payload, f)), { withType: true }));
     const wallet = {
-      async sign(calls: string[], envelope: any) {
-        const reqs = adapter.signingRequests(calls as any, envelope);
+      async sign(
+        calls: import("@seam/compiler").Hex[],
+        envelope: import("@seam/policy").SigningEnvelope,
+      ) {
+        const reqs = adapter.signingRequests(calls, envelope);
         return reqs.map((r, i) => {
-          let payload: any = r.payload;
+          let payload = r.payload;
           let pair = keys.alice;
           if (tamper === "swap-call" && i === 1) payload = { ...payload, method: reqs[2]!.callHex };
           if (tamper === "other-signer" && i === 0) {

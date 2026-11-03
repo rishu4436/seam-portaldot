@@ -164,8 +164,15 @@ export class Seam {
   async prepare(manifest: Manifest, facts: RuntimeFacts, policy: Policy, options?: CompileOptions) {
     const plan = compile(manifest, facts, this.opts(options));
     const { preflight, envelope } = await this.chain.preflight(plan);
-    const policyResult = evaluatePolicy({ policy, plan, facts, preflight, manifest });
-    return { plan, preflight, envelope, policyResult };
+    const policyResult = evaluatePolicy({
+      policy,
+      plan,
+      facts,
+      preflight,
+      manifest,
+      abis: this.opts(options).abis,
+    });
+    return { plan, preflight, envelope, policyResult, compileOptions: this.opts(options) };
   }
 
   approve(p: {
@@ -182,10 +189,12 @@ export class Seam {
      */
     manifest?: Manifest;
     liveFacts?: RuntimeFacts;
+    compileOptions?: CompileOptions;
     /** Refuse unless `manifest` is given and the bytes verify. Use for genuinely live flows. */
     requirePlanVerified?: boolean;
   }) {
     return createApproval({
+      abis: this.opts(p.compileOptions).abis,
       ...(p.manifest ? { manifest: p.manifest, liveFacts: p.liveFacts ?? p.facts } : {}),
       ...(p.requirePlanVerified ? { requirePlanVerified: true } : {}),
       manifestDigest: p.plan.manifestDigest,
@@ -235,6 +244,7 @@ export class Seam {
      */
     manifest?: Manifest;
     liveFacts?: RuntimeFacts;
+    compileOptions?: CompileOptions;
     /**
      * Genuinely live send: turns on checkBeforeSubmit live mode, where the Manifest, live facts, signed calls, current
      * block and account nonce are all required (each missing one blocks). Read fresh before every gate check.
@@ -289,6 +299,7 @@ export class Seam {
       previousSteps?: ReceiptStep[],
     ) =>
       checkBeforeSubmit({
+        abis: this.opts(p.compileOptions).abis,
         manifestDigest: p.plan.manifestDigest,
         plan: p.plan,
         envelope: p.envelope,

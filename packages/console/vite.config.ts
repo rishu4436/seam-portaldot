@@ -9,7 +9,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react()],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
+      output: {
+        strictExecutionOrder: true,
+        codeSplitting: {
+          groups: [
+            { name: "recordings", test: /src[\\/]demo[\\/]/, maxSize: 250000 },
+            { name: "vendor", test: /node_modules/, minSize: 30000, maxSize: 250000 },
+          ],
+        },
+      },
       input: {
         site: resolve(here, "index.html"),
         landing: resolve(here, "landing.html"),

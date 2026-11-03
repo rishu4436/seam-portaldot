@@ -1,0 +1,19 @@
+{
+  "status": "chain_verified",
+  "problems": [],
+  "notes": [
+    "The node's metadata hash differs from the pinned one (0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 vs 0xec2fde24ee70eb009c4d2423feeafbec8d4f79ee41bd1b4f83ef524edb97e57a); genesis, spec, transaction version and ss58 match, so the pinned runtime is used."
+  ],
+  "steps": [
+    {
+      "actionId": "pay",
+      "status": "chain_verified"
+    },
+    {
+      "actionId": "nft",
+      "status": "chain_verified"
+    }
+  ],
+  "checkedAt": "2026-11-03T10:41:41.228Z",
+  "endpoint": "https://test-node-v3.portaldot.dev"
+}

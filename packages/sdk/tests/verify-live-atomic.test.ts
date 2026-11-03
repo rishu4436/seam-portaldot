@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Hex, Plan, RuntimeFingerprint } from "@seam/compiler";
+import { computePlanDigest } from "@seam/compiler";
 import {
   buildReceipt,
   perStepOfBatch,
@@ -121,6 +122,7 @@ describe("atomic plans: each step re-checks against its own slice of the on-chai
     mode: "atomic_verified",
     outerCall: { ...(ATOMIC.plan.outerCall as Plan["outerCall"]), encodedCall: outer },
   } as Plan;
+  aplan.planDigest = computePlanDigest(aplan);
   const cs = CALL.run.receipt.steps[0];
   const callTx: Tx = {
     txHash: cs.txHash,

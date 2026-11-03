@@ -1,4 +1,6 @@
 import { hexToU8a, u8aConcat, u8aToHex } from "@polkadot/util";
+import type { Bytes, Result, Struct, u32 } from "@polkadot/types";
+import type { DispatchError, WeightV2 } from "@polkadot/types/interfaces";
 import { encodeAddress, keccakAsU8a } from "@polkadot/util-crypto";
 import type { Hex, Plan, PlanStep, RuntimeFacts, StepReasonCode } from "@seam/compiler";
 import { SeamChainError } from "./errors.js";
@@ -308,7 +310,7 @@ async function contractDryRunViaRuntimeApi(
     const api = version?.apis?.find(([id]) => id === CONTRACTS_API_ID);
     if (!api || api[1] !== 2) return undefined;
     const { registry } = decodeRuntime(facts);
-    registry.register(CONTRACT_RESULT_V2 as any);
+    registry.register(CONTRACT_RESULT_V2);
     const params = u8aConcat(
       registry.createType("AccountId", origin).toU8a(),
       registry.createType("AccountId", dest).toU8a(),
@@ -322,7 +324,13 @@ async function contractDryRunViaRuntimeApi(
       u8aToHex(params),
       at,
     ]);
-    const res = registry.createType("SeamContractResultV2", hexToU8a(out)) as any;
+    const res = registry.createType<
+      Struct & {
+        debugMessage: Bytes;
+        gasRequired: WeightV2;
+        result: Result<Struct & { flags: u32 }, DispatchError>;
+      }
+    >("SeamContractResultV2", hexToU8a(out));
     const raw = {
       via: "state_call ContractsApi_call (v2)",
       result: res.toJSON(),
@@ -367,7 +375,7 @@ async function assetExists(
   at: Hex,
 ): Promise<boolean | undefined> {
   try {
-    const query = (decodeRuntime(facts).decorated().query as any).assets?.asset;
+    const query = decodeRuntime(facts).decorated().query.assets?.asset;
     if (!query) return undefined;
     const key = storageKey(query, assetId);
     const value = await rpc<string | null>(client, "state_getStorage", [key, at]);
@@ -382,7 +390,7 @@ type StorageEntryLoose = Parameters<typeof storageKey>[0] & {
 };
 
 /** Reads one storage value and decodes it strictly (every byte must be used). null: no entry. Throws on any other problem. */
-async function readStorageValue(
+export async function readStorageValue(
   client: RpcClient,
   facts: RuntimeFacts,
   entry: StorageEntryLoose,

@@ -599,7 +599,7 @@ function capabilityOrigin(
 function bitLengthOf(rt: LoadedRuntime, type: string): number | undefined {
   const inner = type.replace(/^Compact<(.+)>$/, "$1");
   try {
-    const t = rt.registry.createType(inner as any) as any;
+    const t = rt.registry.createType(inner) as { bitLength?: () => number };
     return typeof t.bitLength === "function" ? t.bitLength() : undefined;
   } catch {
     return undefined;
@@ -632,7 +632,7 @@ function isWeightV2(rawType: string): boolean {
 
 function weightV2(rt: LoadedRuntime, metaArgs: { name: string; type: string }[]): boolean {
   const g = metaArgs.find((a) => a.name === "gasLimit" || a.name === "weightLimit");
-  return !!g && isWeightV2(rt.registry.createType(g.type as any).toRawType());
+  return !!g && isWeightV2(rt.registry.createType(g.type).toRawType());
 }
 
 /** Checks that depend only on the runtime, not on the manifest values: encoder exists, V3 shape, no unknown args. */
@@ -735,7 +735,7 @@ function encodeStep(
       continue;
     }
     const raw = v.encodeValues[seamKey]!;
-    const rawType = rt.registry.createType(a.type as any).toRawType();
+    const rawType = rt.registry.createType(a.type).toRawType();
     if (seamKey === "gasLimit" && isWeightV2(rawType)) {
       // Weight v2: { ref_time: gasLimit, proof_size: proofSize }, both Compact<u64>.
       const proof = v.encodeValues.proofSize;

@@ -1,185 +1,267 @@
-import dev from "../demo/devnode.json";
-import { LocalNodeEvidence } from "../components/LocalNode";
-
-const REPO = "https://github.com/rishu4436/seam-portaldot";
-const CONSOLE = "./console.html";
-const short = (h: string) => `${h.slice(0, 10)}…${h.slice(-6)}`;
-
-const seq = dev.sequential.run.receipt;
-
-const PATH = [
+import { SeamMark, Symbol } from "../components/Brand";
+const steps = [
   {
-    n: "1",
-    t: "Describe the transaction",
-    d: "Pick the sample transfer, or fill in who receives what. That description is the Manifest.",
+    n: "01",
+    title: "Describe your intent.",
+    text: "Choose your account, destination and action. Build a single transaction or a sequence of actions.",
+    icon: "layers" as const,
   },
   {
-    n: "2",
-    t: "SEAM checks it",
-    d: "It reads the live Portaldot testnet, builds the exact call, and stops if your rules or the chain say no.",
+    n: "02",
+    title: "See the checks.",
+    text: "SEAM reads the live runtime, compiles exact calls and checks your recipients, amounts and fee limits.",
+    icon: "shield" as const,
   },
   {
-    n: "3",
-    t: "Your wallet signs",
-    d: "SEAM never holds the key. If the chain result cannot be proven, the receipt says unknown.",
+    n: "03",
+    title: "Sign with confidence.",
+    text: "Your wallet signs the approved transaction. A finalized receipt records what the chain actually proves.",
+    icon: "wallet" as const,
   },
 ];
-
 export default function Landing() {
   return (
-    <div className="lp">
-      <header className="nav">
-        <a className="brand" href="#top">
-          <span className="logo">S</span>
-          <b>SEAM</b>
+    <div className="site">
+      <header className="site-nav">
+        <a className="site-brand" href="#top">
+          <span>
+            <SeamMark />
+          </span>
+          seam.
         </a>
-        <nav>
+        <nav aria-label="Main navigation">
           <a href="#how">How it works</a>
-          <a href="#try">Try it</a>
-          <a className="btn small" href={CONSOLE}>
-            Open the console
+          <a href="#principles">Why SEAM</a>
+          <a href="https://github.com/rishu4436/seam-portaldot" target="_blank" rel="noreferrer">
+            Developers <Symbol kind="external" />
           </a>
         </nav>
+        <a className="site-button small" href="./console.html">
+          Launch workspace <Symbol kind="arrow" />
+        </a>
       </header>
-
-      <section className="hero" id="top">
-        <div>
-          <p className="eyebrow">Portaldot testnet</p>
-          <h1>Check a transaction before your wallet signs it.</h1>
-          <p className="lead">
-            SEAM is a console for the Portaldot V3 testnet. You choose a transaction, SEAM checks it
-            against the live chain, and your own wallet signs. A blocked check is a successful
-            result.
-          </p>
-          <div className="cta">
-            <a className="btn" href={CONSOLE}>
-              Open the console
-            </a>
-            <a className="btn ghost" href="#try">
-              See the three steps
+      <main>
+        <section className="site-hero" id="top">
+          <div className="hero-copy">
+            <span className="site-network">
+              <i />
+              BUILT FOR PORTALDOT V3 TESTNET
+            </span>
+            <h1>
+              Your intent.
+              <br />
+              Every check.
+              <br />
+              <span>One clear outcome.</span>
+            </h1>
+            <p>
+              Move from a transaction idea to a verified result.
+              <br className="desktop-break" /> SEAM brings runtime checks, policy and wallet signing
+              <br className="desktop-break" /> into one focused workspace.
+            </p>
+            <div className="hero-actions">
+              <a className="site-button" href="./console.html">
+                Open the live workspace <Symbol kind="arrow" />
+              </a>
+              <a className="text-link" href="#how">
+                Explore the flow <span>↓</span>
+              </a>
+            </div>
+            <div className="hero-footnote">
+              <Symbol kind="shield" />
+              <span>Your wallet. Your keys. Your approval.</span>
+            </div>
+          </div>
+          <div
+            className="flow-art"
+            aria-label="Transaction flow illustration, not live transaction data"
+          >
+            <div className="art-grid" />
+            <span className="art-caption">A CLEAR PATH FROM INTENT TO RESULT</span>
+            <div className="orb orb-one" />
+            <div className="orb orb-two" />
+            <svg className="flow-line" viewBox="0 0 500 530" fill="none" aria-hidden="true">
+              <path d="M250 100V180H140V280H355V385H250V460" stroke="#dcd9f0" strokeWidth="2" />
+              <path
+                className="travelling-line"
+                d="M250 100V180H140V280H355V385H250V460"
+                stroke="#8d82df"
+                strokeWidth="3"
+                strokeDasharray="14 700"
+              />
+            </svg>
+            <div className="art-card intent-card">
+              <span className="art-icon">
+                <Symbol kind="layers" />
+              </span>
+              <div>
+                <small>START WITH AN INTENT</small>
+                <b>Your transaction</b>
+              </div>
+              <span className="art-token">01</span>
+            </div>
+            <div className="art-card check-card">
+              <span className="art-icon violet">
+                <Symbol kind="shield" />
+              </span>
+              <div>
+                <small>BEFORE THE SIGNATURE</small>
+                <b>Live runtime + policy</b>
+                <p>
+                  <i />
+                  Call bytes <i />
+                  Limits <i />
+                  Fees
+                </p>
+              </div>
+            </div>
+            <div className="art-card result-card">
+              <span className="art-icon green">
+                <Symbol kind="wallet" />
+              </span>
+              <div>
+                <small>YOUR WALLET SIGNS</small>
+                <b>Verify the finalized result</b>
+              </div>
+              <span className="art-arrow">↗</span>
+            </div>
+            <div className="art-bottom">
+              <span>COMPILE</span>
+              <span>CHECK</span>
+              <span>SIGN</span>
+              <span>VERIFY</span>
+            </div>
+          </div>
+        </section>
+        <div className="site-strip">
+          <span>
+            One execution layer.<b>Every step accounted for.</b>
+          </span>
+          <div>
+            <span>
+              <Symbol kind="layers" />
+              Metadata-driven calls
+            </span>
+            <span>
+              <Symbol kind="shield" />
+              Policy before signing
+            </span>
+            <span>
+              <Symbol kind="wallet" />
+              External wallet custody
+            </span>
+          </div>
+        </div>
+        <section className="site-how" id="how">
+          <div className="site-section-head">
+            <p className="site-eyebrow">LESS GUESSWORK. MORE CLARITY.</p>
+            <h2>
+              Complex execution.
+              <br />
+              <span>A straightforward experience.</span>
+            </h2>
+            <p>You bring the intent. SEAM makes the path visible.</p>
+          </div>
+          <ol className="site-step-grid">
+            {steps.map((s) => (
+              <li key={s.n}>
+                <div className="step-top">
+                  <span>{s.n}</span>
+                  <Symbol kind={s.icon} />
+                </div>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+                <div className="step-line" />
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section className="site-principles" id="principles">
+          <div>
+            <p className="site-eyebrow">A WORKSPACE YOU CAN REASON ABOUT</p>
+            <h2>
+              Clarity at every
+              <br />
+              trust boundary.
+            </h2>
+            <p>
+              A successful dispatch is only part of the story.
+              <br />
+              SEAM keeps approval, finality and proven effects distinct.
+            </p>
+            <a
+              className="text-link"
+              href="https://github.com/rishu4436/seam-portaldot/blob/main/docs/SECURITY_GATES.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Understand the checks <Symbol kind="arrow" />
             </a>
           </div>
-          <p className="fine">
-            Testnet only. Mainnet is refused. You need a Polkadot.js, Talisman, or SubWallet
-            account, prefix 42, with testnet tPOT for fees.
-          </p>
-        </div>
-        <aside className="receipt" aria-label="What the console walks you through">
-          <header>
-            <span>In the console</span>
-            <b>3 steps</b>
-          </header>
-          <ol>
-            <li>
-              <span>Choose</span>
-              <code>sample transfer or your own</code>
-            </li>
-            <li>
-              <span>Check</span>
-              <code>live V3 testnet</code>
-            </li>
-            <li>
-              <span>Sign</span>
-              <code>only if the check passes</code>
-            </li>
-          </ol>
-          <footer>The console will not ask for a seed phrase.</footer>
-        </aside>
-      </section>
-
-      <section id="how">
-        <h2>How it works</h2>
-        <p className="sec">One transaction. One check. One signature.</p>
-        <ol className="steps">
-          {PATH.map((p) => (
-            <li key={p.n}>
-              <span className="n">{p.n}</span>
-              <h3>{p.t}</h3>
-              <p>{p.d}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section id="try">
-        <h2>Try it</h2>
-        <p className="sec">Stay on the testnet. Do not deploy a contract.</p>
-        <ol className="vol">
-          <li>
-            <span className="n">1</span>
-            <p>
-              <b>Install a wallet.</b> Polkadot.js, Talisman, or SubWallet. Create an account with
-              ss58 prefix 42.
-            </p>
-          </li>
-          <li>
-            <span className="n">2</span>
-            <p>
-              <b>Open the console.</b> Connect the wallet, then press Check live. Stop if the chain
-              is not <code>portaldot-v3</code>.
-            </p>
-          </li>
-          <li>
-            <span className="n">3</span>
-            <p>
-              <b>Send the sample, or build your own.</b> The sample moves 1 unit of test asset
-              806707. Sign in the wallet only after the check says the plan is allowed. If it
-              blocks, write down the code and <a href={`${REPO}/issues`}>open a GitHub issue</a>.
-            </p>
-          </li>
-        </ol>
-        <div className="cta" style={{ marginTop: 18 }}>
-          <a className="btn" href={CONSOLE}>
-            Open the console
+          <div className="principle-list">
+            <article>
+              <span>01</span>
+              <div>
+                <h3>Built from the live runtime</h3>
+                <p>
+                  Calls are compiled from metadata. If an action is unavailable, the workspace tells
+                  you before you sign.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span>02</span>
+              <div>
+                <h3>Your approval has boundaries</h3>
+                <p>
+                  Approvals bind the plan, policy and signing window. Changes require another
+                  review.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span>03</span>
+              <div>
+                <h3>Proof, with its limits visible</h3>
+                <p>
+                  Finalized and verified mean different things. An effect the chain cannot prove
+                  stays unknown.
+                </p>
+              </div>
+            </article>
+          </div>
+        </section>
+        <section className="site-start">
+          <div>
+            <span className="site-eyebrow">YOUR NEXT TRANSACTION STARTS HERE</span>
+            <h2>
+              Make a move.
+              <br />
+              Know what happens.
+            </h2>
+            <p>Connect a Polkadot-compatible wallet and use testnet tPOT for fees.</p>
+          </div>
+          <a className="site-button" href="./console.html">
+            Enter the workspace <Symbol kind="arrow" />
           </a>
-        </div>
-      </section>
-
-      <section id="more">
-        <h2>Proof and source</h2>
-        <p className="sec">
-          The product above is the testnet console. The notes below are for someone checking the
-          claims.
-        </p>
-        <details className="more">
-          <summary>What has been shown on chain</summary>
-          <p>
-            The hosted V3 testnet (spec 3002) has a keystore run of 18 finalized transactions.
-            Wallet-signed console proof so far is <code>assets.transfer</code>, including blocks
-            #121390 and #121394. A Revive call with no <code>ContractEmitted</code> stays unknown.
-            Nothing has been submitted to mainnet.
-          </p>
-          <p>
-            A separate local dev chain recorded a three-step run as <b>{seq.result}</b> (
-            {seq.coverage.verified} of {seq.coverage.expected} steps). That recording is not the V3
-            testnet. First step {short(seq.steps[0].txHash)}. Files live in{" "}
-            <a href={`${REPO}/tree/main/evidence/testnet-v3`}>evidence/testnet-v3</a>.
-          </p>
-        </details>
-        <details className="more">
-          <summary>Local node recording</summary>
-          <LocalNodeEvidence />
-        </details>
-        <details className="more">
-          <summary>Run it from the repo</summary>
-          <pre>{`npm install
-npm run build
-npm run dev -w @seam/console`}</pre>
-          <p>
-            Needs Node 22 or later. The site is <code>http://localhost:5173</code>. The console is{" "}
-            <code>http://localhost:5173/console.html</code>. Docs:{" "}
-            <a href={`${REPO}/blob/main/docs/quickstart.md`}>quickstart</a>.
-          </p>
-        </details>
-      </section>
-
-      <footer>
+          <div className="start-orbit" aria-hidden="true" />
+        </section>
+      </main>
+      <footer className="site-footer">
+        <a className="site-brand" href="#top">
+          <span>
+            <SeamMark />
+          </span>
+          seam.
+        </a>
+        <p>Execution infrastructure for Portaldot.</p>
         <div>
-          <span className="logo">S</span> <b>SEAM</b>
-          <span className="muted">Testnet console. Your wallet signs.</span>
-        </div>
-        <div>
-          <a href={REPO}>GitHub</a> · <a href={CONSOLE}>Console</a>
+          <span>
+            <i />
+            V3 testnet only
+          </span>
+          <a href="https://github.com/rishu4436/seam-portaldot">Source code ↗</a>
+          <a href="./console.html?view=lab">Recorded tools ↗</a>
         </div>
       </footer>
     </div>

@@ -4,6 +4,7 @@ import { blake2AsHex } from "@polkadot/util-crypto";
 import { describe, expect, it } from "vitest";
 import {
   compile,
+  SeamCompileError,
   computeAbiHash,
   computePlanDigest,
   decodeInkMessage,
@@ -52,7 +53,7 @@ function reverseKeys<T>(v: T): T {
     return Object.fromEntries(
       Object.keys(v)
         .reverse()
-        .map((k) => [k, reverseKeys((v as any)[k])]),
+        .map((k) => [k, reverseKeys((v as Record<string, unknown>)[k])]),
     ) as T;
   return v;
 }
@@ -81,7 +82,7 @@ describe("contracts.call from an ink! ABI", () => {
     // The runtime call carries exactly those bytes.
     const call = registry.createType("Call", s.encodedCall!);
     expect(`${call.section}.${call.method}`).toBe("contracts.call");
-    expect((call.args[3] as any).toHex()).toBe(expected);
+    expect(call.args[3].toHex()).toBe(expected);
   });
 
   it("selector is ink!'s default: first 4 bytes of blake2b-256(label)", () => {
@@ -252,7 +253,8 @@ describe("contracts.call ABI form: errors", () => {
     try {
       compile(inkCall({ message: "transferr", args: {}, abi: ERC20 }), facts);
       throw new Error("should fail");
-    } catch (e: any) {
+    } catch (e) {
+      if (!(e instanceof SeamCompileError)) throw e;
       expect(e.issues[0]).toMatchObject({
         code: "ABI_MESSAGE_UNKNOWN",
         path: "actions[1].args.message",

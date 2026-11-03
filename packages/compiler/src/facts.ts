@@ -168,14 +168,15 @@ export function readCapabilities(rt: LoadedRuntime): Record<string, Capability> 
  */
 export function factsFromMetadata(input: FactsFromMetadataInput): RuntimeFacts {
   const rt = loadRuntime(input.metadataHex, input.typesBundle);
-  const consts = withoutLookupWarning(() => expandMetadata(rt.registry, rt.metadata)).consts as any;
-  const version = consts.system?.version;
+  const consts = withoutLookupWarning(() => expandMetadata(rt.registry, rt.metadata)).consts;
+  const version = consts.system?.version as unknown as
+    import("@polkadot/types/interfaces").RuntimeVersion | undefined;
   if (!version) throw new Error("metadata has no System.Version constant");
   const specName = version.specName.toString() as string;
   const specVersion = version.specVersion.toNumber() as number;
   const transactionVersion = version.transactionVersion.toNumber() as number;
   const ss58Prefix = consts.system?.ss58Prefix
-    ? (consts.system.ss58Prefix.toNumber() as number)
+    ? (consts.system.ss58Prefix as unknown as import("@polkadot/types/types").INumber).toNumber()
     : input.ss58Prefix;
   if (ss58Prefix === undefined) throw new Error("ss58Prefix not in metadata; pass it explicitly");
 

@@ -14,7 +14,7 @@ function reverseKeys<T>(v: T): T {
     return Object.fromEntries(
       Object.keys(v)
         .reverse()
-        .map((k) => [k, reverseKeys((v as any)[k])]),
+        .map((k) => [k, reverseKeys((v as Record<string, unknown>)[k])]),
     ) as T;
   }
   return v;
@@ -60,7 +60,7 @@ describe("determinism", () => {
   it("any change to the manifest changes manifestDigest and planDigest", () => {
     const m = demoManifest();
     const m2: Manifest = JSON.parse(JSON.stringify(m));
-    (m2.actions[0]!.args as any).amount = "2500000000000001";
+    (m2.actions[0]!.args as Record<string, unknown>).amount = "2500000000000001";
     expect(computeManifestDigest(m2)).not.toBe(computeManifestDigest(m));
     expect(compile(m2, facts).planDigest).not.toBe(compile(m, facts).planDigest);
   });
@@ -96,7 +96,10 @@ describe("determinism", () => {
     const keys: string[] = [];
     const walk = (v: unknown) => {
       if (v && typeof v === "object")
-        for (const [k, x] of Object.entries(v)) (keys.push(k), walk(x));
+        for (const [k, x] of Object.entries(v)) {
+          keys.push(k);
+          walk(x);
+        }
     };
     walk(p);
     for (const f of forbidden) expect(keys, f).not.toContain(f);

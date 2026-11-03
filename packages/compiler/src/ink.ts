@@ -7,7 +7,15 @@
  * data is decoded again and compared, so the plan can never record args that differ from the bytes.
  */
 import { Abi } from "@polkadot/api-contract";
-import { U8aFixed } from "@polkadot/types";
+import {
+  U8aFixed,
+  type Compact,
+  type Enum,
+  type Option,
+  type Struct,
+  type bool,
+} from "@polkadot/types";
+import type { Codec, INumber } from "@polkadot/types/types";
 import { TypeDefInfo, getTypeDef } from "@polkadot/types-create";
 import type { TypeDef } from "@polkadot/types-create/types";
 import {
@@ -83,15 +91,16 @@ type PlainKind =
   | { kind: "other"; raw: string };
 
 function plainKind(registry: Registry, type: string): PlainKind {
-  const inst = registry.createType(type as any) as any;
+  const inst = registry.createType(type);
+  const numeric = inst as Partial<INumber> & { isUnsigned?: boolean };
   const raw: string = inst.toRawType();
   if (raw === "AccountId" || raw === "AccountId32") return { kind: "account" };
   if (
-    typeof inst.isUnsigned === "boolean" &&
-    typeof inst.toBigInt === "function" &&
-    typeof inst.bitLength === "function"
+    typeof numeric.isUnsigned === "boolean" &&
+    typeof numeric.toBigInt === "function" &&
+    typeof numeric.bitLength === "function"
   ) {
-    return { kind: "int", signed: !inst.isUnsigned, bits: inst.bitLength() };
+    return { kind: "int", signed: !numeric.isUnsigned, bits: numeric.bitLength() };
   }
   if (inst instanceof U8aFixed) return { kind: "fixed", len: inst.length };
   if (raw === "bool") return { kind: "bool" };
@@ -192,6 +201,7 @@ function normalise(
           throw new ArgError(path, `SEAM cannot encode ink! type ${name} (${k.raw}) yet`);
         }
       }
+      throw new ArgError(path, `unrecognized ink! type ${name}`);
     }
     case TypeDefInfo.Compact: {
       const sub = def.sub as TypeDef;
@@ -277,19 +287,19 @@ function normalise(
 }
 
 /** Codec -> the same normalised form as `normalise`, used to prove the bytes say what the plan says. */
-function fromCodec(registry: Registry, def: TypeDef, c: any, ss58Prefix: number): InkArgValue {
+function fromCodec(registry: Registry, def: TypeDef, c: Codec, ss58Prefix: number): InkArgValue {
   switch (def.info) {
     case TypeDefInfo.Plain:
     case TypeDefInfo.Si: {
       const k = plainKind(registry, def.lookupName ?? def.type);
       switch (k.kind) {
         case "int":
-          return c.toBigInt().toString();
+          return (c as INumber).toBigInt().toString();
         case "fixed":
         case "bytes":
           return u8aToHex(c.toU8a(true));
         case "bool":
-          return c.isTrue;
+          return (c as bool).isTrue;
         case "text":
           return c.toString();
         case "account":
@@ -299,31 +309,37 @@ function fromCodec(registry: Registry, def: TypeDef, c: any, ss58Prefix: number)
         case "other":
           return fromCodec(registry, getTypeDef(k.raw), c, ss58Prefix);
       }
+      throw new Error(`unrecognized ink! codec ${def.type}`);
     }
     case TypeDefInfo.Compact:
-      return c.unwrap().toBigInt().toString();
+      return (c as Compact<INumber>).unwrap().toBigInt().toString();
     case TypeDefInfo.Option:
-      return c.isNone ? null : fromCodec(registry, def.sub as TypeDef, c.unwrap(), ss58Prefix);
+      return (c as Option<Codec>).isNone
+        ? null
+        : fromCodec(registry, def.sub as TypeDef, (c as Option<Codec>).unwrap(), ss58Prefix);
     case TypeDefInfo.Struct: {
       const subs = def.sub as TypeDef[];
-      const vals = [...c.values()];
+      const vals = [...(c as Struct).values()];
       return Object.fromEntries(
         subs.map((s, i) => [s.name!, fromCodec(registry, s, vals[i], ss58Prefix)]),
       );
     }
     case TypeDefInfo.Tuple:
-      return (def.sub as TypeDef[]).map((s, i) => fromCodec(registry, s, c[i], ss58Prefix));
+      return (def.sub as TypeDef[]).map((s, i) =>
+        fromCodec(registry, s, (c as unknown as Codec[])[i], ss58Prefix),
+      );
     case TypeDefInfo.Vec:
     case TypeDefInfo.VecFixed: {
       const sub = def.sub as TypeDef;
       if (isU8(sub)) return u8aToHex(c.toU8a(true));
-      return [...c].map((x: unknown) => fromCodec(registry, sub, x, ss58Prefix));
+      return [...(c as unknown as Codec[])].map((x) => fromCodec(registry, sub, x, ss58Prefix));
     }
     case TypeDefInfo.Enum: {
-      const sub = (def.sub as TypeDef[]).find((s, i) => (s.index ?? i) === c.index)!;
+      const value = c as Enum;
+      const sub = (def.sub as TypeDef[]).find((s, i) => (s.index ?? i) === value.index)!;
       return sub.type === "Null"
         ? sub.name!
-        : { [sub.name!]: fromCodec(registry, sub, c.value, ss58Prefix) };
+        : { [sub.name!]: fromCodec(registry, sub, value.value, ss58Prefix) };
     }
     default:
       throw new Error(`cannot decode ink! type ${def.type}`);
@@ -331,9 +347,9 @@ function fromCodec(registry: Registry, def: TypeDef, c: any, ss58Prefix: number)
 }
 
 function messageSpecs(abi: Abi): { label: string; args: string[] }[] {
-  return (abi.metadata.spec.messages as any).map((m: any) => ({
+  return abi.metadata.spec.messages.map((m) => ({
     label: m.label.toString(),
-    args: m.args.map((a: any) => a.label.toString()),
+    args: m.args.map((a) => a.label.toString()),
   }));
 }
 
@@ -384,9 +400,7 @@ export function encodeInkMessage(
   const specs = messageSpecs(abi);
   const idx = specs.findIndex((s) => s.label === message);
   if (idx < 0) {
-    const isCtor = (abi.metadata.spec.constructors as any).some(
-      (c: any) => c.label.toString() === message,
-    );
+    const isCtor = abi.metadata.spec.constructors.some((c) => c.label.toString() === message);
     issues.push({
       code: "ABI_MESSAGE_UNKNOWN",
       path: `${base}.message`,
@@ -467,7 +481,7 @@ export function encodeInkMessage(
 
   let data: Hex;
   try {
-    const withLen = msg.toU8a(enc as any);
+    const withLen = msg.toU8a(enc as Parameters<typeof msg.toU8a>[0]);
     data = u8aToHex(compactStripLength(withLen)[1]) as Hex;
     // Round trip: the bytes must decode to the same message and the same normalised args.
     const d = abi.decodeMessage(withLen);

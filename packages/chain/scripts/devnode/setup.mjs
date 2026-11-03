@@ -54,7 +54,6 @@ const CONTRACT_FILE = fileURLToPath(
 );
 const bundle = JSON.parse(readFileSync(CONTRACT_FILE, "utf8"));
 const ctor = bundle.spec.constructors.find((c) => c.label === "new");
-const wasmHex = bundle.source.wasm;
 const codeHash = bundle.source.hash;
 const stillThere =
   state.contract &&

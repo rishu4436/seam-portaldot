@@ -1,3 +1,4 @@
+import { lookupTxByHash } from "@seam/chain/browser";
 // Persisted, NON-SECRET execution state for LIVE runs (P1-03), so a refresh can recover a pending run and can never
 // broadcast it twice. One versioned localStorage key. Only whitelisted fields are written: plan digest, approval hash,
 // phase, per-step status, tx hash, nonce, block, timestamps, used approval keys and the single-flight send guard.
@@ -11,6 +12,8 @@
 import { InMemoryApprovalStore } from "@seam/policy/browser";
 
 export const RUN_STORE_KEY = "seam.console.runs.v1";
+const SEND_GUARD_PREFIX = "seam.console.send.v1:";
+export class RunStoreError extends Error {}
 
 export type RunPhase =
   | "approved"
@@ -88,6 +91,7 @@ export type TxLookup = (q: { txHash: string; fromBlock?: number }) => Promise<
       success: boolean;
       dispatchError?: unknown;
       events?: unknown;
+      finalized?: boolean;
     }
   | { status: "not_found"; scannedFrom: number; scannedTo: number }
   | { status: "unknown"; reason: string }
@@ -148,11 +152,85 @@ export class RunStore {
   }
   private read(): StoreShape {
     try {
-      const raw = this.kv?.getItem(RUN_STORE_KEY);
-      const v = raw ? (JSON.parse(raw) as StoreShape) : undefined;
-      return v && v.version === 1 ? { ...empty(), ...v } : empty();
-    } catch {
-      return empty();
+      if (!this.kv) throw new Error("Persistent browser storage is unavailable.");
+      const raw = this.kv.getItem(RUN_STORE_KEY);
+      if (raw === null) return empty();
+      assertNoSecrets(raw);
+      const v = JSON.parse(raw) as StoreShape;
+      const record = (value: unknown) =>
+        !!value && typeof value === "object" && !Array.isArray(value);
+      const phases: RunPhase[] = [
+        "approved",
+        "signed",
+        "submitting",
+        "submitted",
+        "finalized",
+        "blocked",
+        "failed",
+        "uncertain",
+        "abandoned",
+      ];
+      const states: StepState[] = [
+        "pending",
+        "signed",
+        "submitting",
+        "submitted",
+        "in_block",
+        "finalized",
+        "not_found",
+        "not_sent",
+        "blocked",
+        "failed",
+        "uncertain",
+      ];
+      if (
+        !record(v) ||
+        v.version !== 1 ||
+        !record(v.runs) ||
+        !Array.isArray(v.used) ||
+        v.used.some((key) => typeof key !== "string") ||
+        !record(v.sends)
+      )
+        throw new Error("The saved execution journal has an invalid format.");
+      for (const [key, run] of Object.entries(v.runs)) {
+        if (
+          !record(run) ||
+          key !== run.approvalHash ||
+          !phases.includes(run.phase) ||
+          !Array.isArray(run.steps) ||
+          run.steps.length > 100 ||
+          run.steps.some(
+            (step) =>
+              !record(step) ||
+              !Number.isSafeInteger(step.index) ||
+              step.index < 0 ||
+              typeof step.actionId !== "string" ||
+              !states.includes(step.status) ||
+              (step.txHash !== undefined && !HEX32.test(step.txHash)),
+          )
+        )
+          throw new Error("The saved execution journal contains a damaged run.");
+      }
+      for (const send of Object.values(v.sends))
+        if (
+          !record(send) ||
+          typeof send.at !== "string" ||
+          (send.txHash !== undefined && !HEX32.test(send.txHash))
+        )
+          throw new Error("The saved execution journal contains a damaged send guard.");
+      return v;
+    } catch (error) {
+      throw new RunStoreError(
+        `${error instanceof Error ? error.message : String(error)} Signing is blocked to preserve duplicate-send protection. Export or repair the journal; do not clear it to retry an uncertain transaction.`,
+      );
+    }
+  }
+  problem(): string | undefined {
+    try {
+      this.read();
+      return undefined;
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
     }
   }
   private write(s: StoreShape): void {
@@ -169,7 +247,11 @@ export class RunStore {
     };
     const json = JSON.stringify(clean);
     assertNoSecrets(json);
-    this.kv?.setItem(RUN_STORE_KEY, json);
+    if (!this.kv)
+      throw new RunStoreError("Persistent storage is unavailable. Nothing can be sent.");
+    this.kv.setItem(RUN_STORE_KEY, json);
+    if (this.kv.getItem(RUN_STORE_KEY) !== json)
+      throw new RunStoreError("The execution journal could not be persisted. Nothing can be sent.");
   }
   runs(): RunRecord[] {
     return Object.values(this.read().runs);
@@ -218,10 +300,26 @@ export class RunStore {
   claimSend(approvalHash: string, index: number): boolean {
     const key = `${approvalHash}#${index}`;
     const s = this.read();
-    if (s.sends[key]) return false;
+    if (s.sends[key] || this.kv?.getItem(SEND_GUARD_PREFIX + key)) return false;
+    // Dedicated append-only keys cannot be erased by another tab updating its run-history snapshot.
+    const guard = JSON.stringify({ at: now() });
+    this.kv!.setItem(SEND_GUARD_PREFIX + key, guard);
+    if (this.kv!.getItem(SEND_GUARD_PREFIX + key) !== guard)
+      throw new RunStoreError("The send guard could not be persisted.");
     s.sends[key] = { at: now() };
     this.write(s);
     return true;
+  }
+  /** Serialize claims across browser tabs. A browser without Web Locks cannot safely submit. */
+  async claimSendOnce(approvalHash: string, index: number): Promise<boolean> {
+    if (typeof window === "undefined") return this.claimSend(approvalHash, index);
+    if (!navigator.locks?.request)
+      throw new RunStoreError(
+        "This browser cannot coordinate sends across tabs. Use a browser with Web Locks support.",
+      );
+    return navigator.locks.request(`seam-send:${approvalHash}#${index}`, () =>
+      this.claimSend(approvalHash, index),
+    );
   }
   recordSent(approvalHash: string, index: number, txHash: string): void {
     const s = this.read();
@@ -231,16 +329,18 @@ export class RunStore {
     this.updateStep(approvalHash, index, { status: "submitted", txHash }, "submitted");
   }
   isClaimed(approvalHash: string, index: number): boolean {
-    return !!this.read().sends[`${approvalHash}#${index}`];
+    const key = `${approvalHash}#${index}`;
+    return !!(this.read().sends[key] || this.kv?.getItem(SEND_GUARD_PREFIX + key));
   }
 
   /**
    * After a refresh: reconcile every unfinished run. Steps with a tx hash are looked up on chain (never re-sent);
    * signed-but-unsent steps become not_sent and the run abandoned; a claimed send with no tx hash is uncertain.
    */
-  async recover(lookup: TxLookup | undefined): Promise<RunRecord[]> {
+  async recover(lookup: TxLookup | undefined, onlyApprovalHash?: string): Promise<RunRecord[]> {
     const done: RunPhase[] = ["finalized", "abandoned", "failed", "blocked"];
     for (const r of this.runs()) {
+      if (onlyApprovalHash && r.approvalHash !== onlyApprovalHash) continue;
       if (done.includes(r.phase)) continue;
       let uncertain = false;
       let abandoned = false;
@@ -267,13 +367,19 @@ export class RunStore {
           if (res.status === "found") {
             // The lookup reports inclusion, not finality: "in_block" until a finality read says otherwise.
             this.updateStep(r.approvalHash, st.index, {
-              status: res.success ? "in_block" : "failed",
+              status: res.success
+                ? res.finalized
+                  ? "finalized"
+                  : "in_block"
+                : res.finalized
+                  ? "failed"
+                  : "in_block",
               block: { number: res.blockNumber, hash: res.blockHash },
               note: res.success
-                ? `reconciled by tx hash: in block #${res.blockNumber} (extrinsic ${res.extrinsicIndex}); finality not read`
+                ? `reconciled by tx hash: in block #${res.blockNumber} (extrinsic ${res.extrinsicIndex}); ${res.finalized ? "canonical finality confirmed; effect verification is separate" : "finality not read"}`
                 : `reconciled by tx hash: in block #${res.blockNumber}, dispatch failed`,
             });
-            if (res.success) uncertain = true;
+            if (!res.finalized) uncertain = true;
           } else {
             this.updateStep(r.approvalHash, st.index, {
               status: "uncertain",
@@ -305,7 +411,11 @@ export class RunStore {
           ? "uncertain"
           : abandoned
             ? "abandoned"
-            : r.phase;
+            : steps.some((s) => s.status === "failed")
+              ? "failed"
+              : steps.some((s) => s.status === "blocked")
+                ? "blocked"
+                : r.phase;
       this.upsertRun({ ...this.run(r.approvalHash)!, phase });
     }
     return this.runs();
@@ -318,7 +428,12 @@ export class PersistedApprovalStore extends InMemoryApprovalStore {
   constructor(runStore: RunStore) {
     super();
     this.runStore = runStore;
-    for (const k of runStore.usedKeys()) super.markUsed(k);
+    // Storage failures are surfaced by RunStore.problem() and every write/claim. Construction must allow read-only UI.
+    try {
+      for (const k of runStore.usedKeys()) super.markUsed(k);
+    } catch {
+      /* signing remains blocked */
+    }
   }
   override markUsed(key: string): void {
     this.runStore.markUsed(key);
@@ -345,10 +460,22 @@ export function chainTxLookup(
   return async (q) => {
     if (q.fromBlock === undefined)
       return { status: "unknown", reason: "no era birth block was recorded for this run" };
-    const { lookupTxByHash } = await import("@seam/chain/browser");
-    return (await lookupTxByHash(send as never, {
+    const result = await lookupTxByHash(send as never, {
       txHash: q.txHash as `0x${string}`,
       fromBlock: q.fromBlock,
-    })) as Awaited<ReturnType<TxLookup>>;
+      maxBlocks: 128,
+    });
+    if (result.status !== "found") return result;
+    const head = await send("chain_getFinalizedHead", []);
+    const header = (await send("chain_getHeader", [head])) as { number?: string } | null;
+    const canonical = await send("chain_getBlockHash", [result.blockNumber]);
+    const number = header?.number ? Number(BigInt(header.number)) : NaN;
+    return {
+      ...result,
+      finalized:
+        Number.isSafeInteger(number) &&
+        result.blockNumber <= number &&
+        canonical === result.blockHash,
+    };
   };
 }

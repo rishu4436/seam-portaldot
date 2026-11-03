@@ -9,3 +9,8 @@ export * from "./receipt.js";
 export * from "./outcomes.js";
 export * from "./deploy-outcomes.js";
 export * from "./batch-steps.js";
+
+export * from "./verify-live-core.js";
+
+export * from "./console-receipt.js";
+export * from "./evidence.js";

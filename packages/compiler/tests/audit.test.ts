@@ -1,3 +1,4 @@
+import { SeamCompileError } from "../src/types.js";
 import { describe, expect, it } from "vitest";
 import {
   compile,
@@ -91,7 +92,7 @@ describe("SEAM-013 atomicRequired vs preferredMode", () => {
 
   it("atomicRequired must be a boolean", () => {
     expectIssue(
-      () => compile({ ...demoManifest(), atomicRequired: "yes" as any }, base),
+      () => compile({ ...demoManifest(), atomicRequired: "yes" as unknown as boolean }, base),
       "MANIFEST_INVALID",
       "atomicRequired",
     );
@@ -176,7 +177,7 @@ describe("SEAM-012 atomic_verified needs a matching proof object", () => {
       ...base,
       behaviour: {
         batchAllRollback: "verified",
-        batchAllRollbackProof: { ...proofFor(base), ...(patch as any) },
+        batchAllRollbackProof: { ...proofFor(base), ...patch },
       },
     };
     expect(compile(demoManifest(), f).mode).not.toBe("atomic_verified");
@@ -232,7 +233,8 @@ describe("SEAM-009 signer domain (20-byte H160 vs 32-byte AccountId32)", () => {
     expectIssue(() => compile(m, base), "SIGNER_DOMAIN_MISMATCH", "signer");
     try {
       compile(m, base);
-    } catch (e: any) {
+    } catch (e) {
+      if (!(e instanceof SeamCompileError)) throw e;
       const msg = e.issues[0].message as string;
       expect(msg).toMatch(/20-byte/);
       expect(msg).toMatch(/32-byte/);

@@ -1,5 +1,11 @@
 import "./quiet.js"; // must stay first: sets the polkadot.js duplicate-package flag before any @polkadot import
 export * from "./types.js";
+export {
+  readAccountReadiness,
+  type AccountReadiness,
+  type Observation,
+} from "./account-readiness.js";
+export { createReceiptReader } from "./receipt-reader.js";
 export * from "./errors.js";
 export { quietly } from "./quiet.js";
 export { connect, withClient, type RpcClient, type Endpoint, type ConnectOptions } from "./rpc.js";

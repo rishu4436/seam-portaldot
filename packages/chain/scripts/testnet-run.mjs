@@ -28,7 +28,6 @@ import { fileURLToPath } from "node:url";
 import { startBridge } from "./external-signer/bridge-server.mjs";
 import {
   assertNotMainnetUrl,
-  assertNotMainnetFacts,
   loadSigner,
   payloadSigner,
   runtimeReport,

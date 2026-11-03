@@ -109,7 +109,7 @@ describe("Contracts.call with Weight v2 (dev node)", () => {
     const { registry } = loadRuntime(devMetadataHex);
     const call = registry.createType("Call", s.encodedCall!);
     expect(`${call.section}.${call.method}`).toBe("contracts.call");
-    const [dest, value, gas, sdl, data] = call.args as any[];
+    const [dest, value, gas, sdl, data] = call.args;
     expect(dest.type).toBe("Id");
     expect(dest.value.toHex()).toBe(BOB_HEX);
     expect(value.toString()).toBe("0");
@@ -126,7 +126,10 @@ describe("Contracts.call with Weight v2 (dev node)", () => {
     expect(s.status).toBe("ok");
     expect(s.decodedArgs.storageDepositLimit).toBeNull();
     const call = loadRuntime(devMetadataHex).registry.createType("Call", s.encodedCall!);
-    expect((call.args[3] as any).isNone).toBe(true);
+    expect(
+      (call.args[3] as import("@polkadot/types").Option<import("@polkadot/types/types").Codec>)
+        .isNone,
+    ).toBe(true);
   });
 
   it("omitted storageDepositLimit: unavailable with the reason, never guessed", () => {
@@ -184,10 +187,10 @@ describe("Contracts.call with Weight v1 (Portaldot spec 1002) is unchanged", () 
 
   it("proofSize / storageDepositLimit are refused there instead of dropped", () => {
     const m = demoManifest();
-    (m.actions[1]!.args as any).proofSize = "1";
+    (m.actions[1]!.args as Record<string, unknown>).proofSize = "1";
     expectIssue(() => compile(m, facts), "MANIFEST_INVALID", "actions[1].args.proofSize");
     const n = demoManifest();
-    (n.actions[1]!.args as any).storageDepositLimit = null;
+    (n.actions[1]!.args as Record<string, unknown>).storageDepositLimit = null;
     expectIssue(() => compile(n, facts), "MANIFEST_INVALID", "actions[1].args.storageDepositLimit");
   });
 
@@ -253,7 +256,7 @@ describe("ink! ABI form on the dev node (Weight v2)", () => {
       storageDepositLimit: null,
     });
     const call = loadRuntime(devMetadataHex).registry.createType("Call", s.encodedCall!);
-    expect((call.args[4] as any).toHex()).toBe(s.decodedArgs.data);
+    expect(call.args[4].toHex()).toBe(s.decodedArgs.data);
     expect(s.decodedArgs.data!.startsWith("0x6c337222")).toBe(true);
   });
 });

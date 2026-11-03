@@ -1,0 +1,17 @@
+.git/
+.vercel/
+node_modules/
+**/node_modules/
+**/dist/
+**/coverage/
+**/*.tsbuildinfo
+.env*
+**/.env*
+secrets/
+seam-data/
+**/*keystore*.json
+**/*wallet*.json
+docs/
+evidence/
+tests/
+.github/

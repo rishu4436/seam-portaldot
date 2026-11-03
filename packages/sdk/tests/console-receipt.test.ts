@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   isConsoleReceipt,
+  consoleIntegrityHash,
   pickReceipt,
   verifyConsoleReceiptLive,
   verifyConsoleReceiptOffline,
@@ -180,6 +181,24 @@ function chainFor(
 }
 
 describe("live re-verification (mock reader, read-only)", () => {
+  it("rejects two sequential actions reusing a single finalized extrinsic", async () => {
+    const receipt = load(SEQ);
+    receipt.steps![1]!.txHash = receipt.steps![0]!.txHash;
+    receipt.steps![1]!.block = receipt.steps![0]!.block;
+    receipt.integrityHash = consoleIntegrityHash(receipt);
+    const result = await verifyConsoleReceiptLive(receipt, chainFor(receipt));
+    expect(st(result, "step_identity")).toContain("fail");
+    expect(result.status).toBe("failed");
+  });
+  it("rejects a receipt whose action order contradicts the plan", async () => {
+    const receipt = load(SEQ);
+    const reader = chainFor(receipt);
+    receipt.steps!.reverse();
+    receipt.integrityHash = consoleIntegrityHash(receipt);
+    const result = await verifyConsoleReceiptLive(receipt, reader);
+    expect(st(result, "step_order")).toContain("fail");
+    expect(result.status).toBe("failed");
+  });
   it("the real sequential receipt is chain_verified when the chain agrees (on-chain nonces 4, 5)", async () => {
     const r = load(SEQ);
     const v = await verifyConsoleReceiptLive(r, chainFor(r));

@@ -110,8 +110,9 @@ export function demoManifest(): Manifest {
 export function expectIssue(fn: () => unknown, code: string, pathPart?: string): void {
   try {
     fn();
-  } catch (e: any) {
-    const issues = e.issues as { code: string; path?: string }[] | undefined;
+  } catch (e) {
+    const issues = (e as { issues?: { code: string; path?: string }[] } | null)?.issues as
+      { code: string; path?: string }[] | undefined;
     if (!issues) throw e;
     const hit = issues.find(
       (i) => i.code === code && (pathPart === undefined || (i.path ?? "").includes(pathPart)),
@@ -119,6 +120,7 @@ export function expectIssue(fn: () => unknown, code: string, pathPart?: string):
     if (!hit)
       throw new Error(
         `expected ${code}${pathPart ? ` at ${pathPart}` : ""}, got ${JSON.stringify(issues)}`,
+        { cause: e },
       );
     return;
   }

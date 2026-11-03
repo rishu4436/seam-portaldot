@@ -10,7 +10,7 @@ import { compile, computeManifestDigest, computeAbiHash } from "@seam/compiler";
 import { evaluatePolicy, portaldotPolicy } from "@seam/policy";
 import { Seam, buildReceipt, checkReceipt } from "@seam/sdk";
 import { createPortaldotAdapter, signBytesOf } from "../../dist/index.js";
-import { ENDPOINT, TYPES_BUNDLE, DECLARED_TOKEN, ASSET_ID, encodeCall } from "./lib.mjs";
+import { ENDPOINT, TYPES_BUNDLE, DECLARED_TOKEN, ASSET_ID } from "./lib.mjs";
 
 /** Instant seal makes a block per transaction; metadata has no block time (no Babe). Declared for envelope expiry. */
 export const DEV_BLOCK_TIME_MS = 6000;

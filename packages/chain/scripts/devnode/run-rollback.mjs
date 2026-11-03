@@ -97,6 +97,7 @@ const direct = await submitAndWatch(
     }),
   { facts, timeoutMs: 60_000 },
 );
+// eslint-disable-next-line no-useless-assignment -- Drop the reference to signed transaction bytes after use.
 signed = undefined;
 const after = await snapshotState();
 const ev = direct.inclusion?.events ?? [];

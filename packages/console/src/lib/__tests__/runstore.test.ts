@@ -193,6 +193,7 @@ describe("persisted run state", () => {
               blockHash: "0x" + "aa".repeat(32),
               extrinsicIndex: 1,
               success: false,
+              finalized: true,
             }
           : { status: "not_found" as const, scannedFrom: 120, scannedTo: 190 },
     );

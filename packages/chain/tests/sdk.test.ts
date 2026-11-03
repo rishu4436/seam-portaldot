@@ -90,7 +90,7 @@ describe.skipIf(!existsSync(SDK))("Bot 5 SDK flow with createPortaldotAdapter (f
       wallet,
       effects,
       now: () => now,
-      onStep: (e: any) => {
+      onStep: (e: import("@seam/sdk").StepEvent) => {
         if (e.phase === "sending") dryRuns.push(adapter.lastDryRun!.map((d) => d.outcome).join());
       },
     });
@@ -100,15 +100,13 @@ describe.skipIf(!existsSync(SDK))("Bot 5 SDK flow with createPortaldotAdapter (f
     expect(dryRuns).toEqual(["ok", "ok", "ok"]);
     expect(node.submitted).toHaveLength(3);
     expect(run.receipt.result).toBe("verified");
-    expect(run.receipt.steps.map((s: any) => s.verification)).toEqual([
-      "verified",
-      "verified",
-      "verified",
-    ]);
+    expect(
+      run.receipt.steps.map((s: import("@seam/policy").ReceiptStep) => s.verification),
+    ).toEqual(["verified", "verified", "verified"]);
   });
 
   it("runs end to end and the receipt verifies every step from the decoded events", async () => {
-    const { sdk, seam, node, wallet, facts, prepared } = await setup();
+    const { seam, node, wallet, facts, prepared } = await setup();
     expect(prepared.policyResult.allowed).toBe(true);
     expect(prepared.envelope).toEqual({
       signer: demoManifest().signer.value,
@@ -132,7 +130,13 @@ describe.skipIf(!existsSync(SDK))("Bot 5 SDK flow with createPortaldotAdapter (f
     expect(run.ok).toBe(true);
     expect(node.submitted).toHaveLength(3);
     expect(run.receipt.result).toBe("verified");
-    expect(run.receipt.steps.map((s: any) => [s.actionId, s.status, s.verification])).toEqual([
+    expect(
+      run.receipt.steps.map((s: import("@seam/policy").ReceiptStep) => [
+        s.actionId,
+        s.status,
+        s.verification,
+      ]),
+    ).toEqual([
       ["pay", "finalized", "verified"],
       ["call", "finalized", "verified"],
       ["receipt", "finalized", "verified"],

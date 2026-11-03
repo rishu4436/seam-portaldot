@@ -13,7 +13,7 @@ Every command in the `bash` blocks below is run by `npm run docs:quickstart-chec
 
 ## 1. Prerequisites, install and build
 
-You need Node 20 or later and npm (CI runs Node 22; this guide was checked on Node 20.19). From the repo root:
+You need Node 22.12 or later and npm for the SDK and console. Use Node 24.14+ for the team backend; CI runs Node 24. From the repo root:
 
 ```bash
 npm ci        # setup

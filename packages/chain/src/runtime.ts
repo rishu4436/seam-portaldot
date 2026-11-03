@@ -1,3 +1,4 @@
+import type { ChainProperties } from "@polkadot/types/interfaces";
 import { Metadata, TypeRegistry, expandMetadata } from "@polkadot/types";
 import { compactStripLength, hexToU8a, u8aToHex } from "@polkadot/util";
 import { blake2AsHex } from "@polkadot/util-crypto";
@@ -99,11 +100,11 @@ export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   const metadata = new Metadata(registry, hexToU8a(facts.source.metadataHex));
   registry.setMetadata(metadata);
   registry.setChainProperties(
-    registry.createType<any>("ChainProperties", {
+    registry.createType("ChainProperties", {
       ss58Format: facts.fingerprint.ss58Prefix,
       tokenDecimals: [facts.fingerprint.tokenDecimals],
       tokenSymbol: [facts.fingerprint.tokenSymbol],
-    }),
+    }) as ChainProperties,
   );
   let expanded: ReturnType<typeof expandMetadata> | undefined;
   const rt: DecodeRuntime = {

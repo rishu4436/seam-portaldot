@@ -1,9 +1,21 @@
 import "./quiet.js"; // must stay first, like index.ts
+export {
+  readAccountReadiness,
+  type AccountReadiness,
+  type Observation,
+} from "./account-readiness.js";
+export { createReceiptReader } from "./receipt-reader.js";
+export {
+  outcomeForExtrinsic,
+  decodeBlockEvents,
+  toChainEvent,
+  SYSTEM_EVENTS_KEY,
+} from "./reader-browser.js";
 /**
  * Browser-safe entry (`@seam/chain/browser`): the offline signature checks, the extrinsic assembler and the facts builder,
  * with no node builtins and no WebSocket client. From @seam/compiler it imports only the pure `@seam/compiler/facts` path
  * (the main compiler entry reads its pinned types file with node:fs). Everything here is pure: bytes in, verdict, facts or
- * bytes out. It never connects anywhere and never signs.
+ * bytes out. Read helpers use the caller's RPC sender; they never sign or submit.
  * The node entry (`@seam/chain`) is unchanged and exports the same functions; tests/browser-entry.test.ts holds the two to the same behaviour.
  */
 export { SeamChainError, type SeamChainErrorCode } from "./errors.js";

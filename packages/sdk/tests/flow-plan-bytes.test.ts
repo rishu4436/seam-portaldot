@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import type { Hex, Plan } from "@seam/compiler";
-import { definePolicy, planDigest, type SigningEnvelope } from "@seam/policy";
+import { definePolicy, evaluatePolicy, planDigest, type SigningEnvelope } from "@seam/policy";
 import {
   Seam,
   defineManifest,
@@ -107,11 +107,13 @@ describe("SDK flow: plan-bytes binding", () => {
     const manifest = payTo(BOB);
     const p = await seam.prepare(manifest, facts, policy);
     const plan = forge(p.plan, seam);
-    // Without the Manifest the old gate approves it: this is the hole.
-    expect(seam.approve({ ...p, plan, policy, facts }).ok).toBe(true);
+    // A genuine result for the original plan cannot authorize edited bytes, even without the Manifest.
+    const stale = seam.approve({ ...p, plan, policy, facts });
+    expect(stale.ok).toBe(false);
+    if (!stale.ok) expect(stale.reason).toMatch(/evaluated for different inputs/);
     const a = seam.approve({ ...p, plan, policy, facts, manifest });
     expect(a.ok).toBe(false);
-    if (!a.ok) expect(a.reason).toMatch(/call bytes/);
+    if (!a.ok) expect(a.reason).toMatch(/evaluated for different inputs/);
   });
 
   it("edited plan approved without the Manifest is blocked at submit with plan_bytes_mismatch, zero submits", async () => {
@@ -120,11 +122,14 @@ describe("SDK flow: plan-bytes binding", () => {
     const manifest = payTo(BOB);
     const p = await seam.prepare(manifest, facts, policy);
     const plan = forge(p.plan, seam);
-    const a = seam.approve({ ...p, plan, policy, facts });
+    // Evaluate the edited plan afresh without the Manifest to isolate the independent bytes gate.
+    const policyResult = evaluatePolicy({ policy, plan, facts, preflight: p.preflight });
+    const a = seam.approve({ ...p, plan, policyResult, policy, facts });
     if (!a.ok) throw new Error(a.reason);
     const r = await seam.execute({
       ...p,
       plan,
+      policyResult,
       policy,
       facts,
       approval: a.approval,

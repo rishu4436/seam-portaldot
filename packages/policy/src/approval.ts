@@ -19,7 +19,7 @@ import {
   policyDigest,
   planDigest,
   evaluatePolicy,
-  isEvaluatedPolicyResult,
+  evaluatedPolicyResultStatus,
 } from "./policy.js";
 import { normalizeAccount } from "./address.js";
 
@@ -69,6 +69,8 @@ export interface ApprovalInput {
   allowAtomicUnverified?: boolean;
   /** createApproval only: refuse unless manifest + liveFacts are given and verifyPlan passes. */
   requirePlanVerified?: boolean;
+  /** Pinned interfaces for abiRef recompilation; hashes remain part of the plan. */
+  abis?: import("@seam/compiler/browser").CompileOptions["abis"];
 }
 
 const COVERS = [
@@ -124,9 +126,11 @@ function runVerifyPlan(
   liveFacts: RuntimeFacts,
   allowAtomicUnverified: boolean | undefined,
   signedCalls?: string[],
+  abis?: ApprovalInput["abis"],
 ): VerifyResult {
   try {
     return verifyPlan(manifest as never, plan as never, liveFacts as never, {
+      abis,
       allowAtomicUnverified: allowAtomicUnverified ?? plan.mode === "atomic_unverified",
       ...(signedCalls ? { signedCalls } : {}),
     });
@@ -149,6 +153,20 @@ export type ApprovalOutcome = { ok: true; approval: BoundApproval } | { ok: fals
 /** Creates an approval only for an allowed, fully consistent plan. Expiry is the earlier of the envelope's and the policy's limit. */
 export function createApproval(input: ApprovalInput): ApprovalOutcome {
   const { plan, envelope, policy, policyResult, fingerprint, now } = input;
+  if (
+    evaluatedPolicyResultStatus(policyResult, {
+      plan,
+      policy,
+      preflight: input.preflight,
+      fingerprint,
+      facts: input.liveFacts,
+    }) === "mismatch"
+  )
+    return {
+      ok: false,
+      reason:
+        "Can't approve: the policy result was edited or evaluated for different inputs. Run policy again.",
+    };
   if (!policyResult.allowed) {
     const why =
       policyResult.rules.find((r) => r.outcome !== "pass")?.reason ??
@@ -179,7 +197,14 @@ export function createApproval(input: ApprovalInput): ApprovalOutcome {
         ok: false,
         reason: "Can't approve: the Manifest doesn't match the approved Manifest digest.",
       };
-    const vr = runVerifyPlan(input.manifest, plan, input.liveFacts, input.allowAtomicUnverified);
+    const vr = runVerifyPlan(
+      input.manifest,
+      plan,
+      input.liveFacts,
+      input.allowAtomicUnverified,
+      undefined,
+      input.abis,
+    );
     if (!vr.ok)
       return {
         ok: false,
@@ -612,13 +637,20 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
     pr.rules.length > 0 &&
     pr.rules.every((r) => r.outcome === "pass") &&
     pr.policyDigest === policyDigest(input.policy);
-  if (!selfConsistent) {
+  const evaluated = evaluatedPolicyResultStatus(pr, {
+    plan,
+    policy: input.policy,
+    preflight: input.preflight,
+    fingerprint: input.preparedFingerprint,
+    facts: input.policyEvaluation?.facts,
+  });
+  if (!selfConsistent || evaluated === "mismatch") {
     reasons.push({
       code: "policy_result_forged",
       message:
         "Blocked: the policy result is not an allowed result for this policy (its rules or policy digest don't support it).",
     });
-  } else if (isEvaluatedPolicyResult(pr)) {
+  } else if (evaluated === "match") {
     // genuine: nothing more to check (no pass code, so existing passed-lists stay stable)
   } else if (!input.policyEvaluation) {
     if (input.requireEvaluatedPolicyResult)
@@ -636,6 +668,7 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
         preflight: input.preflight,
         facts: input.policyEvaluation.facts,
         manifest: input.policyEvaluation.manifest,
+        abis: input.abis,
       });
     } catch {
       again = undefined;
@@ -885,7 +918,14 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
   }
   if (input.liveFacts) {
     if (
-      fingerprintDigest(input.liveFacts.fingerprint) !== fingerprintDigest(input.currentFingerprint)
+      fingerprintDigest(input.liveFacts.fingerprint) !==
+        fingerprintDigest(input.currentFingerprint) &&
+      !(
+        lock.ok &&
+        lock.lockBasis === "layout_hash" &&
+        fingerprintDigest(input.liveFacts.fingerprint) ===
+          fingerprintDigest(input.preparedFingerprint)
+      )
     )
       reasons.push({
         code: "live_facts_mismatch",
@@ -899,6 +939,7 @@ export function checkBeforeSubmit(input: SubmitCheckInput): SubmitCheckResult {
       input.liveFacts,
       input.allowAtomicUnverified,
       signed,
+      input.abis,
     );
     if (!vr.ok)
       reasons.push({
