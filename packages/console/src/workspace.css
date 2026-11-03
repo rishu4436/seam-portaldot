@@ -1615,15 +1615,6 @@ html {
   margin: 0.4rem 0;
   overflow-wrap: anywhere;
 }
-.demo-sequence {
-  list-style: none;
-  padding: 0;
-  counter-reset: demo;
-}
-.demo-sequence li {
-  padding: 1rem 0;
-  border-top: 1px solid #e9ecf3;
-}
 @keyframes center-arrive {
   from {
     opacity: 0;
