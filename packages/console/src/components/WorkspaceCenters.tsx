@@ -921,41 +921,6 @@ function DeveloperHub() {
           </a>
         </article>
       </div>
-      <article className="record-card">
-        <h2>A three-minute product walkthrough</h2>
-        <p>
-          Use your own funded V3 testnet account. Record the real wallet prompts and finalized
-          result.
-        </p>
-        <ol className="demo-sequence">
-          <li>
-            <b>0:00–0:30 · The problem</b>
-            <p>
-              Show why a raw transaction prompt cannot establish user intent or prove execution.
-            </p>
-          </li>
-          <li>
-            <b>0:30–1:30 · A protected action</b>
-            <p>
-              Connect your wallet, read balances, compile an asset transfer, review policy and sign.
-            </p>
-          </li>
-          <li>
-            <b>1:30–2:15 · Independent proof</b>
-            <p>
-              Export the receipt and inspect it against finalized chain evidence. Show a tampered
-              receipt failing.
-            </p>
-          </li>
-          <li>
-            <b>2:15–3:00 · Team and integration</b>
-            <p>
-              Share the original receipt, verify it on the backend and open runtime monitoring. Show
-              the reusable SDK.
-            </p>
-          </li>
-        </ol>
-      </article>
     </section>
   );
 }

@@ -7,7 +7,7 @@
 - **Receipt inspector:** local JSON import, portable secret-free bundles, offline integrity checks, independent browser verification against finalized V3 blocks, manifest recompilation and downloadable results. SDK and console receipt formats are supported. Missing observations remain unknown.
 - **Team workspace:** Railway-hosted tenant-isolated evidence, individually scoped/revocable access keys, separate server verification, audit history and workspace exports. Browser keys remain in memory. Uploading requires an explicit disclosure acknowledgement.
 - **Runtime watch:** persistent server-side scheduling with fixed live baselines, changed/unchanged/unknown outcomes, benign metadata-default drift reporting, manual checks, pause/resume and check history. A 15-minute watch is configured for the SEAM workspace. No external alerts are sent.
-- **Developer adoption:** public browser-safe verification exports, a reusable receipt reader that decodes each block using its parent runtime, refreshed SDK reference, a standalone protected-payment integration using public packages, and a three-minute walkthrough guide.
+- **Developer adoption:** public browser-safe verification exports, a reusable receipt reader that decodes each block using its parent runtime, refreshed SDK reference and a standalone protected-payment integration using public packages. Recording instructions are kept in [repository documentation](recording-guide.md), outside the product UI.
 - **UI:** dedicated activity, verification, team and developer views; retained transaction drafts across navigation; execution-time editing/navigation protection; responsive navigation; accessible status messages and reduced-motion support.
 
 ## Hosted resources
