@@ -1,64 +1,50 @@
 {
-  "checkedAt": "2026-11-03T11:40:54.788Z",
+  "checkedAt": "2026-11-03T12:49:05.447Z",
   "url": "https://seam-portaldot.vercel.app/",
-  "frontendDeploymentId": "dpl_8iFPAbCHcTP6Z3DoprqSjPgauSfo",
-  "frontendImmutableUrl": "https://seam-portaldot-ev268hs80-rishu4436s-projects.vercel.app",
-  "backendDeploymentId": "a723e40d-7820-4cbf-982d-fe859d300e40",
+  "frontendDeploymentId": "dpl_HM5Pm46qHnpSsx4DrgudP1hyQzAC",
+  "frontendImmutableUrl": "https://seam-portaldot-rccwoh4zt-rishu4436s-projects.vercel.app",
+  "backendDeploymentId": "a146ffb1-bf0b-4c41-bbfa-897ae63ea660",
   "files": [
     {
-      "file": "assets/Brand-BAbX6Jeb.js",
+      "file": "assets/browserChain-BfRPHvTd.js",
       "status": 200,
-      "bytes": 1557,
-      "sha256": "b510072eae82b82d59140174f50e54a5e37372ed7073d4fba733319fcb90ef4d",
+      "bytes": 5554,
+      "sha256": "21845e9f72f25587415cf9e686f20bbe7a4f505052d210d231e8d61845515edf",
       "match": true
     },
     {
-      "file": "assets/browserChain-MTvR4YG2.js",
-      "status": 200,
-      "bytes": 7046,
-      "sha256": "445b4bd4b58ede6eec557ee3239a4bcf78ae50bdbd8f4a3ff7cf70249fce4333",
-      "match": true
-    },
-    {
-      "file": "assets/console-BvUp5Co-.js",
-      "status": 200,
-      "bytes": 333467,
-      "sha256": "b8c5f6450a46e3936f8937a69f5e04091f4cfb0ee38218656ac6b396b5400714",
-      "match": true
-    },
-    {
-      "file": "assets/console-C9IrbKe5.css",
-      "status": 200,
-      "bytes": 34608,
-      "sha256": "5316b0c3d38a39e38f4a995783e16fbb1a48ed2027979882ff6cf5f7818b1c5c",
-      "match": true
-    },
-    {
-      "file": "assets/console-D_sX4zMN.js",
+      "file": "assets/console-BHeb_4kt.js",
       "status": 200,
       "bytes": 46,
-      "sha256": "8865e4a999f268dd9736437966ba3113358008484b38fbf624ffb9899bd946dd",
+      "sha256": "6afa58ac5e00fce9d6360c101c713300324cc3baa3170583db983ba942067bdb",
       "match": true
     },
     {
-      "file": "assets/landing-DuTune6I.js",
+      "file": "assets/console-BmtC80F-.js",
       "status": 200,
-      "bytes": 178,
-      "sha256": "051e987e1d2ab5697e8901ff1004c875a76a54335fe462b5b88ab775a1d22a23",
+      "bytes": 328093,
+      "sha256": "7f2653383083919b264cffb302fa2d1ebe694dcd4390a2d89c59e2531b90009d",
       "match": true
     },
     {
-      "file": "assets/LegacyApp-VaWyJcFY.css",
+      "file": "assets/console-BXhgcK1F.css",
       "status": 200,
-      "bytes": 942,
-      "sha256": "2241649ff2cf303bc860f821df619dcf24dc6baa0b9d93255158c2f23012d18b",
+      "bytes": 34733,
+      "sha256": "a6c57a539e4e49c6a4e684e807d05101ed3fc3ab88ec462a8f191ce4218fb4a7",
       "match": true
     },
     {
-      "file": "assets/LegacyApp-YNNh4Uy8.js",
+      "file": "assets/landing-CKLKuB-Y.js",
       "status": 200,
-      "bytes": 62614,
-      "sha256": "76050f35edb47a02833a1e9911cbbb602e714235100ef0a6cbddf8a69ff65889",
+      "bytes": 186,
+      "sha256": "4c66db6a72789247b705e7f7afc8eebb7512c8ca61cb150fc95d5c69517e035d",
+      "match": true
+    },
+    {
+      "file": "assets/main-BqzJqgHC.js",
+      "status": 200,
+      "bytes": 8378,
+      "sha256": "c11e028f1bbffc3d922984e19a65cf364ef2179789b56606be1b2bc6cff094a2",
       "match": true
     },
     {
@@ -69,38 +55,10 @@
       "match": true
     },
     {
-      "file": "assets/main-CQCiggpp.js",
+      "file": "assets/product-links-CABtqdhW.js",
       "status": 200,
-      "bytes": 8487,
-      "sha256": "1b547f49305dbf86f5644585aeb015a5f11641631a1c243977abda39d5f83dbf",
-      "match": true
-    },
-    {
-      "file": "assets/recordings-12TF3eOr.js",
-      "status": 200,
-      "bytes": 396479,
-      "sha256": "05cc1f92c06d6007bc67786ccfb57ad1d8fc4cbe32e4006bfaa92d5bffdc8a3b",
-      "match": true
-    },
-    {
-      "file": "assets/recordings-BPeAECor.js",
-      "status": 200,
-      "bytes": 6959,
-      "sha256": "b081eac83134926ff1f62d1c8acb0d3dacc8b0a187ac722b971bded851c618e9",
-      "match": true
-    },
-    {
-      "file": "assets/recordings-C6vftEfY.js",
-      "status": 200,
-      "bytes": 93146,
-      "sha256": "90e0c3cdefb05e90dea02110614925d1acff6882504105ef889f41aeed12e482",
-      "match": true
-    },
-    {
-      "file": "assets/recordings-D9jAtmW7.js",
-      "status": 200,
-      "bytes": 14250,
-      "sha256": "bbe5157fe45b971970761cfe1cdf276c6eb8c858bd72f5327d79a17c8c1adf35",
+      "bytes": 1872,
+      "sha256": "f1534369451a29c92b5d359b8945ef364b61745e4f115cf235ce3c9aa0d8a852",
       "match": true
     },
     {
@@ -111,24 +69,10 @@
       "match": true
     },
     {
-      "file": "assets/site-DuTune6I.js",
+      "file": "assets/site-CKLKuB-Y.js",
       "status": 200,
-      "bytes": 178,
-      "sha256": "051e987e1d2ab5697e8901ff1004c875a76a54335fe462b5b88ab775a1d22a23",
-      "match": true
-    },
-    {
-      "file": "assets/V3Evidence-BqquyXvG.css",
-      "status": 200,
-      "bytes": 404,
-      "sha256": "806607e28aa0c9ff284fea5717b78f30da38ea078175d439f1aa54e3c9989696",
-      "match": true
-    },
-    {
-      "file": "assets/V3Evidence-DvmrBf9N.js",
-      "status": 200,
-      "bytes": 3623,
-      "sha256": "04de8f9a73f1ca86e4480e2dd5855db1d72701cd534c5586a9bb0d63ed075d27",
+      "bytes": 186,
+      "sha256": "4c66db6a72789247b705e7f7afc8eebb7512c8ca61cb150fc95d5c69517e035d",
       "match": true
     },
     {
@@ -244,17 +188,17 @@
       "match": true
     },
     {
-      "file": "assets/WorkspaceCenters-BCCczanK.js",
+      "file": "assets/WorkspaceCenters-DH6MY3ex.js",
       "status": 200,
-      "bytes": 23831,
-      "sha256": "6c39338e126cd4b054105529ec1a37be0dc9b9b13fca4f068b95da9f6278f98b",
+      "bytes": 25406,
+      "sha256": "7259d022e7176676f22bde8315dd6e0fc9e28be3c7320bd800d0985ed308b2ac",
       "match": true
     },
     {
       "file": "console.html",
       "status": 200,
-      "bytes": 2337,
-      "sha256": "d02e2c5186be523c9686d0bcaed769eab80749e38415e1863c2cdc856ec29596",
+      "bytes": 2345,
+      "sha256": "8fd7e4bc765fd4126f1909a846ac62c4657b552020a04c7da051c355dea597b4",
       "match": true
     },
     {
@@ -281,15 +225,15 @@
     {
       "file": "index.html",
       "status": 200,
-      "bytes": 1429,
-      "sha256": "7fa734a9646c4bec1ac4154c95ec31c3c8e5adba76f6d76c9cdf12d788e63bd6",
+      "bytes": 1437,
+      "sha256": "6e332e0e186e98cd9b07940c95bfa8f2b79ddef56b03828724eb8259038aa9ff",
       "match": true
     },
     {
       "file": "landing.html",
       "status": 200,
-      "bytes": 1432,
-      "sha256": "cdd102a716c3a8f78fbf646eda579c0402aba98e5e99f04f105d06548e720c65",
+      "bytes": 1440,
+      "sha256": "50bde57b0776dc2d4cb1fb35355626291274b1c528a36471c5f11df19fd9c78b",
       "match": true
     },
     {

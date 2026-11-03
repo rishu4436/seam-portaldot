@@ -24,6 +24,14 @@ export function AccountReadiness({
   const [problem, setProblem] = useState<string>();
   const [busy, setBusy] = useState(false);
   const revision = useRef(0);
+  const token = facts?.fingerprint;
+  const displayNative = (raw: string) =>
+    token &&
+    Number.isInteger(token.tokenDecimals) &&
+    token.tokenDecimals >= 0 &&
+    token.tokenDecimals <= 30
+      ? `${formatUnits(raw, token.tokenDecimals)} ${token.tokenSymbol}`
+      : `${formatUnits(raw)} base units`;
   useEffect(() => {
     revision.current++;
     setResult(undefined);
@@ -77,31 +85,34 @@ export function AccountReadiness({
       {problem && <p role="alert">{problem}</p>}
       {result && (
         <>
-          <p className="muted">
-            Finalized block #{result.block.number.toLocaleString()} · balances in base units
-          </p>
+          <p className="muted">Finalized block #{result.block.number.toLocaleString()}</p>
           <dl className="balance-grid">
             <div>
               <dt>Native free balance</dt>
-              <dd>{result.native.known ? formatUnits(result.native.value.free) : "Unavailable"}</dd>
+              <dd>
+                {result.native.known ? displayNative(result.native.value.free) : "Unavailable"}
+              </dd>
+              {result.native.known && (
+                <small>{formatUnits(result.native.value.free)} base units</small>
+              )}
             </div>
             <div>
               <dt>Native frozen balance</dt>
               <dd>
-                {result.native.known ? formatUnits(result.native.value.frozen) : "Unavailable"}
+                {result.native.known ? displayNative(result.native.value.frozen) : "Unavailable"}
               </dd>
             </div>
             <div>
-              <dt>Existential deposit</dt>
+              <dt>Minimum account balance</dt>
               <dd>
                 {result.native.known
-                  ? formatUnits(result.native.value.existentialDeposit)
+                  ? displayNative(result.native.value.existentialDeposit)
                   : "Unavailable"}
               </dd>
             </div>
             {result.assets.map((item) => (
               <div key={item.assetId}>
-                <dt>Asset {item.assetId}</dt>
+                <dt>Asset {item.assetId} · base units</dt>
                 <dd>
                   {item.balance.known
                     ? item.balance.value.exists
@@ -118,8 +129,8 @@ export function AccountReadiness({
           ) : (
             BigInt(result.native.value.free) <= BigInt(result.native.value.frozen) && (
               <p className="workspace-notice">
-                No unlocked native balance was observed. Obtain testnet funds through the event’s
-                official support before signing.
+                No unlocked native balance was observed. Add V3 testnet native tokens to cover fees
+                before signing.
               </p>
             )
           )}

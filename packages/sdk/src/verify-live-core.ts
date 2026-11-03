@@ -192,7 +192,7 @@ export async function verifyReceiptLive(
     finalized = await reader.finalizedNumber();
   } catch (e) {
     return {
-      status: "unknown",
+      status: problems.length ? "failed" : "unknown",
       problems,
       notes: [...notes, `Could not read the finalized head: ${(e as Error).message}`],
       steps,

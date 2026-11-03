@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   inspectEvidenceBundle,
   prepareEvidenceBundle,
@@ -7,6 +7,8 @@ import {
 import { RunStore, browserKV, chainTxLookup, RUN_STORE_KEY, type RunRecord } from "../lib/runstore";
 import { V3_HTTPS_RPC } from "../lib/v3facts";
 import { downloadJson, verifyEvidence } from "../lib/evidence";
+import { verificationLabel, verificationTone } from "../lib/verification-view";
+import { SDK_DOCS_URL, PAYMENT_EXAMPLE_URL, SOURCE_URL } from "../lib/product-links";
 
 export type CenterView = "activity" | "verify" | "team" | "developers";
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -176,7 +178,7 @@ function ActivityCenter({ active }: { active: boolean }) {
   );
 }
 
-function EvidenceInspector({
+export function EvidenceInspector({
   bundle,
   onBundle,
 }: {
@@ -184,19 +186,30 @@ function EvidenceInspector({
   onBundle: (value: EvidenceBundle) => void;
 }) {
   const [problem, setProblem] = useState<string>(),
-    [result, setResult] = useState<unknown>(),
+    [result, setResult] = useState<{ bundle: EvidenceBundle; value: unknown }>(),
     [busy, setBusy] = useState(false);
+  const request = useRef(0);
+  useEffect(() => {
+    request.current++;
+    setResult(undefined);
+    setBusy(false);
+    setProblem(undefined);
+  }, [bundle]);
   const offline = bundle ? inspectEvidenceBundle(bundle) : undefined;
   const importFile = async (file?: File) => {
     if (!file) return;
+    const version = ++request.current;
+    setBusy(true);
     setResult(undefined);
     setProblem(undefined);
     try {
       if (file.size > 8 * 1024 * 1024) throw new Error("Choose a JSON file smaller than 8 MiB.");
       const value = prepareEvidenceBundle(JSON.parse(await file.text()));
-      onBundle(value);
+      if (version === request.current) onBundle(value);
     } catch (error) {
-      setProblem(message(error));
+      if (version === request.current) setProblem(message(error));
+    } finally {
+      if (version === request.current) setBusy(false);
     }
   };
   return (
@@ -271,19 +284,28 @@ function EvidenceInspector({
           <button
             disabled={busy || offline.status === "failed"}
             onClick={() => {
+              const version = ++request.current;
               setBusy(true);
               setProblem(undefined);
               setResult(undefined);
               void verifyEvidence(bundle)
-                .then(setResult)
+                .then((value) => {
+                  if (version === request.current) setResult({ bundle, value });
+                })
                 .catch((error: unknown) => {
+                  if (version !== request.current) return;
                   setProblem(message(error));
                   setResult({
-                    status: "unknown",
-                    reason: "The independent read could not complete.",
+                    bundle,
+                    value: {
+                      status: "unknown",
+                      reason: "The independent read could not complete.",
+                    },
                   });
                 })
-                .finally(() => setBusy(false));
+                .finally(() => {
+                  if (version === request.current) setBusy(false);
+                });
             }}
           >
             {busy ? "Reading finalized chain evidence…" : "Verify against live V3 testnet"}
@@ -294,16 +316,19 @@ function EvidenceInspector({
           </p>
         </article>
       )}
-      {result !== undefined && (
+      {result && result.bundle === bundle && (
         <article className="record-card">
           <h2>Independent chain result</h2>
           <p className="result-headline">
-            {typeof result === "object" && result && "status" in result
-              ? String(result.status).replaceAll("_", " ")
+            {typeof result.value === "object" && result.value && "status" in result.value
+              ? verificationLabel(String(result.value.status), bundle.receipt.result)
               : "unknown"}
           </p>
-          <Details value={result} label="View every chain check" />
-          <button className="ghost" onClick={() => downloadJson("seam-verification.json", result)}>
+          <Details value={result.value} label="View every chain check" />
+          <button
+            className="ghost"
+            onClick={() => downloadJson("seam-verification.json", result.value)}
+          >
             Export verification result
           </button>
         </article>
@@ -313,6 +338,7 @@ function EvidenceInspector({
 }
 
 interface Session {
+  keyId?: string;
   name: string;
   workspaceId: string | null;
   scopes: string[];
@@ -322,6 +348,8 @@ interface EvidenceRow {
   id: string;
   name: string;
   created_at: string;
+  verified_at?: string;
+  claimed_result?: string;
   verification: { status: string } | null;
 }
 interface MonitorRow {
@@ -339,7 +367,7 @@ interface KeyRow {
   scopes: string[];
   revoked_at: string | null;
 }
-function TeamConsole({ bundle }: { bundle?: EvidenceBundle }) {
+export function TeamConsole({ bundle }: { bundle?: EvidenceBundle }) {
   const [url, setUrl] = useState(""),
     [key, setKey] = useState(""),
     [session, setSession] = useState<Session>(),
@@ -357,6 +385,9 @@ function TeamConsole({ bundle }: { bundle?: EvidenceBundle }) {
     [keyRole, setKeyRole] = useState("reader"),
     [issued, setIssued] = useState<string>(),
     [detail, setDetail] = useState<unknown>();
+  useEffect(() => {
+    setShare(false);
+  }, [bundle, connection?.workspace]);
   useEffect(() => {
     let active = true;
     void fetch("./control-plane.json", { cache: "no-store" })
@@ -584,16 +615,30 @@ function TeamConsole({ bundle }: { bundle?: EvidenceBundle }) {
                       ? `${bundle.plan.steps.length} actions ready from Receipt inspector.`
                       : "Import a receipt in Receipt inspector first."}
                   </p>
+                  {bundle && (
+                    <p className="breakable upload-context">
+                      Signer: <code>{bundle.plan.signer.value}</code>
+                      <br />
+                      Plan: <code>{short(bundle.plan.planDigest)}</code>
+                    </p>
+                  )}
                 </>
               )}
               {!evidence.length && <p className="muted">No shared receipts yet.</p>}
               {evidence.map((item) => (
                 <div className="compact-record" key={item.id}>
                   <b>{item.name}</b>
-                  <span className="result-badge neutral">
-                    {item.verification?.status.replaceAll("_", " ") ?? "Stored · unverified"}
+                  <span
+                    className={`result-badge ${verificationTone(item.verification?.status, item.claimed_result)}`}
+                  >
+                    {verificationLabel(item.verification?.status, item.claimed_result)}
                   </span>
-                  <small>{new Date(item.created_at).toLocaleString()}</small>
+                  <small>
+                    Added {new Date(item.created_at).toLocaleString()}
+                    {item.verified_at
+                      ? ` · Last checked ${new Date(item.verified_at).toLocaleString()}`
+                      : " · Not checked yet"}
+                  </small>
                   <div className="button-row">
                     <button
                       className="ghost"
@@ -802,7 +847,11 @@ function TeamConsole({ bundle }: { bundle?: EvidenceBundle }) {
                   {!item.revoked_at && (
                     <button
                       className="ghost"
-                      disabled={busy}
+                      disabled={
+                        busy ||
+                        item.id === session.keyId ||
+                        (!!connection && connection.key.startsWith(item.prefix))
+                      }
                       onClick={() =>
                         void perform(async () => {
                           await request(path(`keys/${item.id}/revoke`), "POST");
@@ -811,7 +860,10 @@ function TeamConsole({ bundle }: { bundle?: EvidenceBundle }) {
                         })
                       }
                     >
-                      Revoke key
+                      {item.id === session.keyId ||
+                      (!!connection && connection.key.startsWith(item.prefix))
+                        ? "Current session key"
+                        : "Revoke key"}
                     </button>
                   )}
                 </div>
@@ -878,12 +930,16 @@ function DeveloperHub() {
             Start with portable public evidence. Integrity checking needs no wallet and no network
             connection.
           </p>
-          <pre>{`import { prepareEvidenceBundle, inspectEvidenceBundle,\n  verifyReceiptLive } from '@seam/sdk/browser';\nimport { createReceiptReader } from '@seam/chain/browser';\n\nconst bundle = prepareEvidenceBundle(recording);\nconst integrity = inspectEvidenceBundle(bundle);\n// Recompile the manifest against historical facts,\n// then verify through a read-only receipt reader.`}</pre>
-          <a
-            href="https://github.com/rishu4436/seam-portaldot/blob/main/docs/sdk.md"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <pre>{`import { prepareEvidenceBundle, inspectEvidenceBundle }\n  from '@seam/sdk/browser';\n\nexport function inspectReceiptExport(receiptExport) {\n  const bundle = prepareEvidenceBundle(receiptExport);\n  return inspectEvidenceBundle(bundle);\n}\n// Integrity checking alone does not prove execution.\n// Use a receipt reader for independent chain verification.`}</pre>
+          <p>
+            Build the packages from the{" "}
+            <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+              release source
+            </a>{" "}
+            with <code>npm ci && npm run build</code>. The SDK is currently distributed through this
+            repository.
+          </p>
+          <a href={SDK_DOCS_URL} target="_blank" rel="noreferrer">
             Browse the SDK API ↗
           </a>
         </article>
@@ -912,11 +968,7 @@ function DeveloperHub() {
               </div>
             </li>
           </ol>
-          <a
-            href="https://github.com/rishu4436/seam-portaldot/tree/main/examples"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a href={PAYMENT_EXAMPLE_URL} target="_blank" rel="noreferrer">
             Explore integration examples ↗
           </a>
         </article>

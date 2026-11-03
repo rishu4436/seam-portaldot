@@ -62,6 +62,32 @@ async function workspace(app, name = "Test team") {
 test("startup refuses weak operator credentials", () => {
   assert.throws(() => createControlPlane({ bootstrapToken: "weak" }), /at least 32/);
 });
+test("a failed verification attempt replaces a stale successful badge with an explicit unknown result", async () => {
+  let offline = false;
+  const app = await start({
+    verify: async () => {
+      if (offline) throw new Error("node offline");
+      return { status: "chain_verified" };
+    },
+  });
+  const team = await workspace(app),
+    path = `/v1/workspaces/${team.id}`;
+  const saved = (
+    await app.request(`${path}/evidence`, {
+      method: "POST",
+      body: { name: "Run", bundle: evidence },
+    })
+  ).body;
+  await app.request(`${path}/evidence/${saved.id}/verify`, { method: "POST" });
+  offline = true;
+  const attempt = await app.request(`${path}/evidence/${saved.id}/verify`, { method: "POST" });
+  assert.equal(attempt.status, 200);
+  assert.equal(attempt.body.status, "unknown");
+  const stored = (await app.request(`${path}/evidence/${saved.id}`)).body;
+  assert.equal(stored.verification.status, "unknown");
+  assert.ok(stored.verification.checkedAt);
+  assert.ok(stored.verified_at);
+});
 test("tenant isolation, read-only keys and revocation are enforced by the server", async () => {
   const app = await start(),
     a = await workspace(app),

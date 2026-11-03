@@ -659,7 +659,9 @@ export function LivePanel({
   liveCompileLoader = loadLiveCompile,
   signerWatchLoader = openSignerWatch,
   onBusyChange,
+  walletSource,
 }: {
+  walletSource?: string;
   onBusyChange?: (busy: boolean) => void;
   /** Persisted non-secret run state (lib/runstore.ts). Default: browser storage via browserKV(), key RUN_STORE_KEY. */
   rpcUrl?: string;
@@ -749,7 +751,7 @@ export function LivePanel({
     setRecovered(rs.filter((r) => r.phase !== "finalized"));
   };
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
-  const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}`;
+  const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}|${walletSource ?? ""}`;
   useEffect(() => {
     setOut(undefined);
     setEngineApproval(undefined);
@@ -823,6 +825,7 @@ export function LivePanel({
         if (plan?.signer && genesis) {
           try {
             watchRef.current = await signerWatchLoader({
+              extension: walletSource,
               expectedAddress: plan.signer,
               expectedGenesisHash: genesis,
               rpc: rpc as never,
@@ -882,6 +885,7 @@ export function LivePanel({
               live: true,
               watch,
               watchErr,
+              walletSource,
             }),
           );
           return;
@@ -909,6 +913,7 @@ export function LivePanel({
         if (host) {
           deps.verifyBinding = host.verifyBinding;
           deps.signer = b.createExtensionSigner({
+            extension: walletSource,
             assemble: (sig, _p, req) => host.assemble(sig, req),
           });
         }
@@ -1349,6 +1354,7 @@ export function MultiStepPanel({ r }: { r: MultiStepResult }) {
 }
 
 async function runMultiStepLive(a: {
+  walletSource?: string;
   rpc: RpcTransport;
   b: typeof import("../lib/browserChain");
   host: LiveHost | undefined;
@@ -1385,7 +1391,10 @@ async function runMultiStepLive(a: {
   const ctx = await a.b.readSigningContext(a.rpc, a.signer);
   if (!ctx.ok) return blocked(ctx.message);
   const client = a.b.createBrowserChainClient(a.rpc, { extrinsicHash: host.extrinsicHash });
-  const wallet = a.b.createExtensionSigner({ assemble: (sig, _p, req) => host.assemble(sig, req) });
+  const wallet = a.b.createExtensionSigner({
+    extension: a.walletSource,
+    assemble: (sig, _p, req) => host.assemble(sig, req),
+  });
   if (!a.watch)
     return blocked(
       `The wallet watch could not start (${a.watchErr ?? "unknown"}), so signing is disabled. Nothing was signed.`,

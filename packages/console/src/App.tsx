@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ManifestBuilder } from "./components/ManifestBuilder";
 import type { BuilderSelection } from "./components/BuilderPolicy";
 import { LivePanel, PolicyGatePanel, liveFactsStep } from "./components/Modes";
@@ -10,8 +10,9 @@ import { V3_HTTPS_RPC } from "./lib/v3facts";
 import type { Approval, RuntimeFacts } from "./lib/types";
 import type { GateOutcome } from "./lib/policygate";
 import "./workspace.css";
+import { DOCS_URL, SOURCE_URL } from "./lib/product-links";
 
-const Lab = lazy(() => import("./LegacyApp"));
+const Lab = import.meta.env.DEV ? lazy(() => import("./LegacyApp")) : undefined;
 const WorkspaceCenters = lazy(() => import("./components/WorkspaceCenters"));
 type ActiveView = "compose" | "activity" | "verify" | "team" | "developers";
 const viewLabels: Record<ActiveView, string> = {
@@ -21,10 +22,17 @@ const viewLabels: Record<ActiveView, string> = {
   team: "Team workspace",
   developers: "Developer hub",
 };
-const Evidence = lazy(() =>
-  import("./components/V3Evidence").then((m) => ({ default: m.V3Evidence })),
-);
-type Selection = BuilderSelection & { facts: unknown; rpcUrl?: string };
+const readActiveView = (): ActiveView => {
+  const value = new URLSearchParams(window.location.search).get("view");
+  return value && Object.hasOwn(viewLabels, value) ? (value as ActiveView) : "compose";
+};
+function writeView(view: ActiveView, replace = false) {
+  const url = new URL(window.location.href);
+  if (view === "compose") url.searchParams.delete("view");
+  else url.searchParams.set("view", view);
+  window.history[replace ? "replaceState" : "pushState"]({}, "", url);
+}
+type Selection = BuilderSelection & { facts: unknown; rpcUrl?: string; walletSource?: string };
 const short = (s?: string) => (s ? `${s.slice(0, 8)}…${s.slice(-6)}` : "Not read yet");
 
 export default function App() {
@@ -36,10 +44,34 @@ export default function App() {
   const [acknowledgedDowngrade, setAcknowledgedDowngrade] = useState(false);
   const [busy, setBusy] = useState(false);
   const [executionBusy, setExecutionBusy] = useState(false);
-  const [activeView, setActiveView] = useState<ActiveView>("compose");
-  const [centersOpened, setCentersOpened] = useState(false);
+  const [activeView, setActiveView] = useState<ActiveView>(readActiveView);
+  const [centersOpened, setCentersOpened] = useState(() => readActiveView() !== "compose");
   const [notice, setNotice] = useState<string>();
-  const [showEvidence, setShowEvidence] = useState(false);
+  const navigate = (next: ActiveView) => {
+    if (busy || executionBusy || next === activeView) return;
+    writeView(next);
+    setActiveView(next);
+    if (next !== "compose") setCentersOpened(true);
+    window.scrollTo(0, 0);
+    document.getElementById("main")?.focus();
+  };
+  useEffect(() => {
+    document.title = `${viewLabels[activeView]} · SEAM`;
+  }, [activeView]);
+  useEffect(() => {
+    const pop = () => {
+      if (busy || executionBusy) {
+        writeView(activeView, true);
+        return;
+      }
+      const next = readActiveView();
+      setActiveView(next);
+      if (next !== "compose") setCentersOpened(true);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("popstate", pop);
+    return () => window.removeEventListener("popstate", pop);
+  }, [activeView, busy, executionBusy]);
   const invalidate = useCallback(() => {
     revision.current++;
     setAcknowledgedDowngrade(false);
@@ -111,7 +143,7 @@ export default function App() {
       setBusy(false);
     }
   };
-  if (new URLSearchParams(window.location.search).get("view") === "lab")
+  if (Lab && new URLSearchParams(window.location.search).get("view") === "lab")
     return (
       <Suspense fallback={<p className="loading-view">Loading recorded workspace…</p>}>
         <Lab />
@@ -138,9 +170,7 @@ export default function App() {
               aria-current={activeView === id ? "page" : undefined}
               disabled={busy || executionBusy}
               onClick={() => {
-                setActiveView(id);
-                if (id !== "compose") setCentersOpened(true);
-                document.getElementById("main")?.focus();
+                navigate(id);
               }}
             >
               <Symbol
@@ -157,23 +187,7 @@ export default function App() {
               {label}
             </button>
           ))}
-          <button
-            className="rail-link"
-            disabled={busy || executionBusy}
-            onClick={() => {
-              setActiveView("compose");
-              setShowEvidence((v) => !v);
-            }}
-          >
-            <Symbol kind="activity" />
-            Testnet evidence
-          </button>
-          <a
-            className="rail-link"
-            href="https://github.com/rishu4436/seam-portaldot#5-minute-quickstart"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className="rail-link" href={DOCS_URL} target="_blank" rel="noreferrer">
             <Symbol kind="external" />
             Documentation
           </a>
@@ -186,8 +200,7 @@ export default function App() {
             disabled={busy || executionBusy}
             onChange={(event) => {
               const next = event.target.value as ActiveView;
-              setActiveView(next);
-              if (next !== "compose") setCentersOpened(true);
+              navigate(next);
             }}
           >
             {(Object.entries(viewLabels) as [ActiveView, string][]).map(([id, label]) => (
@@ -207,9 +220,11 @@ export default function App() {
             <br />
             You stay in control.
           </p>
-          <a href="./console.html?view=lab">
-            Recorded tools <span>↗</span>
-          </a>
+          {import.meta.env.DEV && (
+            <a href="./console.html?view=lab">
+              Recorded tools <span>↗</span>
+            </a>
+          )}
         </div>
       </aside>
       <div className="workspace-body">
@@ -217,7 +232,7 @@ export default function App() {
           <span>
             Workspace <span className="breadcrumb-slash">/</span> <b>{viewLabels[activeView]}</b>
           </span>
-          <a href="https://github.com/rishu4436/seam-portaldot" target="_blank" rel="noreferrer">
+          <a href={SOURCE_URL} target="_blank" rel="noreferrer">
             Open source <Symbol kind="external" />
           </a>
         </header>
@@ -355,6 +370,7 @@ export default function App() {
                     <Symbol kind="wallet" />
                   </div>
                   <LivePanel
+                    walletSource={selection?.walletSource}
                     onBusyChange={setExecutionBusy}
                     plan={view}
                     facts={selection?.facts as RuntimeFacts | undefined}
@@ -381,15 +397,6 @@ export default function App() {
                     }
                   />
                 </section>
-                {showEvidence && (
-                  <section className="evidence-section">
-                    <h2>Recorded testnet evidence</h2>
-                    <p>Historical records, kept separate from your live transaction.</p>
-                    <Suspense fallback={<p>Loading evidence…</p>}>
-                      <Evidence />
-                    </Suspense>
-                  </section>
-                )}
               </div>
               <aside className="context-column" aria-label="Execution guide">
                 <div className="context-card">

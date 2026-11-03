@@ -114,7 +114,7 @@ export class ControlStore {
   listEvidence(workspaceId) {
     return this.db
       .prepare(
-        "SELECT id,name,content_hash,verification,created_at,verified_at FROM evidence WHERE workspace_id=? ORDER BY created_at DESC LIMIT 500",
+        "SELECT id,name,content_hash,verification,created_at,verified_at,json_extract(bundle,'$.receipt.result') AS claimed_result FROM evidence WHERE workspace_id=? ORDER BY created_at DESC LIMIT 500",
       )
       .all(workspaceId)
       .map((e) => ({ ...e, verification: e.verification ? JSON.parse(e.verification) : null }));

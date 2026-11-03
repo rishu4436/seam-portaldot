@@ -53,9 +53,9 @@ const response = await get("console.html");
 const report = {
   checkedAt: new Date().toISOString(),
   url: base,
-  frontendDeploymentId: "dpl_8iFPAbCHcTP6Z3DoprqSjPgauSfo",
-  frontendImmutableUrl: "https://seam-portaldot-ev268hs80-rishu4436s-projects.vercel.app",
-  backendDeploymentId: "a723e40d-7820-4cbf-982d-fe859d300e40",
+  frontendDeploymentId: "dpl_HM5Pm46qHnpSsx4DrgudP1hyQzAC",
+  frontendImmutableUrl: "https://seam-portaldot-rccwoh4zt-rishu4436s-projects.vercel.app",
+  backendDeploymentId: "a146ffb1-bf0b-4c41-bbfa-897ae63ea660",
   files: rows.sort((a, b) => a.file.localeCompare(b.file)),
   failures: rows.filter((row) => !row.match),
   headers: Object.fromEntries(

@@ -8,6 +8,7 @@ import {
   type SignerStatus,
   type SignerWatch,
 } from "@seam/chain/browser";
+import { walletProviderFor } from "./extensionsigner";
 
 export type { SignerState, SignerWatch };
 
@@ -57,7 +58,7 @@ export async function readyOrStop(
 type InjectedLike = Record<string, { enable(app: string): Promise<unknown> }>;
 
 /**
- * Opens the first injected extension and starts the watch. With no extension the watch still starts and reports
+ * Opens the selected account's wallet and starts the watch. With no extension the watch still starts and reports
  * extension_disconnected, so signing stays disabled.
  */
 export async function openSignerWatch(args: {
@@ -66,15 +67,16 @@ export async function openSignerWatch(args: {
   rpc: (method: string, params: unknown[]) => Promise<unknown>;
   onChange?: (s: SignerState) => void;
   getInjected?: () => InjectedLike | undefined;
+  extension?: string;
   watch?: typeof watchSigner;
 }): Promise<SignerWatch> {
-  const inj = (
-    args.getInjected ?? (() => (globalThis as { injectedWeb3?: InjectedLike }).injectedWeb3)
-  )();
-  const name = inj ? Object.keys(inj)[0] : undefined;
   let ext: unknown;
   try {
-    ext = name ? await inj![name]!.enable("SEAM console") : undefined;
+    ext = await walletProviderFor({
+      address: args.expectedAddress,
+      extension: args.extension,
+      getInjected: args.getInjected,
+    });
   } catch {
     ext = undefined;
   }
