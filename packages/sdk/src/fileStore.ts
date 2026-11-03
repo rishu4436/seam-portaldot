@@ -32,6 +32,8 @@ interface StoreFile {
   released: { key: string; idempotencyKey: string; at: string }[];
 }
 const STATES: ReservationState[] = ["reserved", "committed", "uncertain"];
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 const sleepSync = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 /**
@@ -67,7 +69,7 @@ export class FileApprovalStore implements ReservableApprovalStore {
         `cannot read ${this.path} (${(e as Error).message}); refusing to treat anything as unused`,
       );
     }
-    let j: any;
+    let j: unknown;
     try {
       j = JSON.parse(text);
     } catch {
@@ -75,22 +77,17 @@ export class FileApprovalStore implements ReservableApprovalStore {
         `${this.path} is not valid JSON (corrupt or truncated); refusing to treat anything as unused`,
       );
     }
-    if (
-      !j ||
-      j.version !== 1 ||
-      typeof j.records !== "object" ||
-      j.records === null ||
-      Array.isArray(j.records)
-    ) {
+    if (!isRecord(j) || j.version !== 1 || !isRecord(j.records)) {
       throw new ApprovalStoreError(
         `${this.path} has an unknown format or version; refusing to treat anything as unused`,
       );
     }
-    for (const [k, r] of Object.entries<any>(j.records)) {
+    const records: StoreFile["records"] = {};
+    for (const [k, r] of Object.entries(j.records)) {
       if (
-        !r ||
+        !isRecord(r) ||
         r.key !== k ||
-        !STATES.includes(r.state) ||
+        !STATES.some((state) => state === r.state) ||
         typeof r.idempotencyKey !== "string" ||
         typeof r.at !== "string"
       ) {
@@ -98,11 +95,12 @@ export class FileApprovalStore implements ReservableApprovalStore {
           `${this.path} has a damaged record for ${k}; refusing to treat anything as unused`,
         );
       }
+      records[k] = r as unknown as ReservationRecord;
     }
     return {
       version: 1,
-      records: j.records,
-      released: Array.isArray(j.released) ? j.released : [],
+      records,
+      released: Array.isArray(j.released) ? (j.released as StoreFile["released"]) : [],
     };
   }
 

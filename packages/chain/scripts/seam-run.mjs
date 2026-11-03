@@ -489,7 +489,6 @@ export function flowEffects({ address, rawCall }) {
 export async function runAllFlows({
   endpoint,
   discoverOpts,
-  signer,
   signPayloadFor,
   address,
   assetId,
@@ -614,6 +613,7 @@ export async function runAllFlows({
         }),
       { facts, timeoutMs: 120_000 },
     );
+    // eslint-disable-next-line no-useless-assignment -- Drop the reference to signed transaction bytes after use.
     signed = undefined;
     const after = await stateOf(endpoint, facts, assetId, accounts);
     const ev = direct.inclusion?.events ?? [];

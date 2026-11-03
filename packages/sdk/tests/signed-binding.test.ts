@@ -50,7 +50,7 @@ function fake(
   } = {},
 ) {
   const log = { submits: [] as string[], dryRuns: 0, verifyCalls: 0, decodeCalls: [] as string[] };
-  const chain: any = {
+  const chain: ChainAdapter = {
     discover: async () => facts,
     readFingerprint: async () => facts.fingerprint,
     preflight: async (plan: Plan) => ({

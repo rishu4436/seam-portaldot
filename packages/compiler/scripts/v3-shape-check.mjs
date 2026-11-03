@@ -7,7 +7,6 @@
 //   JSON file: a hex string, or {"metadataHex"|"metadata"|"result": "0x..."} optionally with genesis, tokenSymbol, tokenDecimals.
 // Needs `npm run build` first (imports ../dist).
 import { readFileSync, existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import {
   compile,
   factsFromMetadata,

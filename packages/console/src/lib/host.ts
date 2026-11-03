@@ -1,3 +1,4 @@
+import * as chainBrowser from "@seam/chain/browser";
 // The single seam for everything that needs SCALE / signature crypto. The console deliberately has NO local verifier or
 // extrinsic assembler: two copies would drift from the SDK/chain ones. The host (planned: `@seam/chain/browser`) supplies
 // them through LiveHost. Until loadLiveHost() returns one, LIVE stays blocked before anything is signed or sent.
@@ -145,9 +146,6 @@ export function createLiveHost(
  */
 export async function loadLiveHost(facts?: unknown): Promise<LiveHost | undefined> {
   if (!hasChainFacts(facts)) return undefined;
-  const [mod, crypto] = await Promise.all([
-    import("@seam/chain/browser"),
-    import("@polkadot/util-crypto"),
-  ]);
+  const [mod, crypto] = await Promise.all([chainBrowser, import("@polkadot/util-crypto")]);
   return createLiveHost(mod, facts, (hex) => crypto.blake2AsHex(hex, 256));
 }

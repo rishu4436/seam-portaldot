@@ -190,7 +190,7 @@ function gate(
   const policy = definePolicy(policyOf(hashFrom ?? r.codeHash));
   const preflight = preflightFor(plan);
   const result = evaluatePolicy({ policy, plan, facts, preflight, manifest });
-  return Object.assign(result, { ctx: { manifest, plan, policy, preflight } });
+  return { ...result, decision: result, ctx: { manifest, plan, policy, preflight } };
 }
 
 // Example signing envelope (test data, not a chain reading). Signer = the template's signer.
@@ -210,7 +210,7 @@ function approve(res: ReturnType<typeof gate>, plan = res.ctx.plan) {
     envelope,
     preflight,
     policy,
-    policyResult: res,
+    policyResult: res.decision,
     fingerprint: facts.fingerprint as never,
     now: NOW,
     manifest: manifest as never,
@@ -277,7 +277,7 @@ it("createApproval refuses a template plan whose bytes were edited (digest recom
   const edited = { ...forged, planDigest: planDigest(forged as never) } as Plan;
   const out = approve(res, edited);
   expect(out.ok).toBe(false);
-  expect((out as { reason: string }).reason).toMatch(/call bytes/);
+  expect((out as { reason: string }).reason).toMatch(/call bytes|different inputs/);
 });
 
 // ---- Live submit gate (checkBeforeSubmit live: true, Sentinel's call shape from 4dd5e1a) ----
@@ -313,7 +313,7 @@ function liveSubmit(
     envelope,
     preflight,
     policy,
-    policyResult: res,
+    policyResult: res.decision,
     approval: (out as { approval: BoundApproval }).approval,
     preparedFingerprint: facts.fingerprint as never,
     currentFingerprint: facts.fingerprint as never,

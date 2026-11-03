@@ -18,16 +18,10 @@ import { FakeNode } from "./fakeNode.js";
 import { demoPlan, devKeys, snapshotFacts, snapshotInputs } from "./helpers.js";
 
 const NOW = new Date("2026-10-11T12:00:00Z");
-const verify = (chain as any).verifySignedAgainstRequest as (
-  tx: Hex,
-  req: SigningRequest,
-  ctx?: any,
-) => any;
-const verifyBatch = (chain as any).verifySignedBatch as (
-  txs: Hex[],
-  reqs: SigningRequest[],
-  ctx?: any,
-) => any;
+const verify = chain.verifySignedAgainstRequest;
+const verifyBatch = chain.verifySignedBatch;
+type Setup = Awaited<ReturnType<typeof setup>>;
+type Pair = Awaited<ReturnType<typeof devKeys>>["alice"];
 
 async function setup() {
   const keys = await devKeys();
@@ -45,10 +39,14 @@ async function setup() {
   const calls = callsToSign(plan).filter((c): c is Hex => !!c);
   const requests = adapter.signingRequests(calls, envelope); // prepares the operation: these are the approved requests
   const { registry } = encodeRuntime(facts);
-  const sign = (pair: any, payload: any) =>
+  const sign = (pair: Pair, payload: SigningRequest["payload"]) =>
     u8aToHex(pair.sign(hexToU8a(signBytesOf(payload, facts)), { withType: true }));
   /** A signed extrinsic that carries `payload` as-is (even a payload the SDK never asked for), signed by `pair`. */
-  const forge = (pair: any, payload: any, signature: string = sign(pair, payload)): Hex => {
+  const forge = (
+    pair: Pair,
+    payload: SigningRequest["payload"],
+    signature: string = sign(pair, payload),
+  ): Hex => {
     const ext = registry.createType("Extrinsic", { method: payload.method }, { version: 4 });
     ext.addSignature(payload.address, hexToU8a(signature), payload);
     return ext.toHex() as Hex;
@@ -59,12 +57,13 @@ async function setup() {
   return { keys, facts, node, adapter, requests, honest, sign, forge, submits };
 }
 /** Flips one byte inside the signature of honest[0] (the extrinsic stays well-formed). */
-const corruptSignature = (s: any): Hex => {
+const corruptSignature = (s: Setup): Hex => {
   const sig = (chain.extractSignedCall(s.honest[0], s.facts).signature as string).slice(2);
   const flipped = sig.slice(0, 20) + (sig[20] === "a" ? "b" : "a") + sig.slice(21);
   return (s.honest[0] as string).replace(sig, flipped) as Hex;
 };
-const refused = (o: any) => o.status === "failed" && /not sent/i.test(o.error ?? "");
+const refused = (o: Awaited<ReturnType<Setup["adapter"]["submit"]>>) =>
+  o.status === "failed" && /not sent/i.test(o.error ?? "");
 
 describe("SEAM-001 chain: verifySignedAgainstRequest", () => {
   it("exports the verifier", () => {
@@ -98,12 +97,12 @@ describe("SEAM-001 chain: verifySignedAgainstRequest", () => {
     [
       "another signer",
       "signer_mismatch",
-      (s: any) => s.forge(s.keys.bob, { ...s.requests[0].payload, address: s.keys.bob.address }),
+      (s: Setup) => s.forge(s.keys.bob, { ...s.requests[0].payload, address: s.keys.bob.address }),
     ],
     [
       "nonce tampering",
       "nonce_mismatch",
-      (s: any) =>
+      (s: Setup) =>
         s.forge(s.keys.alice, {
           ...s.requests[0].payload,
           nonce: s.requests[0].payload.nonce.replace(/.$/, "9"),
@@ -112,17 +111,17 @@ describe("SEAM-001 chain: verifySignedAgainstRequest", () => {
     [
       "immortal era",
       "era_mismatch",
-      (s: any) => s.forge(s.keys.alice, { ...s.requests[0].payload, era: "0x00" }),
+      (s: Setup) => s.forge(s.keys.alice, { ...s.requests[0].payload, era: "0x00" }),
     ],
     [
       "tip tampering",
       "tip_mismatch",
-      (s: any) => s.forge(s.keys.alice, { ...s.requests[0].payload, tip: "0x01" }),
+      (s: Setup) => s.forge(s.keys.alice, { ...s.requests[0].payload, tip: "0x01" }),
     ],
     [
       "another chain (genesis)",
       "signature_invalid",
-      (s: any) =>
+      (s: Setup) =>
         s.forge(
           s.keys.alice,
           { ...s.requests[0].payload, genesisHash: "0x" + "11".repeat(32) },
@@ -132,18 +131,18 @@ describe("SEAM-001 chain: verifySignedAgainstRequest", () => {
     [
       "another spec version",
       "signature_invalid",
-      (s: any) => s.forge(s.keys.alice, { ...s.requests[0].payload, specVersion: "0x0000ffff" }),
+      (s: Setup) => s.forge(s.keys.alice, { ...s.requests[0].payload, specVersion: "0x0000ffff" }),
     ],
-    ["corrupted signature", "signature_invalid", (s: any) => corruptSignature(s)],
+    ["corrupted signature", "signature_invalid", (s: Setup) => corruptSignature(s)],
     [
       "truncated extrinsic",
       "not_decodable",
-      (s: any) => (s.honest[0] as string).slice(0, -20) as Hex,
+      (s: Setup) => (s.honest[0] as string).slice(0, -20) as Hex,
     ],
     [
       "signature bytes cut short (malformed)",
       "not_decodable",
-      (s: any) =>
+      (s: Setup) =>
         (s.honest[0] as string).replace(
           (chain.extractSignedCall(s.honest[0], s.facts).signature as string).slice(2),
           (chain.extractSignedCall(s.honest[0], s.facts).signature as string).slice(2, 100),
@@ -178,7 +177,7 @@ describe("SEAM-001 chain: verifySignedAgainstRequest", () => {
 });
 
 describe("SEAM-001 chain: adapter.submit is bound to the approved requests and submits nothing otherwise", () => {
-  const attacks: [string, (s: any) => Hex][] = [
+  const attacks: [string, (s: Setup) => Hex][] = [
     [
       "signedTx carries a different call",
       (s) => s.forge(s.keys.alice, { ...s.requests[0].payload, method: s.requests[1].callHex }),

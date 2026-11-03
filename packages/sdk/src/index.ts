@@ -1,4 +1,5 @@
 export * from "./manifest.js";
+export * from "./evidence.js";
 export * from "./receipt.js";
 export * from "./verify-live.js";
 export * from "./codes.js";

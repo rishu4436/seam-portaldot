@@ -1,3 +1,5 @@
+import type { Enum, Vec } from "@polkadot/types";
+import type { Call, Extrinsic } from "@polkadot/types/interfaces";
 import { hexToU8a, u8aConcat, u8aToHex } from "@polkadot/util";
 import { blake2AsHex, signatureVerify } from "@polkadot/util-crypto";
 import type { Hex, RuntimeFacts } from "@seam/compiler";
@@ -142,7 +144,7 @@ export class FakeNode implements RpcClient {
   }
 
   private assetKey(id: string): string {
-    return storageKey((decodeRuntime(this.o.facts).decorated().query as any).assets.asset, id);
+    return storageKey(decodeRuntime(this.o.facts).decorated().query.assets.asset, id);
   }
 
   async send<T>(method: string, params: unknown[]): Promise<T> {
@@ -315,7 +317,7 @@ export class FakeNode implements RpcClient {
     return "0x0000";
   }
 
-  private signatureOk(ext: any): boolean {
+  private signatureOk(ext: Extrinsic): boolean {
     const { registry } = encodeRuntime(this.o.facts);
     const fp = this.o.facts.fingerprint;
     const payload = registry
@@ -403,16 +405,16 @@ export class FakeNode implements RpcClient {
         calls.splice(
           0,
           1,
-          ...(calls[0]!.args[0] as any).map((c: any) => registry.createType("Call", c.toHex())),
+          ...(calls[0]!.args[0] as Vec<Call>).map((c) => registry.createType("Call", c.toHex())),
         );
       for (const c of calls) {
-        const a = c.args as any[];
+        const a = c.args;
         if (c.section === "assets" && c.method === "transferKeepAlive")
           out.push(
             record("Assets", "Transferred", [
               enc("AssetId", a[0]),
               hexToU8a(signerHex),
-              a[1].value.toU8a(),
+              (a[1] as Enum).value.toU8a(),
               enc("TAssetBalance", a[2]),
             ]),
           );
@@ -420,13 +422,16 @@ export class FakeNode implements RpcClient {
           out.push(
             record("Assets", "Issued", [
               enc("AssetId", a[0]),
-              a[1].value.toU8a(),
+              (a[1] as Enum).value.toU8a(),
               enc("TAssetBalance", a[2]),
             ]),
           );
         if (c.section === "contracts" && c.method === "call")
           out.push(
-            record("Contracts", "ContractEmitted", [a[0].value.toU8a(), enc("Bytes", "0x01")]),
+            record("Contracts", "ContractEmitted", [
+              (a[0] as Enum).value.toU8a(),
+              enc("Bytes", "0x01"),
+            ]),
           );
       }
       out.push(record("System", "ExtrinsicSuccess", [info]));

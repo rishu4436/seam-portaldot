@@ -136,12 +136,12 @@ describe("console receipt integrity", () => {
     expect(by("integrity_hash")[0]!.code).toBe("integrity_hash_match");
     expect(by("evidence_coverage")[0]!.status).toBe("pass");
     expect(by("evidence_coverage")[0]!.code).toBe("coverage_states_valid");
-  });
+  }, 60_000); // Starts the real Node CLI; Vitest 5 also times synchronous child processes.
 
   it("a tampered policyDigest fails main's seam verify", async () => {
     const r = await realReceipt();
     const { out, by } = verify({ ...r, policyDigest: "0x" + "00".repeat(32) });
     expect(out.consoleReceipt.status).toBe("failed");
     expect(by("policy_digest")[0]!.status).toBe("fail");
-  });
+  }, 60_000);
 });

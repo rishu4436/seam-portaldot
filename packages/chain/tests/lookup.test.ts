@@ -4,6 +4,7 @@ import { callsToSign } from "@seam/policy";
 import type { Hex } from "@seam/compiler";
 import {
   createPortaldotAdapter,
+  createReceiptReader,
   extrinsicHash,
   encodeRuntime,
   lookupExtrinsic,
@@ -45,6 +46,39 @@ async function setup(o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {})
 const head = () => snapshotInputs().head.number;
 
 describe("lookupExtrinsic", () => {
+  it("the portable receipt reader decodes the executed block with its parent runtime and never sends", async () => {
+    const s = await setup();
+    const tx = s.tx(0);
+    const inclusion = await s.adapter.submit(tx, "pay");
+    expect(inclusion.block).toBeDefined();
+    const blockHash = inclusion.block!.hash;
+    const observed: string[] = [];
+    const reader = createReceiptReader(
+      async (method, params) => {
+        observed.push(method);
+        const value = await s.node.send(method, params);
+        if (method === "chain_getHeader" && params[0] === blockHash)
+          return { ...(value as object), parentHash: snapshotInputs().head.hash };
+        return value;
+      },
+      { expectedGenesis: s.facts.fingerprint.genesisHash, typesBundle: s.facts.source.typesBundle },
+    );
+    const result = await reader.readTx(blockHash, extrinsicHash(tx));
+    expect(result).toMatchObject({
+      nonce: 0,
+      signer: s.facts ? demoPlan(s.facts).signer.publicKey : "",
+      callHex: demoPlan(s.facts).steps[0].encodedCall,
+    });
+    expect(
+      result!.events.some(
+        (event) => event.pallet === "System" && event.name === "ExtrinsicSuccess",
+      ),
+    ).toBe(true);
+    expect(
+      s.node.log.filter((entry) => entry.method === "state_getMetadata").at(-1)!.params,
+    ).toEqual([snapshotInputs().head.hash]);
+    expect(observed.some((method) => /^(author_|payment_|contracts_)/.test(method))).toBe(false);
+  });
   it("found_finalized when the transaction is in a finalized block", async () => {
     const s = await setup();
     const tx = s.tx(0);
@@ -116,11 +150,9 @@ describe("lookupExtrinsic", () => {
       });
       expect(r.state).toBe("unknown");
     }
-    const down = await lookupExtrinsic(
-      "ws://127.0.0.1:1",
-      `0x${"12".repeat(32)}` as Hex,
-      { timeoutMs: 500 } as any,
-    );
+    const down = await lookupExtrinsic("ws://127.0.0.1:1", `0x${"12".repeat(32)}` as Hex, {
+      timeoutMs: 500,
+    });
     expect(down.state).toBe("unknown");
   });
   it("adapter.lookupTx uses the era of what it sent", async () => {
@@ -135,11 +167,11 @@ describe("lookupExtrinsic", () => {
 describe("submit reports delivery", () => {
   it("a refused (mismatching) transaction is not_sent; a node rejection is rejected; a clean send is accepted", async () => {
     const s = await setup();
-    expect(((await s.adapter.submit(s.tx(1), "call")) as any).delivery).toBe("not_sent"); // wrong request for position 0
+    expect((await s.adapter.submit(s.tx(1), "call")).delivery).toBe("not_sent"); // wrong request for position 0
     const ok = await s.adapter.submit(s.tx(0), "pay");
-    expect((ok as any).delivery).toBe("accepted");
+    expect(ok.delivery).toBe("accepted");
     const r = await setup({ rejectWith: "invalid" });
-    expect(((await r.adapter.submit(r.tx(0), "pay")) as any).delivery).toBe("accepted"); // pool took it, then invalidated
+    expect((await r.adapter.submit(r.tx(0), "pay")).delivery).toBe("accepted"); // pool took it, then invalidated
   });
   it("a node that answers nothing before the timeout is uncertain, with the tx hash", async () => {
     const s = await setup();
@@ -149,7 +181,7 @@ describe("submit reports delivery", () => {
       send: s.node.send.bind(s.node),
       unsubscribe: s.node.unsubscribe.bind(s.node),
       subscribe: async () => 1,
-    } as any;
+    };
     const a = createPortaldotAdapter(silent, {
       allowMainnet: true,
       submitTimeoutMs: 50,
@@ -162,7 +194,7 @@ describe("submit reports delivery", () => {
       callsToSign(demoPlan(s.facts)).filter((c): c is Hex => !!c),
       (await a.preflight(demoPlan(s.facts))).envelope,
     );
-    const o: any = await a.submit(tx, "pay");
+    const o = await a.submit(tx, "pay");
     expect(o.delivery).toBe("uncertain");
     expect(o.txHash).toBe(extrinsicHash(tx));
   });
@@ -175,7 +207,7 @@ describe("submit reports delivery", () => {
       subscribe: async () => {
         throw Object.assign(new Error("WebSocket is not connected"), {});
       },
-    } as any;
+    };
     const a = createPortaldotAdapter(broken, {
       allowMainnet: true,
       submitTimeoutMs: 50,
@@ -188,7 +220,7 @@ describe("submit reports delivery", () => {
       callsToSign(demoPlan(s.facts)).filter((c): c is Hex => !!c),
       (await a.preflight(demoPlan(s.facts))).envelope,
     );
-    const o: any = await a.submit(tx, "pay");
+    const o = await a.submit(tx, "pay");
     expect(o.delivery).toBe("uncertain");
     expect(o.txHash).toBe(extrinsicHash(tx));
   });

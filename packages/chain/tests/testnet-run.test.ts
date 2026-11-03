@@ -34,8 +34,9 @@ const run = (args: string[], env: Record<string, string> = {}) => {
         timeout: 280_000,
       }),
     };
-  } catch (e: any) {
-    return { code: e.status as number, out: `${e.stdout ?? ""}${e.stderr ?? ""}` };
+  } catch (e) {
+    const error = e as { status: number; stdout?: string; stderr?: string };
+    return { code: error.status, out: `${error.stdout ?? ""}${error.stderr ?? ""}` };
   }
 };
 const files = (dir: string) => readdirSync(`${dir}/runs`).sort();
@@ -121,7 +122,7 @@ describe.skipIf(!LIVE)("testnet-run against the local dev node (SEAM_DEVNODE=1)"
     expect(s.flows.sequential.result).toBe("verified");
     expect(s.flows.rollback.result).toBe("verified");
     expect(s.flows.atomic).toMatchObject({ mode: "atomic_verified", result: "verified" });
-    expect(s.flows.sequential.steps.map((x: any) => x.status)).toEqual([
+    expect(s.flows.sequential.steps.map((x: { status: string }) => x.status)).toEqual([
       "finalized",
       "finalized",
       "finalized",
@@ -132,8 +133,14 @@ describe.skipIf(!LIVE)("testnet-run against the local dev node (SEAM_DEVNODE=1)"
     const seq = json(`${out}/runs/${files(out).find((f) => f.startsWith("sequential"))}`);
     expect(
       seq.gateChecks
-        .filter((g: any) => g.phase === "sending")
-        .every((g: any) => g.check.ok && g.check.passed.length > 0),
+        .filter(
+          (g: { phase: string; check: { ok: boolean; passed: unknown[] } }) =>
+            g.phase === "sending",
+        )
+        .every(
+          (g: { phase: string; check: { ok: boolean; passed: unknown[] } }) =>
+            g.check.ok && g.check.passed.length > 0,
+        ),
     ).toBe(true);
     expect(
       seq.run.receipt.steps[1].events.some((e: string) =>
@@ -205,7 +212,7 @@ describe.skipIf(!LIVE)("testnet-run against the local dev node (SEAM_DEVNODE=1)"
     expect(s.flows.sequential.result).toBe("verified");
     // 2 recipient funding transfers + 3 sequential steps all went through the wallet
     expect(wallet.seen.length).toBe(5);
-    expect(wallet.seen.every((p: any) => p.address === ALICE)).toBe(true);
+    expect(wallet.seen.every((p: { address: string }) => p.address === ALICE)).toBe(true);
     expect(allText(out)).not.toMatch(/\/\/Alice|"signature"|"signedTx"/);
   }, 290_000);
 

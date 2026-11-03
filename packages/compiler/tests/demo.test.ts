@@ -38,10 +38,10 @@ describe("demo flow on the real spec 1002 snapshot: assets.transfer -> contracts
     expect(pay!.toJSON()).toMatchObject({
       args: { id: 1, target: { id: BOB }, amount: 2500000000000000 },
     });
-    expect((pay!.args[1] as any).value.toHex()).toBe(BOB_HEX);
+    expect((pay!.args[1] as import("@polkadot/types").Enum).value.toHex()).toBe(BOB_HEX);
 
     expect(`${call!.section}.${call!.method}`).toBe("contracts.call");
-    const [dest, value, gas, data] = call!.args as any[];
+    const [dest, value, gas, data] = call!.args;
     expect(dest.type).toBe("Id");
     expect(dest.value.toHex()).toBe(BOB_HEX);
     expect(value.toString()).toBe("0");
@@ -49,8 +49,8 @@ describe("demo flow on the real spec 1002 snapshot: assets.transfer -> contracts
     expect(data.toHex()).toBe("0x633aa551");
 
     expect(`${receipt!.section}.${receipt!.method}`).toBe("assets.mint");
-    expect((receipt!.args[0] as any).toString()).toBe("2");
-    expect((receipt!.args[2] as any).toString()).toBe("1");
+    expect(receipt!.args[0].toString()).toBe("2");
+    expect(receipt!.args[2].toString()).toBe("1");
   });
 
   it("exact bytes for the first step (hand-checked SCALE)", () => {
@@ -64,7 +64,9 @@ describe("demo flow on the real spec 1002 snapshot: assets.transfer -> contracts
     expect(p.mode).toBe("atomic_verified");
     const outer = registry.createType("Call", p.outerCall!.encodedCall);
     expect(`${outer.section}.${outer.method}`).toBe("utility.batchAll");
-    const inner = (outer.args[0] as any).map((c: any) => c.toHex());
+    const inner = (
+      outer.args[0] as import("@polkadot/types").Vec<import("@polkadot/types/interfaces").Call>
+    ).map((c) => c.toHex());
     expect(inner).toEqual(p.steps.map((s) => s.encodedCall));
   });
 });

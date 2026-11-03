@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { isReservableStore } from "@seam/policy";
 import * as sdk from "../src/index.js";
 
-const FileApprovalStore = (sdk as any).FileApprovalStore as new (path: string) => any;
+const FileApprovalStore = sdk.FileApprovalStore;
 const file = () => join(mkdtempSync(join(tmpdir(), "seam-store-")), "approvals.json");
 const K = "0xaaaa";
 const H = ("0x" + "ab".repeat(32)) as `0x${string}`;

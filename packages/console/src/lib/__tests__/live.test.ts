@@ -207,7 +207,10 @@ describe("final names and honest labels", () => {
         signer: signer({
           sign: async () => ({
             ok: true,
-            value: { signedTx: "0xsigned", signedCall: "0xevil" } as any,
+            value: {
+              signedTx: "0xsigned",
+              signedCall: "0xevil",
+            } as import("../live").SignedPayload & { signedCall: string },
           }),
         }),
         verifyBinding: vb,

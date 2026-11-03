@@ -1,1690 +1,484 @@
-import { V3_HTTPS_RPC } from "./lib/v3facts";
-import { engineApprovalCheck, loadChainFns } from "./lib/signflow";
-import { approveWithRebind } from "./lib/rebind";
-import type { GateOutcome } from "./lib/policygate";
-import demoSequentialPolicy from "./demo/v3-demo-transfer-policy-sequential.json";
-import { useMemo, useState } from "react";
-import * as api from "./lib/mock";
-import * as tc from "./lib/testchain";
-import { passedItems, blockText, PASS_WORDING, type GateResult } from "./lib/gate";
-import { LocalNodeBanner, LocalNodeEvidence } from "./components/LocalNode";
-import { V3Evidence } from "./components/V3Evidence";
-import { WalletDemoCard } from "./components/WalletDemo";
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { ManifestBuilder } from "./components/ManifestBuilder";
 import type { BuilderSelection } from "./components/BuilderPolicy";
-import { approveWalletDemo, walletDemo, walletDemoFacts, walletDemoPlan } from "./lib/walletdemo";
-import {
-  RiskLimits,
-  LivePanel,
-  ModeBadge,
-  ModeSwitch,
-  SimulationBadge,
-  WeakProofBadge,
-  SeamCodeBadge,
-  ProvenanceBadge,
-  DowngradeWarning,
-  JsonActions,
-  liveFactsStep,
-  PolicyGatePanel,
-} from "./components/Modes";
-import type { PolicyLike } from "./lib/limits";
-import {
-  classifyReceipt,
-  isWeakProof,
-  type Mode,
-  type Provenance,
-  type SimulationBasis,
-} from "./lib/modes";
-import type {
-  Approval,
-  Plan,
-  PolicyResult,
-  PreflightResult,
-  Receipt,
-  RuntimeFacts,
-  SigningEnvelope,
-  StepStatus,
-} from "./lib/types";
+import { LivePanel, PolicyGatePanel, liveFactsStep } from "./components/Modes";
+import { SeamMark, Symbol } from "./components/Brand";
+import { engineApprovalCheck, loadChainFns } from "./lib/signflow";
+import { approveWithRebind } from "./lib/rebind";
+import { planView, reviewApproval } from "./lib/planview";
+import { V3_HTTPS_RPC } from "./lib/v3facts";
+import type { Approval, RuntimeFacts } from "./lib/types";
+import type { GateOutcome } from "./lib/policygate";
+import "./workspace.css";
 
-type Source = "mainnet" | "testchain";
-type MainScenario = "happy" | "nft" | "upgrade" | "fail" | "midrun";
-type Scenario = MainScenario | tc.TcScn;
-// Test-chain mode only lists runs that have real evidence.
-const TC_SCENARIOS: { id: tc.TcScn; label: string; hint: string }[] = [
-  {
-    id: "sequential",
-    label: "Sequential, verified",
-    hint: "Transfer, contract call, mint in 3 blocks",
-  },
-  { id: "atomic", label: "Atomic, verified", hint: "All 3 steps in one batch_all" },
-  { id: "rollback", label: "Rollback proof", hint: "Gate blocks BalanceLow; bypass rolls back" },
-];
-const SCENARIOS: { id: MainScenario; label: string; hint: string }[] = [
-  { id: "happy", label: "Verified run", hint: "Transfer, ink! call, receipt token" },
-  { id: "nft", label: "Missing pallet", hint: "Asks for nfts.mint on a chain without Nfts" },
-  { id: "upgrade", label: "Runtime changed", hint: "Runtime upgrades after approval" },
-  { id: "fail", label: "Step 2 fails", hint: "Sequential run stops halfway" },
-  { id: "midrun", label: "Upgrade mid-run", hint: "Runtime changes between step 1 and 2" },
-];
-const STEPS = ["Connect", "Manifest", "Plan", "Checks", "Approve", "Receipt"] as const;
-
-const short = (s?: string, n = 10) =>
-  s ? (s.length > n * 2 ? `${s.slice(0, n)}…${s.slice(-6)}` : s) : "—";
-const human: Record<string, string> = {
-  observed: "Observed",
-  not_observed: "Not observed",
-  unknown: "Unknown",
-  atomic_verified: "Atomic, verified",
-  atomic_unverified: "Atomic, unverified",
-  sequential: "One after another",
-  unavailable: "Can't run",
+const Lab = lazy(() => import("./LegacyApp"));
+const WorkspaceCenters = lazy(() => import("./components/WorkspaceCenters"));
+type ActiveView = "compose" | "activity" | "verify" | "team" | "developers";
+const viewLabels: Record<ActiveView, string> = {
+  compose: "New transaction",
+  activity: "Activity & recovery",
+  verify: "Receipt inspector",
+  team: "Team workspace",
+  developers: "Developer hub",
 };
-
-function Pill({
-  tone,
-  children,
-}: {
-  tone: "ok" | "bad" | "warn" | "muted" | "info";
-  children: React.ReactNode;
-}) {
-  return (
-    <span className={`pill ${tone}`}>
-      <span className="sr">
-        {
-          (
-            {
-              ok: "good",
-              bad: "problem",
-              warn: "caution",
-              info: "info",
-              muted: "neutral",
-            } as Record<string, string>
-          )[tone]
-        }
-        :{" "}
-      </span>
-      {children}
-    </span>
-  );
-}
-const triTone = (s: string) =>
-  s === "observed" || s === "confirmed" || s === "ok" || s === "pass"
-    ? "ok"
-    : s === "unknown"
-      ? "warn"
-      : "bad";
-
-function Digest({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className="digest">
-      <span>{label}</span>
-      <code title={value}>{short(value)}</code>
-      {value && (
-        <button className="ghost xs" onClick={() => navigator.clipboard?.writeText(value)}>
-          Copy
-        </button>
-      )}
-    </div>
-  );
-}
-
-const KIND_CAP: Record<string, string> = {
-  "assets.transfer": "Assets.transfer_keep_alive",
-  "assets.mint": "Assets.mint",
-  "contracts.call": "Contracts.call",
-  "revive.call": "Revive.call",
-  "nfts.mint": "Nfts.mint",
-};
-const isEmitted = (e: string) => e.startsWith("Contracts.ContractEmitted");
-const evTone = (e: string) =>
-  isEmitted(e)
-    ? "emit"
-    : e.startsWith("System.ExtrinsicFailed")
-      ? "fail"
-      : e.startsWith("Assets.") || e.startsWith("Utility.") || e.startsWith("Contracts.")
-        ? "key"
-        : "";
-function Events({ list }: { list: string[] }) {
-  return (
-    <ul className="evlist">
-      {list.map((e, i) => (
-        <li key={i} className={evTone(e)}>
-          <code>{e}</code>
-          {isEmitted(e) && <Pill tone="ok">contract event</Pill>}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function GateList({ g }: { g?: GateResult }) {
-  const passed = passedItems(g);
-  if (!g || (!passed.length && !g.reasons.length)) return null;
-  return (
-    <ul className="gatelist">
-      {g.reasons.map((r) => (
-        <li key={"b" + r.code} className="bad">
-          <b>Blocked:</b> {blockText(r)} <code>{r.code}</code>
-        </li>
-      ))}
-      {passed.map((p) => (
-        <li key={"p" + p.code} className="pass">
-          <span>✓</span> {p.text} <code title={p.detail}>{p.code}</code>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function GateChecks({ list }: { list: tc.GateCheck[] }) {
-  if (!list.length) return null;
-  return (
-    <>
-      <h4>Submit gate, per step</h4>
-      {list.map((g, n) => (
-        <details key={n} className="small" open={!g.result.ok}>
-          <summary>
-            <b>{g.actionId}</b>{" "}
-            {g.sendIndex != null && <span className="muted">(send #{g.sendIndex + 1}) </span>}
-            {g.phase && <span className="muted">{g.phase} </span>}
-            <Pill tone={g.result.ok ? "ok" : "bad"}>
-              {g.result.ok ? "all checks passed" : g.result.reasons.map((r) => r.code).join(", ")}
-            </Pill>{" "}
-            {g.sdkOutcome && (
-              <span className="muted">
-                SDK {g.sdkOutcome}
-                {g.agreesWithSdk ? ", recomputed gate agrees" : ", GATE DISAGREES"}
-              </span>
-            )}
-            {g.source && (
-              <span className="muted">
-                {" "}
-                from the SDK's own {g.source === "run.check" ? "refusal result" : "onStep check"}
-              </span>
-            )}
-          </summary>
-          <GateList g={g.result} />
-          {g.checksPerformed && (
-            <p className="muted small">
-              {g.checksPerformed.length} checks: {g.checksPerformed.join(", ")}. {g.note}
-            </p>
-          )}
-          {g.dryRun?.map((d, i) => (
-            <dl key={i} className="kv small">
-              <dt>Dry run</dt>
-              <dd>
-                {d.outcome}: {d.detail}
-              </dd>
-            </dl>
-          ))}
-          {g.inputs && (
-            <dl className="kv small">
-              <dt>Runtime</dt>
-              <dd>{g.inputs.runtimeUnchanged ? "unchanged since approval" : "changed"}</dd>
-              {g.inputs.dryRunDetails?.map((d, i) => (
-                <>
-                  <dt key={"k" + i}>Dry run</dt>
-                  <dd key={"v" + i}>
-                    {d.outcome}: {d.detail}
-                  </dd>
-                </>
-              ))}
-              {g.inputs.previousSteps?.length ? (
-                <>
-                  <dt>Earlier steps</dt>
-                  <dd>
-                    {g.inputs.previousSteps
-                      .map((p) => `${p.actionId} ${p.status}${p.block ? ` #${p.block}` : ""}`)
-                      .join(", ")}
-                  </dd>
-                </>
-              ) : null}
-            </dl>
-          )}
-        </details>
-      ))}
-    </>
-  );
-}
-
-function StateTable({
-  st,
-  cols,
-}: {
-  st: tc.Rollback["state"];
-  cols: ("before" | "afterGate" | "after")[];
-}) {
-  const names: Record<string, string> = {
-    before: "Before",
-    afterGate: "After gate",
-    after: "After bypass",
-  };
-  const rows = Object.keys(st.before.asset);
-  return (
-    <table className="tbl">
-      <thead>
-        <tr>
-          <th></th>
-          {cols.map((c) => (
-            <th key={c}>
-              {names[c]} (#{st[c].block})
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r}>
-            <td>{r}</td>
-            {cols.map((c) => (
-              <td key={c} className={st[c].asset[r] !== st.before.asset[r] ? "bad" : ""}>
-                {Number(st[c].asset[r]).toLocaleString()}
-              </td>
-            ))}
-          </tr>
-        ))}
-        <tr>
-          <td>Alice nonce</td>
-          {cols.map((c) => (
-            <td key={c}>{st[c].aliceNonce}</td>
-          ))}
-        </tr>
-      </tbody>
-    </table>
-  );
-}
+const Evidence = lazy(() =>
+  import("./components/V3Evidence").then((m) => ({ default: m.V3Evidence })),
+);
+type Selection = BuilderSelection & { facts: unknown; rpcUrl?: string };
+const short = (s?: string) => (s ? `${s.slice(0, 8)}…${s.slice(-6)}` : "Not read yet");
 
 export default function App() {
-  const [mode, setModeState] = useState<Mode>("offline");
-  const [source, setSource] = useState<Source>("mainnet");
-  const [scenario, setScenario] = useState<Scenario>("happy");
-  const [gate, setGate] = useState<tc.Rollback>();
-  const [step, setStep] = useState(0);
-  const [evidence, setEvidence] = useState(false);
-  const [endpoint, setEndpoint] = useState("wss://mainnet.portaldot.io");
-  const [facts, setFacts] = useState<RuntimeFacts>();
-  const [plan, setPlan] = useState<Plan>();
-  const [pre, setPre] = useState<PreflightResult>();
-  const [policy, setPolicy] = useState<PolicyResult>();
-  const [env, setEnv] = useState<SigningEnvelope>();
+  const revision = useRef(0);
+  const [runtime, setRuntime] = useState<unknown>();
+  const [selection, setSelection] = useState<Selection>();
   const [approval, setApproval] = useState<Approval>();
-  const [receipt, setReceipt] = useState<Receipt>();
-  const [lockBlock, setLockBlock] = useState<RuntimeFacts>();
-  const [progress, setProgress] = useState<StepStatus[]>([]);
-  const [walletDemoOn, setWalletDemoOn] = useState(false);
-  const [demoApproval, setDemoApproval] = useState<Approval>();
-  const [demoEngine, setDemoEngine] = useState<GateOutcome>();
-  const [demoChecking, setDemoChecking] = useState(false);
-  const demoPlan = useMemo(() => walletDemoPlan(), []);
-  // The authoritative gate checks the demo's raw compiled plan against the sequential demo policy; facts are read live.
-  const demoPolicyInput = useMemo(
-    () => ({
-      policy: demoSequentialPolicy.policy,
-      plan: walletDemo.plan,
-      manifest: walletDemo.manifest,
-    }),
-    [],
-  );
-  const demoFacts = useMemo(() => walletDemoFacts(), []);
-  // Builder plans: plan + compiler manifest + the strict policy derived from that plan go through the same real gate,
-  // engine-bound approval, re-preflight and submit gate as the demo.
-  const [builderSel, setBuilderSel] = useState<BuilderSelection & { facts: unknown }>();
-  const [builderEngine, setBuilderEngine] = useState<GateOutcome>();
-  const [builderApproval, setBuilderApproval] = useState<Approval>();
-  const [builderChecking, setBuilderChecking] = useState(false);
-  const [builderNote, setBuilderNote] = useState<string>();
-  const builderPlan = useMemo(
-    () => (builderSel ? walletDemoPlan(builderSel.plan as never) : undefined),
-    [builderSel],
-  );
-  const builderFacts = useMemo(() => {
-    const f = builderSel?.facts as { fingerprint?: object } | undefined;
-    return f?.fingerprint
-      ? ({
-          fingerprint: { ...f.fingerprint, digest: builderSel!.plan.fingerprintDigest },
-          capabilities: [],
-          behaviour: [],
-          endpoint: "builder compile (live facts)",
-          discoveredAtBlock: 0,
-        } as unknown as RuntimeFacts)
-      : undefined;
-  }, [builderSel]);
-  const builderInput = builderSel
-    ? { policy: builderSel.policy, plan: builderSel.plan, manifest: builderSel.manifest }
-    : undefined;
-  const real = source === "testchain";
-  const manifest = useMemo(
-    () => (real ? tc.demoManifest() : api.demoManifest(scenario === "nft")),
-    [scenario, real],
-  );
-
-  const reset = (s: Scenario, src: Source = source) => {
-    setSource(src);
-    setScenario(s);
-    if (src === "testchain") tc.setScenario(s as tc.TcScn);
-    else api.setScenario(s as MainScenario);
-    setStep(0);
-    setFacts(undefined);
-    setPlan(undefined);
-    setPre(undefined);
-    setPolicy(undefined);
-    setEnv(undefined);
+  const [gate, setGate] = useState<GateOutcome>();
+  const [acknowledgedDowngrade, setAcknowledgedDowngrade] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [executionBusy, setExecutionBusy] = useState(false);
+  const [activeView, setActiveView] = useState<ActiveView>("compose");
+  const [centersOpened, setCentersOpened] = useState(false);
+  const [notice, setNotice] = useState<string>();
+  const [showEvidence, setShowEvidence] = useState(false);
+  const invalidate = useCallback(() => {
+    revision.current++;
+    setAcknowledgedDowngrade(false);
+    setSelection(undefined);
     setApproval(undefined);
-    setReceipt(undefined);
-    setLockBlock(undefined);
-    setProgress([]);
     setGate(undefined);
-  };
-  const switchSource = (src: Source) => {
-    if (src === source) return;
-    setEndpoint(src === "testchain" ? tc.ENDPOINT : "wss://mainnet.portaldot.io");
-    reset(src === "testchain" ? "sequential" : "happy", src);
-  };
-
-  const setMode = (m: Mode) => {
-    setModeState(m);
-    if (m === "recorded") switchSource("testchain");
-    else if (m === "offline") switchSource("mainnet");
-  };
-  const doDiscover = () => {
-    setFacts(real ? tc.discover(endpoint) : api.discover(endpoint));
-  };
-  const doCompile = () => {
-    if (facts) {
-      setPlan(real ? tc.compile() : api.compile(manifest, facts));
-      setStep(2);
+    setNotice(undefined);
+  }, []);
+  const view = useMemo(() => (selection ? planView(selection.plan) : undefined), [selection]);
+  const input = selection
+    ? { policy: selection.policy, plan: selection.plan, manifest: selection.manifest }
+    : undefined;
+  const fingerprint = (
+    (selection?.facts ?? runtime) as {
+      fingerprint?: { specVersion: number; genesisHash: string; specName: string };
     }
-  };
-  const doChecks = () => {
-    if (plan) {
-      setPre(real ? tc.preflight() : api.preflight(plan));
-      setPolicy(real ? tc.checkPolicy() : api.checkPolicy(plan));
-      setStep(3);
-    }
-  };
-  const stepGate = (i: number): GateResult | undefined => {
-    if (real) return tc.gateFor(i);
-    const evs = api.timeline().filter((e) => e.index === i && e.check);
-    return evs[evs.length - 1]?.check;
-  };
-  const doApprove = () => {
-    if (plan && policy) {
-      const e = real ? tc.envelope() : api.envelope();
-      setEnv(e);
-      setApproval(real ? tc.approve() : api.approve(plan, policy, e!));
-    }
-  };
-  const doSubmit = () => {
-    if (mode === "live" || !plan || !policy || !approval || !facts) return; // animated replay is never used for LIVE V3
-    if (!real && api.submitBlock()) {
-      setLockBlock(api.discover(endpoint, true));
-      setStep(5);
-      return;
-    }
-    setStep(5);
-    const n = plan.steps.length;
-    setProgress(Array(n).fill("not_run"));
-    const events = real ? tc.timeline() : api.timeline();
-    if (real && tc.submitBlock()) {
-      events.forEach((e, k) =>
-        setTimeout(
-          () =>
-            setProgress((p) =>
-              p.map((v, j) => (j !== e.index ? v : e.phase === "blocked" ? "blocked" : "checking")),
-            ),
-          300 + k * 120,
-        ),
+  )?.fingerprint;
+  const stage = approval ? 3 : selection ? 2 : 1;
+  const approve = async () => {
+    if (!selection || !input || !view) return;
+    const version = revision.current;
+    setBusy(true);
+    setApproval(undefined);
+    setNotice(undefined);
+    try {
+      const { transportFor } = await import("./lib/browserChain");
+      const rpc = transportFor(selection.rpcUrl ?? V3_HTTPS_RPC);
+      const chain = await loadChainFns();
+      const result = await approveWithRebind({
+        manifest: selection.manifest,
+        plan: selection.plan,
+        planFacts: selection.facts,
+        readFacts: async () => {
+          const result = await liveFactsStep(rpc);
+          return result.ok ? result.facts : undefined;
+        },
+        check: (facts) =>
+          engineApprovalCheck({
+            chain,
+            send: rpc,
+            readFacts: async () => facts,
+            input,
+            now: new Date(),
+            acknowledgedDowngrade,
+          }),
+      });
+      if (revision.current !== version) return;
+      if (result.kind === "rebound") {
+        setSelection({
+          ...selection,
+          plan: result.plan as Selection["plan"],
+          facts: result.liveFacts,
+        });
+        setGate(undefined);
+        setNotice(result.message);
+        return;
+      }
+      if (result.kind === "blocked") {
+        setNotice(result.message);
+        return;
+      }
+      setGate(result.gate);
+      if (result.gate.ok) setApproval(reviewApproval(view, selection.policy.maxApprovalSeconds));
+    } catch (error) {
+      setNotice(
+        `The check could not complete: ${error instanceof Error ? error.message : String(error)}`,
       );
-      setTimeout(() => setGate(tc.rollback()), 400 + events.length * 120);
-      return;
+    } finally {
+      setBusy(false);
     }
-    events.forEach((e, k) => {
-      setTimeout(
-        () =>
-          setProgress((p) =>
-            p.map((v, j) =>
-              j !== e.index
-                ? v
-                : e.phase === "checking"
-                  ? "checking"
-                  : e.phase === "sending"
-                    ? "submitted"
-                    : e.phase === "blocked"
-                      ? "blocked"
-                      : ((e.detail as StepStatus) ?? "finalized"),
-            ),
-          ),
-        400 + k * 550,
-      );
-    });
-    setTimeout(
-      () => {
-        setReceipt(real ? tc.receipt() : api.receipt(plan, policy, approval));
-        setApproval({ ...approval, used: true });
-      },
-      500 + events.length * 550,
+  };
+  if (new URLSearchParams(window.location.search).get("view") === "lab")
+    return (
+      <Suspense fallback={<p className="loading-view">Loading recorded workspace…</p>}>
+        <Lab />
+      </Suspense>
     );
-  };
-
-  const canGo = [true, !!facts, !!plan, !!policy, !!approval, !!receipt || !!lockBlock || !!gate];
-  const run = real ? tc.info() : undefined;
-  // Replays never re-read a chain: recorded = integrity only, offline = unknown.
-  const provenance: Provenance = real ? "integrity_checked" : "unknown";
-  const simulation: SimulationBasis = real
-    ? tc.dryRunFor(0)
-      ? "signed_dry_run"
-      : "none"
-    : "fee_estimate_only";
-  const weakProof =
-    !!policy &&
-    isWeakProof({
-      weakProof: policy.weakProof,
-      gatePassedCodes: real
-        ? tc.gateChecks().flatMap((g) => g.result.passed?.map((p) => p.code) ?? [])
-        : [],
-    });
-
   return (
-    <div className="shell">
+    <div className="workspace">
       <a className="skip" href="#main">
         Skip to main content
       </a>
-      <aside className="side">
-        <a className="brandlink" href="./index.html">
-          <div className="logo">S</div>
-          <div>
-            <b>SEAM</b>
-            <small>Execution console</small>
-          </div>
+      <aside className="workspace-rail">
+        <a className="workspace-brand" href="./">
+          <span className="brand-mark">
+            <SeamMark />
+          </span>
+          seam<span className="brand-period">.</span>
         </a>
-        {mode === "live" ? (
-          <>
-            <p className="sidehint">Testnet console. Do these three things, in order.</p>
-            <ol className="sidesteps">
-              <li>
-                <span>1</span>Choose a transaction
-              </li>
-              <li>
-                <span>2</span>Check the chain
-              </li>
-              <li>
-                <span>3</span>Sign in your wallet
-              </li>
-            </ol>
-          </>
-        ) : (
-          <nav aria-label="Steps">
-            {STEPS.map((s, i) => (
-              <button
-                key={s}
-                aria-current={i === step ? "step" : undefined}
-                className={`navstep ${i === step ? "on" : ""} ${canGo[i] ? "" : "locked"}`}
-                disabled={!canGo[i]}
-                onClick={() => setStep(i)}
-              >
-                <span className="num">{i + 1}</span>
-                {s}
-              </button>
-            ))}
-          </nav>
-        )}
-        <details className="advanced">
-          <summary>Recorded demos</summary>
-          <button
-            aria-pressed={evidence}
-            className={`scenbtn src ${evidence ? "on" : ""}`}
-            style={{ marginTop: 12 }}
-            onClick={() => setEvidence(!evidence)}
-          >
-            <b>Local Portaldot node, real run</b>
-            <span>Spec 1002 evidence view</span>
-          </button>
-          <div className="scen">
-            <small>Mode</small>
-            <ModeSwitch mode={mode} onChange={setMode} />
-            {mode !== "live" && (
-              <small style={{ marginTop: 10 }}>{real ? "Recorded run" : "Demo scenario"}</small>
-            )}
-            {mode === "live"
-              ? null
-              : real
-                ? TC_SCENARIOS.map((s) => (
-                    <button
-                      key={s.id}
-                      aria-pressed={scenario === s.id}
-                      className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                      onClick={() => reset(s.id)}
-                    >
-                      <b>{s.label}</b>
-                      <span>{s.hint}</span>
-                    </button>
-                  ))
-                : SCENARIOS.map((s) => (
-                    <button
-                      key={s.id}
-                      aria-pressed={scenario === s.id}
-                      className={`scenbtn ${scenario === s.id ? "on" : ""}`}
-                      onClick={() => reset(s.id)}
-                    >
-                      <b>{s.label}</b>
-                      <span>{s.hint}</span>
-                    </button>
-                  ))}
-          </div>
-        </details>
-      </aside>
-
-      <main id="main" tabIndex={-1}>
-        <div className="sr" role="status" aria-live="polite">
-          {mode === "live" ? "LIVE V3 mode" : `Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}
-        </div>
-        {mode !== "live" && <ModeBadge mode={mode} />}
-        {mode === "live" ? (
-          <>
-            <header className="top">
-              <div>
-                <h1>Send a checked transaction</h1>
-                <p className="sub">
-                  Portaldot V3 testnet only. Choose what to send, check it, then sign in your
-                  wallet. SEAM never holds the key. A blocked check is a successful test.
-                </p>
-              </div>
-            </header>
-            <section className="card" aria-label="Choose a transaction">
-              <h3>1. Choose what to send</h3>
-              <div className="choice">
-                <button
-                  type="button"
-                  aria-pressed={!walletDemoOn}
-                  className={walletDemoOn ? "ghost" : ""}
-                  onClick={() => {
-                    setWalletDemoOn(false);
-                    setDemoApproval(undefined);
-                  }}
-                >
-                  Build your own
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={walletDemoOn}
-                  className={walletDemoOn ? "" : "ghost"}
-                  onClick={() => {
-                    setWalletDemoOn(true);
-                    setDemoApproval(undefined);
-                  }}
-                >
-                  Sample transfer
-                </button>
-              </div>
-              <p className="muted small">
-                The sample sends 1 unit of test asset 806707. You need testnet tPOT for the fee. Do
-                not deploy a contract.
-              </p>
-            </section>
-            {walletDemoOn && (
-              <WalletDemoCard
-                plan={demoPlan}
-                approval={demoApproval}
-                engine={demoEngine}
-                checking={demoChecking}
-                onApprove={async () => {
-                  setDemoChecking(true);
-                  try {
-                    const b = await import("./lib/browserChain");
-                    const rpc = b.transportFor(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
-                    const g = await engineApprovalCheck({
-                      chain: await loadChainFns(),
-                      send: rpc,
-                      readFacts: async () => {
-                        const r = await liveFactsStep(rpc);
-                        return r.ok ? r.facts : undefined;
-                      },
-                      input: demoPolicyInput,
-                      now: new Date(),
-                    });
-                    setDemoEngine(g);
-                    setDemoApproval(g.ok ? approveWalletDemo(demoPlan) : undefined);
-                  } finally {
-                    setDemoChecking(false);
-                  }
-                }}
-              />
-            )}
-            {!walletDemoOn && (
-              <ManifestBuilder
-                onUsePolicy={(sel) => {
-                  setBuilderSel(sel);
-                  setBuilderEngine(undefined);
-                  setBuilderApproval(undefined);
-                }}
-              />
-            )}
-            {!walletDemoOn && builderSel && builderPlan && (
-              <section className="card" aria-label="Builder approval">
-                <h3>Builder plan approval</h3>
-                <p className="muted small">
-                  The policy engine checks this plan against its derived policy with a real
-                  preflight. Approve is only possible when the engine allows it.
-                </p>
-                <button
-                  disabled={builderChecking}
-                  onClick={async () => {
-                    setBuilderChecking(true);
-                    try {
-                      const b = await import("./lib/browserChain");
-                      const rpc = b.transportFor(import.meta.env.VITE_V3_RPC_URL ?? V3_HTTPS_RPC);
-                      const chain = await loadChainFns();
-                      setBuilderApproval(undefined);
-                      setBuilderNote(undefined);
-                      // Re-read facts once; Forge's rebindPlan decides against the builder's snapshot.
-                      const o = await approveWithRebind({
-                        manifest: builderSel.manifest,
-                        plan: builderSel.plan,
-                        planFacts: builderSel.facts,
-                        readFacts: async () => {
-                          const r = await liveFactsStep(rpc);
-                          return r.ok ? r.facts : undefined;
-                        },
-                        check: (live) =>
-                          engineApprovalCheck({
-                            chain,
-                            send: rpc,
-                            readFacts: async () => live,
-                            input: builderInput!,
-                            now: new Date(),
-                          }),
-                      });
-                      if (o.kind === "rebound") {
-                        // New plan, new digest; the old approval is gone and a fresh one is required.
-                        setBuilderSel({ ...builderSel, plan: o.plan as never, facts: o.liveFacts });
-                        setBuilderEngine(undefined);
-                        setBuilderNote(o.message);
-                        return;
-                      }
-                      if (o.kind === "blocked") {
-                        setBuilderEngine({
-                          ok: false,
-                          codes: [o.code],
-                          explanations: [],
-                          message: o.message,
-                        });
-                        return;
-                      }
-                      const g = o.gate;
-                      setBuilderEngine(g);
-                      setBuilderApproval(
-                        g.ok
-                          ? approveWalletDemo(builderPlan, Date.now(), builderSel.policy as never)
-                          : undefined,
-                      );
-                    } finally {
-                      setBuilderChecking(false);
-                    }
-                  }}
-                >
-                  {builderChecking ? "Checking…" : "Check policy and approve"}
-                </button>
-                {builderNote && (
-                  <p role="alert" className="small">
-                    {builderNote}
-                  </p>
-                )}
-                {builderEngine && <PolicyGatePanel gate={builderEngine} />}
-              </section>
-            )}
-            <section aria-label="Check and sign">
-              <h2 className="stephead">2. Check the chain and sign</h2>
-              <LivePanel
-                plan={walletDemoOn ? demoPlan : (builderPlan ?? plan)}
-                facts={walletDemoOn ? demoFacts : builderPlan ? builderFacts : facts}
-                approval={walletDemoOn ? demoApproval : builderPlan ? builderApproval : approval}
-                policyInput={walletDemoOn ? demoPolicyInput : builderInput}
-                rebind={
-                  !walletDemoOn && builderSel
-                    ? {
-                        planFacts: builderSel.facts,
-                        onRebound: (plan, liveFacts, message) => {
-                          setBuilderSel({ ...builderSel, plan: plan as never, facts: liveFacts });
-                          setBuilderApproval(undefined);
-                          setBuilderEngine(undefined);
-                          setBuilderNote(message);
-                        },
-                      }
-                    : undefined
+        <p className="rail-label">EXECUTION WORKSPACE</p>
+        <nav aria-label="Workspace">
+          {(Object.entries(viewLabels) as [ActiveView, string][]).map(([id, label]) => (
+            <button
+              key={id}
+              className={`rail-link ${activeView === id ? "active" : ""}`}
+              aria-current={activeView === id ? "page" : undefined}
+              disabled={busy || executionBusy}
+              onClick={() => {
+                setActiveView(id);
+                if (id !== "compose") setCentersOpened(true);
+                document.getElementById("main")?.focus();
+              }}
+            >
+              <Symbol
+                kind={
+                  id === "compose"
+                    ? "layers"
+                    : id === "verify"
+                      ? "shield"
+                      : id === "developers"
+                        ? "external"
+                        : "activity"
                 }
               />
-            </section>
-            <details className="fold">
-              <summary>Earlier testnet evidence</summary>
-              <V3Evidence />
-            </details>
-          </>
-        ) : (
-          <>
-            <LocalNodeBanner />
-            {evidence ? (
-              <LocalNodeEvidence banner={false} />
-            ) : (
-              <>
-                <header className="top">
+              {label}
+            </button>
+          ))}
+          <button
+            className="rail-link"
+            disabled={busy || executionBusy}
+            onClick={() => {
+              setActiveView("compose");
+              setShowEvidence((v) => !v);
+            }}
+          >
+            <Symbol kind="activity" />
+            Testnet evidence
+          </button>
+          <a
+            className="rail-link"
+            href="https://github.com/rishu4436/seam-portaldot#5-minute-quickstart"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Symbol kind="external" />
+            Documentation
+          </a>
+        </nav>
+        <label className="mobile-workspace-nav">
+          <span>Workspace</span>
+          <select
+            aria-label="Workspace view"
+            value={activeView}
+            disabled={busy || executionBusy}
+            onChange={(event) => {
+              const next = event.target.value as ActiveView;
+              setActiveView(next);
+              if (next !== "compose") setCentersOpened(true);
+            }}
+          >
+            {(Object.entries(viewLabels) as [ActiveView, string][]).map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="rail-bottom">
+          <div className="network-pill">
+            <span className="status-dot" />
+            Portaldot V3 <span>TESTNET</span>
+          </div>
+          <p>
+            Your wallet holds the keys.
+            <br />
+            You stay in control.
+          </p>
+          <a href="./console.html?view=lab">
+            Recorded tools <span>↗</span>
+          </a>
+        </div>
+      </aside>
+      <div className="workspace-body">
+        <header className="workspace-topbar">
+          <span>
+            Workspace <span className="breadcrumb-slash">/</span> <b>{viewLabels[activeView]}</b>
+          </span>
+          <a href="https://github.com/rishu4436/seam-portaldot" target="_blank" rel="noreferrer">
+            Open source <Symbol kind="external" />
+          </a>
+        </header>
+        <main id="main" className="workspace-main" tabIndex={-1}>
+          <div hidden={activeView !== "compose"}>
+            <header className="workspace-heading">
+              <div>
+                <p className="eyebrow">ONE INTENT. VERIFIED EXECUTION.</p>
+                <h1>Make your next move.</h1>
+                <p>Build a transaction, review the checks, then sign with your wallet.</p>
+              </div>
+              <span className="environment-tag">
+                <span className="status-dot" />
+                Testnet workspace
+              </span>
+            </header>
+            <ol className="journey" aria-label="Transaction progress">
+              {["Build your transaction", "Review & approve", "Sign & verify"].map((label, i) => (
+                <li
+                  key={label}
+                  className={stage === i + 1 ? "current" : stage > i + 1 ? "complete" : ""}
+                  aria-current={stage === i + 1 ? "step" : undefined}
+                >
+                  <span>{stage > i + 1 ? "✓" : `0${i + 1}`}</span>
                   <div>
-                    <h1>{STEPS[step]}</h1>
-                    <p className="sub">One intent, every execution surface, one verified result.</p>
+                    <b>{label}</b>
+                    <small>
+                      {
+                        [
+                          "Your account, destination and action",
+                          "Live runtime and policy checks",
+                          "External wallet, finalized receipt",
+                        ][i]
+                      }
+                    </small>
                   </div>
-                  {facts && (
-                    <div className="fpchip" title={facts.fingerprint.digest}>
-                      <span className="dot" /> {facts.fingerprint.specName} spec{" "}
-                      {facts.fingerprint.specVersion} · tx v{facts.fingerprint.transactionVersion} ·{" "}
-                      <code>{short(facts.fingerprint.digest, 6)}</code>
-                      {facts.fingerprint.fingerprintSchemaVersion != null && (
-                        <small className="muted">
-                          {" "}
-                          schema v{facts.fingerprint.fingerprintSchemaVersion}
-                        </small>
-                      )}
-                    </div>
-                  )}
-                </header>
-                {real ? (
-                  <div className="banner real">
-                    <b>
-                      Real run on a local test chain (substrate-contracts-node, spec 100, or the
-                      Portaldot dev node, spec 1002), not V3.
-                    </b>{" "}
-                    Everything here was recorded from a real local node (substrate-contracts-node
-                    v0.42.0) at <code>{tc.ENDPOINT}</code> (metadata v14, token UNIT): hashes,
-                    blocks, events, fees, dry runs and digests. The console replays that recording;
-                    it isn't connected live. This is a local dev chain, not the V3 hosted testnet or
-                    mainnet, and local spec-1002 success does not prove V3 Revive behaviour. Run{" "}
-                    {new Date(run!.ranAt).toLocaleString()}. Verify it in the repo:{" "}
-                    <code>evidence/README.md</code> explains the files; this run is{" "}
-                    <code>{run!.evidenceFile}</code> (others:{" "}
-                    {tc
-                      .importedFrom()
-                      .files.map((f) => f.replace(/\.json$/, ""))
-                      .join(", ")}
-                    ).
-                  </div>
-                ) : (
-                  <div className="banner">
-                    <b>OFFLINE DEMO.</b> Plans, policy checks, approvals and receipts are real
-                    output from the SEAM compiler, policy engine and SDK, run against a saved
-                    snapshot. Transaction hashes, blocks and events on this screen are simulated.
-                    Live signing is the LIVE V3 mode, against the hosted testnet. This screen does
-                    not send anything.
-                  </div>
-                )}
-
-                {step === 0 && (
-                  <section className="grid2">
-                    <div className="card">
-                      <h3>Node</h3>
-                      <label>RPC endpoint</label>
-                      <div className="row">
-                        <input
-                          value={endpoint}
-                          readOnly={real}
-                          onChange={(e) => setEndpoint(e.target.value)}
-                        />
-                        <button onClick={doDiscover}>
-                          {real ? "Load recorded runtime" : "Discover runtime"}
-                        </button>
-                      </div>
-                      {real && (
-                        <p className="muted small">
-                          {tc.node().binary}. Runtime snapshot read from the node at{" "}
-                          {new Date(tc.node().rpcSnapshotAt).toLocaleString()}.
-                        </p>
-                      )}
-                      {facts && (
-                        <>
-                          <h4>Runtime fingerprint</h4>
-                          <dl className="kv">
-                            <dt>Genesis</dt>
-                            <dd>
-                              <code>{short(facts.fingerprint.genesisHash)}</code>
-                            </dd>
-                            <dt>Runtime</dt>
-                            <dd>
-                              {facts.fingerprint.specName} {facts.fingerprint.specVersion}, tx
-                              version {facts.fingerprint.transactionVersion}
-                            </dd>
-                            <dt>Metadata</dt>
-                            <dd>
-                              v{facts.fingerprint.metadataVersion} ·{" "}
-                              <code>{short(facts.fingerprint.metadataHash)}</code>
-                            </dd>
-                            <dt>Token</dt>
-                            <dd>
-                              {facts.fingerprint.tokenSymbol}, {facts.fingerprint.tokenDecimals}{" "}
-                              decimals, SS58 prefix {facts.fingerprint.ss58Prefix}
-                            </dd>
-                            <dt>Block</dt>
-                            <dd>#{facts.discoveredAtBlock.toLocaleString()}</dd>
-                          </dl>
-                          <Digest label="Fingerprint digest" value={facts.fingerprint.digest} />
-                          {real && (
-                            <>
-                              <dl className="kv" style={{ marginTop: 10 }}>
-                                <dt>Pallets</dt>
-                                <dd>{tc.node().pallets.join(", ")}</dd>
-                                <dt>Token source</dt>
-                                <dd>
-                                  <small className="muted">{tc.node().declaredToken.source}</small>
-                                </dd>
-                              </dl>
-                              <h4>Chain setup (real transactions)</h4>
-                              <table className="tbl">
-                                <tbody>
-                                  {tc
-                                    .setup()
-                                    .steps.filter((s) => s.txHash)
-                                    .map((s) => (
-                                      <tr key={s.txHash}>
-                                        <td>{s.what}</td>
-                                        <td>
-                                          <small className="muted">
-                                            block #{s.block.number} · tx{" "}
-                                            <code title={s.txHash}>{short(s.txHash, 6)}</code>
-                                          </small>
-                                        </td>
-                                        <td className="r">
-                                          <Pill tone={s.success ? "ok" : "bad"}>
-                                            {s.success ? "finalized" : "failed"}
-                                          </Pill>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                </tbody>
-                              </table>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="card">
-                      <h3>Capabilities</h3>
-                      {!facts ? (
-                        <p className="muted">
-                          Discover a runtime to see what this chain can actually do.
-                        </p>
-                      ) : (
-                        <>
-                          <table className="tbl">
-                            <tbody>
-                              {facts.capabilities.map((c) => (
-                                <tr key={c.id}>
-                                  <td>
-                                    <code>{c.id}</code>
-                                  </td>
-                                  <td>
-                                    {c.callIndex ? (
-                                      <small className="muted">[{c.callIndex.join(", ")}]</small>
-                                    ) : null}
-                                  </td>
-                                  <td className="r">
-                                    <Pill tone={triTone(c.status)}>{human[c.status]}</Pill>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          <h4>Behaviour</h4>
-                          <table className="tbl">
-                            <tbody>
-                              {facts.behaviour.map((b) => (
-                                <tr key={b.id}>
-                                  <td>{b.id.replace(/_/g, " ")}</td>
-                                  <td>
-                                    <small className="muted">{b.note}</small>
-                                  </td>
-                                  <td className="r">
-                                    <Pill tone={triTone(b.status)}>{b.status}</Pill>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          <div className="actions">
-                            <button onClick={() => setStep(1)}>Next: Manifest</button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </section>
-                )}
-
-                {step === 1 && (
-                  <section className="grid2">
-                    <div className="card">
-                      <h3>Intent</h3>
-                      <ol className="flow">
-                        {manifest.actions.map((a) => {
-                          const req = a.requires ?? KIND_CAP[a.kind];
-                          const cap = facts?.capabilities.find((c) => c.id === req);
-                          return (
-                            <li key={a.id}>
-                              <b>{a.kind}</b>
-                              <span className="muted"> needs </span>
-                              <code>{req}</code>{" "}
-                              {cap && <Pill tone={triTone(cap.status)}>{human[cap.status]}</Pill>}
-                            </li>
-                          );
-                        })}
-                      </ol>
-                      {real ? (
-                        <Digest label="Manifest digest" value={tc.manifestDigest()} />
-                      ) : (
-                        <Digest label="Manifest digest" value={api.manifestDigest(manifest)} />
-                      )}
-                      <div className="actions">
-                        <button onClick={doCompile}>Compile plan</button>
-                      </div>
-                    </div>
-                    <div className="card">
-                      <h3>Manifest</h3>
-                      <pre className="code">{JSON.stringify(manifest, null, 2)}</pre>
-                    </div>
-                  </section>
-                )}
-
-                {step === 2 && plan && (
-                  <section className="card">
-                    <DowngradeWarning d={plan.modeDowngrade} />
-                    <div className="row between">
-                      <h3>Compiled plan</h3>
-                      <Pill tone={plan.mode === "unavailable" ? "bad" : "info"}>
-                        {human[plan.mode]}
-                      </Pill>
-                    </div>
-                    <table className="tbl big">
-                      <thead>
-                        <tr>
-                          <th>Step</th>
-                          <th>Call</th>
-                          <th>Key arguments</th>
-                          <th>Encoded</th>
-                          <th className="r">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {plan.steps.map((s) => (
-                          <tr key={s.actionId}>
-                            <td>
-                              <b>{s.actionId}</b>
-                            </td>
-                            <td>
-                              <code>{s.capability}</code>
-                              {s.callIndex && (
-                                <small className="muted"> [{s.callIndex.join(", ")}]</small>
-                              )}
-                            </td>
-                            <td>
-                              <small>
-                                {s.decoded.message ? (
-                                  <>
-                                    <b>
-                                      {s.decoded.message}({s.decoded.args ?? ""})
-                                    </b>{" "}
-                                    · selector <code>{s.decoded.selector}</code> · interface{" "}
-                                    <code title={s.decoded.abiHash}>
-                                      {short(s.decoded.abiHash, 6)}
-                                    </code>
-                                    {s.decoded.abiRef && (
-                                      <>
-                                        {" "}
-                                        (<code>{s.decoded.abiRef}</code>)
-                                      </>
-                                    )}{" "}
-                                    ·{" "}
-                                    {Object.entries(s.decoded)
-                                      .filter(
-                                        ([k, v]) =>
-                                          v &&
-                                          ![
-                                            "message",
-                                            "selector",
-                                            "abiHash",
-                                            "args",
-                                            "data",
-                                          ].includes(k),
-                                      )
-                                      .map(([k, v]) => `${k}: ${short(v as string, 6)}`)
-                                      .join(" · ")}
-                                  </>
-                                ) : (
-                                  Object.entries(s.decoded)
-                                    .filter(([, v]) => v)
-                                    .map(([k, v]) => `${k}: ${short(v as string, 6)}`)
-                                    .join(" · ")
-                                )}
-                              </small>
-                            </td>
-                            <td>
-                              <code>{short(s.encodedCall, 6)}</code>
-                            </td>
-                            <td className="r">
-                              {s.status === "ok" ? (
-                                <Pill tone="ok">Ready</Pill>
-                              ) : (
-                                <Pill tone="bad">Unavailable</Pill>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {plan.steps
-                      .filter((s) => s.reason)
-                      .map((s) => (
-                        <div key={s.actionId} className="note bad">
-                          <b>{s.actionId}:</b> {s.reason}
-                        </div>
-                      ))}
-                    {plan.modeReason && (
-                      <div className="note">
-                        <b>Why this mode:</b> {plan.modeReason}
-                      </div>
-                    )}
-                    {real && tc.contractInfo() && plan.steps.some((s) => s.decoded.message) && (
-                      <div className="note">
-                        <b>Contract:</b> {tc.contractInfo()!.name ?? "contract"} at{" "}
-                        <code className="wrap">{tc.contractInfo()!.address}</code>
-                        {tc.contractInfo()!.deployTx && (
-                          <>
-                            , deployed in block #{tc.contractInfo()!.deployBlock} by tx{" "}
-                            <code className="wrap">{tc.contractInfo()!.deployTx}</code>
-                          </>
-                        )}
-                        . The call is given by message name and arguments; the compiler encoded it
-                        from the contract's interface, and the plan pins that interface by hash.
-                      </div>
-                    )}
-                    {real && tc.outerCall() && (
-                      <div className="note">
-                        <b>Sent as one transaction:</b> <code>{tc.outerCall()!.capability}</code>{" "}
-                        <code title={tc.outerCall()!.encodedCall}>
-                          {short(tc.outerCall()!.encodedCall, 10)}
-                        </code>
-                      </div>
-                    )}
-                    <div className="digests">
-                      {plan.digest !== "0x" && <Digest label="Plan digest" value={plan.digest} />}
-                      <Digest label="Manifest" value={plan.manifestDigest} />
-                      <Digest label="Fingerprint" value={plan.fingerprintDigest} />
-                    </div>
-                    <div className="jsonbar">
-                      <JsonActions label="plan" value={plan} file="seam-plan.json" />
-                    </div>
-                    <div className="actions">
-                      {plan.mode === "unavailable" ? (
-                        <div className="note bad">
-                          SEAM won't send this plan for preflight or signing, because a step can't
-                          run on this runtime. Remove the step or connect to a runtime that has it.
-                        </div>
-                      ) : (
-                        <button onClick={doChecks}>Run preflight and policy</button>
-                      )}
-                    </div>
-                  </section>
-                )}
-
-                {step === 3 && policy && (
-                  <RiskLimits
-                    policy={real ? (tc.policyFile() as PolicyLike | undefined) : undefined}
-                    behaviour={{
-                      batchAllRollback:
-                        facts?.behaviour.find((b) => b.id === "batch_all_rollback")?.status ===
-                        "confirmed"
-                          ? "verified"
-                          : "unknown",
+                </li>
+              ))}
+            </ol>
+            <div className="workspace-columns">
+              <div className="transaction-column" id="compose">
+                <div inert={executionBusy}>
+                  <ManifestBuilder
+                    onRuntime={setRuntime}
+                    onInvalidate={invalidate}
+                    onUsePolicy={(sel) => {
+                      invalidate();
+                      setSelection(sel);
+                      setApproval(undefined);
+                      setGate(undefined);
+                      setNotice(undefined);
                     }}
                   />
-                )}
-                {step === 3 && policy && (
-                  <section className="grid2">
-                    {!pre ? null : (
-                      <div className="card">
-                        <h3>Preflight</h3>
-                        <p className="small">
-                          Simulation: <SimulationBadge b={simulation} />
-                        </p>
-                        {real && tc.preflightAt() && (
-                          <p className="muted small">
-                            Read from the node at block #{tc.preflightAt()!.number}{" "}
-                            <code>{short(tc.preflightAt()!.hash, 6)}</code>. Weight is ref_time.
-                          </p>
+                  <section className="card review-card" id="review">
+                    <div className="section-title">
+                      <span className="section-number">02</span>
+                      <div>
+                        <h2>Review & approve</h2>
+                        <p>Check the exact plan against your rules and the current chain.</p>
+                      </div>
+                      <Symbol kind="shield" />
+                    </div>
+                    {selection ? (
+                      <>
+                        <dl className="review-summary">
+                          <div>
+                            <dt>Actions</dt>
+                            <dd>{selection.plan.steps.length}</dd>
+                          </div>
+                          <div>
+                            <dt>Execution</dt>
+                            <dd>
+                              {selection.plan.mode === "sequential" ? "Sequential" : "Atomic batch"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Runtime</dt>
+                            <dd>spec {fingerprint?.specVersion ?? "unknown"}</dd>
+                          </div>
+                        </dl>
+                        {selection.plan.modeDowngrade && (
+                          <label className="downgrade-review">
+                            <input
+                              type="checkbox"
+                              checked={acknowledgedDowngrade}
+                              onChange={(event) => {
+                                setAcknowledgedDowngrade(event.target.checked);
+                                setApproval(undefined);
+                                setGate(undefined);
+                              }}
+                            />
+                            <span>
+                              I understand these actions will run one at a time. Earlier actions can
+                              remain completed if a later action fails.
+                            </span>
+                          </label>
                         )}
-                        <table className="tbl">
-                          <thead>
-                            <tr>
-                              <th>Step</th>
-                              <th>Weight</th>
-                              <th>Proof size</th>
-                              <th>Fee</th>
-                              <th>Storage</th>
-                              <th className="r">Dry run</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {pre.steps.map((s) => (
-                              <tr key={s.actionId}>
-                                <td>
-                                  <b>{s.actionId}</b>
-                                </td>
-                                <td>{s.weight.value ?? "unknown"}</td>
-                                <td>
-                                  {s.proofSize?.value ? (
-                                    <>
-                                      {s.proofSize.value}
-                                      {real && tc.usedProofSize(s.actionId) && (
-                                        <small className="muted">
-                                          <br />
-                                          used {tc.usedProofSize(s.actionId)!.value}
-                                          {tc.usedProofSize(s.actionId)!.shared
-                                            ? " (whole batch)"
-                                            : ""}
-                                        </small>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <Pill tone="warn">Unknown</Pill>
-                                  )}
-                                </td>
-                                <td>{s.fee.value ?? "unknown"}</td>
-                                <td>
-                                  {s.storageDeposit.unknown ? (
-                                    <Pill tone="warn">Unknown</Pill>
-                                  ) : (
-                                    s.storageDeposit.value
-                                  )}
-                                </td>
-                                <td className="r">
-                                  <Pill tone={triTone(s.dryRun)}>{s.dryRun}</Pill>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        <p className="muted">
-                          Estimated total fee: <b>{pre.totalFee.value}</b>
-                        </p>
-                        {real &&
-                          pre.steps
-                            .filter((s) => s.note)
-                            .map((s) => (
-                              <div key={s.actionId} className="note small">
-                                <b>{s.actionId}:</b> {s.note}
-                              </div>
-                            ))}
+                        <button
+                          onClick={approve}
+                          disabled={
+                            busy || (!!selection.plan.modeDowngrade && !acknowledgedDowngrade)
+                          }
+                          className="review-button"
+                        >
+                          {busy
+                            ? "Checking live policy…"
+                            : approval
+                              ? "Check and approve again"
+                              : "Check policy and approve"}
+                          <Symbol kind="arrow" />
+                        </button>
+                        {gate && <PolicyGatePanel gate={gate} />}
+                      </>
+                    ) : (
+                      <div className="empty-review">
+                        <Symbol kind="shield" />
+                        <p>Your review will appear here.</p>
+                        <span>Compile a transaction and select its policy to continue.</span>
                       </div>
                     )}
-                    <div className="card">
-                      <div className="row between">
-                        <h3>Policy</h3>
-                        <span>
-                          {policy.allowed ? (
-                            <Pill tone="ok">Allowed</Pill>
-                          ) : (
-                            <Pill tone="bad">Blocked</Pill>
-                          )}{" "}
-                          <WeakProofBadge show={weakProof} />
-                        </span>
-                      </div>
-                      {real && policy.explain && <p className="muted">{policy.explain}</p>}
-                      <ul className="rules">
-                        {policy.rules.map((r, i) => (
-                          <li key={i} className={r.outcome}>
-                            <Pill tone={triTone(r.outcome)}>{r.outcome}</Pill>
-                            <div>
-                              {r.outcome === "pass" && PASS_WORDING[r.rule] && (
-                                <b className="rulewords">{PASS_WORDING[r.rule]}</b>
-                              )}
-                              <code>{r.rule}</code>
-                              {r.actionId && <small className="muted"> · {r.actionId}</small>}
-                              <p>{r.reason}</p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                      {policy.policyDigest !== "0x" && (
-                        <Digest label="Policy digest" value={policy.policyDigest} />
-                      )}
-                      {real && tc.policyFile() && (
-                        <details className="small">
-                          <summary className="muted">Policy file used</summary>
-                          <pre className="code">{JSON.stringify(tc.policyFile(), null, 2)}</pre>
-                        </details>
-                      )}
-                      <div className="actions">
-                        {policy.allowed ? (
-                          <button onClick={() => setStep(4)}>Next: Approve</button>
-                        ) : (
-                          <div className="note bad">
-                            SEAM blocked this plan. Change the Manifest or connect to a runtime that
-                            has the missing capability.
-                          </div>
-                        )}
-                      </div>
+                    {notice && (
+                      <p role="alert" className="workspace-notice">
+                        {notice}
+                      </p>
+                    )}
+                  </section>
+                </div>
+                <section id="execute" className="execution-section">
+                  <div className="section-title">
+                    <span className="section-number">03</span>
+                    <div>
+                      <h2>Sign & verify</h2>
+                      <p>Your wallet signs. SEAM checks the submitted result.</p>
                     </div>
+                    <Symbol kind="wallet" />
+                  </div>
+                  <LivePanel
+                    onBusyChange={setExecutionBusy}
+                    plan={view}
+                    facts={selection?.facts as RuntimeFacts | undefined}
+                    approval={approval}
+                    acknowledgedDowngrade={acknowledgedDowngrade}
+                    policyInput={input}
+                    rpcUrl={selection?.rpcUrl}
+                    rebind={
+                      selection
+                        ? {
+                            planFacts: selection.facts,
+                            onRebound: (plan, facts, message) => {
+                              setSelection({
+                                ...selection,
+                                plan: plan as Selection["plan"],
+                                facts,
+                              });
+                              setApproval(undefined);
+                              setGate(undefined);
+                              setNotice(message);
+                            },
+                          }
+                        : undefined
+                    }
+                  />
+                </section>
+                {showEvidence && (
+                  <section className="evidence-section">
+                    <h2>Recorded testnet evidence</h2>
+                    <p>Historical records, kept separate from your live transaction.</p>
+                    <Suspense fallback={<p>Loading evidence…</p>}>
+                      <Evidence />
+                    </Suspense>
                   </section>
                 )}
-
-                {step === 4 && plan && policy && (
-                  <section className="grid2">
-                    <div className="card">
-                      <h3>What you're approving</h3>
-                      <ul className="checks">
-                        {(approval?.covers?.length
-                          ? approval.covers
-                          : real && approval
-                            ? [
-                                "Not recorded in this test's evidence: only the approval hash was saved.",
-                              ]
-                            : (approval?.covers ?? [
-                                "Manifest digest",
-                                "Plan digest",
-                                "Runtime fingerprint",
-                                "Policy digest and result",
-                                "Preflight result",
-                                "Signer, nonce, mortality and expiry",
-                              ])
-                        ).map((c) => (
-                          <li key={c}>{c}</li>
-                        ))}
-                      </ul>
-                      <p className="muted">
-                        If any of these change after you approve, the approval stops working and
-                        SEAM asks you to approve again.
-                      </p>
-                      {!approval ? (
-                        <div className="actions">
-                          <button onClick={doApprove}>Approve this plan</button>
-                        </div>
-                      ) : (
-                        <>
-                          <Digest label="Approval hash" value={approval.hash} />
-                          {env && (
-                            <dl className="kv">
-                              <dt>Signer</dt>
-                              <dd>
-                                <code>{short(env?.signer, 8)}</code>
-                              </dd>
-                              <dt>Nonce</dt>
-                              <dd>{env?.nonce}</dd>
-                              <dt>Valid for</dt>
-                              <dd>
-                                {env?.mortalityBlocks} blocks, until{" "}
-                                {new Date(approval.expiresAt).toLocaleTimeString()}
-                              </dd>
-                              {real && tc.checkpoint() && (
-                                <>
-                                  <dt>Checkpoint</dt>
-                                  <dd>
-                                    block #{tc.checkpoint()!.number}{" "}
-                                    <code>{short(tc.checkpoint()!.hash, 6)}</code>
-                                  </dd>
-                                </>
-                              )}
-                              {real && tc.signing() && (
-                                <>
-                                  <dt>Signed</dt>
-                                  <dd>
-                                    {tc.signing()!.count} signing request
-                                    {tc.signing()!.count > 1 ? "s" : ""} · spec{" "}
-                                    {parseInt(tc.signing()!.specVersion, 16)} · era{" "}
-                                    <code>{tc.signing()!.era}</code>
-                                  </dd>
-                                  <dt>Extensions</dt>
-                                  <dd>
-                                    <small className="muted">
-                                      {tc.signing()!.signedExtensions.join(", ")}
-                                    </small>
-                                  </dd>
-                                </>
-                              )}
-                            </dl>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="card">
-                      <h3>Sign with your wallet</h3>
-                      <p className="muted">
-                        SEAM never holds your keys. Your wallet signs the exact bytes from the
-                        approved plan, and SEAM checks the runtime again right before it submits.
-                      </p>
-                      {real && (
-                        <p className="muted small">
-                          On this test chain the "wallet" was the public dev account //Alice.
-                          Replaying shows what happened next; nothing is sent from the console.
-                        </p>
-                      )}
-                      <p className="small">
-                        Signing status:{" "}
-                        <b>
-                          {approval
-                            ? approval.used
-                              ? "Already used"
-                              : "Ready for wallet"
-                            : "Not approved yet"}
-                        </b>{" "}
-                        ·{" "}
-                        {real
-                          ? "Replay of a recorded run"
-                          : "Animated OFFLINE DEMO, no wallet involved"}
-                        .
-                      </p>
-                      <button disabled={!approval} onClick={doSubmit}>
-                        {real ? "Replay recorded run" : "Run offline demo"}
-                      </button>
-                    </div>
-                  </section>
-                )}
-
-                {step === 5 && lockBlock && facts && (
-                  <section className="card blocked">
-                    <div className="row between">
-                      <h3>SEAM blocked this submission</h3>
-                      <Pill tone="bad">Runtime changed</Pill>
-                    </div>
-                    <p>{api.submitBlock()} Nothing was sent.</p>
-                    <table className="tbl">
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th>When approved</th>
-                          <th>Right now</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>Spec version</td>
-                          <td>{facts.fingerprint.specVersion}</td>
-                          <td className="bad">{lockBlock.fingerprint.specVersion}</td>
-                        </tr>
-                        <tr>
-                          <td>Metadata hash</td>
-                          <td>
-                            <code>{short(facts.fingerprint.metadataHash, 6)}</code>
-                          </td>
-                          <td className="bad">
-                            <code>{short(lockBlock.fingerprint.metadataHash, 6)}</code>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Fingerprint</td>
-                          <td>
-                            <code>{short(facts.fingerprint.digest, 6)}</code>
-                          </td>
-                          <td className="bad">
-                            <code>{short(lockBlock.fingerprint.digest, 6)}</code>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div className="actions">
-                      <button onClick={() => reset("happy")}>
-                        Rediscover, recompile and approve again
-                      </button>
-                    </div>
-                  </section>
-                )}
-
-                {step === 5 && real && gate && (
-                  <section className="grid2">
-                    <div className="card blocked">
-                      <div className="row between">
-                        <h3>SEAM blocked this submission</h3>
-                        <Pill tone="bad">{gate.gate.reasons[0]?.code.replace(/_/g, " ")}</Pill>
+              </div>
+              <aside className="context-column" aria-label="Execution guide">
+                <div className="context-card">
+                  <span className="context-icon">
+                    <Symbol kind="shield" />
+                  </span>
+                  <p className="eyebrow">BUILT FOR CERTAINTY</p>
+                  <h2>
+                    Know what
+                    <br />
+                    you're signing.
+                  </h2>
+                  <p>
+                    Every transaction follows the same path. Each check has to pass before anything
+                    is sent.
+                  </p>
+                  <ol className="trust-path">
+                    <li>
+                      <span>01</span>
+                      <div>
+                        <b>Read the live runtime</b>
+                        <p>Calls come from the chain's metadata.</p>
                       </div>
-                      <p>
-                        {gate.gate.reasons.map((r) => r.message).join(" ")}{" "}
-                        {gate.gate.nothingSent && <b>Nothing was sent.</b>}
-                      </p>
-                      {gate.gate.dryRun.map((d) => (
-                        <dl key={d.txHash} className="kv">
-                          <dt>Signed dry run</dt>
-                          <dd>
-                            <Pill tone="bad">{d.outcome}</Pill> {d.detail}
-                          </dd>
-                          <dt>Tx</dt>
-                          <dd>
-                            <code className="wrap">{d.txHash}</code>
-                          </dd>
-                          <dt>Raw result</dt>
-                          <dd>
-                            <code>{d.raw}</code>
-                          </dd>
-                        </dl>
-                      ))}
-                      <h4>Balances after the gate (asset 1)</h4>
-                      <StateTable st={gate.state} cols={["before", "afterGate"]} />
-                      <GateChecks list={tc.gateChecks()} />
-                    </div>
-                    <div className="card">
-                      <div className="row between">
-                        <h3>Rollback proof</h3>
-                        <Pill tone={gate.verdict === "verified" ? "ok" : "warn"}>
-                          rollback {gate.verdict}
-                        </Pill>
+                    </li>
+                    <li>
+                      <span>02</span>
+                      <div>
+                        <b>Enforce your limits</b>
+                        <p>Review recipients, amounts and fees.</p>
                       </div>
-                      <div className="note">
-                        <b>Test-only bypass:</b> {gate.bypass.note}. To prove what the gate
-                        prevented, the same signed batch_all was sent straight to the node, outside
-                        SEAM.
+                    </li>
+                    <li>
+                      <span>03</span>
+                      <div>
+                        <b>Verify the result</b>
+                        <p>Unknown effects stay unverified.</p>
                       </div>
-                      <dl className="kv" style={{ marginTop: 10 }}>
-                        <dt>Tx</dt>
-                        <dd>
-                          <code className="wrap">{gate.bypass.txHash}</code>
-                        </dd>
-                        <dt>Block</dt>
-                        <dd>
-                          #{gate.bypass.block.number}{" "}
-                          <code className="wrap">{gate.bypass.block.hash}</code>
-                        </dd>
-                        <dt>Status</dt>
-                        <dd>
-                          {gate.bypass.history.join(" → ")} ·{" "}
-                          <Pill tone="bad">ExtrinsicFailed</Pill>
-                        </dd>
-                        <dt>Error</dt>
-                        <dd>{gate.bypass.dispatchError}</dd>
-                      </dl>
-                      <h4>Events in that block</h4>
-                      <Events list={gate.bypass.events} />
-                      <p className="muted small">
-                        No Assets.Transferred or Assets.Issued: step 1's transfer and step 3's mint
-                        left nothing behind. Inner effects found: {gate.innerEffects.length}.
-                      </p>
-                      <h4>Balances and supply</h4>
-                      <StateTable st={gate.state} cols={["before", "afterGate", "after"]} />
-                      <div className="note">{gate.conclusion}</div>
-                      <p className="muted small">
-                        Evidence: <code>{gate.evidenceFile}</code>. This proof is why the atomic run
-                        may use <code>atomic_verified</code> on this runtime.
-                      </p>
-                    </div>
-                  </section>
-                )}
-
-                {step === 5 && !lockBlock && !gate && plan && (
-                  <section className="grid2">
-                    <div className="card">
-                      <h3>Live tracking</h3>
-                      <ol className="track">
-                        {plan.steps.map((s, i) => {
-                          const st = progress[i] ?? "not_run";
-                          return (
-                            <li key={s.actionId} className={st}>
-                              <b>{s.actionId}</b> <code>{s.capability}</code>
-                              <div className="stages">
-                                {(["checking", "submitted", "finalized"] as const).map((x, k) => {
-                                  const order: Record<string, number> = {
-                                    not_run: -1,
-                                    checking: 0,
-                                    blocked: 0,
-                                    submitted: 1,
-                                    included: 1,
-                                    failed: 2,
-                                    finalized: 2,
-                                  };
-                                  const bad =
-                                    (st === "blocked" && k === 0) || (st === "failed" && k === 2);
-                                  const label = bad
-                                    ? st === "blocked"
-                                      ? "blocked"
-                                      : "failed"
-                                    : x === "checking"
-                                      ? k <= order[st]
-                                        ? "checked"
-                                        : "check"
-                                      : x === "submitted"
-                                        ? "sent"
-                                        : "finalized";
-                                  return (
-                                    <span
-                                      key={x}
-                                      className={k <= order[st] ? (bad ? "bad" : "on") : ""}
-                                    >
-                                      {st === "checking" && k === 0
-                                        ? `checking step ${i + 1}…`
-                                        : label}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                              {st !== "not_run" && st !== "checking" && (
-                                <GateList g={stepGate(i)} />
-                              )}
-                              {real && st !== "not_run" && st !== "checking" && tc.dryRunFor(i) && (
-                                <small className="muted">
-                                  signed dry run: {tc.dryRunFor(i)!.outcome} (
-                                  {tc.dryRunFor(i)!.detail})
-                                </small>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ol>
-                    </div>
-                    <div className="card">
-                      <div className="row between">
-                        <h3>Execution receipt</h3>
-                        {receipt && <ProvenanceBadge p={provenance} />}
-                        {receipt && <SeamCodeBadge c={classifyReceipt(receipt)} />}
-                        {receipt && <WeakProofBadge show={weakProof} />}
-                      </div>
-                      {!receipt ? (
-                        <p className="muted">Waiting for finalization…</p>
-                      ) : (
-                        <>
-                          <p className="big">
-                            {receipt.checks.confirmed} of {receipt.checks.expected} steps verified
-                            {classifyReceipt(receipt) !== "verified" && " (run not verified)"}
-                          </p>
-                          {receipt.steps.map((s) => (
-                            <div key={s.actionId} className="rstep">
-                              <div className="row between">
-                                <b>{s.actionId}</b>
-                                <Pill
-                                  tone={triTone(
-                                    s.verification === "verified"
-                                      ? "ok"
-                                      : s.verification === "unknown"
-                                        ? "unknown"
-                                        : "bad",
-                                  )}
-                                >
-                                  {s.verification.replace("_", " ")}
-                                </Pill>
-                              </div>
-                              <p>{s.reason}</p>
-                              {s.txHash && !real && (
-                                <small className="muted">
-                                  tx <code>{short(s.txHash, 8)}</code> · block #
-                                  {s.block?.number.toLocaleString()} · {s.events.join(", ")}
-                                </small>
-                              )}
-                              {s.txHash && real && (
-                                <>
-                                  <dl className="kv small">
-                                    <dt>Tx</dt>
-                                    <dd>
-                                      <code className="wrap">{s.txHash}</code>
-                                    </dd>
-                                    <dt>Block</dt>
-                                    <dd>
-                                      #{s.block?.number}{" "}
-                                      <code className="wrap">{s.block?.hash}</code>
-                                    </dd>
-                                    <dt>Status</dt>
-                                    <dd>
-                                      {tc
-                                        .history(s.txHash)
-                                        .filter(
-                                          (h, k, a) =>
-                                            a.findIndex((x) => x.status === h.status) === k,
-                                        )
-                                        .map((h) => h.status)
-                                        .join(" → ")}
-                                    </dd>
-                                  </dl>
-                                  <Events list={s.events} />
-                                  {tc.decodedEmitted(s.actionId) &&
-                                    s.events.some(isEmitted) &&
-                                    (() => {
-                                      const d = tc.decodedEmitted(s.actionId)!;
-                                      return (
-                                        <div className="note">
-                                          <b>
-                                            Decoded <code>ContractEmitted</code>: {d.event}
-                                          </b>{" "}
-                                          <small className="muted">
-                                            (decoded with the contract's ABI, <code>{d.abi}</code>)
-                                          </small>
-                                          <dl className="kv small">
-                                            {d.fields.map((f) => (
-                                              <>
-                                                <dt key={f.name + "k"}>{f.name}</dt>
-                                                <dd key={f.name + "v"}>
-                                                  <code className="wrap">{f.value}</code>{" "}
-                                                  <small className="muted">
-                                                    {f.type}
-                                                    {f.indexed ? ", indexed" : ""}
-                                                  </small>
-                                                </dd>
-                                              </>
-                                            ))}
-                                          </dl>
-                                        </div>
-                                      );
-                                    })()}
-                                </>
-                              )}
-                            </div>
-                          ))}
-                          {real && <GateChecks list={tc.gateChecks()} />}
-                          <div className="digests">
-                            <Digest label="Receipt" value={receipt.digest} />
-                            <Digest label="Approval" value={receipt.approvalHash} />
-                            <Digest label="Plan" value={receipt.planDigest} />
-                            <Digest label="Policy" value={receipt.policyDigest} />
-                          </div>
-                          <div className="jsonbar">
-                            <JsonActions label="receipt" value={receipt} file="seam-receipt.json" />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </section>
-                )}
-              </>
-            )}
-          </>
-        )}
-      </main>
+                    </li>
+                  </ol>
+                  <div className="context-foot">
+                    <Symbol kind="wallet" />
+                    External wallet. No keys stored.
+                  </div>
+                </div>
+                <div className="runtime-card">
+                  <div className="runtime-card-heading">
+                    <span className="status-dot" />
+                    <b>Runtime context</b>
+                  </div>
+                  <dl>
+                    <dt>Network</dt>
+                    <dd>Portaldot V3 testnet</dd>
+                    <dt>Runtime</dt>
+                    <dd>
+                      {fingerprint
+                        ? `${fingerprint.specName} · ${fingerprint.specVersion}`
+                        : "Awaiting live read"}
+                    </dd>
+                    <dt>Genesis</dt>
+                    <dd>
+                      <code title={fingerprint?.genesisHash}>
+                        {short(fingerprint?.genesisHash)}
+                      </code>
+                    </dd>
+                    <dt>Plan</dt>
+                    <dd>
+                      <code title={selection?.plan.planDigest}>
+                        {selection ? short(selection.plan.planDigest) : "Not compiled yet"}
+                      </code>
+                    </dd>
+                  </dl>
+                  <p>Testnet funds only. Mainnet submission is blocked.</p>
+                </div>
+              </aside>
+            </div>
+            <footer className="workspace-footer">
+              <span>SEAM / Execution infrastructure</span>
+              <span>Portaldot V3 · Your intent, your signature.</span>
+            </footer>
+          </div>
+          {centersOpened && (
+            <div hidden={activeView === "compose"}>
+              <Suspense fallback={<p className="loading-view">Loading workspace tools…</p>}>
+                <WorkspaceCenters view={activeView === "compose" ? "activity" : activeView} />
+              </Suspense>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

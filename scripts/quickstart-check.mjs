@@ -6,6 +6,8 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tmpdir } from "node:os";
+import { mkdtempSync, rmSync } from "node:fs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const doc = process.argv.find((a) => a.endsWith(".md")) ?? join(root, "docs/quickstart.md");
@@ -42,6 +44,8 @@ export function extractCommands(md) {
 }
 
 const cmds = extractCommands(readFileSync(doc, "utf8"));
+const temp = mkdtempSync(join(tmpdir(), "seam-quickstart-")).replaceAll("\\", "/");
+process.on("exit", () => rmSync(temp, { recursive: true, force: true }));
 let ran = 0,
   skipped = 0;
 const failures = [];
@@ -51,7 +55,7 @@ for (const c of cmds) {
     console.log(`skip  L${c.line} [${c.setup ? "setup" : "network"}] ${c.cmd}`);
     continue;
   }
-  const r = spawnSync("bash", ["-c", c.cmd], { cwd: root, encoding: "utf8", timeout: 180_000 });
+  const r = spawnSync("bash", ["-c", c.cmd.replaceAll("/tmp/seam-quickstart", temp)], { cwd: root, encoding: "utf8", timeout: 180_000 });
   ran++;
   const ok = r.status === c.expect;
   console.log(`${ok ? "ok  " : "FAIL"}  L${c.line} exit ${r.status} (want ${c.expect}) ${c.cmd}`);

@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll } from "vitest";
+import { describe, expect, it } from "vitest";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { assembleSignedExtrinsic, buildSigningRequests, preflight } from "../src/index.js";
 import { FakeNode } from "./fakeNode.js";
@@ -187,7 +187,7 @@ describe("storage keys", () => {
   it("storageKey strips the compact length prefix polkadot.js puts on decorated keys", async () => {
     const { storageKey, decodeRuntime } = await import("../src/index.js");
     const { snapshotFacts } = await import("./helpers.js");
-    const q = (decodeRuntime(snapshotFacts()).decorated().query as any).assets.asset;
+    const q = decodeRuntime(snapshotFacts()).decorated().query.assets.asset;
     const key = storageKey(q, 1);
     // twox128("Assets") ++ twox128("Asset") ++ blake2_128_concat(u32 1)
     expect(

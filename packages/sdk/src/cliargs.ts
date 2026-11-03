@@ -28,7 +28,7 @@ export function parseAbiFlags(
     try {
       abis[name] = load(file);
     } catch (e) {
-      throw new Error(`--abi ${name}: cannot read ${file}: ${(e as Error).message}`);
+      throw new Error(`--abi ${name}: cannot read ${file}: ${(e as Error).message}`, { cause: e });
     }
   }
   return abis;
@@ -55,7 +55,7 @@ export function parseRuntimeFlag(
   try {
     d = load(file);
   } catch (e) {
-    throw new Error(`--runtime: cannot read ${file}: ${(e as Error).message}`);
+    throw new Error(`--runtime: cannot read ${file}: ${(e as Error).message}`, { cause: e });
   }
   const fp = isFingerprint((d as { fingerprint?: unknown })?.fingerprint)
     ? (d as { fingerprint: RuntimeFingerprint }).fingerprint

@@ -667,7 +667,9 @@ if (STEP === "plans") {
       } catch (e) {
         const n1 = await nextNonce(ADDRESS);
         if (n1 !== n0)
-          throw new Error(`runFlow threw after sending (nonce ${n0} -> ${n1}): ${e.message}`);
+          throw new Error(`runFlow threw after sending (nonce ${n0} -> ${n1}): ${e.message}`, {
+            cause: e,
+          });
         console.warn(
           `runFlow attempt ${i + 1} failed before sending (${e.code ?? ""} ${String(e.message).slice(0, 160)}); retrying`,
         );
@@ -738,7 +740,8 @@ if (STEP === "plans") {
         ranAt: new Date().toISOString(),
         ...r,
       };
-      let file = save(rel, base);
+      save(rel, base);
+      let file;
       let nft;
       try {
         nft = await receiptWithNftVerdicts(r.plan, r.run);
@@ -887,6 +890,7 @@ if (STEP === "plans") {
       } catch (e) {
         direct = { txHash: directHash, status: "unknown", error: String(e.message ?? e) };
       }
+      // eslint-disable-next-line no-useless-assignment -- Drop the reference to signed transaction bytes after use.
       signed = undefined;
       let recoveredBy;
       if (!direct.inclusion) {
@@ -1001,7 +1005,8 @@ if (STEP === "plans") {
         proofNote,
         ...r,
       };
-      let file = save(rel, base);
+      save(rel, base);
+      let file;
       let nft;
       try {
         nft = await receiptWithNftVerdicts(r.plan, r.run);

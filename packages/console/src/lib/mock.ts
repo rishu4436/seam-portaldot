@@ -1,3 +1,8 @@
+import type { PlanStep as EnginePlanStep } from "@seam/compiler/browser";
+import type {
+  PreflightStep as EnginePreflightStep,
+  ReceiptStep as EngineReceiptStep,
+} from "@seam/policy/browser";
 import type { GateResult } from "./gate";
 // Console data adapter. Every plan, policy result, approval and receipt here was
 // produced by the REAL @seam/compiler, @seam/policy and @seam/sdk, run offline
@@ -102,7 +107,7 @@ export function compile(_m: Manifest, _facts: RuntimeFacts): Plan {
     digest: p.planDigest,
     modeReason: p.modeReason,
     explain: S().planText,
-    steps: p.steps.map((s: any) => ({
+    steps: p.steps.map((s: EnginePlanStep) => ({
       actionId: s.actionId,
       capability: s.capability,
       callIndex: s.palletIndex != null ? [s.palletIndex, s.callIndex] : undefined,
@@ -123,7 +128,7 @@ export function compile(_m: Manifest, _facts: RuntimeFacts): Plan {
 export function preflight(_plan: Plan): PreflightResult {
   const p = S().preflight;
   return {
-    steps: p.steps.map((s: any) => ({
+    steps: p.steps.map((s: EnginePreflightStep) => ({
       actionId: s.actionId,
       weight: s.weight.unknown ? { unknown: true } : { value: s.weight.value },
       proofSize: s.proofSize?.value
@@ -185,7 +190,7 @@ export function receipt(
     policyDigest: r.policyDigest,
     approvalHash: r.approvalHash,
     mode: r.mode,
-    steps: r.steps.map((s: any) => ({ ...s, events: s.events ?? [] })),
+    steps: r.steps.map((s: EngineReceiptStep) => ({ ...s, events: s.events ?? [] })),
     overall: r.result,
     checks: { confirmed: r.coverage.verified, expected: r.coverage.expected },
     digest: r.receiptDigest,

@@ -66,7 +66,7 @@ export function parseManifest(input: string | unknown): ParseResult {
   const s = raw.signer;
   if (!isObj(s)) issues.push({ path: "$.signer", message: "signer is required: { type, value }" });
   else {
-    if (!SIGNER_TYPES.includes(s.type as any))
+    if (!SIGNER_TYPES.some((type) => type === s.type))
       issues.push({
         path: "$.signer.type",
         message: `signer type must be one of ${SIGNER_TYPES.join(", ")}`,

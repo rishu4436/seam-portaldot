@@ -1,4 +1,5 @@
 import type { Hex, RuntimeFacts } from "@seam/compiler";
+import type { ApplyExtrinsicResult } from "@polkadot/types/interfaces";
 import { rpc, type RpcClient } from "./rpc-core.js";
 import { decodeRuntime, describeDispatchError, extrinsicHash } from "./runtime.js";
 import type { SignedDryRun } from "./types.js";
@@ -45,7 +46,7 @@ export async function dryRunOne(
     };
   }
   const { registry } = decodeRuntime(facts);
-  let res: any;
+  let res: ApplyExtrinsicResult;
   try {
     res = registry.createType("ApplyExtrinsicResult", raw);
     const len = (raw.length - 2) / 2;

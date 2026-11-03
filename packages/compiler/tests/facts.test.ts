@@ -93,7 +93,7 @@ describe("pinned types against real chain data", () => {
     expect(ex.toHex()).toBe(realExtrinsic.extrinsic);
     // Rebuild the call from its decoded args with our encoder path and compare bytes.
     const fn = registry.findMetaCall(new Uint8Array([6, 3]));
-    const [dest, value] = ex.method.args as any[];
+    const [dest, value] = ex.method.args;
     expect(dest.type).toBe("Id");
     expect(fn({ Id: dest.value.toHex() }, value.toString()).toHex()).toBe(ex.method.toHex());
   });

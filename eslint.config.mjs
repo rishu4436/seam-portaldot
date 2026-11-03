@@ -8,6 +8,7 @@ export default tseslint.config(
       "**/dist/**",
       "**/node_modules/**",
       "**/coverage/**",
+      ".vercel/**",
       "evidence/**",
       "fixtures/**",
       "packages/console/dist/**",
@@ -18,13 +19,13 @@ export default tseslint.config(
   {
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
     rules: {
-      // `any` is tolerated for now (warn) while owners tighten types.
-      "@typescript-eslint/no-explicit-any": "warn",
-      "no-fallthrough": "warn",
-      "@typescript-eslint/no-unused-expressions": "warn",
+      // Keep runtime and evidence boundaries typed, with explicit control flow.
+      "@typescript-eslint/no-explicit-any": "error",
+      "no-fallthrough": "error",
+      "@typescript-eslint/no-unused-expressions": "error",
       // Unused values are allowed when prefixed with an underscore.
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
     },

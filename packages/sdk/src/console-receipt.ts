@@ -2,10 +2,18 @@
 // sequential. Console receipts are not SDK `Receipt`s (no receiptVersion, no receiptDigest), so they get their own checks.
 // Nothing here trusts a field of the receipt: every claim is recomputed (plan digest, approval hash) or re-read from the
 // chain (block, tx, signer, call, nonce, events, fee). A field that is absent is reported as `not_checked`, never as a pass.
-import { computePlanDigest, type Hex, type Plan, type PlanStep } from "@seam/compiler";
-import { createApproval, digest, policyDigest } from "@seam/policy";
+import {
+  computePlanDigest,
+  computeFingerprintDigest,
+  type Hex,
+  type Plan,
+  type PlanStep,
+  type RuntimeFingerprint,
+} from "@seam/compiler/browser";
+import { createApproval, digest, policyDigest } from "@seam/policy/browser";
 import { verifyStep, type ChainEvent } from "./receipt.js";
-import type { ReceiptChainReader } from "./verify-live.js";
+import type { ReceiptChainReader } from "./verify-live-core.js";
+import { perStepOfBatch } from "./batch-steps.js";
 
 export const CONSOLE_RECEIPT_KIND_PREFIX = "seam/console-live-receipt/";
 
@@ -455,6 +463,43 @@ export async function verifyConsoleReceiptLive(
     add("finalized_head", "unknown", `could not read: ${(e as Error).message}`);
   }
   const steps = consoleSteps(r);
+  const atomic = plan?.mode === "atomic_verified" || plan?.mode === "atomic_unverified";
+  const seenActions = new Set<string>(),
+    seenTransactions = new Set<string>();
+  let previous: { block: number; index: number; nonce?: number; planIndex: number } | undefined;
+  let atomicIdentity: string | undefined;
+  let runtime: RuntimeFingerprint | undefined;
+  if (
+    plan?.steps.some((step) =>
+      ["nfts.mint", "revive.call", "revive.instantiate_with_code", "revive.map_account"].includes(
+        step.kind,
+      ),
+    )
+  ) {
+    try {
+      const pinned = r.approvalInputs?.fingerprint as RuntimeFingerprint | undefined;
+      const live = await reader.runtimeFingerprint?.();
+      if (
+        pinned &&
+        live &&
+        computeFingerprintDigest(pinned) === r.fingerprintDigest &&
+        ["genesisHash", "specName", "specVersion", "transactionVersion", "ss58Prefix"].every(
+          (key) =>
+            String(pinned[key as keyof RuntimeFingerprint]) ===
+            String(live[key as keyof RuntimeFingerprint]),
+        )
+      )
+        runtime = pinned;
+      else
+        add(
+          "runtime",
+          "unknown",
+          "The runtime needed for these effects could not be independently matched.",
+        );
+    } catch {
+      add("runtime", "unknown", "The runtime needed for these effects could not be read.");
+    }
+  }
   let sentVerified = 0;
   let sent = 0;
   for (const s of steps) {
@@ -470,6 +515,8 @@ export async function verifyConsoleReceiptLive(
     let ok = true;
     const fail = (c: string, d: string) => (add(c, "fail", d, id), (ok = false));
     const unk = (c: string, d: string) => (add(c, "unknown", d, id), (ok = false));
+    if (seenActions.has(id)) fail("step_identity", "duplicate action ID in receipt");
+    seenActions.add(id);
     try {
       if (head === undefined) unk("finalized", "finalized head unknown");
       else if ((n as number) > head)
@@ -484,6 +531,28 @@ export async function verifyConsoleReceiptLive(
         fail("chain_tx", `block #${n} does not contain ${s.txHash}`);
         continue;
       }
+      const identity = `${lc(bh)}:${tx.extrinsicIndex}:${lc(s.txHash)}`;
+      const planIndex = plan?.steps.findIndex((step) => step.actionId === id) ?? -1;
+      if (!Number.isSafeInteger(tx.extrinsicIndex) || tx.extrinsicIndex < 0)
+        fail("extrinsic_index", "invalid on-chain extrinsic index");
+      if (atomic) {
+        if (atomicIdentity && atomicIdentity !== identity)
+          fail("step_identity", "atomic steps do not share one batch transaction");
+        atomicIdentity = identity;
+      } else {
+        if (seenTransactions.has(lc(s.txHash)))
+          fail("step_identity", "sequential steps reused a transaction");
+        if (
+          previous &&
+          ((n as number) < previous.block ||
+            ((n as number) === previous.block && tx.extrinsicIndex <= previous.index) ||
+            planIndex <= previous.planIndex ||
+            (tx.nonce !== undefined && previous.nonce !== undefined && tx.nonce <= previous.nonce))
+        )
+          fail("step_order", "sequential transactions are out of order");
+        seenTransactions.add(lc(s.txHash));
+        previous = { block: n as number, index: tx.extrinsicIndex, nonce: tx.nonce, planIndex };
+      }
       if (
         Number.isInteger(s.extrinsicIndex) &&
         (s.extrinsicIndex as number) >= 0 &&
@@ -496,7 +565,7 @@ export async function verifyConsoleReceiptLive(
         fail("signer", `chain signer ${tx.signer} != plan signer ${signer}`);
       else add("signer", "pass", "the plan's signer", id);
       const ps: PlanStep | undefined = plan?.steps.find((p) => p.actionId === id);
-      const want = ps?.encodedCall as Hex | undefined;
+      const want = (atomic ? plan?.outerCall?.encodedCall : ps?.encodedCall) as Hex | undefined;
       if (!tx.callHex || !want)
         unk("call_bytes", "call bytes not comparable (undecodable or no planned call)");
       else if (lc(tx.callHex) !== lc(want))
@@ -505,7 +574,7 @@ export async function verifyConsoleReceiptLive(
       const chainNonce = (tx as { nonce?: number }).nonce;
       const expected =
         envNonce !== undefined && Number.isInteger(s.sendIndex)
-          ? envNonce + (s.sendIndex as number)
+          ? envNonce + (atomic ? 0 : (s.sendIndex as number))
           : undefined;
       if (!Number.isInteger(chainNonce)) unk("nonce", "the on-chain nonce could not be read");
       else if (s.nonce != null && s.nonce !== chainNonce)
@@ -540,14 +609,19 @@ export async function verifyConsoleReceiptLive(
         fail("fee", `receipt fee ${s.fee} != TransactionFeePaid ${feeEv.args[1]}`);
       else add("fee", "pass", `equal to TransactionFeePaid ${s.fee}`, id);
       if (ps && signer) {
-        const v = verifyStep(ps, signer, {
+        const outcome = {
           actionId: id,
-          status: "finalized",
+          status: "finalized" as const,
           txHash: s.txHash as Hex,
           block: { number: n as number, hash: bh },
           events,
           callHex: tx.callHex,
-        });
+        };
+        const stepOutcome =
+          atomic && plan
+            ? perStepOfBatch(plan, [outcome], tx.callHex).find((step) => step.actionId === id)
+            : outcome;
+        const v = verifyStep(ps, signer, stepOutcome, undefined, undefined, runtime);
         if (v.verification === "verified") add("effect", "pass", v.reason, id);
         else if (v.verification === "not_verified") fail("effect", v.reason);
         else unk("effect", v.reason);

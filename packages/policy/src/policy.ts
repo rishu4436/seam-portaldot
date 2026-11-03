@@ -147,6 +147,8 @@ export interface PolicyInput {
    * callInfoProofSize from TransactionPaymentCallApi_query_call_info. Default off: a missing reading is only noted.
    */
   requireMeasuredProofSize?: boolean;
+  /** Pinned interfaces used to resolve abiRef during every fresh compile. */
+  abis?: import("@seam/compiler/browser").CompileOptions["abis"];
 }
 
 /**
@@ -159,16 +161,63 @@ export interface PolicyInput {
  * inputs to re-evaluate it (policyEvaluation) and the re-evaluation reproduces it exactly.
  */
 // Shared across copies of this module (src and dist can both be loaded, e.g. in tests or a bundled SDK).
-const REG = Symbol.for("seam.policy.evaluatedResults");
-const EVALUATED: WeakSet<object> = ((globalThis as Record<symbol, unknown>)[REG] ??=
-  new WeakSet<object>()) as WeakSet<object>;
-function markEvaluated(r: PolicyResult): PolicyResult {
-  EVALUATED.add(r);
+const REG = Symbol.for("seam.policy.evaluatedBindings.v2");
+interface EvaluationBinding {
+  result: Hex;
+  plan: Hex;
+  policy: Hex;
+  preflight: Hex;
+  fingerprint: Hex;
+  facts: Hex;
+}
+const EVALUATED = ((globalThis as Record<symbol, unknown>)[REG] ??= new WeakMap<
+  object,
+  EvaluationBinding
+>()) as WeakMap<object, EvaluationBinding>;
+export interface EvaluationContext {
+  plan: Plan;
+  policy: Policy;
+  preflight?: PreflightResult;
+  fingerprint: RuntimeFacts["fingerprint"];
+  facts?: RuntimeFacts;
+}
+function markEvaluated(r: PolicyResult, input: PolicyInput): PolicyResult {
+  EVALUATED.set(r, {
+    result: digest("seam/policy-result/v1", r),
+    plan: digest("seam/plan-content/v1", input.plan),
+    policy: policyDigest(input.policy),
+    preflight: digest("seam/preflight/v1", input.preflight ?? null),
+    fingerprint: fingerprintDigest(input.facts.fingerprint),
+    facts: digest("seam/facts/v1", input.facts),
+  });
   return r;
 }
-/** True only for a PolicyResult object that evaluatePolicy itself returned (same object, unmodified identity). */
+/** Provenance is an immutable snapshot of both the result and its evaluation inputs. */
+export function evaluatedPolicyResultStatus(
+  r: unknown,
+  context?: EvaluationContext,
+): "unknown" | "match" | "mismatch" {
+  if (typeof r !== "object" || r === null) return "unknown";
+  const bound = EVALUATED.get(r);
+  if (!bound) return "unknown";
+  try {
+    if (bound.result !== digest("seam/policy-result/v1", r)) return "mismatch";
+    if (
+      context &&
+      (bound.plan !== digest("seam/plan-content/v1", context.plan) ||
+        bound.policy !== policyDigest(context.policy) ||
+        bound.preflight !== digest("seam/preflight/v1", context.preflight ?? null) ||
+        bound.fingerprint !== fingerprintDigest(context.fingerprint) ||
+        (context.facts && bound.facts !== digest("seam/facts/v1", context.facts)))
+    )
+      return "mismatch";
+    return "match";
+  } catch {
+    return "mismatch";
+  }
+}
 export function isEvaluatedPolicyResult(r: unknown): boolean {
-  return typeof r === "object" && r !== null && EVALUATED.has(r);
+  return evaluatedPolicyResultStatus(r) === "match";
 }
 
 export function evaluatePolicy({
@@ -181,6 +230,7 @@ export function evaluatePolicy({
   requirePlanVerified,
   allowAtomicUnverified,
   requireMeasuredProofSize,
+  abis,
 }: PolicyInput): PolicyResult {
   const rules: PolicyRuleResult[] = [];
   const pass = (rule: string, reason: string, actionId?: string) =>
@@ -221,6 +271,7 @@ export function evaluatePolicy({
     let vr: ReturnType<typeof verifyPlan>;
     try {
       vr = verifyPlan(manifest as never, plan as never, liveFacts as never, {
+        abis,
         allowAtomicUnverified: allowAtomicUnverified ?? plan.mode === "atomic_unverified",
       });
     } catch (e) {
@@ -734,13 +785,16 @@ export function evaluatePolicy({
   const weak = rules
     .filter((r) => r.weak)
     .map((r) => (r.actionId ? `${r.rule}:${r.actionId}` : r.rule));
-  return markEvaluated({
-    allowed: rules.every((r) => r.outcome === "pass"),
-    rules,
-    policyDigest: policyDigest(policy),
-    ...(weak.length ? { weakProof: weak } : {}),
-    ...(approvalRequired.length ? { approvalRequired } : {}),
-  });
+  return markEvaluated(
+    {
+      allowed: rules.every((r) => r.outcome === "pass"),
+      rules,
+      policyDigest: policyDigest(policy),
+      ...(weak.length ? { weakProof: weak } : {}),
+      ...(approvalRequired.length ? { approvalRequired } : {}),
+    },
+    { policy, plan, facts, preflight },
+  );
 }
 
 /** Same checks as the compiler's evaluateRollbackProof, re-done here so policy never trusts a bare 'verified' string. */

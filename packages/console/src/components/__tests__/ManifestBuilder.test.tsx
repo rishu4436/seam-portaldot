@@ -78,12 +78,12 @@ describe("Manifest builder", () => {
     fireEvent.click(screen.getByText("Read live facts"));
     await screen.findByText(/Live runtime:/);
     // Only supported kinds are offered; nfts.mint is listed as unavailable with its cause, not as a button.
-    expect(screen.queryByText("+ nfts.mint")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add Mint an NFT" })).toBeNull();
     const un = screen.getByRole("list", { name: "Unavailable actions" });
     expect(un.querySelector('[data-kind="nfts.mint"]')!.textContent).toMatch(
       /nfts\.mint NO_OBSERVED_V3_METADATA: .*Nfts\.mint/,
     );
-    fireEvent.click(screen.getByText("+ assets.transfer"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Send assets" }));
     fireEvent.change(screen.getByLabelText("step1 assetId"), { target: { value: "806707" } });
     fireEvent.change(screen.getByLabelText("step1 amount"), { target: { value: "1" } });
     fireEvent.change(screen.getByLabelText("step1 recipient"), { target: { value: ALICE } });

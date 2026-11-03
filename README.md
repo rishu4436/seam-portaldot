@@ -4,11 +4,15 @@
 
 Built for Portaldot Hacker House 2026 (Modular Cloud & Middleware track).
 
+**Live V3 workspace:** [seam-portaldot.vercel.app/console.html](https://seam-portaldot.vercel.app/console.html). Use a desktop wallet extension and testnet funds. See the [deployment checks and wallet rehearsal](docs/deployment-2026-11-03.md) and [hackathon strategy](docs/hackathon-strategy-2026-11-03.md).
+
+The workspace now includes balance readiness, activity recovery, independent receipt inspection, a Railway-backed team evidence vault and scheduled runtime monitoring. See the [control-room release](docs/control-room-release-2026-11-03.md), [backend operations](services/control-plane/README.md) and [protected-payment integration](examples/protected-payment/README.md). The backend requires Node 24.14+; CI runs Node 24.
+
 **For judges (5 minutes):** [docs/demo-script.md](docs/demo-script.md) is a timed walkthrough. The real V3 testnet transactions are in [`evidence/testnet-v3`](evidence/testnet-v3/README.md).
 
 ## 5-minute quickstart
 
-Needs Node 22 or later. Run from the repo root. Everything here runs offline: no node, no wallet, no network after `npm ci`. `npm run -s seam -- <command>` runs the built CLI; `npx seam` does not work on a fresh clone, because the bin is linked before `dist/cli.js` exists.
+Needs Node 22.12 or later. Run from the repo root. Everything here runs offline: no node, no wallet, no network after `npm ci`. `npm run -s seam -- <command>` runs the built CLI; `npx seam` does not work on a fresh clone, because the bin is linked before `dist/cli.js` exists.
 
 ```bash
 npm ci && npm run build

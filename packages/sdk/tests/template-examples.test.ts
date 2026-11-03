@@ -70,7 +70,8 @@ describe.each(IDS)("example %s", (id) => {
     expect(e.verifyPlanOk).toBe(false);
     expect(e.verifyPlanCodes).toContain("STEP_BYTES_MISMATCH");
     expect(e.approvalOk).toBe(false);
-    expect(e.approvalReason).toMatch(/call bytes/);
+    // Reusing the honest result for the edited plan fails before the independent bytes gate.
+    expect(e.approvalReason).toMatch(/evaluated for different inputs/);
     // With Sentinel's pre-sign gate (a74ad38) in the build the gate blocks with PLAN_BYTES_MISMATCH; before it, the
     // gate has no bytes check and allows it (createApproval above is what refuses).
     if (hasBytesGate) {

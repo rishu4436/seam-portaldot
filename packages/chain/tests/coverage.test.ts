@@ -21,7 +21,10 @@ const env = {
   checkpoint: CHECKPOINT,
   expiresAt: "x",
 };
-async function signedFor(plan: any, f: any) {
+async function signedFor(
+  plan: import("@seam/compiler").Plan,
+  f: import("@seam/compiler").RuntimeFacts,
+) {
   const keys = await devKeys();
   return buildSigningRequests(plan, f, env).map((q) =>
     assembleSignedExtrinsic(

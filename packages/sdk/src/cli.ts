@@ -130,7 +130,7 @@ async function loadFacts(): Promise<RuntimeFacts> {
   if (cached) return cached;
   const endpoint = flag("--endpoint");
   if (endpoint) {
-    const chain: any = await import("@seam/chain").catch(() => {
+    const chain = await import("@seam/chain").catch(() => {
       throw new Error("--endpoint needs the @seam/chain package installed");
     });
     const declaredToken = tokenFlag();
@@ -323,7 +323,7 @@ async function main() {
         lc,
       );
       // Chain checks passed only says the receipt matches the chain; the run's own outcome still decides the exit code.
-      process.exit(lc === SeamCode.ChainVerified ? oc.exitCode : EXIT[lc]);
+      return process.exit(lc === SeamCode.ChainVerified ? oc.exitCode : EXIT[lc]);
     }
     case "explain": {
       if (!file) throw new Error("missing file");
@@ -353,7 +353,7 @@ async function main() {
       const [, endpoint, outDir] = argv;
       if (!endpoint || !outDir)
         throw new Error("usage: seam snapshot <ws-endpoint> <out-dir> [--name n]");
-      const chain: any = await import("@seam/chain").catch(() => {
+      const chain = await import("@seam/chain").catch(() => {
         throw new Error("snapshot needs the @seam/chain package installed");
       });
       const files = await chain.snapshotFromNode(endpoint, outDir, { name: flag("--name") });

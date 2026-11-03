@@ -1,3 +1,8 @@
+import type { PlanStep as EnginePlanStep } from "@seam/compiler/browser";
+import type {
+  PreflightStep as EnginePreflightStep,
+  ReceiptStep as EngineReceiptStep,
+} from "@seam/policy/browser";
 // Test-chain adapter. Everything here comes from Bot 4's REAL runs on a local
 // substrate-contracts-node v0.42.0 (ws://127.0.0.1:9944, metadata v14), imported
 // by scripts/import-devnode.mjs into src/demo/devnode.json. Nothing is simulated:
@@ -69,7 +74,7 @@ export const setup = () =>
   };
 export const contractInfo = () => {
   const st = D.setup?.state;
-  const deploy = D.setup?.steps?.find((x: any) => x.txHash);
+  const deploy = D.setup?.steps?.find((x: ReturnType<typeof setup>["steps"][number]) => x.txHash);
   return st?.contract
     ? {
         address: st.contract as Hex,
@@ -191,7 +196,7 @@ export function compile(): Plan {
     digest: p.planDigest,
     modeReason: p.modeReason,
     explain: R().planText,
-    steps: p.steps.map((s: any) => {
+    steps: p.steps.map((s: EnginePlanStep) => {
       const a = s.decodedArgs;
       const cm = s.contractMessage;
       const argText = cm
@@ -235,7 +240,7 @@ export function outerCall(): { capability: string; encodedCall: Hex } | undefine
 export function preflight(): PreflightResult {
   const p = R().preflight;
   return {
-    steps: p.steps.map((s: any) => ({
+    steps: p.steps.map((s: EnginePreflightStep) => ({
       actionId: s.actionId,
       weight: s.weight.unknown
         ? { unknown: true }
@@ -297,7 +302,7 @@ export function approve(): Approval {
 
 export function submitBlock(): string | undefined {
   return current === "rollback"
-    ? D.rollback.seamGate.reasons.map((r: any) => r.message).join(" ")
+    ? D.rollback.seamGate.reasons.map((r: { message: string }) => r.message).join(" ")
     : undefined;
 }
 
@@ -353,12 +358,18 @@ export function dryRunFor(
   index: number,
 ): { txHash: Hex; outcome: string; detail: string } | undefined {
   if (current === "rollback") return D.rollback.seamGate.dryRun[0];
-  const log = R().timeline as any[];
+  const log = R().timeline as (StepEvent & {
+    dryRun?: { txHash: Hex; outcome: string; detail: string }[];
+  })[];
   const e = log.find((x) => x.phase === "sending" && (current === "atomic" || x.index === index));
   return e?.dryRun?.[0];
 }
 export function history(txHash?: string): { status: string; at: string; blockHash?: Hex }[] {
-  return txHash ? (R().statuses as any[]).filter((s) => s.txHash === txHash) : [];
+  return txHash
+    ? (R().statuses as { txHash: string; status: string; at: string; blockHash?: Hex }[]).filter(
+        (s) => s.txHash === txHash,
+      )
+    : [];
 }
 
 export function receipt(): Receipt | undefined {
@@ -371,7 +382,7 @@ export function receipt(): Receipt | undefined {
     policyDigest: r.policyDigest,
     approvalHash: r.approvalHash,
     mode: r.mode,
-    steps: r.steps.map((s: any) => ({ ...s, events: s.events ?? [] })),
+    steps: r.steps.map((s: EngineReceiptStep) => ({ ...s, events: s.events ?? [] })),
     overall: r.result,
     checks: { confirmed: r.coverage.verified, expected: r.coverage.expected },
     digest: r.receiptDigest,

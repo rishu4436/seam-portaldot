@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Hex, Plan } from "@seam/compiler";
-import { definePolicy, usageKey, type SigningEnvelope } from "@seam/policy";
+import { definePolicy, type SigningEnvelope } from "@seam/policy";
 import {
   Seam,
   defineManifest,
@@ -32,9 +32,14 @@ const honest: WalletSigner = {
   sign: async (calls) => calls.map((c) => ({ signedTx: c, signedCall: c })),
 };
 
-function chain(submit: (id: string) => any, lookup?: any) {
+function chain(
+  submit: (
+    id: string,
+  ) => ReturnType<ChainAdapter["submit"]> | Awaited<ReturnType<ChainAdapter["submit"]>>,
+  lookup?: ChainAdapter["lookupTx"],
+) {
   const log = { submits: 0 };
-  const c: any = {
+  const c: ChainAdapter = {
     discover: async () => facts,
     readFingerprint: async () => facts.fingerprint,
     preflight: async (plan: Plan) => ({
