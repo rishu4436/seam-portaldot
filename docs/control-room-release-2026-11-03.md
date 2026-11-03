@@ -1,5 +1,7 @@
 # Control-room upgrade — 3 November 2026
 
+This records the initial control-room release. The subsequent [product audit](product-audit-2026-11-03.md) supersedes its frontend asset count and describes additional fixes, tests and deployments. The hosted build manifest now refers to that newer release.
+
 ## Implemented
 
 - **Wallet readiness:** native free/frozen/reserved balances, existential deposit and selected asset balances at one finalized block. Integer precision is preserved. Unreadable balances stay unavailable; runtime changes require another discovery read. Amounts are explicitly shown in base units.
@@ -31,7 +33,7 @@ The final deployment manifest records the exact hosted frontend assets and the c
 
 Final checks: **1,984 passing tests** across compiler (359), policy (452), SDK (477), chain (395, including the added runtime-drift regression) and console (293), plus the backend (8). The main chain suite retains 13 opt-in skips. **All 3 disposable-chain end-to-end checks passed again on Linux**, including strict sequential execution and batch rollback. Linux build, package-consumer smoke and all 20 runnable quickstart commands passed (9 documented setup/network skips). Lint has zero errors/warnings, formatting passes, and npm audit reports zero findings. The protected-payment example also passes JavaScript type checking.
 
-The [hosted build manifest](control-room-build-2026-11-03.json) records 42 matching files and response headers. The [persistence check](control-plane-persistence-2026-11-03.json) confirms that evidence, credentials and runtime watches survived the backend redeployment. Live browser checks confirmed authenticated team access and displayed the stored chain-verified receipt and scheduled runtime result, with no browser errors.
+The initial build had 42 matching files; the [hosted build manifest](control-room-build-2026-11-03.json) now records the subsequent audit release. The [persistence check](control-plane-persistence-2026-11-03.json) confirms that evidence, credentials and runtime watches survived the backend redeployment. Live browser checks confirmed authenticated team access and displayed the stored chain-verified receipt and scheduled runtime result, with no browser errors.
 
 ## Product direction
 

@@ -19,6 +19,28 @@ const bob = "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty";
 const hash = (n: number) => `0x${n.toString(16).padStart(64, "0")}` as `0x${string}`;
 const success = { pallet: "System", name: "ExtrinsicSuccess", args: ["{}"] };
 describe("independent live evidence", () => {
+  it("retains a known plan-tampering failure when finality cannot be read", async () => {
+    const plan = compile(
+      defineManifest({
+        signer,
+        actions: [action.transfer("pay", { assetId: "1", amount: "10", recipient: bob })],
+      }),
+      facts,
+    );
+    const receipt = buildReceipt({ plan, outcomes: [] });
+    const altered = structuredClone(plan);
+    altered.steps[0].encodedCall = "0x010203";
+    const reader: ReceiptChainReader = {
+      finalizedNumber: async () => {
+        throw new Error("offline");
+      },
+      canonicalHash: async () => null,
+      readTx: async () => null,
+    };
+    const result = await verifyReceiptLive(receipt, reader, { plan: altered });
+    expect(result.status).toBe("failed");
+    expect(result.problems.join()).toMatch(/plan contents/);
+  });
   it("rejects using one finalized transfer for two sequential actions", async () => {
     const plan = compile(
       defineManifest({

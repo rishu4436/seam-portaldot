@@ -3,7 +3,7 @@
 import { fileURLToPath } from "node:url";
 import { dirname, resolve as resolvePath } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { factsFromMetadata } from "@seam/compiler/browser";
@@ -53,6 +53,115 @@ const factsStep = vi.fn(
 );
 
 describe("Manifest builder", () => {
+  it("discards facts from a network selection that has since changed", async () => {
+    let finish!: (value: V3FactsResult) => void;
+    render(
+      <ManifestBuilder
+        transportFor={() => vi.fn()}
+        factsStep={() =>
+          new Promise((resolve) => {
+            finish = resolve;
+          })
+        }
+      />,
+    );
+    fireEvent.click(screen.getByText("Read live facts"));
+    fireEvent.change(screen.getByLabelText("RPC URL"), {
+      target: { value: "https://another.example" },
+    });
+    await act(async () => finish({ ok: true, facts, report: {} } as unknown as V3FactsResult));
+    expect(screen.queryByText(/Live runtime:/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add Send assets" })).toBeNull();
+  });
+  it("keeps duplicate account addresses distinguishable by their wallet provider and supports disconnect", async () => {
+    render(
+      <ManifestBuilder
+        getInjected={() =>
+          ({ first: injected()["polkadot-js"], second: injected()["polkadot-js"] }) as never
+        }
+      />,
+    );
+    fireEvent.click(screen.getByText("Connect wallet"));
+    await screen.findByLabelText("Account");
+    const account = screen.getByLabelText("Account") as HTMLSelectElement;
+    expect([...account.options].map((option) => option.value)).toEqual([
+      `first:${ALICE}`,
+      `second:${ALICE}`,
+    ]);
+    fireEvent.change(account, { target: { value: `second:${ALICE}` } });
+    expect(account.value).toBe(`second:${ALICE}`);
+    fireEvent.click(screen.getByText("Disconnect wallet"));
+    expect(screen.queryByLabelText("Account")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Compile against live runtime" }).hasAttribute("disabled"),
+    ).toBe(true);
+  });
+  it("discards compilation results after the transaction input changes", async () => {
+    let finish!: (value: { ok: true; plan: unknown }) => void;
+    const compiled = vi.fn();
+    render(
+      <ManifestBuilder
+        getInjected={injected as never}
+        transportFor={() => vi.fn()}
+        factsStep={factsStep}
+        compile={() =>
+          new Promise((resolve) => {
+            finish = resolve;
+          })
+        }
+        onCompiled={compiled}
+      />,
+    );
+    fireEvent.click(screen.getByText("Connect wallet"));
+    await screen.findByLabelText("Account");
+    fireEvent.click(screen.getByText("Read live facts"));
+    await screen.findByText(/Live runtime:/);
+    fireEvent.click(screen.getByRole("button", { name: "Add Send assets" }));
+    fireEvent.change(screen.getByLabelText("step1 assetId"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("step1 amount"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("step1 recipient"), { target: { value: ALICE } });
+    fireEvent.click(screen.getByText("Compile against live runtime"));
+    fireEvent.change(screen.getByLabelText("step1 amount"), { target: { value: "2" } });
+    await act(async () => finish({ ok: true, plan: { planDigest: "old-plan" } }));
+    expect(compiled).not.toHaveBeenCalled();
+  });
+  it("does not let a slow manifest file overwrite newer imports or form edits", async () => {
+    render(<ManifestBuilder />);
+    const text = JSON.stringify(
+      buildManifest(
+        ALICE,
+        [
+          {
+            id: "imported",
+            kind: "assets.transfer",
+            args: { assetId: "1", amount: "1", recipient: ALICE },
+          },
+        ],
+        "sequential",
+      ),
+    );
+    let finish!: (value: string) => void;
+    const slow = {
+      size: text.length,
+      text: () =>
+        new Promise<string>((resolve) => {
+          finish = resolve;
+        }),
+    };
+    fireEvent.change(screen.getByLabelText("Import Manifest"), { target: { files: [slow] } });
+    const newer = text.replace('"amount":"1"', '"amount":"2"');
+    fireEvent.change(screen.getByLabelText("Import Manifest"), {
+      target: { files: [{ size: newer.length, text: async () => newer }] },
+    });
+    await screen.findByLabelText("imported amount");
+    expect((screen.getByLabelText("imported amount") as HTMLInputElement).value).toBe("2");
+    await act(async () => finish(text));
+    expect((screen.getByLabelText("imported amount") as HTMLInputElement).value).toBe("2");
+    fireEvent.change(screen.getByLabelText("Import Manifest"), { target: { files: [slow] } });
+    fireEvent.change(screen.getByLabelText("imported amount"), { target: { value: "3" } });
+    await act(async () => finish(text));
+    expect((screen.getByLabelText("imported amount") as HTMLInputElement).value).toBe("3");
+  });
   it("marks actions unsupported with a reason from live facts", () => {
     const s = actionSupport(facts as never);
     expect(s.find((x) => x.kind === "assets.transfer")?.supported).toBe(true);

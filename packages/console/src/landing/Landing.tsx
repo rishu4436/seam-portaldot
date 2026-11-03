@@ -1,4 +1,5 @@
 import { SeamMark, Symbol } from "../components/Brand";
+import { SOURCE_URL } from "../lib/product-links";
 const steps = [
   {
     n: "01",
@@ -32,7 +33,7 @@ export default function Landing() {
         <nav aria-label="Main navigation">
           <a href="#how">How it works</a>
           <a href="#principles">Why SEAM</a>
-          <a href="https://github.com/rishu4436/seam-portaldot" target="_blank" rel="noreferrer">
+          <a href="./console.html?view=developers">
             Developers <Symbol kind="external" />
           </a>
         </nav>
@@ -260,8 +261,9 @@ export default function Landing() {
             <i />
             V3 testnet only
           </span>
-          <a href="https://github.com/rishu4436/seam-portaldot">Source code ↗</a>
-          <a href="./console.html?view=lab">Recorded tools ↗</a>
+          <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+            Source code ↗
+          </a>
         </div>
       </footer>
     </div>

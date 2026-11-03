@@ -2,6 +2,9 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "../../App";
+vi.mock("../WorkspaceCenters", () => ({
+  default: ({ view }: { view: string }) => <h1>{view}</h1>,
+}));
 const mocks = vi.hoisted(() => ({ check: vi.fn() }));
 vi.mock("../../lib/signflow", () => ({
   loadChainFns: async () => ({}),
@@ -54,6 +57,19 @@ vi.mock("../Modes", () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  window.history.replaceState({}, "", "/console.html");
+});
+it("opens a shared developer URL directly and keeps navigation in browser history", async () => {
+  const scrolling = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  window.history.replaceState({}, "", "/console.html?view=developers");
+  render(<App />);
+  await screen.findByRole("heading", { name: "developers" });
+  fireEvent.click(screen.getByRole("button", { name: "New transaction" }));
+  expect(window.location.search).toBe("");
+  window.history.replaceState({}, "", "/console.html?view=developers");
+  fireEvent(window, new PopStateEvent("popstate"));
+  await waitFor(() => expect(screen.getByRole("heading", { name: "developers" })).toBeTruthy());
+  scrolling.mockRestore();
 });
 it("opens the live workspace without a demo-mode detour", () => {
   render(<App />);

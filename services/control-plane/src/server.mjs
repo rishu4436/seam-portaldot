@@ -197,6 +197,7 @@ export function createControlPlane({
         if (req.method === "GET" && path === "/v1/session")
           return send(200, {
             name: actor.name,
+            keyId: actor.id,
             workspaceId: actor.workspaceId ?? null,
             scopes: actor.scopes,
             administrator: root,
@@ -280,7 +281,19 @@ export function createControlPlane({
               throw new HttpError(429, "A verification is already running. Try again shortly.");
             verifying = true;
             try {
-              const result = await verify(saved.bundle);
+              let result;
+              try {
+                result = await verify(saved.bundle);
+              } catch {
+                result = {
+                  status: "unknown",
+                  notes: [
+                    "The independent verification could not complete. Retry when the testnet node is available.",
+                  ],
+                };
+                log({ event: "verification_unavailable", requestId });
+              }
+              result = { ...result, checkedAt: new Date().toISOString() };
               store.saveVerification(workspaceId, saved.id, result, actor.id);
               return send(200, result);
             } finally {

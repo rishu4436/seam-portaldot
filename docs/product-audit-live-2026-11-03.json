@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-11-03T12:48:50.045Z",
+  "backendDeploymentId": "a146ffb1-bf0b-4c41-bbfa-897ae63ea660",
+  "health": {
+    "status": "ok",
+    "service": "seam-control-plane",
+    "version": 1
+  },
+  "existingSessionKeyIdentified": true,
+  "evidenceRecords": 1,
+  "monitors": 1,
+  "historicalReceiptClaim": "verified",
+  "independentStatus": "chain_verified",
+  "fullLiveVerificationPassed": true,
+  "notes": [
+    "The node's metadata hash differs from the pinned one (0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 vs 0xc988c6125de97a883ab71e01f18b54d0eca08af0432df55390f1338e1d31e5bc); genesis, spec, transaction version and ss58 match, so the pinned runtime is used."
+  ],
+  "lastCheckedAt": "2026-11-03T12:48:49.021Z",
+  "persistedVerificationAt": "2026-11-03T12:48:49.021Z"
+}

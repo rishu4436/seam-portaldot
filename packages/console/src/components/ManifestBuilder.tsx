@@ -1,7 +1,7 @@
 // Manifest Builder: connect a wallet, pick an account and network, read live runtime facts (read-only), build a Manifest
 // with one or more actions, choose atomicity, export/import JSON and compile. Supported actions come from the live facts'
 // capabilities; the compiler is the only authority on arguments and encoding. Nothing here signs or submits.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   argFields,
   checkManifest,
@@ -116,6 +116,7 @@ function downloadText(name: string, text: string) {
   a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
   a.download = name;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 0);
 }
 
 /** Turns form strings into the values the compiler expects: json fields are parsed, everything else stays a string. */
@@ -180,11 +181,19 @@ export function ManifestBuilder({
   compile?: CompileFn;
   onCompiled?: (plan: unknown, manifest: DraftManifest, facts: Facts) => void;
   /** Builder plan + compiler manifest + the tightened derived policy, for the real gate, approval and signing. */
-  onUsePolicy?: (sel: BuilderSelection & { facts: Facts; rpcUrl?: string }) => void;
+  onUsePolicy?: (
+    sel: BuilderSelection & { facts: Facts; rpcUrl?: string; walletSource?: string },
+  ) => void;
 }) {
   const [accounts, setAccounts] = useState<WalletAccount[]>();
   const [walletMsg, setWalletMsg] = useState<string>();
   const [signer, setSigner] = useState("");
+  const [walletSource, setWalletSource] = useState("");
+  const factsRequest = useRef(0),
+    compileRequest = useRef(0),
+    importRequest = useRef(0),
+    connectRequest = useRef(0);
+  const [connecting, setConnecting] = useState(false);
   const [url, setUrl] = useState(V3_HTTPS_RPC);
   const [facts, setFacts] = useState<V3FactsResult>();
   const [busy, setBusy] = useState(false);
@@ -201,7 +210,9 @@ export function ManifestBuilder({
     onRuntime?.(live);
   }, [live, onRuntime]);
   useEffect(() => {
+    factsRequest.current++;
     setFacts(undefined);
+    setBusy(false);
   }, [url]);
   const support = useMemo(() => actionSupport(live), [live]);
   const fp = (
@@ -209,9 +220,13 @@ export function ManifestBuilder({
       { fingerprint?: { genesisHash: string; specVersion: number; specName?: string } } | undefined
   )?.fingerprint;
   useEffect(() => {
+    compileRequest.current++;
+    importRequest.current++;
     setPlan(undefined);
+    setCompileMsg(undefined);
+    setFieldErrors({});
     onInvalidate?.();
-  }, [signer, url, live, actions, atomicity, onInvalidate]);
+  }, [signer, walletSource, url, live, actions, atomicity, onInvalidate]);
   const manifest =
     signer && actions.length
       ? buildManifest(
@@ -223,30 +238,49 @@ export function ManifestBuilder({
       : undefined;
 
   const connect = async () => {
+    const version = ++connectRequest.current;
+    setConnecting(true);
     setWalletMsg(undefined);
-    const r = await listWalletAccounts(getInjected);
+    const r = await listWalletAccounts(getInjected).catch((error: unknown) => ({
+      ok: false as const,
+      message: error instanceof Error ? error.message : String(error),
+    }));
+    if (version !== connectRequest.current) return;
+    setConnecting(false);
     if (!r.ok) {
       setAccounts(undefined);
       setSigner("");
+      setWalletSource("");
       return setWalletMsg(r.message);
     }
     setAccounts(r.value);
-    if (!r.value.some((a) => a.address === signer)) setSigner(r.value[0].address);
+    if (!r.value.some((a) => a.address === signer && a.source === walletSource)) {
+      setSigner(r.value[0].address);
+      setWalletSource(r.value[0].source);
+    }
   };
   const readFacts = async () => {
+    const version = ++factsRequest.current;
     setBusy(true);
     setPlan(undefined);
+    setFacts(undefined);
     try {
       const t = transportFor ?? (await import("../lib/browserChain")).transportFor;
-      setFacts(
-        await factsStep(t(url)).catch((e: unknown): V3FactsResult => ({
+      const result = await factsStep(t(url)).catch((e: unknown): V3FactsResult => ({
+        ok: false,
+        reason: "rpc_error",
+        message: e instanceof Error ? e.message : String(e),
+      }));
+      if (version === factsRequest.current) setFacts(result);
+    } catch (error) {
+      if (version === factsRequest.current)
+        setFacts({
           ok: false,
           reason: "rpc_error",
-          message: e instanceof Error ? e.message : String(e),
-        })),
-      );
+          message: error instanceof Error ? error.message : String(error),
+        });
     } finally {
-      setBusy(false);
+      if (version === factsRequest.current) setBusy(false);
     }
   };
   const update = (i: number, a: DraftAction) => {
@@ -255,8 +289,19 @@ export function ManifestBuilder({
   };
   const doImport = async (f?: File) => {
     if (!f) return;
+    const version = ++importRequest.current;
     setIssues([]);
-    const r = importManifest(await f.text(), live);
+    let text: string;
+    try {
+      if (f.size > 8 * 1024 * 1024) throw new Error("Choose a manifest smaller than 8 MiB.");
+      text = await f.text();
+    } catch (error) {
+      if (version !== importRequest.current) return;
+      setImportMsg(`Import refused: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+    if (version !== importRequest.current) return;
+    const r = importManifest(text, live);
     if (!r.ok) {
       setIssues(r.issues);
       return setImportMsg(`Import refused: ${r.issues.length} issue(s).`);
@@ -266,7 +311,9 @@ export function ManifestBuilder({
     setPlan(undefined);
     setImportMsg(
       r.value.signer && r.value.signer !== signer
-        ? "Imported. The file's signer was replaced by your connected account."
+        ? signer
+          ? "Imported. The file's signer was replaced by your connected account."
+          : "Imported. Connect a wallet and select the account to use."
         : "Imported.",
     );
   };
@@ -281,6 +328,7 @@ export function ManifestBuilder({
     downloadText("seam-manifest.json", r.text);
   };
   const doCompile = async () => {
+    const version = ++compileRequest.current;
     setCompileMsg(undefined);
     setFieldErrors({});
     setPlan(undefined);
@@ -289,6 +337,7 @@ export function ManifestBuilder({
       ok: false as const,
       message: e instanceof Error ? e.message : String(e),
     }));
+    if (version !== compileRequest.current) return;
     if (!r.ok) {
       setFieldErrors(("fieldErrors" in r && r.fieldErrors) || {});
       return setCompileMsg(`Compile failed: ${r.message}`);
@@ -320,18 +369,39 @@ export function ManifestBuilder({
         <span>1</span> Connect your wallet
       </h4>
       <div className="row">
-        <button onClick={connect}>{accounts ? "Refresh accounts" : "Connect wallet"}</button>
+        <button disabled={connecting} onClick={connect}>
+          {connecting ? "Connecting…" : accounts ? "Refresh accounts" : "Connect wallet"}
+        </button>
+        {accounts && (
+          <button
+            className="ghost"
+            onClick={() => {
+              connectRequest.current++;
+              setAccounts(undefined);
+              setSigner("");
+              setWalletSource("");
+              setConnecting(false);
+              setWalletMsg("Wallet disconnected from this workspace.");
+            }}
+          >
+            Disconnect wallet
+          </button>
+        )}
         {accounts && (
           <select
             aria-label="Account"
-            value={signer}
+            value={`${walletSource}:${signer}`}
             onChange={(e) => {
-              setSigner(e.target.value);
+              const account = accounts.find(
+                (item) => `${item.source}:${item.address}` === e.target.value,
+              );
+              setSigner(account?.address ?? "");
+              setWalletSource(account?.source ?? "");
               setPlan(undefined);
             }}
           >
             {accounts.map((a) => (
-              <option key={`${a.source}:${a.address}`} value={a.address}>
+              <option key={`${a.source}:${a.address}`} value={`${a.source}:${a.address}`}>
                 {a.name ? `${a.name} ` : ""}
                 {a.address} ({a.source})
               </option>
@@ -589,7 +659,10 @@ export function ManifestBuilder({
               const chain = await loadChainFns();
               return chain.preflight(t(url), plan, live);
             }}
-            onUse={onUsePolicy && ((sel) => onUsePolicy({ ...sel, facts: live, rpcUrl: url }))}
+            onUse={
+              onUsePolicy &&
+              ((sel) => onUsePolicy({ ...sel, facts: live, rpcUrl: url, walletSource }))
+            }
           />
         </>
       )}
