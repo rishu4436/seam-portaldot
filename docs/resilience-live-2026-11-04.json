@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-11-04T11:36:48.765Z",
+  "backendDeploymentId": "4dfeaf09-9eda-4974-9d0e-1ed6bd0aa272",
+  "backup": {
+    "encrypted": true,
+    "separatePrivateBucket": true,
+    "intervalSeconds": 21600,
+    "retainedBackups": 28,
+    "bytes": 29327,
+    "lastSuccessAt": "2026-11-04T11:33:52.963Z"
+  },
+  "isolatedRestore": {
+    "integrity": "ok",
+    "schemaDigest": "279f615e68252e77f521befb602e7499f6ad9c39c8de14618da9e20e4a47ea4d",
+    "counts": {
+      "workspaces": 1,
+      "access_keys": 2,
+      "evidence": 1,
+      "monitors": 1,
+      "monitor_checks": 97,
+      "audit": 9
+    },
+    "createdAt": "2026-11-04T11:33:51.906Z",
+    "sha256": "72e2b33610262b9d7e8e2badb0396f7b553993b67d47ff52f9f125614889778f"
+  },
+  "restoredApi": {
+    "authentication": true,
+    "evidenceRecords": 1,
+    "monitors": 1,
+    "revokedKeysPreserved": true
+  },
+  "workspaceBackupAccessDenied": true,
+  "liveDatabaseReplaced": false
+}

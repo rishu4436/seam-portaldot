@@ -1517,7 +1517,7 @@ html {
 .import-zone small {
   display: block;
 }
-.import-zone .file-button {
+.workspace .file-button {
   display: inline-flex;
   border-radius: 9px;
   background: #6b47dc;

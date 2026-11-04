@@ -193,6 +193,15 @@ const renderPanel = (approved = true) =>
 const press = () => fireEvent.click(screen.getByRole("button", { name: /check live|retry/i }));
 
 beforeEach(() => {
+  // Every RPC path is offline in this suite, including the new fallback transport.
+  vi.stubGlobal(
+    "WebSocket",
+    class {
+      constructor() {
+        throw new Error("Test RPC WebSocket is unavailable");
+      }
+    },
+  );
   submitted = [];
   calls = [];
   feeReply = {

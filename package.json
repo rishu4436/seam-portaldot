@@ -7,7 +7,8 @@
     "packages/policy",
     "packages/sdk",
     "packages/chain",
-    "packages/console"
+    "packages/console",
+    "services/control-plane"
   ],
   "scripts": {
     "build": "npm run build -w @seam/compiler && npm run build -w @seam/policy && npm run build -w @seam/chain && npm run build -w @seam/sdk && npm run build -w @seam/console",

@@ -59,6 +59,7 @@ import {
   type TxLookup,
 } from "../lib/runstore";
 import { buildSequentialReceipt } from "../lib/seqreceipt";
+import { ReceiptArchiveStatus } from "./ReceiptArchiveStatus";
 import { callsToSignOf, runPlanSteps, type MultiStepResult } from "../lib/multistep";
 import {
   canSign,
@@ -489,7 +490,9 @@ export function LiveReceipt({
   stepCheck,
   engineApprovalHash,
   approvalInputs,
+  archiveManifest,
 }: {
+  archiveManifest?: unknown;
   /** preSign's createApproval inputs + now, so the hash can be recomputed. */
   approvalInputs?: Record<string, unknown> & { now: string };
   /** The engine's createApproval hash from preSign. */
@@ -551,6 +554,7 @@ export function LiveReceipt({
 
   return (
     <div className="receipt small" role="group" aria-label="Receipt">
+      <ReceiptArchiveStatus receipt={receipt} manifest={archiveManifest} />
       <div className="row between">
         <b>Receipt</b>
         <button
@@ -1130,7 +1134,7 @@ export function LivePanel({
         )}
         <ApprovalSummary plan={plan} approval={approval} />
         {gate && <PolicyGatePanel gate={gate} />}
-        {multi && <MultiStepPanel r={multi} />}
+        {multi && <MultiStepPanel r={multi} manifest={policyInput?.manifest} />}
         {v3 && <V3FactsNotice r={v3} />}
         {out?.status === "rejected" && !dismissed && (
           <RejectionNotice onRetry={run} onDismiss={() => setDismissed(true)} />
@@ -1152,6 +1156,7 @@ export function LivePanel({
             <p>{out.message}</p>
             <FinalityPanel out={out} />
             <LiveReceipt
+              archiveManifest={policyInput?.manifest}
               out={out}
               plan={plan}
               approval={approval}
@@ -1304,11 +1309,12 @@ export function RiskLimits({
 }
 
 /** Per-step result of a multi-step LIVE run: which step stopped and why. */
-export function MultiStepPanel({ r }: { r: MultiStepResult }) {
+export function MultiStepPanel({ r, manifest }: { r: MultiStepResult; manifest?: unknown }) {
   // Single source of truth: the Result line and the download are the same receipt object.
   const receipt = buildSequentialReceipt(r);
   return (
     <div className="small" role="group" aria-label="Multi-step run">
+      {receipt.approvalHash && <ReceiptArchiveStatus receipt={receipt} manifest={manifest} />}
       <p>
         <strong>{r.ok ? "All steps sent" : "Stopped"}</strong>: {r.message}
       </p>

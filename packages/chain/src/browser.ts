@@ -1,5 +1,12 @@
 import "./quiet.js"; // must stay first, like index.ts
 export {
+  createReadFailover,
+  createJsonRpcTransport,
+  READ_RPC_METHODS,
+  V3_RPC_ENDPOINTS,
+  V3_RPC_IDENTITY,
+} from "./resilient-rpc.js";
+export {
   readAccountReadiness,
   type AccountReadiness,
   type Observation,

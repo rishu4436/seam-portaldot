@@ -9,5 +9,8 @@
   "scripts": {
     "start": "node src/main.mjs",
     "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1161.0"
   }
 }

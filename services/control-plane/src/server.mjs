@@ -93,6 +93,7 @@ export function createControlPlane({
   runtime,
   verify,
   worker = true,
+  backups,
   log = () => {},
 }) {
   if (typeof bootstrapToken !== "string" || bootstrapToken.length < 32)
@@ -202,6 +203,17 @@ export function createControlPlane({
             scopes: actor.scopes,
             administrator: root,
           });
+        if (path === "/v1/operations/backups") {
+          if (!root) throw new HttpError(403, "Only the operator can manage service backups.");
+          const manager = backups?.();
+          if (req.method === "GET")
+            return send(200, manager?.status() ?? { enabled: false, status: "disabled" });
+          if (req.method === "POST") {
+            if (!manager) throw new HttpError(503, "Service backups are not configured.");
+            return send(200, await manager.run());
+          }
+          throw new HttpError(405, "Method not allowed.");
+        }
         if (root && req.method === "GET" && path === "/v1/workspaces")
           return send(200, {
             workspaces: store.db
