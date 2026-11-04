@@ -2,7 +2,8 @@
 // Rendered LIVE V3 flow with a mocked polkadot.js extension (window.injectedWeb3), mocked JSON-RPC (fetch) and a fake host
 // standing in for @seam/chain/browser. Nothing here touches a real chain, wallet or keystore.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import * as effectChecks from "../../lib/effectcheck";
 import { LivePanel } from "../Modes";
 import type { LiveHost } from "../../lib/host";
 import type { V3FactsResult } from "../../lib/v3facts";
@@ -214,11 +215,36 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   delete (globalThis as { injectedWeb3?: unknown }).injectedWeb3;
 });
 
 describe("LivePanel, V3 wallet demo (rendered)", () => {
+  it("updates the top live status and proof row together when the finalized effect is proven", async () => {
+    let finish!: (value: effectChecks.EffectVerdict) => void;
+    vi.spyOn(effectChecks, "checkAssetsTransferEffect").mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    mockExtension(GOOD_SIG);
+    renderPanel();
+    press();
+    await screen.findByRole("group", { name: "Receipt" });
+    const summary = screen.getByRole("heading", { name: "Live status" }).parentElement!;
+    expect(within(summary).getByText("unverified")).toBeTruthy();
+    await act(async () =>
+      finish({ verdict: "effect_proven", checkedAt: "t", extrinsicIndex: 0, event: {} }),
+    );
+    expect(within(summary).getByText("verified")).toBeTruthy();
+    expect(within(summary).queryByText("unverified")).toBeNull();
+    expect(screen.getByText(/The expected on-chain effect was verified/)).toBeTruthy();
+    const effectRow = screen.getByText("Verified effect").closest("tr")!;
+    expect(within(effectRow).getByText("Verified")).toBeTruthy();
+    expect(screen.queryByText(/Its on-chain effect .* was not checked/)).toBeNull();
+  });
   it("finishes a rejected attempt in the journal without consuming the approval", async () => {
     const sign = mockExtension(GOOD_SIG);
     sign.mockRejectedValue(new Error("Rejected by user"));

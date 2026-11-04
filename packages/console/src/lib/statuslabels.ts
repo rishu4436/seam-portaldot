@@ -1,6 +1,7 @@
 // One vocabulary for what a result is, so nothing is ever shown stronger than it is. Simulated is never called live;
 // recorded is never called live; unknown stays unknown; verified needs a verifier's result, not just finality.
 import type { LiveOutcome } from "./live";
+import type { EffectVerdict } from "./effectcheck";
 import { proofSizeText, type ProofSizeField } from "./signflow";
 
 export type EvidenceLabel =
@@ -59,6 +60,34 @@ export interface ProofRow {
 }
 
 export type Source = "live" | "recorded" | "simulated";
+
+/** Display the completed effect check without rewriting the original finalization outcome. */
+export function liveStatusSummary(
+  outcome: LiveOutcome | undefined,
+  effect?: EffectVerdict,
+): Pick<LiveOutcome, "status" | "message"> | undefined {
+  if (!outcome) return undefined;
+  if (
+    effect &&
+    outcome.submitted &&
+    outcome.txState === "finalized" &&
+    outcome.txHash &&
+    outcome.block &&
+    outcome.provenance !== "failed" &&
+    (outcome.status === "unverified" || outcome.status === "verified")
+  ) {
+    return effect.verdict === "effect_proven"
+      ? {
+          status: "verified",
+          message: `Finalized in block #${outcome.block.number}. The expected on-chain effect was verified.`,
+        }
+      : {
+          status: "unverified",
+          message: `Finalized in block #${outcome.block.number}. The effect could not be verified: ${effect.reason}`,
+        };
+  }
+  return { status: outcome.status, message: outcome.message };
+}
 
 /**
  * The five proof rows for one run. `source` caps every row: a recorded or simulated run shows "recorded"/"simulated"
