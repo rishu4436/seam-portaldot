@@ -1,36 +1,36 @@
 {
-  "checkedAt": "2026-11-04T11:38:36.274Z",
+  "checkedAt": "2026-11-04T11:44:41.653Z",
   "url": "https://seam-portaldot.vercel.app/",
-  "frontendDeploymentId": "dpl_H6UoCx1axbWfwzPxykauGakXCCPt",
-  "frontendImmutableUrl": "https://seam-portaldot-axop77kuv-rishu4436s-projects.vercel.app",
+  "frontendDeploymentId": "dpl_EA4RfTXrsNQ9BdHLLQCiSWFKLu27",
+  "frontendImmutableUrl": "https://seam-portaldot-b7ecmok9k-rishu4436s-projects.vercel.app",
   "backendDeploymentId": "4dfeaf09-9eda-4974-9d0e-1ed6bd0aa272",
   "files": [
     {
-      "file": "assets/browserChain-kcxbHERP.js",
+      "file": "assets/browserChain-KswDILW8.js",
       "status": 200,
       "bytes": 5677,
-      "sha256": "1c3dc6d1703069192fae20c91b3e4dff53b32a233b58cee79a53f37cae6db913",
+      "sha256": "ba0fa25742773b1d8b87daca7606b0881844649eb4883bb36502cb8f9279f38d",
       "match": true
     },
     {
-      "file": "assets/console-BrUhuL-Q.js",
+      "file": "assets/console-BFvcpcUO.js",
       "status": 200,
       "bytes": 336221,
-      "sha256": "838e518197bd49f77117e19585a6b609dae5f4c36c4d812afdf135dd8c59f9eb",
+      "sha256": "36e11eb7ca7cb5ab142d3998ef873d711464ebd1ea5541b37a0166c7c814e79b",
       "match": true
     },
     {
-      "file": "assets/console-BzPYAplM.js",
+      "file": "assets/console-CwPl2PhG.js",
       "status": 200,
       "bytes": 46,
-      "sha256": "d1daba16f33377d6ea6314c59bbae95fbc2491b92fa2c6051dd81389641d9108",
+      "sha256": "4ee5e39b17e3767d5dc6b223f360eac607692813c8125e63330c6ef93758d702",
       "match": true
     },
     {
-      "file": "assets/console-JHYLO06K.css",
+      "file": "assets/console-DRXZiwHy.css",
       "status": 200,
-      "bytes": 34731,
-      "sha256": "9326e5754f541cf2f9992ebfb1bfb2e1c06a1560a80ed05b49971d981cc7dc1e",
+      "bytes": 34750,
+      "sha256": "30770a9addb04ddccfc2ac45d608e9148daf88da03a1284383a01c0d4eb861ea",
       "match": true
     },
     {
@@ -188,17 +188,17 @@
       "match": true
     },
     {
-      "file": "assets/WorkspaceCenters-CdsR4AnZ.js",
+      "file": "assets/WorkspaceCenters-DNcGEZhI.js",
       "status": 200,
       "bytes": 27390,
-      "sha256": "e6cd61b4d90e25769bf0171c50380a570bf59c197f47904e04ca0561c505707d",
+      "sha256": "ebc18c03b8b4dff7b668e4a1b87448ee3c9b0f64406b44352a074dc744b8cccc",
       "match": true
     },
     {
       "file": "console.html",
       "status": 200,
       "bytes": 2345,
-      "sha256": "0ba679686cd38635a690bce2bf752e9ab98f8965df9917fb70d42aa63f81bb49",
+      "sha256": "a3b7b58535db5df0f727ff8d7dbdd49948492e3b1eca830460072838db61dd46",
       "match": true
     },
     {

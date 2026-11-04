@@ -16,7 +16,7 @@ Production browser QA restored an archive, refreshed, reopened its receipt with 
 
 Local checks passed: **400 chain tests**, **313 console tests**, **13 control-plane tests**, root build, zero-warning lint and formatting. The chain suite retains 13 opt-in skips. The remaining compiler/policy/SDK suites are unchanged and run again in release CI. New regressions cover failover identity/runtime/deadlines, forbidden submission retries, receipt archive reopening/atomic imports/secret rejection, current-versus-old revisions, missing storage, encrypted remote read-back, tampering/wrong keys, retention, existing-target refusal, full restored data/authentication and operator-only backup access.
 
-Frontend: `dpl_H6UoCx1axbWfwzPxykauGakXCCPt`.
+Frontend: `dpl_EA4RfTXrsNQ9BdHLLQCiSWFKLu27`.
 
 Backend: `4dfeaf09-9eda-4974-9d0e-1ed6bd0aa272`.
 
