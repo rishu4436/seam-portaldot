@@ -70,6 +70,7 @@ export function proofRows(
   extra: {
     unsignedSim?: "ok" | "failed" | "unknown";
     signedDryRun?: "ok" | "failed" | "unknown";
+    effect?: { verified: boolean; reason?: string };
     /** Revive steps: preflight dryRunProofSize / callInfoProofSize, each { value } or { unknown: true }. */
     proofSize?: { dryRunProofSize?: ProofSizeField; callInfoProofSize?: ProofSizeField };
   } = {},
@@ -122,13 +123,21 @@ export function proofRows(
               ]
             : ["unknown", "Not sent."];
   const effect: [EvidenceLabel, string] =
-    o?.status === "verified" && o.provenance === "chain_verified"
-      ? ["verified", "The expected effect was found on chain."]
-      : o?.provenance === "failed" || o?.status === "failed"
-        ? ["failed", "The expected effect was not found."]
-        : o?.status === "uncertain"
-          ? ["uncertain", "The effect couldn't be confirmed either way."]
-          : ["unknown", "The effect was not checked."];
+    extra.effect && tx === "finalized"
+      ? [
+          extra.effect.verified ? "verified" : "unknown",
+          extra.effect.reason ??
+            (extra.effect.verified
+              ? "The expected effect was verified in the finalized transaction."
+              : "The effect has not been verified."),
+        ]
+      : o?.status === "verified" && o.provenance === "chain_verified"
+        ? ["verified", "The expected effect was found on chain."]
+        : o?.provenance === "failed" || o?.status === "failed"
+          ? ["failed", "The expected effect was not found."]
+          : o?.status === "uncertain"
+            ? ["uncertain", "The effect couldn't be confirmed either way."]
+            : ["unknown", "The effect was not checked."];
   const ps = extra.proofSize ? proofSizeText(extra.proofSize) : undefined;
   return [
     row("fee_estimate", ...fee),

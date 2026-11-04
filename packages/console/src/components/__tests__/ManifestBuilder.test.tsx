@@ -53,6 +53,22 @@ const factsStep = vi.fn(
 );
 
 describe("Manifest builder", () => {
+  it("retries one transient read-only discovery failure and never retries a network mismatch", async () => {
+    const read = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, reason: "rpc_error", message: "timeout" })
+      .mockResolvedValueOnce({ ok: true, facts, report: {} });
+    const view = render(<ManifestBuilder transportFor={() => vi.fn()} factsStep={read} />);
+    fireEvent.click(screen.getByRole("button", { name: "Read live facts" }));
+    await screen.findByText(/Live runtime:/);
+    expect(read).toHaveBeenCalledTimes(2);
+    view.unmount();
+    read.mockReset().mockResolvedValue({ ok: false, reason: "mismatch", message: "Wrong network" });
+    render(<ManifestBuilder transportFor={() => vi.fn()} factsStep={read} />);
+    fireEvent.click(screen.getByRole("button", { name: "Read live facts" }));
+    await screen.findByText(/Wrong network/);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
   it("discards facts from a network selection that has since changed", async () => {
     let finish!: (value: V3FactsResult) => void;
     render(
@@ -66,6 +82,7 @@ describe("Manifest builder", () => {
       />,
     );
     fireEvent.click(screen.getByText("Read live facts"));
+    await waitFor(() => expect(typeof finish).toBe("function"));
     fireEvent.change(screen.getByLabelText("RPC URL"), {
       target: { value: "https://another.example" },
     });

@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-11-04T13:58:51.094Z",
+  "reportedByUser": {
+    "allTenStepsPassed": true,
+    "recipient": "5CwFE91fBsdTSAAcnbn2cSu8iCmeQHYtB9wakzPCJv1QVr5G",
+    "assetId": "806707",
+    "amount": "1"
+  },
+  "independentRead": {
+    "scope": "Canonical finalized inclusion and decoded call/events, not a replacement for the complete receipt verifier",
+    "blockNumber": 320764,
+    "blockHash": "0x4428654ae220b8232d7ab45711bb8a66f388ae02335e64dbac3d425b5fe959ac",
+    "finalizedHead": 321194,
+    "txHash": "0x18ee9304902698921505fe7e1eb012e0a4cdc797d4c8c7514337d17c5f04fd52",
+    "signer": "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+    "call": {
+      "args": {
+        "id": "806,707",
+        "target": {
+          "Id": "5CwFE91fBsdTSAAcnbn2cSu8iCmeQHYtB9wakzPCJv1QVr5G"
+        },
+        "amount": "1"
+      },
+      "method": "transferKeepAlive",
+      "section": "assets"
+    },
+    "events": [
+      {
+        "pallet": "Assets",
+        "name": "Transferred",
+        "args": [
+          "806707",
+          "0x80270a11d7b2e2b8b2dfb1ca3a45ab3b3f2339613709108c72f04074a8048467",
+          "0x268bdf23fe5b51a97278b86bd50bd9870d19f9d42682b4e677b9032c5bb7d10a",
+          "1"
+        ]
+      },
+      {
+        "pallet": "System",
+        "name": "ExtrinsicSuccess",
+        "args": [
+          "{\"class\":\"Normal\",\"paysFee\":\"Yes\",\"weight\":{\"proofSize\":18392,\"refTime\":1145368000}}"
+        ]
+      }
+    ]
+  }
+}

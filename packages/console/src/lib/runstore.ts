@@ -12,6 +12,7 @@ import { lookupTxByHash } from "@seam/chain/browser";
 import { InMemoryApprovalStore } from "@seam/policy/browser";
 
 export const RUN_STORE_KEY = "seam.console.runs.v1";
+export const RUN_STORE_EVENT = "seam:runs-changed";
 const SEND_GUARD_PREFIX = "seam.console.send.v1:";
 export class RunStoreError extends Error {}
 
@@ -24,6 +25,8 @@ export type RunPhase =
   | "blocked"
   | "failed"
   | "uncertain"
+  | "rejected"
+  | "not_sent"
   | "abandoned";
 export type StepState =
   | "pending"
@@ -36,6 +39,7 @@ export type StepState =
   | "not_sent"
   | "blocked"
   | "failed"
+  | "rejected"
   | "uncertain";
 
 export interface StepRecord {
@@ -169,6 +173,8 @@ export class RunStore {
         "failed",
         "uncertain",
         "abandoned",
+        "rejected",
+        "not_sent",
       ];
       const states: StepState[] = [
         "pending",
@@ -182,6 +188,7 @@ export class RunStore {
         "blocked",
         "failed",
         "uncertain",
+        "rejected",
       ];
       if (
         !record(v) ||
@@ -252,6 +259,7 @@ export class RunStore {
     this.kv.setItem(RUN_STORE_KEY, json);
     if (this.kv.getItem(RUN_STORE_KEY) !== json)
       throw new RunStoreError("The execution journal could not be persisted. Nothing can be sent.");
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(RUN_STORE_EVENT));
   }
   runs(): RunRecord[] {
     return Object.values(this.read().runs);
@@ -284,6 +292,22 @@ export class RunStore {
     if (phase) r.phase = phase;
     r.updatedAt = now();
     this.write(s);
+  }
+  /** Close a definitely-unsent attempt without consuming its approval or touching send guards. */
+  finishUnsent(approvalHash: string, phase: "rejected" | "blocked" | "failed", note: string): void {
+    const run = this.run(approvalHash);
+    if (
+      !run ||
+      run.phase === "finalized" ||
+      run.steps.some((step) => step.txHash || this.isClaimed(approvalHash, step.index))
+    )
+      return;
+    this.upsertRun({
+      ...run,
+      phase,
+      note,
+      steps: run.steps.map((step) => ({ ...step, status: phase, note })),
+    });
   }
   usedKeys(): string[] {
     return this.read().used;
@@ -338,14 +362,27 @@ export class RunStore {
    * signed-but-unsent steps become not_sent and the run abandoned; a claimed send with no tx hash is uncertain.
    */
   async recover(lookup: TxLookup | undefined, onlyApprovalHash?: string): Promise<RunRecord[]> {
-    const done: RunPhase[] = ["finalized", "abandoned", "failed", "blocked"];
+    const done: RunPhase[] = [
+      "finalized",
+      "abandoned",
+      "failed",
+      "blocked",
+      "rejected",
+      "not_sent",
+    ];
     for (const r of this.runs()) {
       if (onlyApprovalHash && r.approvalHash !== onlyApprovalHash) continue;
       if (done.includes(r.phase)) continue;
       let uncertain = false;
       let abandoned = false;
+      let unsigned = false;
       for (const st of r.steps) {
-        if (st.status === "finalized" || st.status === "failed" || st.status === "blocked")
+        if (
+          st.status === "finalized" ||
+          st.status === "failed" ||
+          st.status === "blocked" ||
+          st.status === "rejected"
+        )
           continue;
         if (st.txHash) {
           if (!lookup) {
@@ -399,9 +436,13 @@ export class RunStore {
         } else if (st.status === "signed" || st.status === "pending") {
           this.updateStep(r.approvalHash, st.index, {
             status: "not_sent",
-            note: "signed bytes are gone after the refresh; not sent. A new approval is needed.",
+            note:
+              st.status === "signed"
+                ? "Signed bytes were discarded when the session ended. Nothing was sent; approve again to continue."
+                : "The session ended before signing or sending. Approve again to continue.",
           });
-          abandoned = true;
+          if (st.status === "signed") abandoned = true;
+          else unsigned = true;
         }
       }
       const steps = this.run(r.approvalHash)!.steps;
@@ -411,11 +452,13 @@ export class RunStore {
           ? "uncertain"
           : abandoned
             ? "abandoned"
-            : steps.some((s) => s.status === "failed")
-              ? "failed"
-              : steps.some((s) => s.status === "blocked")
-                ? "blocked"
-                : r.phase;
+            : unsigned
+              ? "not_sent"
+              : steps.some((s) => s.status === "failed")
+                ? "failed"
+                : steps.some((s) => s.status === "blocked")
+                  ? "blocked"
+                  : r.phase;
       this.upsertRun({ ...this.run(r.approvalHash)!, phase });
     }
     return this.runs();

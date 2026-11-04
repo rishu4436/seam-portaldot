@@ -57,6 +57,24 @@ describe("status labels", () => {
     expect(r[3]!.label).toBe("finalized");
     expect(r[4]!.label).toBe("unknown");
   });
+  it("updates the effect row from the finalized receipt verifier without changing transaction provenance", () => {
+    const outcome = {
+      txState: "finalized" as const,
+      status: "unverified" as const,
+      provenance: "unknown" as const,
+    };
+    expect(proofRows(outcome, "live", { effect: { verified: true } })[4].label).toBe("verified");
+    expect(
+      proofRows(outcome, "live", { effect: { verified: false, reason: "Node unavailable" } })[4],
+    ).toMatchObject({ label: "unknown", detail: "Node unavailable" });
+    expect(
+      proofRows({ ...outcome, txState: "included" }, "live", { effect: { verified: true } })[4]
+        .label,
+    ).toBe("unknown");
+    expect(proofRows(outcome, "recorded", { effect: { verified: true } })[4].label).toBe(
+      "recorded",
+    );
+  });
   it("simulated and recorded are never called live, finalized or verified", () => {
     const o = {
       fee: "1",

@@ -81,6 +81,10 @@ export function AccountReadiness({
           onChange={(e) => setAssets(e.target.value)}
         />
       </label>
+      <p className="muted">
+        Enter an asset ID to inspect it; assets are not discovered automatically. The recorded V3
+        test asset is 806707. Your account must hold it, or its issuer must fund or mint to you.
+      </p>
       {!address && <p className="muted">Select a connected account to inspect its funds.</p>}
       {problem && <p role="alert">{problem}</p>}
       {result && (
@@ -121,6 +125,12 @@ export function AccountReadiness({
                     : "Unavailable"}
                 </dd>
                 {!item.balance.known && <small>{item.balance.reason}</small>}
+                {item.balance.known && item.balance.value.isSufficient === false && (
+                  <small>
+                    This asset requires recipients to have native tPOT before they can hold it.
+                    Sender tPOT pays the transaction fee separately.
+                  </small>
+                )}
               </div>
             ))}
           </dl>

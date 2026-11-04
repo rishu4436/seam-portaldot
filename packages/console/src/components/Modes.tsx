@@ -491,7 +491,9 @@ export function LiveReceipt({
   engineApprovalHash,
   approvalInputs,
   archiveManifest,
+  onEffectChange,
 }: {
+  onEffectChange?: (effect: EffectVerdict | undefined) => void;
   archiveManifest?: unknown;
   /** preSign's createApproval inputs + now, so the hash can be recomputed. */
   approvalInputs?: Record<string, unknown> & { now: string };
@@ -517,16 +519,28 @@ export function LiveReceipt({
   const blockHash = out.block?.hash;
   useEffect(() => {
     setEffect(undefined);
+    onEffectChange?.(undefined);
     if (!rpc || !want || !out.txHash || !blockHash || out.txState !== "finalized") return;
     let live = true;
     const check = compiled
       ? (stepCheck ?? defaultStepCheck)(rpc, out.txHash, out.block!, compiled)
       : effectCheck(rpc, out.txHash, blockHash, want as TransferExpectation);
-    check.then((v) => live && setEffect(v));
+    check
+      .catch((error: unknown): EffectVerdict => ({
+        verdict: "not_verified",
+        reason: error instanceof Error ? error.message : String(error),
+        checkedAt: new Date().toISOString(),
+      }))
+      .then((v) => {
+        if (live) {
+          setEffect(v);
+          onEffectChange?.(v);
+        }
+      });
     return () => {
       live = false;
     };
-  }, [rpc, out.txHash, blockHash, out.txState, plan?.digest]);
+  }, [rpc, out.txHash, blockHash, out.txState, plan?.digest, onEffectChange]);
   if (!out.submitted || !out.txHash) return null;
   const effectLabel = !want
     ? "not checked (no effect check for this plan)"
@@ -708,6 +722,7 @@ export function LivePanel({
   }, [rpcUrl]);
   const [v3, setV3] = useState<V3FactsResult>();
   const [out, setOut] = useState<LiveOutcome>();
+  const [verifiedEffect, setVerifiedEffect] = useState<EffectVerdict>();
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     onBusyChange?.(busy);
@@ -741,7 +756,9 @@ export function LivePanel({
     // tx hash wait for the user to press Reconcile, which reads the chain by hash and never re-sends.
     void runStore
       .recover(undefined)
-      .then((rs) => setRecovered(rs.filter((r) => r.phase !== "finalized")))
+      .then((rs) =>
+        setRecovered(rs.filter((r) => ["submitting", "submitted", "uncertain"].includes(r.phase))),
+      )
       .catch((error: unknown) =>
         setRecoveryProblem(error instanceof Error ? error.message : String(error)),
       );
@@ -752,12 +769,13 @@ export function LivePanel({
       txLookup ??
       (u ? chainTxLookup((await import("../lib/browserChain")).transportFor(u)) : undefined);
     const rs = await runStore.recover(lookup);
-    setRecovered(rs.filter((r) => r.phase !== "finalized"));
+    setRecovered(rs.filter((r) => ["submitting", "submitted", "uncertain"].includes(r.phase)));
   };
   // A result belongs to the plan and approval it ran with; switching plan (e.g. turning on the wallet demo) or re-approving clears it.
   const planKey = `${plan?.digest ?? ""}|${approval?.hash ?? ""}|${walletSource ?? ""}`;
   useEffect(() => {
     setOut(undefined);
+    setVerifiedEffect(undefined);
     setEngineApproval(undefined);
     setApprovalInputs(undefined);
     setV3(undefined);
@@ -772,6 +790,10 @@ export function LivePanel({
   const run = async () => {
     setBusy(true);
     setOut(undefined);
+    setVerifiedEffect(undefined);
+    engineHashRef.current = undefined;
+    setEngineApproval(undefined);
+    setApprovalInputs(undefined);
     setDismissed(false);
     setGate(undefined);
     try {
@@ -1033,6 +1055,12 @@ export function LivePanel({
       }
       const res = await runLive(url, undefined, deps);
       const runHash = (store.current && engineHashRef.current) || undefined;
+      if (runHash && !res.submitted)
+        runStore.finishUnsent(
+          runHash,
+          res.status === "rejected" ? "rejected" : res.status === "failed" ? "failed" : "blocked",
+          res.message,
+        );
       if (runHash && res.submitted && res.txHash) {
         for (const r of runStore.run(runHash)?.steps ?? []) {
           runStore.recordSent(runHash, r.index, res.txHash);
@@ -1050,6 +1078,16 @@ export function LivePanel({
       if (res.submitted && approval) setSpent((x) => [...x, approval.hash]);
       setOut(res);
     } catch (error) {
+      try {
+        if (engineHashRef.current)
+          runStore.finishUnsent(
+            engineHashRef.current,
+            "blocked",
+            "Execution stopped before submission. Reconcile any claimed send.",
+          );
+      } catch {
+        /* Preserve the original storage/execution failure below. */
+      }
       setRecoveryProblem(
         `Execution stopped: ${error instanceof Error ? error.message : String(error)} Reconcile any uncertain transaction before trying another approval.`,
       );
@@ -1156,6 +1194,7 @@ export function LivePanel({
             <p>{out.message}</p>
             <FinalityPanel out={out} />
             <LiveReceipt
+              onEffectChange={setVerifiedEffect}
               archiveManifest={policyInput?.manifest}
               out={out}
               plan={plan}
@@ -1234,7 +1273,17 @@ export function LivePanel({
             </dl>
             {/* Submitted only after checkBeforeSubmit passed, which requires the signed dry run to be ok. */}
             <ProofRows
-              rows={proofRows(out, "live", { signedDryRun: out.submitted ? "ok" : undefined })}
+              rows={proofRows(out, "live", {
+                signedDryRun: out.submitted ? "ok" : undefined,
+                ...(verifiedEffect
+                  ? {
+                      effect: {
+                        verified: verifiedEffect.verdict === "effect_proven",
+                        reason: verifiedEffect.reason,
+                      },
+                    }
+                  : {}),
+              })}
             />
           </>
         )}
@@ -1438,7 +1487,7 @@ async function runMultiStepLive(a: {
       });
       if (!req.ok) return { ok: false, message: req.message };
       const s = await wallet.sign(req.value);
-      if (!s.ok) return { ok: false, message: s.message };
+      if (!s.ok) return { ok: false, message: s.message, reason: s.reason };
       const v = await host.verifyBinding(s.value.signedTx, req.value);
       if (!v.ok) return { ok: false, message: `Signed bytes differ (${v.reasons.join(", ")}).` };
       return { ok: true, value: s.value.signedTx };

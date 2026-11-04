@@ -6,6 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { LivePanel } from "../Modes";
 import type { LiveHost } from "../../lib/host";
 import type { V3FactsResult } from "../../lib/v3facts";
+import { RunStore } from "../../lib/runstore";
 import {
   approveWalletDemo,
   walletDemo,
@@ -218,6 +219,49 @@ afterEach(() => {
 });
 
 describe("LivePanel, V3 wallet demo (rendered)", () => {
+  it("finishes a rejected attempt in the journal without consuming the approval", async () => {
+    const sign = mockExtension(GOOD_SIG);
+    sign.mockRejectedValue(new Error("Rejected by user"));
+    const values = new Map<string, string>();
+    const store = new RunStore({
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => {
+        values.set(key, value);
+      },
+    });
+    const hash = "0x" + "5f".repeat(32);
+    render(
+      <LivePanel
+        plan={plan}
+        facts={facts}
+        approval={approveWalletDemo(plan)}
+        runStore={store}
+        hostLoader={async () => fakeHost()}
+        factsStep={factsOk}
+        chainLoader={noChain}
+        gates={
+          {
+            ...passGates,
+            preSign: async () => ({
+              res: {
+                ok: true,
+                value: {
+                  approval: { hash },
+                  approvedAt: new Date().toISOString(),
+                  approvalInput: {},
+                },
+              },
+            }),
+          } as never
+        }
+      />,
+    );
+    press();
+    await screen.findByText("Wallet rejected the signing request");
+    expect(store.run(hash)).toMatchObject({ phase: "rejected", steps: [{ status: "rejected" }] });
+    expect(store.usedKeys()).toEqual([]);
+    expect(submitted).toHaveLength(0);
+  });
   it("shows the approval request before anything is contacted", () => {
     renderPanel();
     const box = screen.getByRole("group", { name: "Approval request" });

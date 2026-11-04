@@ -136,12 +136,15 @@ export function describeDispatchError(facts: RuntimeFacts, json: unknown): strin
     const err = registry.createType("DispatchError", json as never) as unknown as {
       isModule: boolean;
       asModule: never;
+      isToken?: boolean;
+      asToken?: { type: string };
       type: string;
     };
     if (err.isModule) {
       const m = registry.findMetaError(err.asModule);
       return `${m.section}.${m.name}${m.docs.length ? `: ${m.docs.join(" ").trim()}` : ""}`;
     }
+    if (err.isToken && err.asToken?.type) return `Token.${err.asToken.type}`;
     return err.type;
   } catch {
     return JSON.stringify(json);
