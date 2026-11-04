@@ -13,7 +13,13 @@ it("reads native and asset balances at a single finalized block without losing i
   const result = await readAccountReadiness(node.send.bind(node), facts, ALICE, ["1", "2"]);
   expect(result.assets[0].balance).toEqual({
     known: true,
-    value: { exists: true, balance: "9007199254740993123", minBalance: "1", isSufficient: false },
+    value: {
+      exists: true,
+      balance: "9007199254740993123",
+      minBalance: "1",
+      isSufficient: false,
+      accountExists: true,
+    },
   });
   expect(result.native).toMatchObject({
     known: true,

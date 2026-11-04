@@ -17,6 +17,7 @@ export const READ_RPC_METHODS = new Set([
   "state_getRuntimeVersion",
   "state_getMetadata",
   "state_getStorage",
+  "state_getKeysPaged",
   "state_call",
   "system_properties",
   "system_health",

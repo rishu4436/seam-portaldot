@@ -1600,6 +1600,62 @@ html {
   border-radius: 12px;
   background: #faf8ff;
 }
+.recipient-readiness,
+.transaction-review {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #ded9ee;
+  border-radius: 12px;
+  background: #faf8ff;
+  overflow-wrap: anywhere;
+}
+.recipient-readiness.needs_funding,
+.recipient-readiness.blocked {
+  background: #fff8e8;
+  border-color: #e5cb8b;
+}
+.recipient-readiness.ready {
+  background: #eef9f3;
+  border-color: #b1d9c4;
+}
+.recipient-readiness p {
+  margin: 0.5rem 0;
+}
+.recipient-readiness small {
+  display: block;
+  line-height: 1.6;
+}
+.transaction-review h3 {
+  margin-top: 0;
+}
+.transaction-review ol {
+  padding-left: 1.25rem;
+}
+.transaction-review li + li {
+  margin-top: 1.25rem;
+}
+.transaction-review dl {
+  display: grid;
+  gap: 0.8rem;
+}
+.transaction-review dt {
+  color: #646e85;
+  font-size: 0.75rem;
+  margin-bottom: 0.3rem;
+}
+.transaction-review dd {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.transaction-review code {
+  white-space: normal;
+  word-break: break-all;
+}
+.transaction-review .review-fees {
+  border-top: 1px solid #ded9ee;
+  padding-top: 1rem;
+}
 .account-readiness .feature-row > div {
   flex: 1;
 }

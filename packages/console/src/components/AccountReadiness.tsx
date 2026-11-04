@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { readAccountReadiness, type AccountReadiness as Observation } from "@seam/chain/browser";
 import type { RuntimeFacts } from "@seam/compiler/browser";
+import type { RpcTransport } from "../lib/chainclient";
 
 export function formatUnits(raw: string, decimals = 0): string {
   if (!/^\d+$/.test(raw) || !Number.isInteger(decimals) || decimals < 0 || decimals > 30)
@@ -14,10 +15,16 @@ export function AccountReadiness({
   address,
   facts,
   rpcUrl,
+  transportFor: suppliedTransport,
+  onChooseAsset,
+  read: readBalances = readAccountReadiness,
 }: {
   address: string;
   facts?: RuntimeFacts;
   rpcUrl: string;
+  transportFor?: (url: string) => RpcTransport;
+  onChooseAsset?: (assetId: string) => void;
+  read?: typeof readAccountReadiness;
 }) {
   const [assets, setAssets] = useState("");
   const [result, setResult] = useState<Observation>();
@@ -37,21 +44,47 @@ export function AccountReadiness({
     setResult(undefined);
     setProblem(undefined);
     setBusy(false);
-  }, [address, facts, rpcUrl, assets]);
-  const read = async () => {
-    if (!facts) return;
+    if (address && facts) void read();
+    return () => {
+      revision.current++;
+    };
+  }, [address, facts, rpcUrl, suppliedTransport, readBalances]);
+  const read = async (more = false) => {
+    if (!facts || !address) return;
     const version = ++revision.current;
     setBusy(true);
     setProblem(undefined);
-    setResult(undefined);
+    if (!more) setResult(undefined);
     try {
       const ids = assets
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      const { transportFor } = await import("../lib/browserChain");
-      const observed = await readAccountReadiness(transportFor(rpcUrl), facts, address, ids);
-      if (version === revision.current) setResult(observed);
+      const transportFor = suppliedTransport ?? (await import("../lib/browserChain")).transportFor;
+      const send = transportFor(rpcUrl);
+      let accumulated = more ? result : undefined;
+      // Automatically scan up to 128 registered assets per read; larger networks can continue explicitly.
+      for (let page = 0; page < 4; page++) {
+        const observed = await readBalances(send, facts, address, page === 0 ? ids : [], {
+          discover: true,
+          ...(accumulated
+            ? { after: accumulated.discovery?.nextCursor, at: accumulated.block.hash }
+            : {}),
+        });
+        if (version !== revision.current) return;
+        const merged = new Map(accumulated?.assets.map((item) => [item.assetId, item]));
+        for (const item of observed.assets) merged.set(item.assetId, item);
+        accumulated = {
+          ...observed,
+          assets: [...merged.values()],
+          discovery: observed.discovery && {
+            ...observed.discovery,
+            scanned: (accumulated?.discovery?.scanned ?? 0) + observed.discovery.scanned,
+          },
+        };
+        setResult(accumulated);
+        if (!observed.discovery?.nextCursor || observed.discovery.reason) break;
+      }
     } catch (error) {
       if (version === revision.current)
         setProblem(error instanceof Error ? error.message : String(error));
@@ -63,28 +96,36 @@ export function AccountReadiness({
     <section className="account-readiness" aria-label="Account readiness">
       <div className="feature-row">
         <div>
-          <b>Check your testnet funds</b>
+          <b>Your testnet assets</b>
           <p>
-            Read balances before preparing a payment. Fees and permissions are checked again before
-            signing.
+            Balances load automatically after your wallet and live network are connected. Choose an
+            asset to start a transfer.
           </p>
         </div>
         <button className="ghost" disabled={!address || !facts || busy} onClick={() => void read()}>
           {busy ? "Reading balances…" : "Read balances"}
         </button>
       </div>
-      <label>
-        Asset IDs to inspect <small>(optional, comma separated)</small>
-        <input
-          value={assets}
-          placeholder="e.g. 100, 200"
-          onChange={(e) => setAssets(e.target.value)}
-        />
-      </label>
-      <p className="muted">
-        Enter an asset ID to inspect it; assets are not discovered automatically. The recorded V3
-        test asset is 806707. Your account must hold it, or its issuer must fund or mint to you.
-      </p>
+      <details>
+        <summary>Look up an asset manually</summary>
+        <label>
+          Asset IDs to inspect <small>(optional, comma separated)</small>
+          <input
+            value={assets}
+            placeholder="e.g. 100, 200"
+            onChange={(e) => {
+              revision.current++;
+              setBusy(false);
+              setResult(undefined);
+              setAssets(e.target.value);
+            }}
+          />
+        </label>
+        <p className="muted">
+          Use Read balances after entering IDs. A transfer requires an asset balance; minting
+          requires issuer rights.
+        </p>
+      </details>
       {!address && <p className="muted">Select a connected account to inspect its funds.</p>}
       {problem && <p role="alert">{problem}</p>}
       {result && (
@@ -131,9 +172,42 @@ export function AccountReadiness({
                     Sender tPOT pays the transaction fee separately.
                   </small>
                 )}
+                {onChooseAsset && item.balance.known && BigInt(item.balance.value.balance) > 0n && (
+                  <button className="ghost xs" onClick={() => onChooseAsset(item.assetId)}>
+                    Send asset {item.assetId}
+                  </button>
+                )}
               </div>
             ))}
           </dl>
+          {result.discovery && (
+            <p role="status" className="muted">
+              {result.discovery.reason
+                ? `Discovery incomplete: ${result.discovery.reason} You can retry or look up an asset manually.`
+                : `${result.discovery.scanned} assets checked at this block. ${result.discovery.complete ? "Discovery complete." : "More assets remain to be checked."}`}
+            </p>
+          )}
+          {result.assets.some((item) => !item.balance.known) && (
+            <p role="status">
+              Some asset balances could not be read. Retry before assuming the account has no
+              assets.
+            </p>
+          )}
+          {result.discovery?.complete &&
+            result.assets.every((item) => item.balance.known) &&
+            !result.assets.some(
+              (item) => item.balance.known && BigInt(item.balance.value.balance) > 0n,
+            ) && (
+              <p>
+                No asset balances found for this account. Receive an asset from a holder to make a
+                transfer.
+              </p>
+            )}
+          {result.discovery?.nextCursor && (
+            <button className="ghost" disabled={busy} onClick={() => void read(true)}>
+              Find more assets
+            </button>
+          )}
           {!result.native.known ? (
             <p role="status">{result.native.reason}</p>
           ) : (

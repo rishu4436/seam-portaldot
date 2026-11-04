@@ -11,6 +11,9 @@ import { dryRunOne } from "./dryrun-core.js";
 import { runtimeApiId } from "./api-id.js";
 import type { BlockRef, Estimate, PreflightResult, PreflightStep } from "./types.js";
 import { decodeWeightV2Prefix } from "./revive-weight.js";
+import { readRecipientReadiness } from "./recipient-readiness.js";
+import { readStorageValue, type StorageEntryLoose } from "./storage-read.js";
+export { readStorageValue } from "./storage-read.js";
 
 /** Preflight options shared by the node and browser entries (no connection settings). */
 export interface PreflightCoreOptions {
@@ -383,37 +386,6 @@ async function assetExists(
   } catch {
     return undefined;
   }
-}
-
-type StorageEntryLoose = Parameters<typeof storageKey>[0] & {
-  meta: { type: { isMap: boolean; asMap: { value: unknown }; asPlain: unknown } };
-};
-
-/** Reads one storage value and decodes it strictly (every byte must be used). null: no entry. Throws on any other problem. */
-export async function readStorageValue(
-  client: RpcClient,
-  facts: RuntimeFacts,
-  entry: StorageEntryLoose,
-  args: unknown[],
-  at: Hex,
-): Promise<Record<string, { toBigInt(): bigint }> | null> {
-  const { registry } = decodeRuntime(facts);
-  const raw = await rpc<string | null>(client, "state_getStorage", [
-    storageKey(entry, ...args),
-    at,
-  ]);
-  if (raw === null || raw === undefined || raw === "0x") return null;
-  const t = entry.meta.type.isMap ? entry.meta.type.asMap.value : entry.meta.type.asPlain;
-  const r = registry as unknown as {
-    createLookupType(t: unknown): string;
-    createTypeUnsafe(t: string, p: unknown[], o: { isPedantic: boolean }): unknown;
-  };
-  const v = r.createTypeUnsafe(r.createLookupType(t), [hexToU8a(raw)], { isPedantic: true }) as {
-    isSome?: boolean;
-    unwrap?: () => unknown;
-  };
-  const inner = v.isSome === undefined ? v : v.isSome ? v.unwrap!() : null;
-  return inner as Record<string, { toBigInt(): bigint }> | null;
 }
 
 /**
@@ -981,6 +953,32 @@ export async function preflightWithClient(
           atomic,
         );
     const contractDryRuns: Record<string, unknown> = {};
+    const recipientFailures = new Map<string, string>();
+    if (!opts.signedExtrinsics) {
+      // Check only the first action against current state. Later actions may depend on earlier effects.
+      const first = plan.steps[0];
+      if (
+        first?.kind === "assets.transfer" &&
+        first.decodedArgs.recipient &&
+        first.decodedArgs.assetId &&
+        first.decodedArgs.amount
+      ) {
+        try {
+          const check = await readRecipientReadiness(
+            client.send.bind(client),
+            facts,
+            first.decodedArgs.recipient,
+            first.decodedArgs.assetId,
+            first.decodedArgs.amount,
+            atBlock.hash,
+          );
+          if (check.status === "needs_funding" || check.status === "blocked")
+            recipientFailures.set(first.actionId, `Recipient readiness: ${check.message}`);
+        } catch {
+          /* Unknown reads do not invent a balance failure. The signed dry run still gates submission. */
+        }
+      }
+    }
     const v3Steps: V3StepPreflight[] = [];
     const steps: PreflightStep[] = [];
     const coverage: SimulationCoverage["steps"] = [];
@@ -1014,6 +1012,11 @@ export async function preflightWithClient(
         }
       }
       const nativeNote = nativeFailures.get(s.actionId);
+      const recipientNote = recipientFailures.get(s.actionId);
+      if (recipientNote) {
+        dryRun = "failed";
+        notes.push(recipientNote);
+      }
       if (nativeNote) {
         dryRun = "failed";
         notes.push(nativeNote);

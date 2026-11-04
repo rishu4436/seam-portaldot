@@ -26,7 +26,12 @@ export interface FakeNodeOptions {
    * Real Assets.Asset / Assets.Account storage (SCALE-encoded with the runtime's own types) for these assets:
    * minBalance and per-account balances (SS58 -> balance). Accounts not listed have no Assets.Account entry.
    */
-  assetBalances?: { assetId: string; minBalance: bigint; accounts: Record<string, bigint> }[];
+  assetBalances?: {
+    assetId: string;
+    minBalance: bigint;
+    accounts: Record<string, bigint>;
+    isSufficient?: boolean;
+  }[];
   /** Response for contracts_call. Default: Ok, flags 0. */
   contractsCall?: unknown;
   /** Make an extrinsic fail with this DispatchError (by call index). */
@@ -52,7 +57,10 @@ export interface FakeNodeOptions {
    * System.Account per SS58 (free/reserved/frozen). Accounts not listed have no entry (null). Without this option
    * every System.Account read throws, so the native balance check stays unknown (as before it existed).
    */
-  nativeBalances?: Record<string, { free: bigint; reserved?: bigint; frozen?: bigint }>;
+  nativeBalances?: Record<
+    string,
+    { free: bigint; reserved?: bigint; frozen?: bigint; providers?: number }
+  >;
 }
 
 interface FakeBlock {
@@ -217,6 +225,16 @@ export class FakeNode implements RpcClient {
             result: { Ok: { flags: 0, data: "0x" } },
           },
         );
+      case "state_getKeysPaged": {
+        const [prefix, count, start] = params as [string, number, string | null];
+        return r(
+          (this.o.assetBalances ?? [])
+            .map((a) => this.assetKey(a.assetId))
+            .filter((key) => key.startsWith(prefix) && (!start || key > start))
+            .sort()
+            .slice(0, count),
+        );
+      }
       case "state_getStorage": {
         const [key, at] = params as [string, string | undefined];
         if (key === SYSTEM_EVENTS_KEY)
@@ -224,7 +242,12 @@ export class FakeNode implements RpcClient {
         for (const a of this.o.assetBalances ?? []) {
           if (key === this.assetKey(a.assetId))
             return r(
-              this.encodeValue("asset", { minBalance: a.minBalance, supply: 1000n, accounts: 1 }),
+              this.encodeValue("asset", {
+                minBalance: a.minBalance,
+                supply: 1000n,
+                accounts: 1,
+                isSufficient: a.isSufficient ?? false,
+              }),
             );
           for (const [who, balance] of Object.entries(a.accounts))
             if (key === storageKey(this.assetsQuery().account, a.assetId, who))
@@ -244,7 +267,7 @@ export class FakeNode implements RpcClient {
                 [
                   {
                     nonce: 0,
-                    providers: 1,
+                    providers: b.providers ?? 1,
                     data: {
                       free: b.free,
                       reserved: b.reserved ?? 0n,
