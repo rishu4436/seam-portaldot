@@ -22,10 +22,10 @@ This release was built and tested locally before publishing its source. It does 
 | Policy | 452 passed |
 | SDK | 478 passed |
 | Chain | 407 passed; 13 opt-in tests skipped |
-| DeFi contracts/execution | 21 passed on an isolated local chain |
+| DeFi contracts/execution | 22 passed on an isolated local chain |
 | Console | 338 passed |
 | Control-plane backend | 13 passed |
-| Total passing | **2,068** |
+| Total passing | **2,069** |
 | ESLint | Passed, zero warnings |
 | Prettier | Passed |
 | Production build | Passed |
@@ -44,7 +44,7 @@ The clean-run CI also exposed a timing assumption in the existing native LivePan
 
 ## Remaining gates
 
-V3 DeFi submission is explicitly disabled. A read-only probe confirmed the expected EVM chain ID and finalized-block RPC, but no reviewed V3 swap/vault market, ERC-20 mapping, liquidity or exit was established. Enabling it requires the deployment and protocol review described in [the threat model](defi-threat-model.md). The local reference contracts are experimental and unaudited.
+V3 DeFi submission and trusted economic verification are explicitly disabled. Imported profiles cannot bootstrap trust using their own code hashes and events: those receipts stay unknown until a reviewed market is installed. A read-only probe confirmed the expected EVM chain ID and finalized-block RPC, but no reviewed V3 swap/vault market, ERC-20 mapping, liquidity or exit was established. Enabling it requires the deployment and protocol review described in [the threat model](defi-threat-model.md). The local reference contracts are experimental and unaudited.
 
 The runtime ABI dependency resolves patched Zod 4.6.7, and the compiler's `tmp` dependency is overridden to patched 0.2.7. Hardhat's separate localhost-only development dependency still requires Zod 3. The full audit reports three related high findings across Zod, Hardhat's Zod utility and Hardhat itself. They are not shipped in the browser runtime. Forcing the incompatible Zod 4 API into Hardhat was avoided; the upstream migration remains a development-tool maintenance item. See [the dependency boundary](defi-threat-model.md#dependencies).
 

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { encodeFunctionData, parseUnits, type Address, type Hex } from "viem";
 import { bootstrap, startNode } from "../scripts/local-node.mjs";
 import {
@@ -239,6 +239,36 @@ describe("executable reference market", () => {
   }, 30000);
 });
 describe("strict intent and market boundaries", () => {
+  it("never promotes an unreviewed imported V3 profile into trusted economic proof", async () => {
+    const original = await quote();
+    const unreviewed: Registry = {
+      ...registry,
+      mode: "v3-testnet",
+      chainId: 420420777,
+      rpcUrl: "https://test-evm-rpc-v3.portaldot.dev/",
+    };
+    const { id: _id, ...body } = original;
+    const bound = { ...body, registryHash: digest(unreviewed) };
+    const now = new Date().toISOString();
+    const network = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValue(new Error("Unexpected network request"));
+    try {
+      const result = await verifyRecord({
+        version: 1,
+        registry: unreviewed,
+        plan: { id: planId(bound), ...bound },
+        attempts: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+      expect(result.status).toBe("pending");
+      expect(result.checks.at(-1)?.label).toBe("Reviewed V3 market required");
+      expect(network).not.toHaveBeenCalled();
+    } finally {
+      network.mockRestore();
+    }
+  });
   it("refuses an occupied local port without bootstrapping another node", async () => {
     await expect(startNode(18546)).rejects.toThrow(/already in use/);
     expect(await client.rpc.getChainId()).toBe(31337);

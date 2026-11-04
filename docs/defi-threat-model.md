@@ -1,6 +1,6 @@
 # DeFi execution threat model
 
-This is a local engineering release, not an independent security audit. It deliberately blocks V3 economic submission pending a reviewed integration.
+This is a local engineering release, not an independent security audit. It deliberately blocks V3 economic submission and trusted economic verification pending a reviewed integration. Imported V3 profiles cannot establish guard or token semantics using their own code hashes and events; their proof stays unknown. Read-only identity inspection remains available.
 
 | Boundary | Enforced behavior | Remaining trust / limitation |
 | --- | --- | --- |
