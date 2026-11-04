@@ -173,15 +173,22 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
         await client.walletIdentity(wallet, connected.account);
       }
       invalidate();
+      const version = revision.current;
+      const balances = await client.positions(connected.account);
+      await client.walletIdentity(connected.wallet, connected.account);
+      if (version !== revision.current) return;
       setConnection(connected);
       setRecipient(connected.account);
-      setPositions(await client.positions(connected.account));
+      setPositions(balances);
       setNotice("Network and contract identities checked. Balances read without a signature.");
     });
   const read = async () =>
     run(async () => {
       if (!client || !connection) return;
-      setPositions(await client.positions(connection.account));
+      const version = revision.current;
+      const balances = await client.positions(connection.account);
+      if (version !== revision.current) return;
+      setPositions(balances);
       setNotice("Balances and the vault exit limit refreshed from one block.");
     });
   const quote = async () =>
@@ -214,17 +221,26 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
   const execute = async () =>
     run(async () => {
       if (!client || !connection || !plan || !ack) return;
+      const version = revision.current;
       const row = await new Executor(client, connection.wallet, localStore()).execute(
         plan,
         setNotice,
       );
       const result = await verifyRecord(row);
       setChecks((old) => ({ ...old, [row.plan.id]: result }));
-      setPositions(await client.positions(connection.account));
+      if (version !== revision.current) {
+        setNotice(
+          `Receipt saved for the original account ${plan.account}. Reconnect to refresh balances.`,
+        );
+        return;
+      }
       invalidate();
+      const refreshVersion = revision.current;
       setNotice(
         `${statusLabel(result)}. Receipt saved. ${result.status === "local-confirmed" ? "Local inclusion does not establish V3 testnet finality." : ""}`,
       );
+      const balances = await client.positions(connection.account);
+      if (refreshVersion === revision.current) setPositions(balances);
     });
   const verify = async (row: RecordEntry) =>
     run(async () => {

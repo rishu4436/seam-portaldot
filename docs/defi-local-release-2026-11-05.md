@@ -23,9 +23,9 @@ This release was built and tested locally before publishing its source. It does 
 | SDK | 478 passed |
 | Chain | 407 passed; 13 opt-in tests skipped |
 | DeFi contracts/execution | 21 passed on an isolated local chain |
-| Console | 337 passed |
+| Console | 338 passed |
 | Control-plane backend | 13 passed |
-| Total passing | **2,067** |
+| Total passing | **2,068** |
 | ESLint | Passed, zero warnings |
 | Prettier | Passed |
 | Production build | Passed |
@@ -34,7 +34,7 @@ This release was built and tested locally before publishing its source. It does 
 | Runtime dependency audit | Zero advisories |
 | Full development dependency audit | Three related high findings in Hardhat/Zod 3; documented below |
 
-The full existing regression suite passed; after final review, the changed DeFi and console suites were run again. Tests include lost-response recovery, explicit rejection, uncertain claims, exact/reset allowances, adverse market movement, vault donation/rounding changes, fee overrides, stale quotes, on-chain deployment mismatch/deadline/gas-price enforcement, replay, storage failure, archive integrity, deduplication and settled-record removal.
+The full existing regression suite passed; after final review, the changed DeFi and console suites were run again. Tests include lost-response recovery, explicit rejection, uncertain claims, exact/reset allowances, adverse market movement, vault donation/rounding changes, fee overrides, stale quotes, on-chain deployment mismatch/deadline/gas-price enforcement, replay, storage failure, archive integrity, deduplication and settled-record removal. A reproduced wallet account-change race was fixed so that late balance reads cannot repopulate a disconnected account's positions; a completed transaction also clears its approval before an optional balance refresh.
 
 Browser checks exercised actual local swap, deposit and full withdrawal through the final guard ABI. All three produced independently confirmed local effects; withdrawing all reference shares returned the position to zero. Earlier browser checks verified review invalidation, reload persistence, independent re-verification and archive restore confirmation/deduplication. The final workspace preserved native-wallet navigation. Mobile had no horizontal overflow. The production preview correctly showed an unconfigured/read-only V3 market and no unlocked local-account connector. Local visual captures are in the ignored `.vercel/qa/` directory.
 

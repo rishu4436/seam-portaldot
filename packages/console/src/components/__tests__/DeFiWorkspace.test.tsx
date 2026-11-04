@@ -126,6 +126,39 @@ it("clears the quote and connection when the wallet announces an account change"
   expect(screen.queryByRole("heading", { name: "What you are approving" })).toBeNull();
   expect(screen.getByText(/Wallet account or network changed/)).toBeTruthy();
 });
+it("discards a slow balance response after the wallet account changes", async () => {
+  await connectAndQuote();
+  let resolve!: (value: Awaited<ReturnType<DeFiClient["positions"]>>) => void;
+  vi.mocked(DeFiClient.prototype.positions).mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  const provider = (window as unknown as { ethereum: { on: ReturnType<typeof vi.fn> } }).ethereum;
+  const callback = provider.on.mock.calls.find(([event]) => event === "accountsChanged")![1];
+  const { act } = await import("@testing-library/react");
+  act(() => callback());
+  await act(async () =>
+    resolve({
+      block: "2",
+      balances: [...registry.tokens, registry.vault].map((token) => ({
+        token,
+        balance: "777000000",
+      })),
+      native: "1",
+      redeemable: "0",
+      maxRedeem: "0",
+      totalAssets: "0",
+    }),
+  );
+  expect(screen.getByRole("button", { name: "Connect EVM wallet" })).toBeTruthy();
+  expect(screen.queryAllByText("777")).toHaveLength(0);
+  expect(
+    screen.getByText("Connect an account to read token balances and available vault exits."),
+  ).toBeTruthy();
+});
 it("restores an archive with confirmation and deduplicates without sending anything", async () => {
   const store = new DeFiStore(localStorage),
     now = new Date().toISOString();
