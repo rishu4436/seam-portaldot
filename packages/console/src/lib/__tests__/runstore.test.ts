@@ -37,7 +37,10 @@ const plan = {
 };
 const okGate = { ok: true as const, explanations: [] };
 
-function run(kv: KV, opts: { submit?: (i: number) => unknown; blockAt?: number } = {}) {
+function run(
+  kv: KV,
+  opts: { submit?: (i: number) => unknown; blockAt?: number; rejectAt?: number } = {},
+) {
   const runStore = new RunStore(kv);
   const store = new PersistedApprovalStore(runStore);
   const submitAndWait = vi.fn(async (i: number) =>
@@ -67,7 +70,11 @@ function run(kv: KV, opts: { submit?: (i: number) => unknown; blockAt?: number }
     store,
     runStore,
     freshFingerprint: async () => ({ fingerprint: {} }),
-    sign: vi.fn(async (i: number) => ({ ok: true as const, value: SIGNED(i) })),
+    sign: vi.fn(async (i: number) =>
+      i === opts.rejectAt
+        ? { ok: false as const, reason: "rejected", message: "Rejected by user" }
+        : { ok: true as const, value: SIGNED(i) },
+    ),
     submitAndWait: submitAndWait as never,
     verifyOutcome: (_i, o) => o as never,
     gates: {
@@ -97,6 +104,17 @@ function run(kv: KV, opts: { submit?: (i: number) => unknown; blockAt?: number }
 }
 
 describe("persisted run state", () => {
+  it("records a rejected multi-step signing request without broadcasting earlier signed steps", async () => {
+    const attempt = run(memKV(), { rejectAt: 1 });
+    const result = await attempt.p;
+    expect(result.ok).toBe(false);
+    expect(attempt.runStore.run(H)).toMatchObject({
+      phase: "rejected",
+      steps: [{ status: "not_sent" }, { status: "rejected" }],
+    });
+    expect(attempt.submitAndWait).not.toHaveBeenCalled();
+    expect(attempt.runStore.usedKeys()).toEqual([]);
+  });
   it("records plan digest, approval hash, phase, step statuses, tx hashes, nonces and blocks under a versioned key", async () => {
     const kv = memKV();
     const { p } = run(kv);
@@ -161,6 +179,43 @@ describe("persisted run state", () => {
     expect(r!.phase).toBe("abandoned");
     expect(r!.steps.map((s) => s.status)).toEqual(["not_sent", "not_sent"]);
     expect(lookup).not.toHaveBeenCalled();
+  });
+  it("records rejection immediately, preserves unused approval, and keeps it rejected after refresh", async () => {
+    const kv = memKV(),
+      rs = new RunStore(kv);
+    rs.upsertRun({
+      approvalHash: H,
+      phase: "approved",
+      steps: [{ index: 0, actionId: "pay", status: "pending", updatedAt: "t" }],
+    });
+    rs.finishUnsent(H, "rejected", "Rejected in wallet. Nothing sent.");
+    const [row] = await new RunStore(kv).recover(undefined);
+    expect(row.phase).toBe("rejected");
+    expect(row.steps[0].status).toBe("rejected");
+    expect(rs.usedKeys()).toEqual([]);
+  });
+  it("closes an unsigned pending session as not sent and never rewrites a claimed send as rejected", async () => {
+    const kv = memKV(),
+      rs = new RunStore(kv);
+    rs.upsertRun({
+      approvalHash: H,
+      phase: "approved",
+      steps: [{ index: 0, actionId: "pay", status: "pending", updatedAt: "t" }],
+    });
+    expect((await rs.recover(undefined))[0]).toMatchObject({
+      phase: "not_sent",
+      steps: [{ status: "not_sent" }],
+    });
+    rs.upsertRun({
+      approvalHash: H,
+      phase: "submitting",
+      steps: [{ index: 0, actionId: "pay", status: "submitting", updatedAt: "t" }],
+    });
+    rs.claimSend(H, 0);
+    rs.finishUnsent(H, "rejected", "must not overwrite possible broadcast");
+    expect(rs.run(H)?.phase).toBe("submitting");
+    expect((await rs.recover(undefined))[0].phase).toBe("uncertain");
+    expect(rs.claimSend(H, 0)).toBe(false);
   });
   it("reconciliation: a tx hash is looked up on chain (found / failed / not seen), never re-sent", async () => {
     const kv = memKV();

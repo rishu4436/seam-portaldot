@@ -46,14 +46,17 @@ export interface BlockDetail {
 
 export const NO_DETAIL = "no detail reported by the gate";
 
-/** Plain sentence for the block message and panels. Never guesses a cause. */
+/** Preserve the reported error; suggest checks without presenting an unobserved cause as fact. */
 export function blockDetailText(d: BlockDetail | undefined): string | undefined {
   if (!d) return undefined;
   if (!d.dryRun) return `Dry-run detail: ${NO_DETAIL}.`;
   const at = d.dryRunAt
     ? ` (dry run at block #${d.dryRunAt.number}, ${d.dryRunAt.hash.slice(0, 10)}…)`
     : "";
-  return `Dry-run detail: ${d.dryRun.outcome}, ${d.dryRun.detail}${at}.`;
+  const hint = /\bToken(?:\.|\b)/i.test(d.dryRun.detail)
+    ? " The runtime rejected a token operation. For asset transfers, check the sender's spendable balance and the recipient's native tPOT. Non-self-sufficient assets require a native-funded recipient account."
+    : "";
+  return `Dry-run detail: ${d.dryRun.outcome}, ${d.dryRun.detail}${at}.${hint}`;
 }
 
 export interface ChainFns {

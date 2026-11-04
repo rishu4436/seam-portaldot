@@ -16,7 +16,12 @@ export interface AccountReadiness {
   }>;
   assets: {
     assetId: string;
-    balance: Observation<{ exists: boolean; balance: string; minBalance: string }>;
+    balance: Observation<{
+      exists: boolean;
+      balance: string;
+      minBalance: string;
+      isSufficient?: boolean;
+    }>;
   }[];
 }
 type Entry = Parameters<typeof storageKey>[0] & {
@@ -96,6 +101,9 @@ export async function readAccountReadiness(
       const amount = balance === null ? 0n : balance.balance?.toBigInt();
       if (amount === undefined || (info && !info.minBalance))
         throw new Error("The asset balance could not be decoded.");
+      const sufficient = (
+        info as unknown as { isSufficient?: { toJSON(): unknown } } | null
+      )?.isSufficient?.toJSON();
       assets.push({
         assetId,
         balance: {
@@ -104,6 +112,7 @@ export async function readAccountReadiness(
             exists: !!info,
             balance: String(amount),
             minBalance: String(info?.minBalance.toBigInt() ?? 0n),
+            ...(typeof sufficient === "boolean" ? { isSufficient: sufficient } : {}),
           },
         },
       });

@@ -27,7 +27,7 @@ import {
 } from "./signflow";
 
 type Send = (method: string, params: unknown[]) => Promise<unknown>;
-type Res<T> = { ok: true; value: T } | { ok: false; message: string };
+type Res<T> = { ok: true; value: T } | { ok: false; message: string; reason?: string };
 
 export interface ReceiptStepLike {
   actionId: string;
@@ -41,7 +41,7 @@ export interface ReceiptStepLike {
 export interface StepReport {
   index: number;
   actionId: string;
-  status: "sent" | "blocked" | "not_run" | "failed";
+  status: "sent" | "blocked" | "not_run" | "failed" | "rejected";
   message: string;
   receipt?: ReceiptStepLike;
   /** The send order (0-based) when this step's transaction was broadcast; absent when it was never sent. */
@@ -232,7 +232,7 @@ async function runPlanStepsInner(args: RunPlanArgs): Promise<MultiStepResult> {
     i: number,
     message: string,
     gate?: GateOutcome,
-    status: "blocked" | "failed" = "blocked",
+    status: "blocked" | "failed" | "rejected" = "blocked",
   ): MultiStepResult => {
     const msg = holder.redact(message);
     holder.clear();
@@ -322,7 +322,13 @@ async function runPlanStepsInner(args: RunPlanArgs): Promise<MultiStepResult> {
     signRequests++;
     const requested = args.ctx.nonce + i;
     const s = await args.sign(i, c, requested);
-    if (!s.ok) return stop(i, `Signing failed: ${s.message} Nothing was sent.`, pre.gate);
+    if (!s.ok)
+      return stop(
+        i,
+        `Signing failed: ${s.message} Nothing was sent.`,
+        pre.gate,
+        s.reason === "rejected" ? "rejected" : "blocked",
+      );
     holder.put(i, s.value);
     let decodedNonce: unknown;
     try {

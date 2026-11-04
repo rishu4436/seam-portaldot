@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The LIVE receipt's effect check and download. The effect checker is mocked; nothing here touches a real chain.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { LiveReceipt, transferExpectation } from "../Modes";
 import type { LiveOutcome } from "../../lib/live";
 import { walletDemoPlan } from "../../lib/walletdemo";
@@ -24,6 +24,39 @@ const rpc = vi.fn();
 afterEach(cleanup);
 
 describe("LiveReceipt effect check", () => {
+  it("publishes the completed effect check to the parent proof table and ignores a late unmounted check", async () => {
+    const notify = vi.fn(),
+      check = vi.fn().mockResolvedValue({
+        verdict: "effect_proven",
+        extrinsicIndex: 1,
+        event: {},
+        checkedAt: "t",
+      });
+    const view = render(
+      <LiveReceipt out={out} plan={plan} rpc={rpc} effectCheck={check} onEffectChange={notify} />,
+    );
+    await waitFor(() =>
+      expect(notify).toHaveBeenLastCalledWith(
+        expect.objectContaining({ verdict: "effect_proven" }),
+      ),
+    );
+    view.unmount();
+    notify.mockClear();
+    let finish!: (value: unknown) => void;
+    check.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const late = render(
+      <LiveReceipt out={out} plan={plan} rpc={rpc} effectCheck={check} onEffectChange={notify} />,
+    );
+    late.unmount();
+    notify.mockClear();
+    await act(async () => finish({ verdict: "effect_proven", event: {}, checkedAt: "late" }));
+    expect(notify).not.toHaveBeenCalled();
+  });
   it("reads the planned transfer from the demo plan", () => {
     const w = transferExpectation(plan)!;
     expect(w).toMatchObject({ assetId: "806707", amount: "1", from: plan.signer });

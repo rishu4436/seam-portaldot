@@ -4,7 +4,14 @@ import {
   prepareEvidenceBundle,
   type EvidenceBundle,
 } from "@seam/sdk/browser";
-import { RunStore, browserKV, chainTxLookup, RUN_STORE_KEY, type RunRecord } from "../lib/runstore";
+import {
+  RunStore,
+  browserKV,
+  chainTxLookup,
+  RUN_STORE_KEY,
+  RUN_STORE_EVENT,
+  type RunRecord,
+} from "../lib/runstore";
 import { V3_HTTPS_RPC } from "../lib/v3facts";
 import { downloadJson, verifyEvidence } from "../lib/evidence";
 import { verificationLabel, verificationTone } from "../lib/verification-view";
@@ -50,6 +57,7 @@ function ActivityCenter({
 }) {
   const [receipts, setReceipts] = useState<ArchivedReceipt[]>([]);
   const [archiveProblem, setArchiveProblem] = useState<string>();
+  const [archiveNotice, setArchiveNotice] = useState<string>();
   const [archiveLoading, setArchiveLoading] = useState(true);
   const refreshReceipts = () => {
     setArchiveLoading(true);
@@ -84,10 +92,12 @@ function ActivityCenter({
     };
     window.addEventListener("storage", handler);
     window.addEventListener("focus", handler);
+    window.addEventListener(RUN_STORE_EVENT, refresh);
     window.addEventListener(RECEIPT_ARCHIVE_EVENT, refreshReceipts);
     return () => {
       window.removeEventListener("storage", handler);
       window.removeEventListener("focus", handler);
+      window.removeEventListener(RUN_STORE_EVENT, refresh);
       window.removeEventListener(RECEIPT_ARCHIVE_EVENT, refreshReceipts);
     };
   }, []);
@@ -187,10 +197,14 @@ function ActivityCenter({
                 if (!file) return;
                 setBusy(true);
                 setArchiveProblem(undefined);
+                setArchiveNotice(undefined);
                 void (async () => {
                   if (file.size > 32 * 1024 * 1024)
                     throw new Error("Choose an archive smaller than 32 MiB.");
-                  await importLocalReceipts(JSON.parse(await file.text()));
+                  const count = await importLocalReceipts(JSON.parse(await file.text()));
+                  setArchiveNotice(
+                    `Archive restored: ${count} receipt${count === 1 ? "" : "s"} checked and merged. Existing receipts were deduplicated. Nothing was submitted.`,
+                  );
                   refreshReceipts();
                 })()
                   .catch((error: unknown) => setArchiveProblem(message(error)))
@@ -200,6 +214,7 @@ function ActivityCenter({
           </label>
         </div>
         {archiveProblem && <p role="alert">{archiveProblem}</p>}
+        {archiveNotice && <p role="status">{archiveNotice}</p>}
         {archiveLoading && <p role="status">Reading saved receipts…</p>}
         {!archiveLoading && !archiveProblem && !receipts.length && (
           <p>No saved receipts in this browser yet.</p>
@@ -267,7 +282,11 @@ function ActivityCenter({
             <div className="feature-row">
               <div>
                 <span className={`result-badge ${run.phase === "finalized" ? "good" : "neutral"}`}>
-                  {run.phase.replaceAll("_", " ")}
+                  {run.phase === "rejected"
+                    ? "Rejected by wallet · not sent"
+                    : ["abandoned", "not_sent"].includes(run.phase)
+                      ? "Not sent · session ended"
+                      : run.phase.replaceAll("_", " ")}
                 </span>
                 <h3>
                   {run.steps.length} action{run.steps.length === 1 ? "" : "s"} ·{" "}
@@ -292,7 +311,11 @@ function ActivityCenter({
               {run.steps.map((step) => (
                 <li key={step.index}>
                   <b>{step.actionId}</b>
-                  <span className="result-badge neutral">{step.status.replaceAll("_", " ")}</span>
+                  <span className="result-badge neutral">
+                    {step.status === "rejected"
+                      ? "Rejected by wallet"
+                      : step.status.replaceAll("_", " ")}
+                  </span>
                   {step.txHash && <code title={step.txHash}>{short(step.txHash)}</code>}
                   {step.block && <span>Block #{step.block.number}</span>}
                   {step.note && <p>{step.note}</p>}

@@ -4,6 +4,10 @@ Open [the live workspace](https://seam-portaldot.vercel.app/console.html) in the
 
 The application submits asset transfers, not a native tPOT transfer form. The amount field uses the asset's **base units**. Check the asset's minimum balance and use an amount the sender can spare while remaining alive. Keep the recipient funded/existing if the asset requires it.
 
+**For test asset 806707, fund the recipient with native tPOT before transferring.** This asset is not self-sufficient. The sender needs both an asset balance and native tPOT for fees; the recipient needs a native account meeting the live minimum account balance. In the completed acceptance run, funding the recipient with 0.5 tPOT resolved a `Token` dry-run rejection. That is an observed funding amount, not a universal minimum.
+
+Enter `806707` in **Asset IDs to inspect**, then read balances. IDs are currently supplied manually. A wallet with no balance must receive assets from a holder, or use **Mint assets** only if it has the asset's issuer rights. Minting does not create an asset ID.
+
 | Step | What to do | Expected result |
 | --- | --- | --- |
 | 1 | Refresh the app, click **Connect wallet**, authorize the site in your wallet and select the intended account/provider. | Correct account and wallet name appear. With two wallets installed, selecting the second must use that wallet. |

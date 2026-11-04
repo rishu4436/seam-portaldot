@@ -101,10 +101,18 @@ export function wsTransport(
     });
 }
 
-export function transportFor(url: string): RpcTransport {
+export function transportFor(
+  url: string,
+  options: { readDeadline?: number; readRounds?: number } = {},
+): RpcTransport {
   const primary = /^wss?:/i.test(url) ? wsTransport(url) : httpTransport(url);
   if (!(V3_RPC_ENDPOINTS as readonly string[]).includes(url.replace(/\/$/, ""))) return primary;
-  const reads = createReadFailover();
+  const endpoint = url.replace(/\/$/, "");
+  const reads = createReadFailover({
+    endpoints: [endpoint, ...V3_RPC_ENDPOINTS.filter((value) => value !== endpoint)],
+    deadline: options.readDeadline,
+    rounds: options.readRounds,
+  });
   // Signed submissions always use the original transport exactly once, regardless of read failover.
   return (method, params) =>
     READ_RPC_METHODS.has(method) ? reads(method, params) : primary(method, params);

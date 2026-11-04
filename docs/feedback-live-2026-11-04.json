@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-11-04T14:06:56.785Z",
+  "backendDeploymentId": "37a65b03-0e8f-4d4d-9e5f-4b2afb1258fe",
+  "healthStatus": 200,
+  "contributorAuthentication": true,
+  "contributorKeyManagementDenied": true,
+  "contributorBackupAccessDenied": true,
+  "backupHealthy": true,
+  "lastBackupAt": "2026-11-04T14:02:17.015Z",
+  "browser": {
+    "archiveRestoreConfirmation": true,
+    "contributorEvidenceAndMonitorsVisible": true,
+    "disconnectedAfterCheck": true
+  }
+}

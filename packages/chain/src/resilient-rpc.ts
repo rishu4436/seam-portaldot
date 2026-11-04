@@ -66,7 +66,10 @@ export function createJsonRpcTransport(
       throw new Error("RPC verification time budget exhausted.");
     const timeout = Math.max(
       1,
-      Math.min(options.timeoutMs ?? 6000, (options.deadline ?? Infinity) - Date.now()),
+      Math.min(
+        options.timeoutMs ?? (method === "state_getMetadata" ? 12000 : 6000),
+        (options.deadline ?? Infinity) - Date.now(),
+      ),
     );
     if (url.protocol === "wss:")
       return new Promise((resolve, reject) => {

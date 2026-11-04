@@ -197,6 +197,7 @@ export function ManifestBuilder({
   const [url, setUrl] = useState(V3_HTTPS_RPC);
   const [facts, setFacts] = useState<V3FactsResult>();
   const [busy, setBusy] = useState(false);
+  const [factsAttempt, setFactsAttempt] = useState(1);
   const [actions, setActions] = useState<DraftAction[]>([]);
   const [atomicity, setAtomicity] = useState<Atomicity>("sequential");
   const [importMsg, setImportMsg] = useState<string>();
@@ -262,16 +263,30 @@ export function ManifestBuilder({
   const readFacts = async () => {
     const version = ++factsRequest.current;
     setBusy(true);
+    setFactsAttempt(1);
     setPlan(undefined);
     setFacts(undefined);
     try {
-      const t = transportFor ?? (await import("../lib/browserChain")).transportFor;
-      const result = await factsStep(t(url)).catch((e: unknown): V3FactsResult => ({
-        ok: false,
-        reason: "rpc_error",
-        message: e instanceof Error ? e.message : String(e),
-      }));
-      if (version === factsRequest.current) setFacts(result);
+      const t =
+        transportFor ??
+        ((endpoint: string) =>
+          import("../lib/browserChain").then((module) =>
+            module.transportFor(endpoint, { readDeadline: Date.now() + 25000, readRounds: 1 }),
+          ));
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        if (version !== factsRequest.current) return;
+        setFactsAttempt(attempt);
+        const result = await factsStep(await t(url)).catch((e: unknown): V3FactsResult => ({
+          ok: false,
+          reason: "rpc_error",
+          message: e instanceof Error ? e.message : String(e),
+        }));
+        if (version !== factsRequest.current) return;
+        if (result.ok || result.reason !== "rpc_error" || attempt === 2) {
+          setFacts(result);
+          break;
+        }
+      }
     } catch (error) {
       if (version === factsRequest.current)
         setFacts({
@@ -438,7 +453,7 @@ export function ManifestBuilder({
           }}
         />
         <button disabled={busy || !url} onClick={readFacts}>
-          {busy ? "Reading…" : "Read live facts"}
+          {busy ? (factsAttempt === 2 ? "Retrying network read…" : "Reading…") : "Read live facts"}
         </button>
       </div>
       {facts && !facts.ok && (
