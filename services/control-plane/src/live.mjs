@@ -1,5 +1,11 @@
 import { metadataLayoutHash, verifyPlan } from "@seam/compiler";
-import { factsFromChainInputs, createReceiptReader } from "@seam/chain";
+import {
+  factsFromChainInputs,
+  createReceiptReader,
+  createReadFailover,
+  createJsonRpcTransport,
+  V3_RPC_ENDPOINTS,
+} from "@seam/chain";
 import {
   verifyReceiptLive,
   verifyConsoleReceiptLive,
@@ -26,50 +32,26 @@ const blockNumber = (value) => {
   return number;
 };
 
-export function createReadRpc(fetchImpl = fetch, deadline = Infinity) {
-  let id = 0;
-  return async (method, params) => {
+export function createReadRpc(
+  fetchImpl = fetch,
+  deadline = Infinity,
+  endpoints = V3_RPC_ENDPOINTS,
+) {
+  let activeEndpoint = endpoints[0];
+  const send = createReadFailover({
+    endpoints,
+    deadline,
+    onFailover: (endpoint) => {
+      activeEndpoint = endpoint;
+    },
+    transport: (endpoint) => createJsonRpcTransport(endpoint, { fetch: fetchImpl, deadline }),
+  });
+  const read = async (method, params) => {
     if (!READ_METHODS.has(method))
       throw new Error("This service only permits read-only chain methods.");
-    if (Date.now() > deadline) throw new Error("Verification time budget exhausted.");
-    const requestId = ++id;
-    const response = await fetchImpl(RPC_URL, {
-      method: "POST",
-      redirect: "error",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: requestId, method, params }),
-      signal: AbortSignal.timeout(Math.max(1, Math.min(10000, deadline - Date.now()))),
-    });
-    if (!response.ok) throw new Error(`Testnet RPC HTTP ${response.status}.`);
-    const maximum = 8 * 1024 * 1024;
-    if (Number(response.headers.get("content-length")) > maximum) {
-      await response.body?.cancel();
-      throw new Error("Testnet RPC response is too large.");
-    }
-    if (!response.body) throw new Error("Testnet RPC returned an empty response.");
-    const reader = response.body.getReader(),
-      chunks = [];
-    let length = 0;
-    try {
-      while (true) {
-        const chunk = await reader.read();
-        if (chunk.done) break;
-        length += chunk.value.byteLength;
-        if (length > maximum) {
-          await reader.cancel();
-          throw new Error("Testnet RPC response is too large.");
-        }
-        chunks.push(chunk.value);
-      }
-    } finally {
-      reader.releaseLock();
-    }
-    const text = Buffer.concat(chunks, length).toString("utf8");
-    const body = JSON.parse(text);
-    if (body.jsonrpc !== "2.0" || body.id !== requestId || body.error || !("result" in body))
-      throw new Error("Testnet RPC returned a mismatched or failed response.");
-    return body.result;
+    return send(method, params);
   };
+  return Object.assign(read, { endpoint: () => activeEndpoint });
 }
 
 async function factsAt(send, at) {
@@ -92,13 +74,13 @@ async function factsAt(send, at) {
   });
 }
 
-export function createLiveServices(fetchImpl = fetch) {
+export function createLiveServices(fetchImpl = fetch, endpoints = V3_RPC_ENDPOINTS) {
   let cached, pending;
   async function runtime() {
     if (cached && Date.now() - cached.at < 20000) return cached.value;
     if (pending) return pending;
     pending = (async () => {
-      const send = createReadRpc(fetchImpl, Date.now() + 25000),
+      const send = createReadRpc(fetchImpl, Date.now() + 25000, endpoints),
         head = await send("chain_getFinalizedHead", []);
       const facts = await factsAt(send, head),
         fp = facts.fingerprint;
@@ -130,7 +112,7 @@ export function createLiveServices(fetchImpl = fetch) {
         checkedAt: new Date().toISOString(),
         endpoint: RPC_URL,
       };
-    const send = createReadRpc(fetchImpl, Date.now() + 30000);
+    const send = createReadRpc(fetchImpl, Date.now() + 40000, endpoints);
     const head = await send("chain_getFinalizedHead", []);
     await factsAt(send, head);
     let firstFacts;
@@ -165,7 +147,7 @@ export function createLiveServices(fetchImpl = fetch) {
         "Manifest recompilation was unavailable. The supplied intent has not been independently bound to its call bytes.",
       );
     }
-    return { ...result, checkedAt: new Date().toISOString(), endpoint: RPC_URL };
+    return { ...result, checkedAt: new Date().toISOString(), endpoint: send.endpoint() };
   }
   return { runtime, verify };
 }

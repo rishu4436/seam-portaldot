@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createControlPlane, validateBundle } from "../src/server.mjs";
-import { createReadRpc } from "../src/live.mjs";
+import { createReadRpc, RPC_URL } from "../src/live.mjs";
 
 const root = "seam_root_" + "test-only-".repeat(6);
 const baseline = {
@@ -61,6 +61,26 @@ async function workspace(app, name = "Test team") {
 
 test("startup refuses weak operator credentials", () => {
   assert.throws(() => createControlPlane({ bootstrapToken: "weak" }), /at least 32/);
+});
+test("only the operator can inspect or trigger full service backups", async () => {
+  let runs = 0;
+  const manager = {
+    status: () => ({ enabled: true, status: "healthy" }),
+    run: async () => {
+      runs++;
+      return { status: "healthy" };
+    },
+  };
+  const app = await start({ backups: () => manager });
+  const team = await workspace(app);
+  const path = "/v1/operations/backups";
+  assert.equal((await app.request(path, { key: null })).status, 401);
+  assert.equal((await app.request(path, { key: team.accessKey })).status, 403);
+  assert.equal((await app.request(path, { key: team.accessKey, method: "POST" })).status, 403);
+  assert.equal(runs, 0);
+  assert.equal((await app.request(path)).body.status, "healthy");
+  assert.equal((await app.request(path, { method: "POST" })).status, 200);
+  assert.equal(runs, 1);
 });
 test("a failed verification attempt replaces a stale successful badge with an explicit unknown result", async () => {
   let offline = false;
@@ -265,15 +285,21 @@ test("CORS is restricted, authentication is required and responses carry safe me
 });
 test("chain transport refuses writes and mismatched response IDs", async () => {
   let calls = 0;
-  const send = createReadRpc(async () => {
-    calls++;
-    return new Response(JSON.stringify({ jsonrpc: "2.0", id: "wrong", result: true }));
-  });
+  const send = createReadRpc(
+    async () => {
+      calls++;
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: "wrong", result: true }));
+    },
+    Infinity,
+    [RPC_URL],
+  );
   await assert.rejects(send("author_submitExtrinsic", ["0x"]), /read-only/);
   assert.equal(calls, 0);
   await assert.rejects(send("chain_getFinalizedHead", []), /mismatched/);
 });
 test("chain transport stops reading oversized node responses", async () => {
-  const send = createReadRpc(async () => new Response("x".repeat(8 * 1024 * 1024 + 1)));
+  const send = createReadRpc(async () => new Response("x".repeat(8 * 1024 * 1024 + 1)), Infinity, [
+    RPC_URL,
+  ]);
   await assert.rejects(send("state_getMetadata", []), /too large/);
 });

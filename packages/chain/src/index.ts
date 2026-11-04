@@ -205,3 +205,10 @@ export {
   type ReviveWeightBound,
   type WeightV2,
 } from "./revive-weight.js";
+export {
+  createReadFailover,
+  createJsonRpcTransport,
+  READ_RPC_METHODS,
+  V3_RPC_ENDPOINTS,
+  V3_RPC_IDENTITY,
+} from "./resilient-rpc.js";

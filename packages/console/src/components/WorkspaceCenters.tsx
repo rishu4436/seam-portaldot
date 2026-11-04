@@ -9,6 +9,14 @@ import { V3_HTTPS_RPC } from "../lib/v3facts";
 import { downloadJson, verifyEvidence } from "../lib/evidence";
 import { verificationLabel, verificationTone } from "../lib/verification-view";
 import { SDK_DOCS_URL, PAYMENT_EXAMPLE_URL, SOURCE_URL } from "../lib/product-links";
+import {
+  exportLocalReceipts,
+  importLocalReceipts,
+  listLocalReceipts,
+  removeLocalReceipt,
+  RECEIPT_ARCHIVE_EVENT,
+  type ArchivedReceipt,
+} from "../lib/receiptarchive";
 
 export type CenterView = "activity" | "verify" | "team" | "developers";
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -33,7 +41,26 @@ function Empty({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function ActivityCenter({ active }: { active: boolean }) {
+function ActivityCenter({
+  active,
+  onInspect,
+}: {
+  active: boolean;
+  onInspect: (bundle: EvidenceBundle) => void;
+}) {
+  const [receipts, setReceipts] = useState<ArchivedReceipt[]>([]);
+  const [archiveProblem, setArchiveProblem] = useState<string>();
+  const [archiveLoading, setArchiveLoading] = useState(true);
+  const refreshReceipts = () => {
+    setArchiveLoading(true);
+    void listLocalReceipts()
+      .then((rows) => {
+        setReceipts(rows);
+        setArchiveProblem(undefined);
+      })
+      .catch((error: unknown) => setArchiveProblem(message(error)))
+      .finally(() => setArchiveLoading(false));
+  };
   const [runs, setRuns] = useState<RunRecord[]>([]),
     [problem, setProblem] = useState<string>(),
     [busy, setBusy] = useState(false),
@@ -50,16 +77,25 @@ function ActivityCenter({ active }: { active: boolean }) {
   };
   useEffect(() => {
     refresh();
-    const handler = () => refresh();
+    refreshReceipts();
+    const handler = () => {
+      refresh();
+      refreshReceipts();
+    };
     window.addEventListener("storage", handler);
     window.addEventListener("focus", handler);
+    window.addEventListener(RECEIPT_ARCHIVE_EVENT, refreshReceipts);
     return () => {
       window.removeEventListener("storage", handler);
       window.removeEventListener("focus", handler);
+      window.removeEventListener(RECEIPT_ARCHIVE_EVENT, refreshReceipts);
     };
   }, []);
   useEffect(() => {
-    if (active) refresh();
+    if (active) {
+      refresh();
+      refreshReceipts();
+    }
   }, [active]);
   const reconcile = async (id: string) => {
     setBusy(true);
@@ -119,6 +155,98 @@ function ActivityCenter({ active }: { active: boolean }) {
         This browser stores non-secret execution state. Chain finality and verified effects are
         separate checks. Keep send guards intact when a run is uncertain.
       </p>
+      <section className="record-card" aria-label="Saved receipts">
+        <h2>Saved receipts</h2>
+        <p>
+          Wallet run receipts are saved in this browser, including public addresses and call data.
+          Export an archive to keep a copy on another device. Importing receipts never changes send
+          guards or resends transactions.
+        </p>
+        <div className="button-row">
+          <button
+            className="ghost"
+            disabled={busy}
+            onClick={() =>
+              void exportLocalReceipts()
+                .then((value) => downloadJson("seam-receipts.json", value))
+                .catch((error: unknown) => setArchiveProblem(message(error)))
+            }
+          >
+            Export receipt archive
+          </button>
+          <label className="file-button">
+            Restore receipt archive
+            <input
+              type="file"
+              aria-label="Restore receipt archive"
+              accept=".json,application/json"
+              disabled={busy}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                setBusy(true);
+                setArchiveProblem(undefined);
+                void (async () => {
+                  if (file.size > 32 * 1024 * 1024)
+                    throw new Error("Choose an archive smaller than 32 MiB.");
+                  await importLocalReceipts(JSON.parse(await file.text()));
+                  refreshReceipts();
+                })()
+                  .catch((error: unknown) => setArchiveProblem(message(error)))
+                  .finally(() => setBusy(false));
+              }}
+            />
+          </label>
+        </div>
+        {archiveProblem && <p role="alert">{archiveProblem}</p>}
+        {archiveLoading && <p role="status">Reading saved receipts…</p>}
+        {!archiveLoading && !archiveProblem && !receipts.length && (
+          <p>No saved receipts in this browser yet.</p>
+        )}
+        {receipts.map((row) => (
+          <article className="compact-record" key={row.id}>
+            <b>
+              {row.bundle.plan.steps.length} actions · {row.bundle.plan.mode}
+            </b>
+            <span>
+              Saved {new Date(row.savedAt).toLocaleString()} · Receipt claim:{" "}
+              {row.bundle.receipt.result}
+            </span>
+            <code>{short(row.bundle.plan.planDigest)}</code>
+            <div className="button-row">
+              <button className="ghost" onClick={() => onInspect(row.bundle)}>
+                Open receipt
+              </button>
+              <button
+                className="ghost"
+                onClick={() => downloadJson("seam-evidence.json", row.bundle)}
+              >
+                Download receipt
+              </button>
+              <button
+                className="ghost"
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Remove this receipt from this browser? Export it first to keep a copy. Transaction send guards and the chain are unaffected.",
+                    )
+                  )
+                    return;
+                  setBusy(true);
+                  void removeLocalReceipt(row.id)
+                    .then(refreshReceipts)
+                    .catch((error: unknown) => setArchiveProblem(message(error)))
+                    .finally(() => setBusy(false));
+                }}
+              >
+                Remove local copy
+              </button>
+            </div>
+          </article>
+        ))}
+      </section>
       {problem && <p role="alert">{problem}</p>}
       {!runs.length && (
         <Empty title="Your next transaction starts here">
@@ -976,12 +1104,24 @@ function DeveloperHub() {
     </section>
   );
 }
-export default function WorkspaceCenters({ view }: { view: CenterView }) {
+export default function WorkspaceCenters({
+  view,
+  onNavigate,
+}: {
+  view: CenterView;
+  onNavigate?: (view: CenterView) => void;
+}) {
   const [bundle, setBundle] = useState<EvidenceBundle>();
   return (
     <div className="workspace-centers">
       <div hidden={view !== "activity"}>
-        <ActivityCenter active={view === "activity"} />
+        <ActivityCenter
+          active={view === "activity"}
+          onInspect={(value) => {
+            setBundle(value);
+            onNavigate?.("verify");
+          }}
+        />
       </div>
       <div hidden={view !== "verify"}>
         <EvidenceInspector bundle={bundle} onBundle={setBundle} />

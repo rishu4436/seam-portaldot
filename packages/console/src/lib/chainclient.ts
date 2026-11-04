@@ -6,6 +6,7 @@
 import type { ChainClient, LiveFingerprint, Res, VerifyResult } from "./live";
 import type { SigningContext } from "./host";
 import { hostedTestnetProblem } from "./network";
+import { createReadFailover, READ_RPC_METHODS, V3_RPC_ENDPOINTS } from "@seam/chain/browser";
 
 export type RpcTransport = (method: string, params: unknown[]) => Promise<unknown>;
 export class RpcError extends Error {
@@ -101,7 +102,12 @@ export function wsTransport(
 }
 
 export function transportFor(url: string): RpcTransport {
-  return /^wss?:/i.test(url) ? wsTransport(url) : httpTransport(url);
+  const primary = /^wss?:/i.test(url) ? wsTransport(url) : httpTransport(url);
+  if (!(V3_RPC_ENDPOINTS as readonly string[]).includes(url.replace(/\/$/, ""))) return primary;
+  const reads = createReadFailover();
+  // Signed submissions always use the original transport exactly once, regardless of read failover.
+  return (method, params) =>
+    READ_RPC_METHODS.has(method) ? reads(method, params) : primary(method, params);
 }
 
 const isHex = (v: unknown): v is string => typeof v === "string" && /^0x[0-9a-fA-F]+$/.test(v);

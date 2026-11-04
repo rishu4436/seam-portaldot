@@ -480,7 +480,10 @@ export default function App() {
           {centersOpened && (
             <div hidden={activeView === "compose"}>
               <Suspense fallback={<p className="loading-view">Loading workspace tools…</p>}>
-                <WorkspaceCenters view={activeView === "compose" ? "activity" : activeView} />
+                <WorkspaceCenters
+                  view={activeView === "compose" ? "activity" : activeView}
+                  onNavigate={navigate}
+                />
               </Suspense>
             </div>
           )}

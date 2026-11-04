@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-11-04T11:28:36.802Z",
+  "fault": "primary HTTPS transport unavailable",
+  "status": "chain_verified",
+  "problems": [],
+  "notes": [
+    "The node's metadata hash differs from the pinned one (0x1c8226aa9efd53c9e1bddd3aea43685d6c696d3171e73132c557c17a16615340 vs 0x0235d2eb87410764d600e6432512e4aa69e1b54708e40edad732af103ebad3c3); genesis, spec, transaction version and ss58 match, so the pinned runtime is used."
+  ],
+  "steps": [
+    {
+      "actionId": "pay",
+      "status": "chain_verified"
+    },
+    {
+      "actionId": "nft",
+      "status": "chain_verified"
+    }
+  ],
+  "endpoint": "wss://test-node-v3.portaldot.dev"
+}
