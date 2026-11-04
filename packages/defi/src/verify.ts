@@ -25,6 +25,17 @@ export async function verifyRecord(row: RecordEntry): Promise<Verification> {
     const c = new DeFiClient(row.registry),
       p = parsePlan(row.plan, c.registry);
     pass("Plan integrity and market binding");
+    // A user-supplied code hash establishes identity, not trusted guard/token semantics.
+    // No reviewed V3 deployment is installed in this local release, including for imported evidence.
+    if (c.registry.mode === "v3-testnet") {
+      checks.push({
+        label: "Reviewed V3 market required",
+        status: "unknown",
+        detail:
+          "Economic verification is disabled for unreviewed V3 profiles. Self-declared code hashes and events cannot establish trusted economic postconditions.",
+      });
+      return { status: "pending", checks };
+    }
     await c.audit();
     pass("Network, deployment and contract identities");
     const quote = await c.rpc.getBlock({ blockNumber: BigInt(p.quoteBlock) });
