@@ -223,7 +223,7 @@ afterEach(() => {
 describe("LivePanel, V3 wallet demo (rendered)", () => {
   it("updates the top live status and proof row together when the finalized effect is proven", async () => {
     let finish!: (value: effectChecks.EffectVerdict) => void;
-    vi.spyOn(effectChecks, "checkAssetsTransferEffect").mockImplementationOnce(
+    const effectCheck = vi.spyOn(effectChecks, "checkAssetsTransferEffect").mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           finish = resolve;
@@ -235,6 +235,9 @@ describe("LivePanel, V3 wallet demo (rendered)", () => {
     await screen.findByRole("group", { name: "Receipt" });
     const summary = screen.getByRole("heading", { name: "Live status" }).parentElement!;
     expect(within(summary).getByText("unverified")).toBeTruthy();
+    // The receipt mounts before its asynchronous chain reader starts the effect check.
+    // Wait for the actual verifier, rather than assuming the receipt heading means it is ready.
+    await waitFor(() => expect(effectCheck).toHaveBeenCalledTimes(1));
     await act(async () =>
       finish({ verdict: "effect_proven", checkedAt: "t", extrinsicIndex: 0, event: {} }),
     );

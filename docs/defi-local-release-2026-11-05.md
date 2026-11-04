@@ -40,6 +40,8 @@ Browser checks exercised actual local swap, deposit and full withdrawal through 
 
 The browser's native wallet is still the user's signer. Local tests do not prove a real wallet's V3 EVM compatibility, market liquidity, contract security, or mainnet readiness.
 
+The clean-run CI also exposed a timing assumption in the existing native LivePanel status test: the receipt can mount before the effect-check promise is created. The test now waits for the verifier call before resolving that promise, while retaining all its status/proof assertions.
+
 ## Remaining gates
 
 V3 DeFi submission is explicitly disabled. A read-only probe confirmed the expected EVM chain ID and finalized-block RPC, but no reviewed V3 swap/vault market, ERC-20 mapping, liquidity or exit was established. Enabling it requires the deployment and protocol review described in [the threat model](defi-threat-model.md). The local reference contracts are experimental and unaudited.
