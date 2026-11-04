@@ -1,0 +1,36 @@
+{
+  "name": "@seam/defi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Policy-bound DeFi intents, contract adapters and independently checked economic receipts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --maxWorkers 1",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "viem": "2.57.16",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "5.6.1",
+    "hardhat": "3.21.2",
+    "solc": "0.8.38",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "@types/node": "^26.6.5"
+  }
+}

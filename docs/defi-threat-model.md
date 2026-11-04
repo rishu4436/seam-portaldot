@@ -1,0 +1,31 @@
+# DeFi execution threat model
+
+This is a local engineering release, not an independent security audit. It deliberately blocks V3 economic submission pending a reviewed integration.
+
+| Boundary | Enforced behavior | Remaining trust / limitation |
+| --- | --- | --- |
+| Market identity | Restricted endpoint/network; block-zero hash, deployment ID, runtime-code hashes, token decimals, vault underlying | RPC honesty is trusted. Hash pins do not audit code, proxies, governance, admin keys, or economic design. A V3 profile cannot enable submission. |
+| Intent | Strict field set; canonical hash binds account, recipient, market, token path, exact input, minimum output, quote block, deadline, gas price, fee budget and random salt | User must review what the wallet actually displays. No external price oracle or fair-price proof. Slippage is relative to a venue quote. |
+| Amounts | Canonical decimal integer base units, exact decimal parsing, 1–500 bps slippage, positive non-dust output, bounded quote lifetime | Standard ERC-20 semantics only. Fee-on-transfer, rebasing, callback and malicious tokens are not approved integrations. |
+| Allowance | Existing nonzero allowance reset before replacement; exact amount to the guard; guard's venue approval reset to zero in the same transaction | Separate approval can remain after wallet rejection, revert or expired quote. User can revoke. No claim of atomicity across approval and action. |
+| Guard | Input balance delta, recipient output delta, minimum output, deadline, gas-price bound, one successful action per actor/plan, reentrancy guard | Experimental unaudited code. No owner/rescue function; accidental direct token transfers can remain stranded. Caller-selected venues must be reviewed before testnet enablement. |
+| Wallet | Network/account rechecked per request; exact simulation, explicit nonce, gas estimate with bounded budget; transaction reread after wallet returns | EIP-1193 sends through the wallet. Seam cannot inspect signed raw bytes before wallet broadcast or prevent a user/wallet from overriding an approval's fee. Such deviations stop continuation and fail verification. No generic claim of pre-broadcast enforcement of every wallet override. |
+| Concurrency | Origin-wide Web Lock; claim persisted before request; uncertain claims block another send | Another website/wallet action can use the nonce. Browser storage can be manually erased or corrupted; this is not a chain-wide account lock. No automatic recovery of an unknown signature or request. |
+| Recovery | Read-only hash lookup or bounded full-block nonce scan, canonical block check, full payload match; never retry a broadcast automatically | No match is not proof of non-submission. Conflicting nonce, >256-block window or RPC history gaps require reconciliation. Current UI does not clear such claims automatically. |
+| Evidence | Canonical quote/receipt blocks, signer/value/call bytes, historical code identity, guard event, exact input transfer, output transfers, replay marker, actual recorded fees; V3 requires finalized block | RPC/archive availability and RPC honesty trusted. Local inclusion is labeled local. Recorded fees include this archive's transaction attempts; not unrelated wallet activity or a complete account audit. Events alone cannot establish safety for an unreviewed malicious token. |
+| Archive | Bounded payloads/count, strict plans/registry, integrity hash, validate-all-before-one-write, dedup; original entries and claims retained on merge | Integrity hash detects damage, not authorship. Import is untrusted evidence. No signed transaction bytes, keys or wallet passwords are stored. Public call data/addresses are included and disclose activity to whoever receives an export. |
+| Reference vault | OpenZeppelin ERC-4626 virtual accounting plus guard minimum shares/assets; exit preview/maxRedeem and action simulation | Holds underlying assets; no investment strategy or yield promise. Donation/exchange-rate changes can invalidate a quote. Real vault strategies introduce additional oracle, debt, queue, liquidity and upgrade risks. |
+
+## Before real testnet enablement
+
+1. Select one maintained venue and obtain published deployment/source information. Verify the exact factory/router/pool, route, fee model, token contracts and token/native-asset mapping. Document proxy and upgrade controls. Obtain protocol maintainer review or acknowledgement; do not imply a partnership without it.
+2. Establish compiler/opcode and V3 RPC compatibility, account mapping, gas estimation, dry-run behavior, logs and finality semantics. Independently deploy/review the guard only with an authorized testnet signer; this release never uses a stored user wallet to deploy it.
+3. Exercise swap in both directions with real available testnet liquidity. Verify non-dust output, market movement, fees and an exit. Publish the evidence with an explicit testnet label and reviewed code hashes.
+4. Exercise the selected vault's deposit and full redeem, including limits, pause/queue, donation/rounding, loss and illiquidity behavior. Do not enable an adapter simply because it exposes ERC-4626 method names.
+5. Commission an independent contract/adapter review, add a deployment allowlist and rollback/disable path, and retain the old release. Only then remove the explicit V3 submission block.
+
+## Dependencies
+
+Pinned viem 2.57.16 supplies ABI encoding and RPC/wallet interfaces. OpenZeppelin 5.6.1 supplies token, vault, safe transfer and reentrancy primitives. No dependency choice establishes an audit of Seam's composed contracts.
+
+Zod 4.6.7 is explicitly pinned for the runtime ABI tool's optional peer resolution. Hardhat 3.21.2 still requires the separate Zod 3 API for the localhost-only developer tool. The [Zod constrained-collection memory advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) affects that legacy developer dependency; do not expose the development node/configuration interface or process untrusted configuration. Track its upstream migration. Report runtime and full development audits separately rather than suppressing the advisory or forcing an incompatible major version into Hardhat.
