@@ -53,8 +53,8 @@ const response = await get("console.html");
 const report = {
   checkedAt: new Date().toISOString(),
   url: base,
-  frontendDeploymentId: "dpl_DCTseqZjw7zENk3kS76rguXvGxVL",
-  frontendImmutableUrl: "https://seam-portaldot-q6qxd5z5k-rishu4436s-projects.vercel.app",
+  frontendDeploymentId: "dpl_2ahyhaYgDC1Q241ehekQBTvGT6Cd",
+  frontendImmutableUrl: "https://seam-portaldot-qww5viatl-rishu4436s-projects.vercel.app",
   backendDeploymentId: "37736e3a-babd-4db1-a198-89883ec8a182",
   files: rows.sort((a, b) => a.file.localeCompare(b.file)),
   failures: rows.filter((row) => !row.match),
@@ -64,7 +64,7 @@ const report = {
     ),
   ),
 };
-writeFileSync("docs/first-use-build-2026-11-04.json", JSON.stringify(report, null, 2) + "\n");
+writeFileSync("docs/status-summary-build-2026-11-04.json", JSON.stringify(report, null, 2) + "\n");
 console.log(
   JSON.stringify({ files: rows.length, failures: report.failures, headers: report.headers }),
 );

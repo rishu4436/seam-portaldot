@@ -1,6 +1,68 @@
 // Status labels and the five proof rows: nothing shown stronger than it is.
 import { describe, expect, it } from "vitest";
-import { EVIDENCE_LABEL, PROOF_ROW_TITLE, proofRows } from "../statuslabels";
+import { EVIDENCE_LABEL, PROOF_ROW_TITLE, liveStatusSummary, proofRows } from "../statuslabels";
+import type { LiveOutcome } from "../live";
+import type { EffectVerdict } from "../effectcheck";
+
+const finalized = {
+  status: "unverified",
+  message: "Effect not checked yet.",
+  submitted: true,
+  txState: "finalized",
+  txHash: "0x01",
+  block: { number: 322246, hash: "0x02" },
+  provenance: "chain_verified",
+  coverage: "extrinsic_finalized",
+  simulation: "none",
+  signing: "signed",
+  rpcAttempts: 1,
+} as LiveOutcome;
+const proven: EffectVerdict = {
+  verdict: "effect_proven",
+  checkedAt: "t",
+  extrinsicIndex: 1,
+  event: {},
+};
+
+describe("live status summary", () => {
+  it("updates the badge and explanation after effect proof without mutating the captured outcome", () => {
+    const before = structuredClone(finalized);
+    expect(liveStatusSummary(finalized, proven)).toEqual({
+      status: "verified",
+      message: "Finalized in block #322246. The expected on-chain effect was verified.",
+    });
+    expect(finalized).toEqual(before);
+  });
+  it("keeps pending and negative effect checks unverified with an accurate explanation", () => {
+    expect(liveStatusSummary(undefined, proven)).toBeUndefined();
+    expect(liveStatusSummary(finalized)).toEqual({
+      status: "unverified",
+      message: finalized.message,
+    });
+    expect(
+      liveStatusSummary(finalized, {
+        verdict: "not_verified",
+        checkedAt: "t",
+        reason: "Node unavailable",
+      }),
+    ).toEqual({
+      status: "unverified",
+      message: "Finalized in block #322246. The effect could not be verified: Node unavailable",
+    });
+  });
+  it("never upgrades failed, rejected, uncertain, unsent or unfinalized outcomes", () => {
+    for (const status of ["failed", "rejected", "uncertain", "blocked", "unknown"] as const)
+      expect(liveStatusSummary({ ...finalized, status }, proven)?.status).toBe(status);
+    for (const patch of [
+      { txState: "included" },
+      { submitted: false },
+      { txHash: undefined },
+      { block: undefined },
+      { provenance: "failed" },
+    ] as Partial<LiveOutcome>[])
+      expect(liveStatusSummary({ ...finalized, ...patch }, proven)?.status).toBe("unverified");
+  });
+});
 
 const ids = [
   "fee_estimate",

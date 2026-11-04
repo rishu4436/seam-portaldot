@@ -1,0 +1,9 @@
+# Live status follows effect verification — 4 November 2026
+
+The user reported that all four updated wallet acceptance checks passed, including transaction `0xf9fe2013b9b444323503d4826f07618b71184bf08b1638395bd0ab8e68526610` finalized in block 322246. Asset discovery, recipient funding feedback, transaction review, effect proof, rejection journaling and archive restore/deduplication behaved correctly. The remaining inconsistency was the top Live status box displaying Unverified after the effect was proven. These wallet results are user-reported; no additional wallet transaction was signed by the agent.
+
+The box used the outcome captured at finalization, before asynchronous effect verification finished. The receipt and proof table already consumed the completed verifier result. The top badge and its explanation now derive from that same result, updating to Verified only for a submitted, finalized transaction with a hash/block and a proven effect. Pending or negative checks stay unverified. Failed, rejected, uncertain, blocked and unknown outcomes are not promoted, and the captured finalization outcome/provenance remain intact for receipt history.
+
+A rendered LivePanel regression starts with an unresolved effect check, confirms Unverified, resolves the proof and checks that the top badge, explanation and Verified effect row update together. Additional tests cover missing finality/transaction evidence, negative reads, failure states and non-mutation of the original outcome. All 49 focused status/receipt/panel tests passed, as did the root build, zero-warning lint and full formatting check.
+
+Production deployment: `dpl_2ahyhaYgDC1Q241ehekQBTvGT6Cd`, aliased to [the live console](https://seam-portaldot.vercel.app/console.html). The [asset manifest](status-summary-build-2026-11-04.json) checks the hosted files against the local build. The backend is unchanged by this frontend fix.

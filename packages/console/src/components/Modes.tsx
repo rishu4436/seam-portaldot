@@ -1,7 +1,7 @@
 import * as chainBrowser from "@seam/chain/browser";
 import { readExtrinsicOutcome, stepEffectCheck } from "../lib/stepverify";
 import { ProofRows } from "./ProofRows";
-import { proofRows } from "../lib/statuslabels";
+import { liveStatusSummary, proofRows } from "../lib/statuslabels";
 import {
   liveReadsFor,
   loadLiveCompile,
@@ -1097,6 +1097,7 @@ export function LivePanel({
       setBusy(false);
     }
   };
+  const statusSummary = liveStatusSummary(out, verifiedEffect);
   return (
     <section className="grid2">
       <div className="card">
@@ -1181,8 +1182,8 @@ export function LivePanel({
       <div className="card" aria-live="polite" aria-atomic="false">
         <div className="row between">
           <h3>Live status</h3>
-          {out ? (
-            <Tag tone={STATUS_TONE[out.status]}>{out.status}</Tag>
+          {statusSummary ? (
+            <Tag tone={STATUS_TONE[statusSummary.status]}>{statusSummary.status}</Tag>
           ) : (
             <Tag tone="warn">blocked / unknown</Tag>
           )}
@@ -1191,7 +1192,7 @@ export function LivePanel({
           <p className="muted">Nothing checked yet. Status is unknown, not success.</p>
         ) : (
           <>
-            <p>{out.message}</p>
+            <p>{statusSummary?.message}</p>
             <FinalityPanel out={out} />
             <LiveReceipt
               onEffectChange={setVerifiedEffect}
