@@ -8,6 +8,7 @@ export interface BuilderSelection {
   plan: Plan;
   manifest: unknown;
   policy: Policy;
+  feeEstimate?: string;
 }
 
 function download(name: string, text: string) {
@@ -136,7 +137,20 @@ export function BuilderPolicy({
         </button>
         <button
           disabled={!t.ok || !onUse}
-          onClick={() => t.ok && onUse?.({ plan, manifest, policy: t.policy })}
+          onClick={() => {
+            const fee = (
+              preflight as { totalFee?: { value?: string; unknown?: boolean } } | undefined
+            )?.totalFee;
+            if (t.ok)
+              onUse?.({
+                plan,
+                manifest,
+                policy: t.policy,
+                ...(fee && !fee.unknown && typeof fee.value === "string" && /^\d+$/.test(fee.value)
+                  ? { feeEstimate: fee.value }
+                  : {}),
+              });
+          }}
         >
           Send to approval and signing
         </button>

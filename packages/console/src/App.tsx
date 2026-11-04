@@ -1,5 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ManifestBuilder } from "./components/ManifestBuilder";
+import { TransactionReview } from "./components/TransactionReview";
+import type { RuntimeFacts as CompilerFacts } from "@seam/compiler/browser";
 import type { BuilderSelection } from "./components/BuilderPolicy";
 import { LivePanel, PolicyGatePanel, liveFactsStep } from "./components/Modes";
 import { SeamMark, Symbol } from "./components/Brand";
@@ -124,6 +126,7 @@ export default function App() {
           ...selection,
           plan: result.plan as Selection["plan"],
           facts: result.liveFacts,
+          feeEstimate: undefined,
         });
         setGate(undefined);
         setNotice(result.message);
@@ -297,6 +300,12 @@ export default function App() {
                     </div>
                     {selection ? (
                       <>
+                        <TransactionReview
+                          plan={selection.plan}
+                          facts={selection.facts as CompilerFacts}
+                          feeEstimate={selection.feeEstimate}
+                          feeCap={selection.policy.maxFee}
+                        />
                         <dl className="review-summary">
                           <div>
                             <dt>Actions</dt>
@@ -387,6 +396,7 @@ export default function App() {
                                 ...selection,
                                 plan: plan as Selection["plan"],
                                 facts,
+                                feeEstimate: undefined,
                               });
                               setApproval(undefined);
                               setGate(undefined);

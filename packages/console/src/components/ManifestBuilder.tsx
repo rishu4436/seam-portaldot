@@ -30,6 +30,7 @@ import { loadChainFns } from "../lib/signflow";
 import { BuilderPolicy, type BuilderSelection } from "./BuilderPolicy";
 import type { Plan as PolicyPlan } from "@seam/policy/browser";
 import { AccountReadiness } from "./AccountReadiness";
+import { RecipientReadiness } from "./RecipientReadiness";
 
 type Facts = Extract<V3FactsResult, { ok: true }>["facts"];
 const ACTION_LABELS: Record<BuilderKind, string> = {
@@ -472,6 +473,14 @@ export function ManifestBuilder({
         address={signer}
         facts={live as unknown as RuntimeFacts | undefined}
         rpcUrl={url}
+        transportFor={transportFor}
+        onChooseAsset={(assetId) => {
+          setPlan(undefined);
+          setActions((xs) => {
+            const action = emptyAction("assets.transfer", xs);
+            return [...xs, { ...action, args: { ...action.args, assetId } }];
+          });
+        }}
       />
       <h4>
         <span>3</span> Choose your actions
@@ -561,6 +570,16 @@ export function ManifestBuilder({
               );
             })}
             {!f.length && <p className="muted small">No arguments.</p>}
+            {a.kind === "assets.transfer" && live && (
+              <RecipientReadiness
+                recipient={a.args.recipient ?? ""}
+                assetId={a.args.assetId ?? ""}
+                amount={a.args.amount ?? ""}
+                facts={live as unknown as RuntimeFacts}
+                rpcUrl={url}
+                transportFor={transportFor}
+              />
+            )}
             <div className="row">
               <button
                 className="ghost xs"

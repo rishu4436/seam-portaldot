@@ -27,7 +27,7 @@ const node = (native?: Record<string, { free: bigint; reserved?: bigint; frozen?
     inputs: snapshotInputs(),
     facts,
     assetBalances: [{ assetId: ASSET, minBalance: 1n, accounts: { [ALICE]: 100n } }],
-    ...(native ? { nativeBalances: native } : {}),
+    ...(native ? { nativeBalances: { [BOB]: { free: ED }, ...native } } : {}),
   });
 const run = (n: FakeNode, steps = 2) => preflight(n, compile(manifest(steps), facts), facts);
 

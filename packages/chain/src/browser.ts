@@ -1,5 +1,10 @@
 import "./quiet.js"; // must stay first, like index.ts
 export {
+  readRecipientReadiness,
+  assessRecipientReadiness,
+  type RecipientReadiness,
+} from "./recipient-readiness.js";
+export {
   createReadFailover,
   createJsonRpcTransport,
   READ_RPC_METHODS,

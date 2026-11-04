@@ -1,7 +1,9 @@
 import type { Hex, RuntimeFacts } from "@seam/compiler/facts";
+import { StorageKey } from "@polkadot/types";
+import { u8aToHex } from "@polkadot/util";
 import { clientFromSend, rpc, toSafeNumber, type RpcSend } from "./rpc-core.js";
 import { decodeRuntime, storageKey } from "./runtime.js";
-import { readStorageValue } from "./preflight-core.js";
+import { readStorageValue } from "./storage-read.js";
 import { metadataLayoutHash } from "./metadata-layout.js";
 
 export type Observation<T> = { known: true; value: T } | { known: false; reason: string };
@@ -13,6 +15,7 @@ export interface AccountReadiness {
     reserved: string;
     frozen: string;
     existentialDeposit: string;
+    providers?: number;
   }>;
   assets: {
     assetId: string;
@@ -21,8 +24,10 @@ export interface AccountReadiness {
       balance: string;
       minBalance: string;
       isSufficient?: boolean;
+      accountExists?: boolean;
     }>;
   }[];
+  discovery?: { complete: boolean; scanned: number; nextCursor?: string; reason?: string };
 }
 type Entry = Parameters<typeof storageKey>[0] & {
   meta: { type: { isMap: boolean; asMap: { value: unknown }; asPlain: unknown } };
@@ -35,6 +40,7 @@ export async function readAccountReadiness(
   facts: RuntimeFacts,
   address: string,
   assetIds: string[] = [],
+  options: { discover?: boolean; after?: string; at?: Hex; pageSize?: number } = {},
 ): Promise<AccountReadiness> {
   if (!address || assetIds.length > 16 || assetIds.some((id) => !/^(0|[1-9]\d*)$/.test(id)))
     throw new Error("An account and at most 16 integer asset IDs are required.");
@@ -42,7 +48,7 @@ export async function readAccountReadiness(
   const genesis = await rpc<Hex>(client, "chain_getBlockHash", [0]);
   if (genesis.toLowerCase() !== facts.fingerprint.genesisHash.toLowerCase())
     throw new Error("The balance reader is connected to a different chain.");
-  const hash = await rpc<Hex>(client, "chain_getFinalizedHead", []);
+  const hash = options.at ?? (await rpc<Hex>(client, "chain_getFinalizedHead", []));
   const header = await rpc<{ number: string } | null>(client, "chain_getHeader", [hash]);
   if (!header) throw new Error("The finalized block could not be read.");
   const [version, metadata] = await Promise.all([
@@ -71,6 +77,7 @@ export async function readAccountReadiness(
     if (!entry || !ed) throw new Error("The runtime does not expose the native account layout.");
     const account = (await readStorageValue(client, facts, entry, [address], hash)) as unknown as {
       data: Record<string, NumberCodec | undefined>;
+      providers?: NumberCodec;
     } | null;
     const free = account === null ? 0n : account.data.free?.toBigInt();
     if (free === undefined) throw new Error("The free balance could not be decoded.");
@@ -83,13 +90,81 @@ export async function readAccountReadiness(
           account?.data.frozen?.toBigInt() ?? account?.data.miscFrozen?.toBigInt() ?? 0n,
         ),
         existentialDeposit: String(ed.toBigInt()),
+        ...(account === null
+          ? { providers: 0 }
+          : account.providers
+            ? { providers: Number(account.providers.toBigInt()) }
+            : {}),
       },
     };
   } catch (error) {
     native = { known: false, reason: error instanceof Error ? error.message : String(error) };
   }
+  const discovered: string[] = [];
+  let discovery: AccountReadiness["discovery"];
+  if (options.discover) {
+    try {
+      const pageSize = options.pageSize ?? 32;
+      if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 32)
+        throw new Error("Discovery pages contain at most 32 assets.");
+      const asset = d.query.assets?.asset as (Entry & { keyPrefix(): Uint8Array }) | undefined;
+      if (!asset) throw new Error("Asset discovery is unavailable on this runtime.");
+      const prefix = u8aToHex(asset.keyPrefix()).toLowerCase();
+      if (
+        options.after &&
+        (!/^0x[0-9a-f]+$/i.test(options.after) ||
+          !options.after.toLowerCase().startsWith(prefix) ||
+          options.after.length > 256)
+      )
+        throw new Error("Invalid asset discovery cursor.");
+      const keys = await rpc<unknown>(client, "state_getKeysPaged", [
+        prefix,
+        pageSize,
+        options.after ?? null,
+        hash,
+      ]);
+      if (!Array.isArray(keys) || keys.length > pageSize)
+        throw new Error("Invalid asset discovery response.");
+      let previous = options.after?.toLowerCase() ?? prefix;
+      for (const key of keys) {
+        if (
+          typeof key !== "string" ||
+          !/^0x[0-9a-f]+$/i.test(key) ||
+          !key.toLowerCase().startsWith(prefix) ||
+          key.toLowerCase() <= previous ||
+          key.length > 256
+        )
+          throw new Error("Asset discovery returned invalid or repeated keys.");
+        const decoded = new StorageKey(decodeRuntime(facts).registry, key).setMeta(
+          asset.meta as never,
+        );
+        const id = decoded.args[0]?.toString();
+        if (
+          !id ||
+          !/^(0|[1-9]\d*)$/.test(id) ||
+          storageKey(asset, id).toLowerCase() !== key.toLowerCase()
+        )
+          throw new Error("An asset storage key could not be decoded safely.");
+        discovered.push(id);
+        previous = key.toLowerCase();
+      }
+      discovery = {
+        complete: keys.length < pageSize,
+        scanned: keys.length,
+        ...(keys.length === pageSize ? { nextCursor: previous } : {}),
+      };
+    } catch (error) {
+      discovered.length = 0;
+      discovery = {
+        complete: false,
+        scanned: 0,
+        reason: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
   const assets: AccountReadiness["assets"] = [];
-  for (const assetId of new Set(assetIds)) {
+  const ids = [...new Set([...assetIds, ...discovered])];
+  const readAsset = async (assetId: string) => {
     try {
       const asset = d.query.assets?.asset,
         account = d.query.assets?.account;
@@ -113,6 +188,7 @@ export async function readAccountReadiness(
             balance: String(amount),
             minBalance: String(info?.minBalance.toBigInt() ?? 0n),
             ...(typeof sufficient === "boolean" ? { isSufficient: sufficient } : {}),
+            accountExists: balance !== null,
           },
         },
       });
@@ -122,6 +198,17 @@ export async function readAccountReadiness(
         balance: { known: false, reason: error instanceof Error ? error.message : String(error) },
       });
     }
-  }
-  return { address, block: { hash, number: toSafeNumber(header.number) }, native, assets };
+  };
+  for (let i = 0; i < ids.length; i += 4) await Promise.all(ids.slice(i, i + 4).map(readAsset));
+  assets.sort((a, b) => (BigInt(a.assetId) < BigInt(b.assetId) ? -1 : 1));
+  return {
+    address,
+    block: { hash, number: toSafeNumber(header.number) },
+    native,
+    assets: assets.filter(
+      (a) =>
+        assetIds.includes(a.assetId) || !a.balance.known || BigInt(a.balance.value.balance) > 0n,
+    ),
+    ...(discovery ? { discovery } : {}),
+  };
 }

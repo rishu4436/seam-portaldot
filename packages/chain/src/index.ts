@@ -212,3 +212,8 @@ export {
   V3_RPC_ENDPOINTS,
   V3_RPC_IDENTITY,
 } from "./resilient-rpc.js";
+export {
+  readRecipientReadiness,
+  assessRecipientReadiness,
+  type RecipientReadiness,
+} from "./recipient-readiness.js";

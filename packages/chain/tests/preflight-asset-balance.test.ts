@@ -27,7 +27,11 @@ const node = (
     inputs: snapshotInputs(),
     facts,
     assetBalances: [
-      { assetId: ASSET, minBalance, accounts: balance === undefined ? {} : { [ALICE]: balance } },
+      {
+        assetId: ASSET,
+        minBalance,
+        accounts: { [BOB]: minBalance, ...(balance === undefined ? {} : { [ALICE]: balance }) },
+      },
     ],
     ...o,
   });

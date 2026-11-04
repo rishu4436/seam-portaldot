@@ -1,0 +1,51 @@
+{
+  "checkedAt": "2026-11-04T14:34:04.872Z",
+  "chain": {
+    "genesisHash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "specName": "portaldot-v3",
+    "specVersion": 3002
+  },
+  "discovery": {
+    "address": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+    "finalizedBlockHash": "0x37a03c3c5656361993c3af23f8e32cc3b8d70a44641050a95fcdc7aa94c3b2ea",
+    "scanned": 44,
+    "complete": true,
+    "heldAssets": [
+      {
+        "assetId": "806707",
+        "balance": {
+          "known": true,
+          "value": {
+            "exists": true,
+            "balance": "999997489",
+            "minBalance": "1",
+            "isSufficient": false,
+            "accountExists": true
+          }
+        }
+      }
+    ]
+  },
+  "recipients": {
+    "funded": {
+      "address": "5CwFE91fBsdTSAAcnbn2cSu8iCmeQHYtB9wakzPCJv1QVr5G",
+      "status": "ready",
+      "message": "The recipient meets this asset's account and minimum-balance requirements at the checked block.",
+      "block": {
+        "hash": "0x7b89ef7c3d32e0bb69529decb6c811101e88abd8044816d0e4725f547ff2040c",
+        "number": 321546
+      }
+    },
+    "unfunded": {
+      "status": "needs_funding",
+      "message": "This asset is not self-sufficient. Fund the recipient with native tPOT before signing so its account can hold the asset.",
+      "block": {
+        "hash": "0x16628244eb54e6cc715558e6f5874ffc6bd8ff1ccf267d9af4cecc622930a45f",
+        "number": 321547
+      },
+      "nativeShortfall": "10000000000000"
+    }
+  },
+  "signed": false,
+  "submitted": false
+}
