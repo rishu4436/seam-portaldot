@@ -8,6 +8,9 @@ dist/
 *wallet*.json
 secrets/
 .vercel
+.seam-defi/
+packages/defi/artifacts/
+packages/defi/cache/
 
 # TypeScript incremental caches
 *.tsbuildinfo

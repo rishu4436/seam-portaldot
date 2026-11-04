@@ -1,5 +1,7 @@
 # SEAM
 
+**Local DeFi workbench:** [run and test protected swaps, vault deposit/withdrawal, recovery and portable economic receipts](docs/defi-local.md). This is an isolated development addition. V3 DeFi signing remains disabled pending a reviewed market deployment; the hosted native wallet release is separate. See the [threat model](docs/defi-threat-model.md) and [pilot milestones](docs/defi-pilot-milestones.md).
+
 **SEAM is the execution layer for Portaldot: one Manifest in, one verified receipt out.** A developer (or an AI agent) writes a **Manifest** saying what should happen. SEAM reads the live runtime, **compiles** the exact calls from the chain's own metadata, checks them against a **policy**, binds an **approval**, hands the transaction to the user's own wallet to **sign** (SEAM never holds keys), re-checks everything at a per-step **submit gate**, waits until it is **finalized**, and ends with a **receipt** that anyone can re-verify against the chain. Nothing is guessed: if the metadata doesn't show a call, SEAM refuses to build it, and a step it cannot prove stays `unknown`, never "success".
 
 Built for Portaldot Hacker House 2026 (Modular Cloud & Middleware track).

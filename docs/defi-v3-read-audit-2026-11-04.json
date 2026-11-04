@@ -1,0 +1,46 @@
+{
+  "checkedAt": "2026-11-04T17:12:52.412Z",
+  "endpoint": "https://test-evm-rpc-v3.portaldot.dev",
+  "expectedChainId": 420420777,
+  "readOnly": true,
+  "checks": [
+    {
+      "name": "chainId",
+      "status": "pass",
+      "value": 420420777
+    },
+    {
+      "name": "genesis",
+      "status": "pass",
+      "value": {
+        "hash": "0x7c05b2dc7486f81a693d676553fa13f380b5be16da7c739b182931cd6cf07001",
+        "number": "0",
+        "timestamp": "0"
+      }
+    },
+    {
+      "name": "latest",
+      "status": "pass",
+      "value": {
+        "hash": "0x050f53e29f851fcddc821b6786722d985b741c65292489879bebb3715b8f8b1d",
+        "number": "323122",
+        "timestamp": "1793812374"
+      }
+    },
+    {
+      "name": "finalized",
+      "status": "pass",
+      "value": {
+        "hash": "0x255800cbd09e635694ccb583527c59e5539c67bb67380cd7e0e7358e4019972a",
+        "number": "323119",
+        "timestamp": "1793812356"
+      }
+    }
+  ],
+  "marketStatus": "unconfigured",
+  "limitations": [
+    "No reviewed V3 swap/vault contract addresses or ERC-20 mapping have been supplied.",
+    "Local reference contracts target Cancun; V3 opcode compatibility and deployment have not been established.",
+    "No testnet liquidity, exit capacity, price oracle or economic security audit is claimed."
+  ]
+}

@@ -16,9 +16,11 @@ import { DOCS_URL, SOURCE_URL } from "./lib/product-links";
 
 const Lab = import.meta.env.DEV ? lazy(() => import("./LegacyApp")) : undefined;
 const WorkspaceCenters = lazy(() => import("./components/WorkspaceCenters"));
-type ActiveView = "compose" | "activity" | "verify" | "team" | "developers";
+const DeFiWorkspace = lazy(() => import("./components/DeFiWorkspace"));
+type ActiveView = "compose" | "defi" | "activity" | "verify" | "team" | "developers";
 const viewLabels: Record<ActiveView, string> = {
   compose: "New transaction",
+  defi: "DeFi workspace",
   activity: "Activity & recovery",
   verify: "Receipt inspector",
   team: "Team workspace",
@@ -47,13 +49,17 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [executionBusy, setExecutionBusy] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>(readActiveView);
-  const [centersOpened, setCentersOpened] = useState(() => readActiveView() !== "compose");
+  const [centersOpened, setCentersOpened] = useState(
+    () => !["compose", "defi"].includes(readActiveView()),
+  );
+  const [defiOpened, setDefiOpened] = useState(() => readActiveView() === "defi");
   const [notice, setNotice] = useState<string>();
   const navigate = (next: ActiveView) => {
     if (busy || executionBusy || next === activeView) return;
     writeView(next);
     setActiveView(next);
-    if (next !== "compose") setCentersOpened(true);
+    if (next !== "compose" && next !== "defi") setCentersOpened(true);
+    if (next === "defi") setDefiOpened(true);
     window.scrollTo(0, 0);
     document.getElementById("main")?.focus();
   };
@@ -68,7 +74,8 @@ export default function App() {
       }
       const next = readActiveView();
       setActiveView(next);
-      if (next !== "compose") setCentersOpened(true);
+      if (next !== "compose" && next !== "defi") setCentersOpened(true);
+      if (next === "defi") setDefiOpened(true);
       window.scrollTo(0, 0);
     };
     window.addEventListener("popstate", pop);
@@ -216,7 +223,8 @@ export default function App() {
         <div className="rail-bottom">
           <div className="network-pill">
             <span className="status-dot" />
-            Portaldot V3 <span>TESTNET</span>
+            {activeView === "defi" ? "DeFi markets" : "Portaldot V3"}{" "}
+            <span>{activeView === "defi" ? "CHECK PROFILE" : "TESTNET"}</span>
           </div>
           <p>
             Your wallet holds the keys.
@@ -488,12 +496,19 @@ export default function App() {
             </footer>
           </div>
           {centersOpened && (
-            <div hidden={activeView === "compose"}>
+            <div hidden={activeView === "compose" || activeView === "defi"}>
               <Suspense fallback={<p className="loading-view">Loading workspace tools…</p>}>
                 <WorkspaceCenters
-                  view={activeView === "compose" ? "activity" : activeView}
+                  view={activeView === "compose" || activeView === "defi" ? "activity" : activeView}
                   onNavigate={navigate}
                 />
+              </Suspense>
+            </div>
+          )}
+          {defiOpened && (
+            <div hidden={activeView !== "defi"}>
+              <Suspense fallback={<p className="loading-view">Loading DeFi workspace…</p>}>
+                <DeFiWorkspace onBusyChange={setExecutionBusy} />
               </Suspense>
             </div>
           )}

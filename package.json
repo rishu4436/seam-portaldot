@@ -7,12 +7,17 @@
     "packages/policy",
     "packages/sdk",
     "packages/chain",
+    "packages/defi",
     "packages/console",
     "services/control-plane"
   ],
   "scripts": {
-    "build": "npm run build -w @seam/compiler && npm run build -w @seam/policy && npm run build -w @seam/chain && npm run build -w @seam/sdk && npm run build -w @seam/console",
-    "test": "npm test -w @seam/compiler && npm test -w @seam/policy && npm test -w @seam/sdk && npm test -w @seam/chain && npm test -w @seam/console",
+    "build": "npm run build -w @seam/compiler && npm run build -w @seam/policy && npm run build -w @seam/chain && npm run build -w @seam/sdk && npm run build -w @seam/defi && npm run build -w @seam/console",
+    "test": "npm test -w @seam/compiler && npm test -w @seam/policy && npm test -w @seam/sdk && npm test -w @seam/chain && npm test -w @seam/defi && npm test -w @seam/console",
+    "defi:contracts": "node packages/defi/scripts/build-contracts.mjs",
+    "defi:local": "node packages/defi/scripts/local-node.mjs",
+    "defi:audit-v3": "node packages/defi/scripts/audit-v3.mjs",
+    "test:defi": "npm test -w @seam/defi",
     "test:control-plane": "node --test services/control-plane/test/*.test.mjs",
     "smoke:pack": "bash scripts/pack-smoke.sh",
     "test:e2e": "bash tests/e2e/run.sh",
@@ -26,6 +31,9 @@
     "docs:quickstart-check": "node scripts/quickstart-check.mjs"
   },
   "license": "Apache-2.0",
+  "dependencies": {
+    "zod": "4.6.7"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.14.0",
@@ -34,7 +42,8 @@
     "typescript-eslint": "^8.72.1"
   },
   "overrides": {
-    "minimatch": "^11.0.4"
+    "minimatch": "^11.0.4",
+    "tmp": "0.2.7"
   },
   "engines": {
     "node": ">=22.12.0"
