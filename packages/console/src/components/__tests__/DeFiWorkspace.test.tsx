@@ -134,9 +134,7 @@ it("shows swap, deposit and withdrawal before setup while keeping unfunded tradi
   vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
   render(<DeFiWorkspace onBusyChange={() => {}} />);
   expect(screen.getByRole("heading", { name: "Swap assets" })).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "Swap" }).getAttribute("aria-pressed"),
-  ).toBe("true");
+  expect(screen.getByRole("button", { name: "Swap" }).getAttribute("aria-pressed")).toBe("true");
   expect(screen.getByText("Market setup & recovery").closest("details")?.open).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "Deposit" }));
   expect(screen.getByRole("heading", { name: "Deposit into the vault" })).toBeTruthy();
