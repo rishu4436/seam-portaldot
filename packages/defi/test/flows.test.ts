@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { encodeFunctionData, parseUnits, type Address, type Hex } from "viem";
+import { encodeFunctionData, parseUnits, keccak256, type Address, type Hex } from "viem";
 import { bootstrap, startNode } from "../scripts/local-node.mjs";
 import {
   DeFiClient,
@@ -14,12 +14,24 @@ import {
   verifyRecord,
   type Registry,
   type Wallet,
+  MarketWalletOperations,
+  estimateMarketDeployment,
+  newDeploymentId,
+  deploymentNetwork,
+  WalletClaimStore,
+  WALLET_CLAIMS_KEY,
+  reviewedBindings,
+  assertReviewedCode,
+  poolAbi,
+  marketAbi,
 } from "../src/index.js";
+import { V3_PROGRAM } from "../src/reviewed-v3.js";
 let node: Awaited<ReturnType<typeof startNode>>,
   registry: Registry,
   accounts: Address[],
   client: DeFiClient,
   snapshot: Hex;
+let reviewed: Registry;
 const exclusive = async <T>(_name: string, fn: () => Promise<T>) => fn();
 function memory() {
   const values = new Map<string, string>();
@@ -62,6 +74,18 @@ beforeAll(async () => {
   registry = parseRegistry(market.registry);
   accounts = market.accounts;
   client = new DeFiClient(registry);
+  expect(market.artifacts.SeamTestMarket.bytecode).toBe(V3_PROGRAM.factoryCreationCode);
+  const network = deploymentNetwork(registry),
+    id = newDeploymentId();
+  const cost = await estimateMarketDeployment(accounts[1], id, network);
+  reviewed = await new MarketWalletOperations(memory(), exclusive).deploy(
+    wallet,
+    accounts[1],
+    id,
+    cost.maximumCost,
+    () => {},
+    network,
+  );
   snapshot = (await raw("evm_snapshot")) as Hex;
 }, 120000);
 beforeEach(async () => {
@@ -69,6 +93,181 @@ beforeEach(async () => {
   snapshot = (await raw("evm_snapshot")) as Hex;
 });
 afterAll(() => node?.stop());
+describe("bundled engineering-reviewed test market", () => {
+  it("attests all six deployed programs and constructor bindings, not self-declared hashes", async () => {
+    const rpc = new DeFiClient(reviewed).rpc;
+    await new DeFiClient(reviewed).audit();
+    for (const binding of reviewedBindings(reviewed)) {
+      const code = (await rpc.getCode({ address: binding.address }))!;
+      assertReviewedCode(binding.name, code, binding.bindings);
+      expect(() =>
+        assertReviewedCode(binding.name, (code.slice(0, -2) + "fe") as Hex, binding.bindings),
+      ).toThrow(/Unreviewed/);
+    }
+    const bad = structuredClone(reviewed);
+    bad.review!.deployer = accounts[2];
+    await expect(new DeFiClient(bad).audit()).rejects.toThrow(/immutable/);
+    const factory = reviewed.review!.factory.address;
+    await raw("anvil_setCode", [factory, "0x60006000f3"]);
+    const selfBlessed = structuredClone(reviewed);
+    selfBlessed.review!.factory.codeHash = keccak256("0x60006000f3");
+    await expect(new DeFiClient(selfBlessed).audit()).rejects.toThrow(/Unreviewed/);
+  });
+  it("seeds actual test liquidity and only permits one faucet allocation per address", async () => {
+    const c = new DeFiClient(reviewed),
+      factory = reviewed.review!.factory.address;
+    expect(
+      await c.rpc.readContract({
+        address: reviewed.pool.address,
+        abi: poolAbi,
+        functionName: "reserve0",
+      }),
+    ).toBe(1_000_000n * 10n ** 6n);
+    expect(
+      await c.rpc.readContract({
+        address: reviewed.pool.address,
+        abi: poolAbi,
+        functionName: "reserve1",
+      }),
+    ).toBe(500n * 10n ** 18n);
+    expect(
+      await c.rpc.readContract({
+        address: factory,
+        abi: marketAbi,
+        functionName: "claimed",
+        args: [accounts[1]],
+      }),
+    ).toBe(true);
+    const other: Wallet = {
+      request: ({ method, params }) =>
+        method === "eth_accounts" ? Promise.resolve([accounts[2]]) : raw(method, params),
+    };
+    const ops = new MarketWalletOperations(memory(), exclusive),
+      cost = await ops.estimateClaim(accounts[2], reviewed);
+    await ops.claim(other, accounts[2], reviewed, cost.maximumCost);
+    expect((await c.positions(accounts[2])).balances[0].balance).toBe("10000000000");
+    await expect(ops.estimateClaim(accounts[2], reviewed)).rejects.toThrow();
+  }, 30000);
+  it("simulates approval and action costs before approval, then swaps, deposits and fully redeems", async () => {
+    const c = new DeFiClient(reviewed),
+      store = new DeFiStore(memory()),
+      executor = new Executor(c, wallet, store, exclusive);
+    for (const action of ["swap", "deposit", "redeem"] as const) {
+      const p = await c.quote({
+        action,
+        account: accounts[1],
+        recipient: accounts[1],
+        amount: "100",
+        slippageBps: 50,
+        ttlSeconds: 300,
+        maxTotalFee: parseUnits("0.1", 18).toString(),
+      });
+      const estimate = await c.previewCost(p);
+      expect(estimate.steps.map((row) => row.phase)).toEqual(["Exact token approval", action]);
+      expect(BigInt(estimate.maximumCost)).toBeGreaterThan(0n);
+      expect(await c.allowance(p)).toBe(0n);
+      const row = await executor.execute(p);
+      expect((await verifyRecord(row)).status).toBe("local-confirmed");
+      expect(await c.allowance(p)).toBe(0n);
+    }
+    expect((await c.positions(accounts[1])).balances[2].balance).toBe("0");
+  }, 30000);
+  it("recovers market creation after a lost wallet response without deploying twice", async () => {
+    const storage = memory(),
+      ops = new MarketWalletOperations(storage, exclusive),
+      network = deploymentNetwork(registry),
+      id = newDeploymentId();
+    let sends = 0;
+    const lossy: Wallet = {
+      request: async (input) => {
+        if (input.method === "eth_sendTransaction") {
+          sends++;
+          await wallet.request(input);
+          throw new Error("Response lost");
+        }
+        return wallet.request(input);
+      },
+    };
+    const cost = await estimateMarketDeployment(accounts[1], id, network);
+    await expect(
+      ops.deploy(lossy, accounts[1], id, cost.maximumCost, () => {}, network),
+    ).rejects.toThrow("Response lost");
+    expect(ops.claims.list()[0].state).toBe("uncertain");
+    expect(() => ops.claims.remove(ops.claims.list()[0].id)).toThrow(/Unresolved/);
+    expect(() => new DeFiStore(storage).assertNoExternalRequests(accounts[1], 31337)).toThrow(
+      /Recover/,
+    );
+    const restored = await ops.recover(ops.claims.list()[0]);
+    expect(restored.state).toBe("confirmed");
+    expect(restored.registry?.deploymentId).toBe(id);
+    expect(sends).toBe(1);
+    new DeFiStore(storage).assertNoExternalRequests(accounts[1], 31337);
+    ops.claims.remove(restored.id);
+    expect(ops.claims.list()).toHaveLength(0);
+  }, 30000);
+  it("can reconcile an old no-hash claim using a supplied canonical hash, but rejects unrelated transactions", async () => {
+    const ops = new MarketWalletOperations(memory(), exclusive),
+      network = deploymentNetwork(registry),
+      id = newDeploymentId();
+    let sent: Hex | undefined;
+    const lossy: Wallet = {
+      request: async (input) => {
+        if (input.method === "eth_sendTransaction") {
+          sent = (await wallet.request(input)) as Hex;
+          throw new Error("Lost");
+        }
+        return wallet.request(input);
+      },
+    };
+    const cost = await estimateMarketDeployment(accounts[1], id, network);
+    await expect(
+      ops.deploy(lossy, accounts[1], id, cost.maximumCost, () => {}, network),
+    ).rejects.toThrow("Lost");
+    const claim = ops.claims.list()[0];
+    await raw("anvil_mine", ["0x101", "0x1"]);
+    await expect(ops.recover(claim)).rejects.toThrow(/256 blocks/);
+    await expect(ops.recover(claim, reviewed.review!.deploymentTransaction)).rejects.toThrow(
+      /differs/,
+    );
+    expect(ops.claims.list()[0].hash).toBeUndefined();
+    expect(ops.claims.list()[0].state).toBe("uncertain");
+    const recovered = await ops.recover(claim, sent!);
+    expect(recovered.state).toBe("confirmed");
+    expect(recovered.registry?.deploymentId).toBe(id);
+  }, 30000);
+  it("persists a claim before the wallet and treats only explicit rejection as unsent", async () => {
+    const storage = memory(),
+      ops = new MarketWalletOperations(storage, exclusive),
+      network = deploymentNetwork(registry),
+      id = newDeploymentId();
+    const cost = await estimateMarketDeployment(accounts[1], id, network);
+    const requests = vi.fn(wallet.request);
+    await expect(
+      ops.deploy({ request: requests }, accounts[1], id, cost.maximumCost, () => {}, network, "1"),
+    ).rejects.toThrow(/reviewed budget/);
+    expect(requests.mock.calls.some(([request]) => request.method === "eth_sendTransaction")).toBe(
+      false,
+    );
+    expect(ops.claims.list()).toHaveLength(0);
+    const rejecting: Wallet = {
+      request: async (input) => {
+        if (input.method === "eth_sendTransaction") {
+          expect(ops.claims.list()[0].state).toBe("requesting");
+          throw Object.assign(new Error("Rejected"), { code: 4001 });
+        }
+        return wallet.request(input);
+      },
+    };
+    await expect(
+      ops.deploy(rejecting, accounts[1], id, cost.maximumCost, () => {}, network),
+    ).rejects.toThrow("Rejected");
+    expect(ops.claims.pending(accounts[1], 31337)).toHaveLength(0);
+    const rows = ops.claims.list();
+    rows[0].state = "confirmed";
+    storage.setItem(WALLET_CLAIMS_KEY, JSON.stringify(rows));
+    expect(() => new WalletClaimStore(storage).list()).toThrow(/hash/);
+  });
+});
 describe("executable reference market", () => {
   it("swaps with an exact approval, verifies economic evidence and rejects replay", async () => {
     const p = await quote(),
@@ -418,6 +617,24 @@ describe("strict intent and market boundaries", () => {
     );
     expect(store.list()[0].attempts).toHaveLength(1);
     expect((await verifyRecord(store.list()[0])).status).toBe("failed");
+  }, 30000);
+  it("rejects a wallet gas-limit override whose upfront cost exceeds the plan even when actual fees are small", async () => {
+    const p = await quote({ maxTotalFee: parseUnits("0.01", 18).toString() }),
+      store = new DeFiStore(memory());
+    const override: Wallet = {
+      request: async (input) =>
+        input.method === "eth_sendTransaction"
+          ? raw(input.method, [
+              { ...(input.params![0] as Record<string, unknown>), gas: "0x1c9c380" },
+            ])
+          : wallet.request(input),
+    };
+    await expect(new Executor(client, override, store, exclusive).execute(p)).rejects.toThrow(
+      /fee limit/,
+    );
+    const result = await verifyRecord(store.list()[0]);
+    expect(result.status).toBe("failed");
+    expect(result.checks.some((check) => check.detail?.includes("upfront gas limits"))).toBe(true);
   }, 30000);
   it("exports counters once per plan and distinguishes local inclusion from adoption", async () => {
     const store = new DeFiStore(memory()),

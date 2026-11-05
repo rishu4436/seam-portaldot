@@ -1,8 +1,9 @@
 import { decodeEventLog, encodeFunctionData, keccak256, type Hex } from "viem";
 import { guardAbi, tokenAbi } from "./abi.js";
-import { DeFiClient, same } from "./client.js";
+import { DeFiClient, same, gasPriceLimit } from "./client.js";
 import { DeFiInvariantError, invariant, parsePlan } from "./model.js";
 import type { RecordEntry } from "./store.js";
+import { hasReviewedProgram } from "./review.js";
 export type Check = { label: string; status: "pass" | "fail" | "unknown"; detail?: string };
 export type Verification = {
   status: "verified" | "local-confirmed" | "pending" | "failed" | "reverted";
@@ -18,6 +19,7 @@ export async function verifyRecord(row: RecordEntry): Promise<Verification> {
   let executionHash: Hex | undefined,
     output: string | undefined,
     totalFee = 0n,
+    totalUpfrontLimits = 0n,
     blockNumber: bigint | undefined,
     finality = true,
     reverted = false;
@@ -26,8 +28,8 @@ export async function verifyRecord(row: RecordEntry): Promise<Verification> {
       p = parsePlan(row.plan, c.registry);
     pass("Plan integrity and market binding");
     // A user-supplied code hash establishes identity, not trusted guard/token semantics.
-    // No reviewed V3 deployment is installed in this local release, including for imported evidence.
-    if (c.registry.mode === "v3-testnet") {
+    // Only the bundled reviewed test program can establish V3 guard/token semantics.
+    if (c.registry.mode === "v3-testnet" && !hasReviewedProgram(c.registry)) {
       checks.push({
         label: "Reviewed V3 market required",
         status: "unknown",
@@ -82,10 +84,12 @@ export async function verifyRecord(row: RecordEntry): Promise<Verification> {
       );
       invariant(tx.nonce === a.nonce, "Transaction nonce differs from the saved request");
       invariant(
-        receipt.effectiveGasPrice <= BigInt(p.maxGasPrice),
+        receipt.effectiveGasPrice <= BigInt(p.maxGasPrice) &&
+          gasPriceLimit(tx) <= BigInt(p.maxGasPrice),
         "Actual gas price exceeded the approved limit",
       );
       totalFee += receipt.gasUsed * receipt.effectiveGasPrice;
+      totalUpfrontLimits += tx.gas * gasPriceLimit(tx);
       // A current hash cannot establish which implementation executed in a historical block.
       for (const pin of [
         c.registry.guard,
@@ -185,6 +189,11 @@ export async function verifyRecord(row: RecordEntry): Promise<Verification> {
       "Recorded transaction fees exceed the approved plan budget",
     );
     pass("Actual recorded network fees within budget");
+    invariant(
+      totalUpfrontLimits <= BigInt(p.maxTotalFee),
+      "Submitted upfront gas limits exceed the approved wallet cost budget",
+    );
+    pass("Submitted upfront wallet cost limits within budget");
     if (!executionHash) {
       if (reverted && finality) {
         checks.push({

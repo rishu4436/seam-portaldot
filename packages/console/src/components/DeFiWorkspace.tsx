@@ -11,6 +11,8 @@ import {
   parseRegistry,
   verifyRecord,
   pilotMetrics,
+  hasReviewedProgram,
+  MarketWalletOperations,
   type Action,
   type Plan,
   type RecordEntry,
@@ -21,6 +23,8 @@ import {
 import { downloadJson } from "../lib/evidence";
 import "./defi.css";
 import { browserKV } from "../lib/runstore";
+import V3MarketSetup from "./V3MarketSetup";
+const MARKET_KEY = "seam.defi.market-profile.v1";
 function localStore() {
   const kv = browserKV();
   if (!kv)
@@ -68,6 +72,9 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState<string>(),
     [problem, setProblem] = useState<string>();
+  const [cost, setCost] = useState<Awaited<ReturnType<DeFiClient["previewCost"]>>>();
+  const [claimCost, setClaimCost] =
+    useState<Awaited<ReturnType<MarketWalletOperations["estimateClaim"]>>>();
   const [rows, setRows] = useState<RecordEntry[]>([]),
     [checks, setChecks] = useState<Record<string, Verification>>({}),
     [allowance, setAllowance] = useState<string>();
@@ -80,11 +87,15 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
     setPlan(undefined);
     setAck(false);
     setAllowance(undefined);
+    setCost(undefined);
+    setClaimCost(undefined);
   };
   const refreshJournal = () => setRows(localStore().list());
   useEffect(() => {
     try {
       refreshJournal();
+      const saved = browserKV()?.getItem(MARKET_KEY);
+      if (saved) setRegistry(parseRegistry(JSON.parse(saved)));
     } catch (e) {
       setProblem(errorText(e));
     }
@@ -125,6 +136,8 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
       setAck(false);
       setConnection(undefined);
       setPositions(undefined);
+      setCost(undefined);
+      setClaimCost(undefined);
       setNotice("Wallet account or network changed. Reconnect and read a new quote.");
     };
     provider?.on?.("accountsChanged", changed);
@@ -211,9 +224,11 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
         maxTotalFee: parseUnits(feeCap, 18).toString(),
       });
       const approved = await client.allowance(result);
+      const preview = await client.previewCost(result);
       if (version !== revision.current) return;
       setPlan(result);
       setAllowance(approved.toString());
+      setCost(preview);
       setNotice(
         "Quote bound to your account, recipient, limits and this deployment. Review before continuing.",
       );
@@ -305,6 +320,43 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
     invalidate();
     fn();
   };
+  const readyMarket = (next: Registry) => {
+    const kv = browserKV();
+    if (!kv) throw new Error("Persistent browser storage is unavailable");
+    kv.setItem(MARKET_KEY, JSON.stringify(next));
+    invalidate();
+    setConnection(undefined);
+    setPositions(undefined);
+    setRegistry(next);
+  };
+  const claimTestAssets = (send: boolean) =>
+    run(async () => {
+      if (!connection || !registry?.review) return;
+      const kv = browserKV();
+      if (!kv) throw new Error("Persistent browser storage is required");
+      const operations = new MarketWalletOperations(kv);
+      if (!send) {
+        setClaimCost(await operations.estimateClaim(connection.account, registry));
+        return;
+      }
+      if (!claimCost || claimCost.fundingShortfall !== "0") return;
+      const version = revision.current;
+      try {
+        await operations.claim(
+          connection.wallet,
+          connection.account,
+          registry,
+          claimCost.maximumCost,
+          setNotice,
+          claimCost.gasPrice,
+        );
+        setNotice("Test assets claimed. Nothing with monetary value was minted.");
+        const balances = await client!.positions(connection.account);
+        if (version === revision.current) setPositions(balances);
+      } finally {
+        setClaimCost(undefined);
+      }
+    });
   return (
     <div className="defi-workspace">
       <div className="defi-heading">
@@ -317,7 +369,9 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
           {registry?.mode === "local"
             ? "LOCAL DEVELOPMENT"
             : registry
-              ? "V3 TESTNET · READ ONLY"
+              ? hasReviewedProgram(registry)
+                ? "V3 TESTNET · SEAM TEST MARKET"
+                : "V3 TESTNET · READ ONLY"
               : "V3 MARKET NOT CONFIGURED"}
         </span>
       </div>
@@ -326,7 +380,9 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
         <p>
           {registry?.mode === "local"
             ? "An executable local market, with development funds. The reference pool and vault are experimental; the vault holds assets and has no yield strategy."
-            : "V3 DeFi signing is disabled until a reviewed market deployment is included. Profiles can be loaded for read-only identity checks. Native asset IDs are not ERC-20 addresses."}
+            : registry && hasReviewedProgram(registry)
+              ? "A test market with minted sUSD and sETH. Native tPOT pays network costs. The vault has no yield strategy. Engineering reviewed; no independent security audit. Native asset IDs are not ERC-20 addresses."
+              : "Create or open a reviewed test market below. A fresh EVM wallet needs native test gas before deployment. Native asset IDs are not ERC-20 addresses."}
         </p>
         <button disabled={busy} onClick={() => profileFile.current?.click()}>
           Load market profile
@@ -344,10 +400,7 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
                 if (selected.size > 20000) throw new Error("Market profile exceeds 20 KB");
                 const next = parseRegistry(JSON.parse(await selected.text()));
                 await new DeFiClient(next).audit();
-                invalidate();
-                setConnection(undefined);
-                setPositions(undefined);
-                setRegistry(next);
+                readyMarket(next);
                 setNotice(
                   "Profile identities checked. Matching code hashes are not a security audit.",
                 );
@@ -355,6 +408,15 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
           }}
         />
       </div>
+      {registry?.mode !== "local" &&
+        (registry ? (
+          <details className="defi-market-details">
+            <summary>Market setup and wallet recovery</summary>
+            <V3MarketSetup busy={busy} run={run} onReady={readyMarket} onNotice={setNotice} />
+          </details>
+        ) : (
+          <V3MarketSetup busy={busy} run={run} onReady={readyMarket} onNotice={setNotice} />
+        ))}
       {notice && (
         <p className="defi-notice" role="status">
           {notice}
@@ -454,7 +516,7 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
                 />
               </label>
               <label>
-                Total fee budget ({native})
+                Maximum wallet cost ({native})
                 <input
                   inputMode="decimal"
                   value={feeCap}
@@ -518,7 +580,7 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
                 </dd>
                 <dt>Expires</dt>
                 <dd>{new Date(plan.deadline * 1000).toLocaleTimeString()}</dd>
-                <dt>Total network fee budget</dt>
+                <dt>Total wallet cost budget</dt>
                 <dd>
                   {money(plan.maxTotalFee, 18)} {native}
                 </dd>
@@ -532,6 +594,47 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
                     : ""}
                 </dd>
               </dl>
+              {cost && (
+                <div className="defi-cost">
+                  <strong>
+                    Simulated maximum wallet cost: {money(cost.maximumCost, 18)} {native}
+                  </strong>
+                  <p>
+                    Includes buffered gas for {cost.steps.map((row) => row.phase).join(" + ")} at
+                    the approved gas price ceiling. V3 estimates can include storage reservation.
+                    This is an upfront limit, not the final fee.
+                  </p>
+                  {BigInt(cost.maximumCost) > BigInt(plan.maxTotalFee) && (
+                    <>
+                      <p>
+                        The current budget is too low. Updating it clears this review; read a new
+                        quote afterward.
+                      </p>
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          edit(() =>
+                            setFeeCap(
+                              money(
+                                ((BigInt(cost.maximumCost) * 110n + 99n) / 100n).toString(),
+                                18,
+                              ),
+                            ),
+                          )
+                        }
+                      >
+                        Use estimate + 10% budget & clear review
+                      </button>
+                    </>
+                  )}
+                  {BigInt(cost.fundingShortfall) > 0n && (
+                    <p>
+                      Fund the EVM account with at least {money(cost.fundingShortfall, 18)} more{" "}
+                      {native} before continuing.
+                    </p>
+                  )}
+                </div>
+              )}
               <p>
                 Slippage limits movement after this quote; they do not prove a fair price. This
                 adapter has no independent price oracle.
@@ -554,7 +657,15 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
               </label>
               <button
                 className="defi-primary"
-                disabled={busy || !ack || registry?.mode !== "local"}
+                disabled={
+                  busy ||
+                  !ack ||
+                  !registry ||
+                  (registry.mode !== "local" && !hasReviewedProgram(registry)) ||
+                  !cost ||
+                  BigInt(cost.maximumCost) > BigInt(plan.maxTotalFee) ||
+                  cost.fundingShortfall !== "0"
+                }
                 onClick={() => void execute()}
               >
                 {busy
@@ -576,6 +687,46 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
               </button>
             </div>
             <h2>Capital you control.</h2>
+            {registry?.review && connection && (
+              <div className="defi-faucet">
+                <p>
+                  Need test assets? Each address can claim 10,000 sUSD and 10 sETH once. Market
+                  creators receive them automatically.
+                </p>
+                <button disabled={busy} onClick={() => void claimTestAssets(false)}>
+                  Estimate test asset claim
+                </button>
+                {claimCost && (
+                  <>
+                    <p>
+                      Maximum upfront cost: {money(claimCost.maximumCost, 18)} {native}. EVM
+                      shortfall: {money(claimCost.fundingShortfall, 18)} {native}. Review this
+                      network cost before signing.
+                    </p>
+                    <button
+                      disabled={busy || claimCost.fundingShortfall !== "0"}
+                      onClick={() => void claimTestAssets(true)}
+                    >
+                      Approve test asset claim in wallet
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            {registry?.review && (
+              <p className="defi-market-link">
+                <a href={`?view=defi&marketTx=${registry.review.deploymentTransaction}`}>
+                  Open or share this market
+                </a>{" "}
+                ·{" "}
+                <button
+                  disabled={busy}
+                  onClick={() => downloadJson("seam-v3-market.json", registry)}
+                >
+                  Export profile
+                </button>
+              </p>
+            )}
             {positions ? (
               <>
                 <div className="defi-balances">

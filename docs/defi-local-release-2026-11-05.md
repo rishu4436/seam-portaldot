@@ -1,5 +1,7 @@
 # Local DeFi release — 2026-11-05
 
+Historical local-only release report. See [the subsequent V3 setup release](defi-v3-setup-release-2026-11-05.md) for dependency remediation and the wallet-driven test market.
+
 Branch: `codex/defi-local-20261104`. Based on the tested native-wallet release `e6a9eb2253cb035e25687fd7f681a569fe3a90fe`.
 
 This release was built and tested locally before publishing its source. It does not replace the hosted Vercel application or Railway backend. No real testnet deployment, approval or economic transaction was submitted by this work.

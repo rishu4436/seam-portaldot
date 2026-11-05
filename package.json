@@ -15,6 +15,8 @@
     "build": "npm run build -w @seam/compiler && npm run build -w @seam/policy && npm run build -w @seam/chain && npm run build -w @seam/sdk && npm run build -w @seam/defi && npm run build -w @seam/console",
     "test": "npm test -w @seam/compiler && npm test -w @seam/policy && npm test -w @seam/sdk && npm test -w @seam/chain && npm test -w @seam/defi && npm test -w @seam/console",
     "defi:contracts": "node packages/defi/scripts/build-contracts.mjs",
+    "defi:review": "npm run defi:contracts && node packages/defi/scripts/build-review.mjs && prettier --write packages/defi/src/reviewed-v3.ts",
+    "defi:simulate-v3": "node packages/defi/scripts/simulate-v3.mjs",
     "defi:local": "node packages/defi/scripts/local-node.mjs",
     "defi:audit-v3": "node packages/defi/scripts/audit-v3.mjs",
     "test:defi": "npm test -w @seam/defi",

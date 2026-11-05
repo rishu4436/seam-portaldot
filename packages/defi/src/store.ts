@@ -1,4 +1,5 @@
 import type { Hex } from "viem";
+import { WalletClaimStore } from "./wallet-claims.js";
 import {
   digest,
   exactKeys,
@@ -36,6 +37,12 @@ export const STORE_KEY = "seam.defi.records.v1";
 // Restored evidence never restores a send permission or removes an existing claim.
 export class DeFiStore {
   constructor(private readonly storage: StorageLike) {}
+  assertNoExternalRequests(account: `0x${string}`, chainId: number) {
+    invariant(
+      new WalletClaimStore(this.storage).pending(account, chainId).length === 0,
+      "Recover the earlier deployment or faucet wallet request before sending another transaction",
+    );
+  }
   list(): RecordEntry[] {
     const text = this.storage.getItem(STORE_KEY);
     if (!text) return [];

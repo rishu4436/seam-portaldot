@@ -4,11 +4,21 @@ import {
   encodeFunctionData,
   keccak256,
   parseUnits,
+  encodeAbiParameters,
+  parseAbiParameters,
+  toHex,
   type PublicClient,
   type Address,
   type Hex,
 } from "viem";
 import { guardAbi, poolAbi, tokenAbi, vaultAbi } from "./abi.js";
+import {
+  assertReviewedCode,
+  factoryCreationData,
+  hasReviewedProgram,
+  reviewedBindings,
+  V3_EVM_GENESIS,
+} from "./review.js";
 import {
   address,
   digest,
@@ -24,6 +34,11 @@ import {
 export const same = (a: string | null | undefined, b: string | null | undefined) =>
   !!a && !!b && a.toLowerCase() === b.toLowerCase();
 export type Wallet = { request(input: { method: string; params?: unknown[] }): Promise<unknown> };
+export function gasPriceLimit(tx: { maxFeePerGas?: bigint; gasPrice?: bigint }) {
+  const price = tx.maxFeePerGas ?? tx.gasPrice;
+  invariant(price !== undefined && price >= 0n, "Transaction gas price limit is unavailable");
+  return price;
+}
 export class DeFiClient {
   readonly registry: Registry;
   readonly rpc: PublicClient;
@@ -44,6 +59,11 @@ export class DeFiClient {
       chain === r.chainId && same(genesis.hash, r.genesisHash),
       "RPC network identity mismatch",
     );
+    if (r.mode === "v3-testnet")
+      invariant(
+        same(genesis.hash, V3_EVM_GENESIS),
+        "V3 EVM genesis does not match the released network identity",
+      );
     const head = await this.rpc.getBlock();
     invariant(head.hash, "Missing head hash");
     for (const pin of [r.guard, r.pool, ...r.tokens, r.vault]) {
@@ -52,6 +72,51 @@ export class DeFiClient {
         code && code !== "0x" && same(keccak256(code), pin.codeHash),
         `Contract identity changed at ${pin.address}`,
       );
+    }
+    if (r.review) {
+      invariant(
+        hasReviewedProgram(r),
+        "This market's engineering review is not included in this release",
+      );
+      invariant(
+        r.tokens[0].symbol === "sUSD" &&
+          r.tokens[0].decimals === 6 &&
+          r.tokens[1].symbol === "sETH" &&
+          r.tokens[1].decimals === 18 &&
+          r.vault.symbol === "svUSD" &&
+          r.vault.decimals === 6,
+        "Reviewed test asset metadata mismatch",
+      );
+      for (const binding of reviewedBindings(r)) {
+        const code = await this.rpc.getCode({ address: binding.address, blockNumber: head.number });
+        invariant(code && code !== "0x", "Reviewed market contract is missing");
+        assertReviewedCode(binding.name, code, binding.bindings);
+        if (binding.name === "SeamTestMarket")
+          invariant(same(keccak256(code), r.review.factory.codeHash), "Factory code hash changed");
+      }
+      const receipt = await this.rpc.getTransactionReceipt({
+        hash: r.review.deploymentTransaction,
+      });
+      const tx = await this.rpc.getTransaction({ hash: r.review.deploymentTransaction });
+      const block = await this.rpc.getBlock({ blockNumber: receipt.blockNumber });
+      invariant(
+        receipt.status === "success" &&
+          same(receipt.contractAddress, r.review.factory.address) &&
+          same(block.hash, receipt.blockHash) &&
+          same(tx.blockHash, receipt.blockHash) &&
+          tx.to === null &&
+          same(tx.from, r.review.deployer) &&
+          tx.value === 0n &&
+          same(tx.input, factoryCreationData(r.deploymentId)),
+        "Factory deployment does not match the reviewed creation program",
+      );
+      if (r.mode === "v3-testnet") {
+        const finalized = await this.rpc.getBlock({ blockTag: "finalized" });
+        invariant(
+          finalized.number >= receipt.blockNumber,
+          "Market deployment is not finalized yet. Recover or refresh after finality.",
+        );
+      }
     }
     const id = await this.rpc.readContract({
       address: r.guard.address,
@@ -292,6 +357,74 @@ export class DeFiClient {
       functionName: "allowance",
       args: [plan.account, this.registry.guard.address],
     });
+  }
+  async previewCost(plan: Plan) {
+    await this.preflight(plan);
+    invariant(
+      this.registry.mode === "local" || hasReviewedProgram(this.registry),
+      "Cost simulation requires a bundled reviewed token layout",
+    );
+    const allowance = await this.allowance(plan),
+      amount = BigInt(plan.amountIn),
+      spender = this.registry.guard.address;
+    const gasPrice = await this.rpc.getGasPrice();
+    invariant(gasPrice <= BigInt(plan.maxGasPrice), "Gas price changed. Read a new quote.");
+    const steps: { phase: string; gas: string; maximumCost: string }[] = [];
+    const estimate = async (phase: string, to: Address, data: Hex, overridden = false) => {
+      // OpenZeppelin ERC20 5.6.1: _allowances is the nested mapping in storage slot 1.
+      // This override is used only for a read-only estimate before the actual exact approval.
+      const ownerSlot = keccak256(
+        encodeAbiParameters(parseAbiParameters("address,uint256"), [plan.account, 1n]),
+      );
+      const slot = keccak256(
+        encodeAbiParameters(parseAbiParameters("address,bytes32"), [spender, ownerSlot]),
+      );
+      const estimated = await this.rpc.estimateGas({
+        account: plan.account,
+        to,
+        data,
+        value: 0n,
+        gasPrice,
+        ...(overridden
+          ? {
+              stateOverride: [
+                {
+                  address: plan.tokenIn,
+                  stateDiff: [{ slot, value: toHex(amount, { size: 32 }) }],
+                },
+              ],
+            }
+          : {}),
+      });
+      const gas = (estimated * 120n) / 100n + 5000n;
+      steps.push({
+        phase,
+        gas: gas.toString(),
+        maximumCost: (gas * BigInt(plan.maxGasPrice)).toString(),
+      });
+    };
+    if (allowance !== amount) {
+      if (allowance > 0n)
+        await estimate(
+          "Reset old approval",
+          plan.tokenIn,
+          encodeFunctionData({ abi: tokenAbi, functionName: "approve", args: [spender, 0n] }),
+        );
+      await estimate(
+        "Exact token approval",
+        plan.tokenIn,
+        encodeFunctionData({ abi: tokenAbi, functionName: "approve", args: [spender, amount] }),
+      );
+    }
+    await estimate(plan.action, spender, this.data(plan), allowance !== amount);
+    const maximumCost = steps.reduce((sum, row) => sum + BigInt(row.maximumCost), 0n),
+      balance = await this.rpc.getBalance({ address: plan.account });
+    return {
+      steps,
+      maximumCost: maximumCost.toString(),
+      balance: balance.toString(),
+      fundingShortfall: (maximumCost > balance ? maximumCost - balance : 0n).toString(),
+    };
   }
   async walletIdentity(wallet: Wallet, account: Address) {
     const [chain, accounts] = await Promise.all([

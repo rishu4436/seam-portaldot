@@ -1,4 +1,5 @@
 import { getAddress, isAddress, keccak256, stringToHex, type Address, type Hex } from "viem";
+import type { Review } from "./review.js";
 export type Action = "swap" | "deposit" | "redeem";
 export type Pin = { address: Address; codeHash: Hex };
 export type Token = Pin & { symbol: string; decimals: number };
@@ -14,6 +15,7 @@ export type Registry = {
   pool: Pin;
   vault: Token;
   createdAt: string;
+  review?: Review;
 };
 export type Plan = {
   version: 1;
@@ -120,6 +122,7 @@ export function parseRegistry(input: unknown): Registry {
     "pool",
     "vault",
     "createdAt",
+    ...(v.review !== undefined ? ["review"] : []),
   ]);
   invariant(
     v.version === 1 && (v.mode === "local" || v.mode === "v3-testnet"),
@@ -166,6 +169,23 @@ export function parseRegistry(input: unknown): Registry {
     typeof v.createdAt === "string" && Number.isFinite(Date.parse(v.createdAt)),
     "Invalid creation time",
   );
+  let review: Review | undefined;
+  if (v.review !== undefined) {
+    const input = object(v.review);
+    exactKeys(input, ["id", "factory", "deployer", "deploymentTransaction"]);
+    review = {
+      id: hash(input.id),
+      factory: pin(input.factory),
+      deployer: address(input.deployer),
+      deploymentTransaction: hash(input.deploymentTransaction),
+    };
+    invariant(
+      ![guard.address, pool.address, vault.address, ...tokens.map((t) => t.address)].some(
+        (a) => a.toLowerCase() === review!.factory.address.toLowerCase(),
+      ),
+      "Factory must be distinct from market contracts",
+    );
+  }
   return {
     version: 1,
     mode: v.mode,
@@ -178,6 +198,7 @@ export function parseRegistry(input: unknown): Registry {
     tokens,
     vault,
     createdAt: v.createdAt,
+    ...(review ? { review } : {}),
   };
 }
 export function planId(plan: Omit<Plan, "id">): Hex {

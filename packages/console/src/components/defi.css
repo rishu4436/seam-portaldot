@@ -101,6 +101,81 @@
   gap: 24px;
   align-items: start;
 }
+.defi-setup {
+  margin: 0 0 24px;
+}
+.defi-setup > p,
+.defi-faucet p,
+.defi-cost p {
+  color: #5b6d60;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.defi-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+.defi-setup details,
+.defi-market-details {
+  margin: 18px 0 24px;
+}
+.defi-setup summary,
+.defi-market-details > summary {
+  padding: 14px 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #34523e;
+}
+.defi-setup-label {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.defi-setup-label input {
+  border: 1px solid #d5dfd7;
+  border-radius: 9px;
+  padding: 12px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+}
+.defi-funding,
+.defi-cost,
+.defi-faucet {
+  border: 1px solid #d8e4dc;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f4f8f2;
+  margin: 16px 0;
+  font-size: 12px;
+}
+.defi-funding > code,
+.defi-setup-claim > code {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+  user-select: all;
+}
+.defi-setup-claim {
+  padding: 16px 0;
+  border-top: 1px solid #dce3dc;
+  font-size: 12px;
+}
+.defi-setup-claim button {
+  margin: 4px 8px 4px 0;
+}
+.defi-market-link {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.defi-market-link a {
+  color: #35674e;
+}
 .defi-card {
   border: 1px solid #dce3dc;
   background: #fff;
