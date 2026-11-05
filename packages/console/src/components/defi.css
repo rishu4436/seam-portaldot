@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 .defi-heading h1 {
   font-size: clamp(28px, 3.2vw, 43px);
@@ -56,6 +56,18 @@
   line-height: 1.65;
   margin: 0;
   color: #53645a;
+}
+.defi-network-note p strong {
+  display: block;
+  color: #34523e;
+}
+.defi-action-nav {
+  max-width: 500px;
+}
+.defi-workspace button.defi-setup-cta {
+  background: #244d36;
+  color: #fff;
+  border-color: #244d36;
 }
 .defi-workspace button {
   cursor: pointer;
