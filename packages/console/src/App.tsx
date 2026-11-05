@@ -20,7 +20,7 @@ const DeFiWorkspace = lazy(() => import("./components/DeFiWorkspace"));
 type ActiveView = "compose" | "defi" | "activity" | "verify" | "team" | "developers";
 const viewLabels: Record<ActiveView, string> = {
   compose: "New transaction",
-  defi: "DeFi workspace",
+  defi: "Swap & vaults",
   activity: "Activity & recovery",
   verify: "Receipt inspector",
   team: "Team workspace",
@@ -507,7 +507,7 @@ export default function App() {
           )}
           {defiOpened && (
             <div hidden={activeView !== "defi"}>
-              <Suspense fallback={<p className="loading-view">Loading DeFi workspace…</p>}>
+              <Suspense fallback={<p className="loading-view">Loading swaps and vaults…</p>}>
                 <DeFiWorkspace onBusyChange={setExecutionBusy} />
               </Suspense>
             </div>

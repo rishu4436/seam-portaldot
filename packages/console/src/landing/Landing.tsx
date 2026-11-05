@@ -33,6 +33,7 @@ export default function Landing() {
         <nav aria-label="Main navigation">
           <a href="#how">How it works</a>
           <a href="#principles">Why SEAM</a>
+          <a href="./console.html?view=defi">Swap & vaults</a>
           <a href="./console.html?view=developers">
             Developers <Symbol kind="external" />
           </a>
@@ -64,8 +65,8 @@ export default function Landing() {
               <a className="site-button" href="./console.html">
                 Open the live workspace <Symbol kind="arrow" />
               </a>
-              <a className="text-link" href="#how">
-                Explore the flow <span>↓</span>
+              <a className="text-link" href="./console.html?view=defi">
+                Explore swaps & vaults <span>↗</span>
               </a>
             </div>
             <div className="hero-footnote">

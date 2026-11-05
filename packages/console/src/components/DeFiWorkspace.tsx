@@ -59,6 +59,9 @@ const statusLabel = (v?: Verification) =>
 export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: boolean) => void }) {
   const [registry, setRegistry] = useState<Registry>(),
     [connection, setConnection] = useState<Connected>();
+  const [setupOpen, setSetupOpen] = useState(() =>
+    new URLSearchParams(location.search).has("marketTx"),
+  );
   const [positions, setPositions] = useState<Positions>(),
     [action, setAction] = useState<Action>("swap"),
     [reverse, setReverse] = useState(false);
@@ -328,6 +331,7 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
     setConnection(undefined);
     setPositions(undefined);
     setRegistry(next);
+    setSetupOpen(false);
   };
   const claimTestAssets = (send: boolean) =>
     run(async () => {
@@ -361,9 +365,9 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
     <div className="defi-workspace">
       <div className="defi-heading">
         <div>
-          <p className="eyebrow">CAPITAL, WITH CLEAR CONDITIONS</p>
-          <h1>Put your intent to work.</h1>
-          <p>Set your limits. Keep custody. Check the economic result.</p>
+          <p className="eyebrow">PROTECTED DEFI ON PORTALDOT V3</p>
+          <h1>Swap. Deposit. Withdraw.</h1>
+          <p>Choose an action, review your limits and verify the result.</p>
         </div>
         <span className={`defi-environment ${registry ? "ready" : ""}`}>
           {registry?.mode === "local"
@@ -372,18 +376,46 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
               ? hasReviewedProgram(registry)
                 ? "V3 TESTNET · SEAM TEST MARKET"
                 : "V3 TESTNET · READ ONLY"
-              : "V3 MARKET NOT CONFIGURED"}
+              : "V3 TESTNET · SETUP REQUIRED"}
         </span>
+      </div>
+      <div className="defi-tabs defi-action-nav" role="group" aria-label="DeFi action">
+        {(["swap", "deposit", "redeem"] as Action[]).map((id) => (
+          <button
+            key={id}
+            disabled={busy}
+            aria-pressed={action === id}
+            onClick={() =>
+              edit(() => {
+                setAction(id);
+                setAmount(id === "redeem" ? "1" : "100");
+              })
+            }
+          >
+            {id === "redeem" ? "Withdraw" : id[0].toUpperCase() + id.slice(1)}
+          </button>
+        ))}
       </div>
       <div className="defi-network-note">
         <span aria-hidden="true">◈</span>
         <p>
-          {registry?.mode === "local"
-            ? "An executable local market, with development funds. The reference pool and vault are experimental; the vault holds assets and has no yield strategy."
-            : registry && hasReviewedProgram(registry)
-              ? "A test market with minted sUSD and sETH. Native tPOT pays network costs. The vault has no yield strategy. Engineering reviewed; no independent security audit. Native asset IDs are not ERC-20 addresses."
-              : "Create or open a reviewed test market below. A fresh EVM wallet needs native test gas before deployment. Native asset IDs are not ERC-20 addresses."}
+          {registry?.mode === "local" ? (
+            "An executable local market, with development funds. The reference pool and vault are experimental; the vault holds assets and has no yield strategy."
+          ) : registry && hasReviewedProgram(registry) ? (
+            "A test market with minted sUSD and sETH. Native tPOT pays network costs. The vault has no yield strategy. Engineering reviewed; no independent security audit. Native asset IDs are not ERC-20 addresses."
+          ) : (
+            <>
+              <strong>Market setup required.</strong> Swap, Deposit and Withdraw unlock after you
+              create or open a verified test market. Connect a test wallet in setup and review its
+              funding requirement.
+            </>
+          )}
         </p>
+        {!registry && (
+          <button className="defi-setup-cta" disabled={busy} onClick={() => setSetupOpen(true)}>
+            Set up or open market
+          </button>
+        )}
         <button disabled={busy} onClick={() => profileFile.current?.click()}>
           Load market profile
         </button>
@@ -408,15 +440,16 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
           }}
         />
       </div>
-      {registry?.mode !== "local" &&
-        (registry ? (
-          <details className="defi-market-details">
-            <summary>Market setup and wallet recovery</summary>
-            <V3MarketSetup busy={busy} run={run} onReady={readyMarket} onNotice={setNotice} />
-          </details>
-        ) : (
+      {registry?.mode !== "local" && (
+        <details
+          className="defi-market-details"
+          open={setupOpen}
+          onToggle={(event) => setSetupOpen(event.currentTarget.open)}
+        >
+          <summary>Market setup & recovery</summary>
           <V3MarketSetup busy={busy} run={run} onReady={readyMarket} onNotice={setNotice} />
-        ))}
+        </details>
+      )}
       {notice && (
         <p className="defi-notice" role="status">
           {notice}
@@ -430,25 +463,14 @@ export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: b
       <div className="defi-grid">
         <section className="defi-card defi-trade">
           <div className="defi-card-top">
-            <span className="eyebrow">PROTECTED EXECUTION</span>
+            <h2>
+              {action === "swap"
+                ? "Swap assets"
+                : action === "deposit"
+                  ? "Deposit into the vault"
+                  : "Withdraw your assets"}
+            </h2>
             <span className="defi-small">01 / Intent</span>
-          </div>
-          <div className="defi-tabs" role="group" aria-label="DeFi action">
-            {(["swap", "deposit", "redeem"] as Action[]).map((id) => (
-              <button
-                key={id}
-                disabled={busy}
-                aria-pressed={action === id}
-                onClick={() =>
-                  edit(() => {
-                    setAction(id);
-                    setAmount(id === "redeem" ? "1" : "100");
-                  })
-                }
-              >
-                {id === "redeem" ? "Withdraw" : id[0].toUpperCase() + id.slice(1)}
-              </button>
-            ))}
           </div>
           <fieldset disabled={busy || !registry || !connection} className="defi-fields">
             <label className="defi-amount-label">

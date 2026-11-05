@@ -124,10 +124,29 @@ async function connectAndQuote() {
 it("keeps an unconfigured market disconnected and does not ask the wallet for permissions", async () => {
   vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
   render(<DeFiWorkspace onBusyChange={() => {}} />);
-  expect(screen.getByText("V3 MARKET NOT CONFIGURED")).toBeTruthy();
+  expect(screen.getByText("V3 TESTNET · SETUP REQUIRED")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Connect EVM wallet" }).hasAttribute("disabled")).toBe(
     true,
   );
+  expect(wallet).not.toHaveBeenCalled();
+});
+it("shows swap, deposit and withdrawal before setup while keeping unfunded trading locked", async () => {
+  vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+  render(<DeFiWorkspace onBusyChange={() => {}} />);
+  expect(screen.getByRole("heading", { name: "Swap assets" })).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "Swap", exact: true }).getAttribute("aria-pressed"),
+  ).toBe("true");
+  expect(screen.getByText("Market setup & recovery").closest("details")?.open).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "Deposit", exact: true }));
+  expect(screen.getByRole("heading", { name: "Deposit into the vault" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Withdraw", exact: true }));
+  expect(screen.getByRole("heading", { name: "Withdraw your assets" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Connect EVM wallet" }).hasAttribute("disabled")).toBe(
+    true,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Set up or open market" }));
+  expect(screen.getByRole("button", { name: "Connect test wallet for setup" })).toBeTruthy();
   expect(wallet).not.toHaveBeenCalled();
 });
 it("quotes without a signature and invalidates review when any spending field changes", async () => {
@@ -166,6 +185,7 @@ it("adds or switches only the pinned V3 test network without requesting a transa
         : null,
   );
   render(<DeFiWorkspace onBusyChange={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "Set up or open market" }));
   fireEvent.click(screen.getByRole("button", { name: "Connect test wallet for setup" }));
   await screen.findByText("Setup account");
   expect(
