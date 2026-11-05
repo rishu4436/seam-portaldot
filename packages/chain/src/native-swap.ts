@@ -433,9 +433,8 @@ async function checkBalance(
   );
   if (p.reverse)
     requireThat(
-      BigInt(asset.balance) === BigInt(p.amountIn) ||
-        BigInt(asset.balance) - BigInt(p.amountIn) >= BigInt(asset.minBalance),
-      "The remaining asset balance would be below its minimum.",
+      BigInt(asset.balance) - BigInt(p.amountIn) >= BigInt(asset.minBalance),
+      "Keep the asset account minimum when swapping back. Use the available balance rather than the entire balance.",
     );
   return balances;
 }

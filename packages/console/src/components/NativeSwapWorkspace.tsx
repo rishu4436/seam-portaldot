@@ -416,10 +416,26 @@ export default function NativeSwapWorkspace({
                 {inputSymbol}
                 {reverse && assetBalance && (
                   <button
-                    onClick={() => edit(() => setAmount(money(assetBalance, pool?.decimals ?? 0)))}
+                    disabled={BigInt(assetBalance) <= BigInt(pool?.minBalance ?? "0")}
+                    onClick={() =>
+                      edit(() =>
+                        setAmount(
+                          money(
+                            (BigInt(assetBalance) - BigInt(pool?.minBalance ?? "0")).toString(),
+                            pool?.decimals ?? 0,
+                          ),
+                        ),
+                      )
+                    }
                   >
-                    Use balance
+                    Use available
                   </button>
+                )}
+                {reverse && pool && (
+                  <span className="native-minimum">
+                    Keep {money(pool.minBalance, pool.decimals)} {pool.symbol} to preserve the asset
+                    account.
+                  </span>
                 )}
               </p>
             )}

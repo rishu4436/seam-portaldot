@@ -120,6 +120,18 @@ it("refuses excessive fees and reverse swaps without tokens", async () => {
     }),
   ).rejects.toThrow(/asset balance/);
 });
+it("reverse swaps preserve the asset minimum instead of quoting a full balance that cannot be withdrawn", async () => {
+  const { send } = nativeSwapNode({ assetBalance: 100000000000n });
+  await expect(
+    quoteNativeSwap(send, { ...nativeInput, reverse: true, amountIn: "100000000000" }),
+  ).rejects.toThrow(/asset account minimum/);
+  const result = await quoteNativeSwap(send, {
+    ...nativeInput,
+    reverse: true,
+    amountIn: "99999999999",
+  });
+  expect(result.plan.amountIn).toBe("99999999999");
+});
 it("invalidates stale nonce, expired quote, changed checkpoint and moved price before signing", async () => {
   const { send, node } = nativeSwapNode(),
     { plan } = await quoteNativeSwap(send, nativeInput);
