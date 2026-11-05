@@ -223,8 +223,7 @@ export default function App() {
         <div className="rail-bottom">
           <div className="network-pill">
             <span className="status-dot" />
-            {activeView === "defi" ? "DeFi markets" : "Portaldot V3"}{" "}
-            <span>{activeView === "defi" ? "CHECK PROFILE" : "TESTNET"}</span>
+            Portaldot V3 <span>TESTNET</span>
           </div>
           <p>
             Your wallet holds the keys.

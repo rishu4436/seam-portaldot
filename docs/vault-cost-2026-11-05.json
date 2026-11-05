@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-11-05T10:53:12.354Z",
+  "readOnly": true,
+  "submitted": false,
+  "chainId": 420420777,
+  "rpc": "https://test-evm-rpc-v3.portaldot.dev/",
+  "gasPrice": "21710",
+  "estimates": [
+    {
+      "name": "SeamReferenceVault",
+      "estimatedGas": "14668474609425236",
+      "rawUpfrontTPOT": "318.45258377062187356",
+      "bufferedUpfrontTPOT": "420.357410577340273323"
+    },
+    {
+      "name": "SeamGuardRouter",
+      "estimatedGas": "20666767001424719",
+      "rawUpfrontTPOT": "448.67551160093064949",
+      "bufferedUpfrontTPOT": "592.251675313347843222"
+    }
+  ],
+  "assumptions": [
+    "eth_estimateGas creation simulations with a virtual balance; no wallet was funded or connected.",
+    "The vault constructor was simulated with compatible test-token code at its asset address.",
+    "The buffer is 20% estimated gas plus 5000 gas, at a 10% higher gas price rounded up.",
+    "These are upfront requirements, not observed final fees.",
+    "Separate simulations do not establish a reviewed staged deployment or native-asset compatibility.",
+    "Underlying asset deployment/compatibility, deposits, liquidity and subsequent operations are excluded."
+  ]
+}

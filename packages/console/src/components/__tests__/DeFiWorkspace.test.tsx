@@ -11,7 +11,7 @@ import {
   type Registry,
 } from "@seam/defi";
 import type { Address, Hex } from "viem";
-import DeFiWorkspace from "../DeFiWorkspace";
+import DeFiWorkspace from "../ContractDeFiWorkspace";
 const addr = (n: number) => ("0x" + n.toString(16).padStart(40, "0")) as Address;
 const pin = (n: number) => ({ address: addr(n), codeHash: ("0x" + "ab".repeat(32)) as Hex });
 const registry: Registry = {

@@ -1,0 +1,45 @@
+# Native swaps on Portaldot V3
+
+The default Swap & vaults view now uses the runtime's `AssetConversion.swap_exact_tokens_for_tokens`, with a native AccountId32 wallet and existing testnet liquidity. It does not deploy contracts, bridge funds, mint assets or require an EVM wallet. Contract markets and ERC-4626 vaults remain a separate, explicit route.
+
+## Readiness and scope
+
+Read-only checks on 2026-11-05 found 14 usable native pools among the first 32 pool storage keys. The default pool was tPOT / DUCAT, native asset ID 8801000, with 20 tPOT and 20,000 DUCAT in reserves at that observation. Names and symbols come from chain metadata; these community test tokens have no promised value or backing. Discovery omits frozen assets, empty/unreadable reserves and unsupported decimals. The list is bounded, not a claim to index every future pool.
+
+A 0.01 tPOT input quoted 9.9650324313 DUCAT, with a 0.5% slippage minimum of 9.9152072691 and an unsigned native fee estimate of approximately 0.0181074 tPOT. These are time-specific observations, not a price or fee guarantee. Quotes and fees are re-read before signing and submission. Existing liquidity means no pool creation or liquidity seeding transaction is required from a tester. The runtime's separate new-pool setup constant is 1 tPOT; it is not charged for an existing-pool swap.
+
+The first screen reads the default pool directly for a faster initial load. Refresh live pools discovers the bounded catalog. The implementation is restricted to the pinned V3 genesis, runtime spec 3002 / transaction version 2, observed native decimals 14 and the reviewed swap layout. A changed runtime blocks new execution until reviewed. Engineering checks are not an independent security audit. Live reads and offline signed-transaction tests have passed; a fresh user-approved V3 wallet transaction is required to establish live execution for this release.
+
+## Signing and verification review
+
+- Metadata encodes `Native` / `WithId(u32)` paths. SCALE runtime API inputs use little-endian byte encoding, including the u128 amount. Quotes include the pool trading fee.
+- The plan binds the signer and self recipient, direction, native asset ID and decimals, pool trading fee, exact input, minimum output, nonce, checkpoint, normalized runtime layout, local expiry and fee review limit. The reviewed normalized V3 layout is `0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304`; an unexplained layout change blocks execution even if the spec version stays the same. Changing any form field clears approval.
+- Input is limited to 1 tPOT of pool reserve value and 2% of the input reserve. Slippage is 0.01–5%; the fee review limit is at most 0.1 tPOT. Native balance checks retain the account minimum, respect frozen funds and reserve a fee margin. Assets must meet their minimum balance.
+- The native transaction enforces minimum output, `keep_alive = true` and a 32-block mortal era. A quote expires locally after two minutes. There is no runtime deadline argument or transaction fee cap: local expiry and the fee review limit are checked before broadcast; actual fees are determined by the runtime. The UI makes this distinction explicit.
+- The extension signs an exact payload. The existing chain assembler verifies its signature and decodes the resulting signed transaction against the approved request. Fresh nonce, checkpoint, runtime, balance, quote and fee checks and a successful `system_dryRun` are required before submission. The selected wallet must still expose the approved account.
+- A browser Web Lock serializes wallet requests. Persistent storage records the locally calculated transaction hash before the only `author_submitExtrinsic` call. A failed or lost reply retains that hash and blocks another swap until read-only recovery resolves it. Rejection and failed pre-submit checks remain not sent. Signed bytes and signatures are never stored.
+- Verification scans finalized blocks within the mortal signing window, re-reads historical metadata and checks the actual transaction hash, signature, call, signer, nonce and era. It also checks the canonical quote checkpoint and re-reads asset decimals, pool fee and quote there, so a restored archive cannot relabel a signed amount using forged asset units. It requires `System.ExtrinsicSuccess` and exactly one `AssetConversion.SwapExecuted` with matching accounts, path, input and output at least the minimum. Fee evidence is shown when available. Inclusion alone does not prove the effect.
+- A request can be marked expired/not included only after every block of its signing window has been read and finalized without the transaction. RPC failure never clears an uncertain send. Recovery never broadcasts.
+- Native archive restore validates every plan before writing, deduplicates and rejects conflicting hashes atomically. Imported verification claims are discarded; imported transactions require live verification. An interrupted unsigned request is not sent. Archive files are public transaction evidence and should be stored privately if account associations matter.
+
+Primary interface references: [Polkadot Asset Conversion pallet](https://paritytech.github.io/polkadot-sdk/master/pallet_asset_conversion/index.html), [runtime event documentation](https://polkadot.js.org/docs/substrate/events/#swapexecutedaccountid32-accountid32-u128-u128-vecframesupporttokensfungibleunionofnativeorwithidu128). V3's own live metadata is authoritative for its concrete layout.
+
+## Wallet rehearsal
+
+1. Open [Native swaps](https://seam-portaldot.vercel.app/console.html?view=defi) in the desktop browser with the funded Polkadot wallet extension. Leave the default native route selected. Wait for live pools to load.
+2. Connect the Polkadot wallet, permit address sharing and select the funded native account. Connecting and balance reads must not request a signature. No EVM funding transfer is needed.
+3. Select tPOT / DUCAT, asset 8801000. Start with **0.01 tPOT**, 0.5% slippage and a 0.05 tPOT fee review limit. Read a live quote. Review the full signer/recipient, exact input, minimum output and network fee estimate.
+4. Check the acknowledgement and click Sign & submit native swap. For the first attempt, reject in the wallet. No hash should be created; the journal must say Not sent. Read a new quote, then approve the second attempt yourself.
+5. Wait for Verified native swap, the matching VERIFIED EXECUTION banner, a transaction hash, finalized block and verified output. If the submit response is lost, use Verify / recover on V3. Never submit again to recover.
+6. Refresh the page, reconnect and verify the receipt again without a signature. Reverse the direction and use the received asset balance, or a smaller amount that meets the asset minimum, for a second swap back into tPOT. Repeat quote review and signing. Fees and trading slippage mean the round trip returns less tPOT than its starting amount.
+7. Export the native archive. Restore it twice; a confirmation should appear and no duplicate should be created. On a fresh browser profile, restored transactions must await live verification, and restoration must never request a signature.
+
+If a quote expires, a runtime/nonce changes or a signed dry run fails, stop and read the displayed reason. A new quote needs a new acknowledgement. Share transaction hashes and the displayed error if help is needed; never share a seed phrase, private key, wallet password or wallet export file.
+
+## Separate vault cost assessment
+
+The existing ERC-4626 vault is Solidity code and needs an ERC-20-compatible underlying asset. Native pool liquidity does not automatically make a native asset compatible with that vault. A compatible asset/precompile, separate deployment attestation and vault/guard integration would need review before enabling a staged native-asset vault.
+
+Read-only V3 sizing refreshed on 2026-11-05 at 10:53 UTC estimated the current standalone reference vault at about **318.45 tPOT raw upfront**, or **420.36 tPOT** with the existing gas/price buffers. Its guard was about **448.68 raw**, or **592.25 buffered**. These were separate creation simulations, with a virtual balance and a compatible test-token code override for the vault constructor. They exclude underlying asset deployment or compatibility work, deposits, liquidity and later wallet transactions. Code upload storage quotes alone were 229.02 tPOT for the vault runtime and 330.54 for the guard runtime. They are not observed final fees or a complete reviewed staged deployment plan.
+
+The [read-only sizing report](vault-cost-2026-11-05.json) records the inputs, buffers and limitations. These costs are unrelated to a native swap's roughly 0.018 tPOT transaction fee. Native swapping is released independently; no vault funds are spent as part of it. Existing contract-market setup still uses the complete attested factory and must not be represented as a lower-cost staged deployment.

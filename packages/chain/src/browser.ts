@@ -1,4 +1,5 @@
 import "./quiet.js"; // must stay first, like index.ts
+export * from "./native-swap.js";
 export {
   readRecipientReadiness,
   assessRecipientReadiness,
