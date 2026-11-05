@@ -135,12 +135,12 @@ it("shows swap, deposit and withdrawal before setup while keeping unfunded tradi
   render(<DeFiWorkspace onBusyChange={() => {}} />);
   expect(screen.getByRole("heading", { name: "Swap assets" })).toBeTruthy();
   expect(
-    screen.getByRole("button", { name: "Swap", exact: true }).getAttribute("aria-pressed"),
+    screen.getByRole("button", { name: "Swap" }).getAttribute("aria-pressed"),
   ).toBe("true");
   expect(screen.getByText("Market setup & recovery").closest("details")?.open).toBe(false);
-  fireEvent.click(screen.getByRole("button", { name: "Deposit", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Deposit" }));
   expect(screen.getByRole("heading", { name: "Deposit into the vault" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Withdraw", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Withdraw" }));
   expect(screen.getByRole("heading", { name: "Withdraw your assets" })).toBeTruthy();
   expect(screen.getByRole("button", { name: "Connect EVM wallet" }).hasAttribute("disabled")).toBe(
     true,
