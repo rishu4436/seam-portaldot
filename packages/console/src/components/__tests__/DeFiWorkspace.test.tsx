@@ -32,6 +32,10 @@ const registry: Registry = {
 };
 const account = addr(6),
   wallet = vi.fn();
+const listeners = new Map<string, Set<() => void>>();
+function emitWalletChange() {
+  for (const callback of listeners.get("accountsChanged") ?? []) callback();
+}
 function plan(): Plan {
   const body: Omit<Plan, "id"> = {
     version: 1,
@@ -58,12 +62,22 @@ function plan(): Plan {
 beforeEach(() => {
   localStorage.clear();
   wallet.mockReset();
+  listeners.clear();
   wallet.mockImplementation(async ({ method }: { method: string }) =>
     method === "eth_chainId" ? "0x7a69" : [account],
   );
   Object.defineProperty(window, "ethereum", {
     configurable: true,
-    value: { request: wallet, on: vi.fn(), removeListener: vi.fn() },
+    value: {
+      request: wallet,
+      on: vi.fn((event: string, callback: () => void) => {
+        if (!listeners.has(event)) listeners.set(event, new Set());
+        listeners.get(event)!.add(callback);
+      }),
+      removeListener: vi.fn((event: string, callback: () => void) =>
+        listeners.get(event)?.delete(callback),
+      ),
+    },
   });
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => registry }));
   vi.spyOn(DeFiClient.prototype, "audit").mockResolvedValue(
@@ -79,6 +93,15 @@ beforeEach(() => {
   });
   vi.spyOn(DeFiClient.prototype, "quote").mockImplementation(async () => plan());
   vi.spyOn(DeFiClient.prototype, "allowance").mockResolvedValue(0n);
+  vi.spyOn(DeFiClient.prototype, "previewCost").mockResolvedValue({
+    steps: [
+      { phase: "Exact token approval", gas: "20000", maximumCost: "100000" },
+      { phase: "swap", gas: "40000", maximumCost: "200000" },
+    ],
+    maximumCost: "300000",
+    balance: "1000000000000000000",
+    fundingShortfall: "0",
+  });
 });
 afterEach(() => {
   cleanup();
@@ -117,12 +140,44 @@ it("quotes without a signature and invalidates review when any spending field ch
   fireEvent.change(screen.getByLabelText("Amount to spend"), { target: { value: "101" } });
   expect(screen.queryByRole("heading", { name: "What you are approving" })).toBeNull();
 });
+it("requires a fresh quote after raising a budget below the simulated wallet cost", async () => {
+  vi.mocked(DeFiClient.prototype.previewCost).mockResolvedValue({
+    steps: [{ phase: "swap", gas: "1", maximumCost: "20000000000000000" }],
+    maximumCost: "20000000000000000",
+    balance: "1000000000000000000",
+    fundingShortfall: "0",
+  });
+  await connectAndQuote();
+  fireEvent.click(screen.getByRole("checkbox", { name: /I reviewed/ }));
+  expect(
+    screen.getByRole("button", { name: "Approve exact amount & execute" }).hasAttribute("disabled"),
+  ).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Use estimate + 10% budget & clear review" }));
+  expect(screen.queryByRole("heading", { name: "What you are approving" })).toBeNull();
+  expect(wallet.mock.calls.every(([arg]) => arg.method !== "eth_sendTransaction")).toBe(true);
+});
+it("adds or switches only the pinned V3 test network without requesting a transaction", async () => {
+  vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+  wallet.mockImplementation(async ({ method }: { method: string }) =>
+    method === "eth_chainId"
+      ? "0x190f1ca9"
+      : method === "eth_requestAccounts" || method === "eth_accounts"
+        ? [account]
+        : null,
+  );
+  render(<DeFiWorkspace onBusyChange={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "Connect test wallet for setup" }));
+  await screen.findByText("Setup account");
+  expect(
+    wallet.mock.calls.find(([arg]) => arg.method === "wallet_switchEthereumChain")?.[0].params,
+  ).toEqual([{ chainId: "0x190f1ca9" }]);
+  expect(wallet.mock.calls.every(([arg]) => arg.method !== "eth_sendTransaction")).toBe(true);
+  expect(screen.queryByRole("button", { name: "Create test market in wallet" })).toBeNull();
+});
 it("clears the quote and connection when the wallet announces an account change", async () => {
   await connectAndQuote();
-  const provider = (window as unknown as { ethereum: { on: ReturnType<typeof vi.fn> } }).ethereum;
-  const callback = provider.on.mock.calls.find(([event]) => event === "accountsChanged")![1];
   const { act } = await import("@testing-library/react");
-  act(() => callback());
+  act(emitWalletChange);
   expect(screen.queryByRole("heading", { name: "What you are approving" })).toBeNull();
   expect(screen.getByText(/Wallet account or network changed/)).toBeTruthy();
 });
@@ -136,10 +191,8 @@ it("discards a slow balance response after the wallet account changes", async ()
       }),
   );
   fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
-  const provider = (window as unknown as { ethereum: { on: ReturnType<typeof vi.fn> } }).ethereum;
-  const callback = provider.on.mock.calls.find(([event]) => event === "accountsChanged")![1];
   const { act } = await import("@testing-library/react");
-  act(() => callback());
+  act(emitWalletChange);
   await act(async () =>
     resolve({
       block: "2",

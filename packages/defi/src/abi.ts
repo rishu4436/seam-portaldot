@@ -9,6 +9,18 @@ export const tokenAbi = parseAbi([
 ]);
 export const poolAbi = parseAbi([
   "function getAmountsOut(uint256,address[]) view returns (uint256[])",
+  "function reserve0() view returns (uint256)",
+  "function reserve1() view returns (uint256)",
+]);
+export const marketAbi = parseAbi([
+  "function usd() view returns (address)",
+  "function eth() view returns (address)",
+  "function pool() view returns (address)",
+  "function vault() view returns (address)",
+  "function guard() view returns (address)",
+  "function bootstrapper() view returns (address)",
+  "function claimed(address) view returns (bool)",
+  "function claimTestAssets()",
 ]);
 export const vaultAbi = parseAbi([
   "function asset() view returns (address)",

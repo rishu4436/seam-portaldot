@@ -5,3 +5,6 @@ export * from "./store.js";
 export * from "./execution.js";
 export * from "./verify.js";
 export * from "./metrics.js";
+export * from "./review.js";
+export * from "./wallet-claims.js";
+export * from "./deployment.js";

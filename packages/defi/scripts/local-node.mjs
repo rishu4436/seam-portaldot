@@ -1,13 +1,27 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { createPublicClient, createWalletClient, http, keccak256, parseUnits, toHex } from "viem";
-import { hardhat } from "viem/chains";
+import { foundry } from "viem/chains";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:net";
 import { buildContracts } from "./build-contracts.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
+export function anvilBinary() {
+  const architecture = { x64: "amd64", arm64: "arm64" }[process.arch];
+  if (!architecture || !["win32", "linux", "darwin"].includes(process.platform))
+    throw new Error("This platform has no pinned Anvil binary");
+  const binary = require.resolve(
+    `@foundry-rs/anvil-${process.platform}-${architecture}/bin/anvil${process.platform === "win32" ? ".exe" : ""}`,
+  );
+  const version = spawnSync(binary, ["--version"], { encoding: "utf8", windowsHide: true });
+  if (version.status !== 0 || !/anvil Version: 1\.7\.1\b/.test(version.stdout))
+    throw new Error("Expected the pinned Anvil 1.7.1 binary");
+  return binary;
+}
 export async function startNode(port = 8545) {
   await new Promise((resolve, reject) => {
     const reservation = createServer();
@@ -20,29 +34,38 @@ export async function startNode(port = 8545) {
     );
     reservation.listen(port, "127.0.0.1", () => reservation.close(resolve));
   });
-  // Hardhat prints public development keys on startup. Do not capture or display them.
+  // Development nodes print public test keys on startup. Do not capture or display them.
+  // Ignore ambient Anvil options: this node must never inherit a fork URL or private mnemonic.
+  const environment = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith("ANVIL_")),
+  );
   const child = spawn(
-    process.execPath,
+    anvilBinary(),
     [
-      resolve(here, "../../../node_modules/hardhat/dist/src/cli.js"),
-      "node",
-      "--network",
-      "default",
-      "--hostname",
+      "--host",
       "127.0.0.1",
       "--port",
       String(port),
+      "--chain-id",
+      "31337",
+      "--hardfork",
+      "cancun",
+      "--block-time",
+      "5",
+      "--mixed-mining",
     ],
-    { cwd: resolve(here, ".."), stdio: "ignore", windowsHide: true },
+    { cwd: resolve(here, ".."), stdio: "ignore", windowsHide: true, env: environment },
   );
+  let startupError;
+  child.once("error", (error) => {
+    startupError = error;
+  });
   const url = `http://127.0.0.1:${port}/`,
     rpc = createPublicClient({ transport: http(url, { retryCount: 0, timeout: 1000 }) });
   let ready = false;
   for (let i = 0; i < 150; i++) {
-    if (child.exitCode !== null)
-      throw new Error(
-        "Local Hardhat node stopped during startup. Check the pinned Hardhat configuration.",
-      );
+    if (startupError || child.exitCode !== null)
+      throw new Error("Local Anvil node stopped during startup. Check the pinned platform binary.");
     try {
       if ((await rpc.getChainId()) === 31337) {
         ready = true;
@@ -66,7 +89,7 @@ export async function bootstrap(url) {
   const rpc = createPublicClient({ transport: http(url) });
   if ((await rpc.getChainId()) !== 31337) throw new Error("Bootstrap requires local chain 31337");
   const accounts = await rpc.request({ method: "eth_accounts" });
-  const wallet = createWalletClient({ chain: hardhat, account: accounts[0], transport: http(url) });
+  const wallet = createWalletClient({ chain: foundry, account: accounts[0], transport: http(url) });
   const built = buildContracts(),
     artifacts = built.contracts;
   async function deploy(name, args) {

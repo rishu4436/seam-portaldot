@@ -209,5 +209,7 @@ describe("submit lock on the layout hash (real policy gate, real decoder)", () =
       expect(txt).not.toContain(DRIFT.slice(2, 202));
       expect(txt).not.toContain(V3.slice(2, 202));
     }
-  });
+    // This integration case decodes and compares real V3 metadata twice. Keep
+    // the assertions intact while allowing a loaded Windows runner to finish.
+  }, 20000);
 });

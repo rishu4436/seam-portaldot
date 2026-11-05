@@ -1,10 +1,10 @@
 # DeFi execution threat model
 
-This is a local engineering release, not an independent security audit. It deliberately blocks V3 economic submission and trusted economic verification pending a reviewed integration. Imported V3 profiles cannot establish guard or token semantics using their own code hashes and events; their proof stays unknown. Read-only identity inspection remains available.
+This is an engineering release for disposable local and V3 test assets, not an independent security audit. V3 signing is restricted to the bundled Seam test market program and its canonical creation transaction. Imported V3 profiles cannot establish guard or token semantics using their own code hashes, review ID or events; unreviewed proof stays unknown. See the [test market engineering review](defi-v3-engineering-review.md).
 
 | Boundary | Enforced behavior | Remaining trust / limitation |
 | --- | --- | --- |
-| Market identity | Restricted endpoint/network; block-zero hash, deployment ID, runtime-code hashes, token decimals, vault underlying | RPC honesty is trusted. Hash pins do not audit code, proxies, governance, admin keys, or economic design. A V3 profile cannot enable submission. |
+| Market identity | Restricted endpoint/network; block-zero hash, deployment ID, runtime-code hashes, token decimals, vault underlying; V3 bundled runtime/immutable and creation-input attestation | RPC honesty is trusted. Hash pins do not audit code, proxies, governance, admin keys, or economic design. Only the isolated bundled test program can enable V3 submission. |
 | Intent | Strict field set; canonical hash binds account, recipient, market, token path, exact input, minimum output, quote block, deadline, gas price, fee budget and random salt | User must review what the wallet actually displays. No external price oracle or fair-price proof. Slippage is relative to a venue quote. |
 | Amounts | Canonical decimal integer base units, exact decimal parsing, 1–500 bps slippage, positive non-dust output, bounded quote lifetime | Standard ERC-20 semantics only. Fee-on-transfer, rebasing, callback and malicious tokens are not approved integrations. |
 | Allowance | Existing nonzero allowance reset before replacement; exact amount to the guard; guard's venue approval reset to zero in the same transaction | Separate approval can remain after wallet rejection, revert or expired quote. User can revoke. No claim of atomicity across approval and action. |
@@ -16,16 +16,16 @@ This is a local engineering release, not an independent security audit. It delib
 | Archive | Bounded payloads/count, strict plans/registry, integrity hash, validate-all-before-one-write, dedup; original entries and claims retained on merge | Integrity hash detects damage, not authorship. Import is untrusted evidence. No signed transaction bytes, keys or wallet passwords are stored. Public call data/addresses are included and disclose activity to whoever receives an export. |
 | Reference vault | OpenZeppelin ERC-4626 virtual accounting plus guard minimum shares/assets; exit preview/maxRedeem and action simulation | Holds underlying assets; no investment strategy or yield promise. Donation/exchange-rate changes can invalidate a quote. Real vault strategies introduce additional oracle, debt, queue, liquidity and upgrade risks. |
 
-## Before real testnet enablement
+## Before integrating external markets
 
 1. Select one maintained venue and obtain published deployment/source information. Verify the exact factory/router/pool, route, fee model, token contracts and token/native-asset mapping. Document proxy and upgrade controls. Obtain protocol maintainer review or acknowledgement; do not imply a partnership without it.
 2. Establish compiler/opcode and V3 RPC compatibility, account mapping, gas estimation, dry-run behavior, logs and finality semantics. Independently deploy/review the guard only with an authorized testnet signer; this release never uses a stored user wallet to deploy it.
 3. Exercise swap in both directions with real available testnet liquidity. Verify non-dust output, market movement, fees and an exit. Publish the evidence with an explicit testnet label and reviewed code hashes.
 4. Exercise the selected vault's deposit and full redeem, including limits, pause/queue, donation/rounding, loss and illiquidity behavior. Do not enable an adapter simply because it exposes ERC-4626 method names.
-5. Commission an independent contract/adapter review, add a deployment allowlist and rollback/disable path, and retain the old release. Only then remove the explicit V3 submission block.
+5. Commission an independent contract/adapter review, add a deployment allowlist and rollback/disable path, and retain the old release. Only then enable an external market adapter; the bundled disposable test fixture is a separate scope.
 
 ## Dependencies
 
 Pinned viem 2.57.16 supplies ABI encoding and RPC/wallet interfaces. OpenZeppelin 5.6.1 supplies token, vault, safe transfer and reentrancy primitives. No dependency choice establishes an audit of Seam's composed contracts.
 
-Zod 4.6.7 is explicitly pinned for the runtime ABI tool's optional peer resolution. Hardhat 3.21.2 still requires the separate Zod 3 API for the localhost-only developer tool. The [Zod constrained-collection memory advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) affects that legacy developer dependency; do not expose the development node/configuration interface or process untrusted configuration. Track its upstream migration. Report runtime and full development audits separately rather than suppressing the advisory or forcing an incompatible major version into Hardhat.
+Zod 4.6.7 is explicitly pinned for the runtime ABI tool's optional peer resolution. The vulnerable Hardhat/Zod 3 development path has been removed. The loopback test runner now uses the official pinned Anvil 1.7.1 native package, verifies its version, ignores inherited Anvil options and suppresses public development key output. It never forks a public chain or reads user wallet material. Both full and runtime npm audit results are recorded in the current release report. No advisory is suppressed by a forced incompatible major version.

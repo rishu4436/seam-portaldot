@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-11-05T04:46:20.004Z",
+  "chainId": 420420777,
+  "genesis": "0x7c05b2dc7486f81a693d676553fa13f380b5be16da7c739b182931cd6cf07001",
+  "readOnly": true,
+  "stateCommitted": false,
+  "storageOverrideVerified": true,
+  "compiler": "0.8.38+commit.1835d247.Emscripten.clang",
+  "sourceSha256": "4871717598b02b818f0b6b33fbc4f8ce8f666d6ee2af9dd4ff17786e827eab2f",
+  "creationInputHash": "0x62cc6f0ff2434157774e972ef75ed6ff63e35841e78d8b2ee9e138695f4d483e",
+  "results": {
+    "swapOutput": "49845030450464088",
+    "depositShares": "100000000",
+    "redeemedAssets": "100000000",
+    "finalDollars": "9900000000",
+    "finalEthers": "10049845030450464088"
+  },
+  "limitations": [
+    "This is an RPC eth_call simulation with temporary account funding. No contracts or liquidity were persistently deployed.",
+    "Engineering compatibility evidence is not an independent security audit."
+  ]
+}

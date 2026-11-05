@@ -1,8 +1,9 @@
 import { encodeFunctionData, toHex, type Address, type Hex } from "viem";
-import { DeFiClient, same, type Wallet } from "./client.js";
+import { DeFiClient, same, gasPriceLimit, type Wallet } from "./client.js";
 import { tokenAbi } from "./abi.js";
 import { hash, invariant, parsePlan, type Plan } from "./model.js";
 import { DeFiStore, type Attempt, type RecordEntry } from "./store.js";
+import { hasReviewedProgram } from "./review.js";
 export type Exclusive = <T>(name: string, work: () => Promise<T>) => Promise<T>;
 export const JOURNAL_LOCK = "seam.defi.wallet-journal.v1";
 export const browserExclusive: Exclusive = async (name, work) => {
@@ -36,6 +37,7 @@ export class Executor {
       await client.audit();
     } else await client.preflight(p);
     await client.walletIdentity(wallet, p.account);
+    store.assertNoExternalRequests(p.account, client.registry.chainId);
     const unresolved = store.unresolved(p.account, client.registry.chainId);
     invariant(
       unresolved.length === 0,
@@ -44,6 +46,7 @@ export class Executor {
     const nonce = await client.rpc.getTransactionCount({ address: p.account, blockTag: "pending" });
     const gasPrice = await client.rpc.getGasPrice();
     invariant(gasPrice <= BigInt(p.maxGasPrice), "Gas price exceeds your approved limit");
+    const walletPriceCap = client.registry.mode === "v3-testnet" ? BigInt(p.maxGasPrice) : gasPrice;
     // eth_estimateGas executes the exact call. After a scoped approval it checks actual swap/vault preconditions.
     const estimated = await client.rpc.estimateGas({
       account: p.account,
@@ -53,13 +56,13 @@ export class Executor {
       gasPrice,
     });
     const gas = (estimated * 120n) / 100n + 5000n;
-    const spent = await this.actualFees(row);
+    const spent = await this.actualFees(row, true);
     invariant(
-      spent + gas * gasPrice <= BigInt(p.maxTotalFee),
+      spent + gas * walletPriceCap <= BigInt(p.maxTotalFee),
       "This transaction would exceed the remaining fee budget",
     );
     const native = await client.rpc.getBalance({ address: p.account });
-    invariant(native >= gas * gasPrice, "Insufficient native balance for network fees");
+    invariant(native >= gas * walletPriceCap, "Insufficient native balance for network fees");
     const head = await client.rpc.getBlockNumber();
     const attempt: Attempt = {
       phase,
@@ -68,7 +71,7 @@ export class Executor {
       nonce,
       fromBlock: head.toString(),
       gas: gas.toString(),
-      gasPrice: gasPrice.toString(),
+      gasPrice: walletPriceCap.toString(),
       state: "requesting",
     };
     row.attempts.push(attempt);
@@ -82,12 +85,15 @@ export class Executor {
         params: [
           {
             from: p.account,
+            chainId: toHex(client.registry.chainId),
             to,
             data,
             value: "0x0",
             nonce: toHex(nonce),
             gas: toHex(gas),
-            gasPrice: toHex(gasPrice),
+            ...(client.registry.mode === "v3-testnet"
+              ? { type: "0x2", maxFeePerGas: toHex(walletPriceCap), maxPriorityFeePerGas: "0x0" }
+              : { gasPrice: toHex(gasPrice) }),
           },
         ],
       });
@@ -133,7 +139,8 @@ export class Executor {
     invariant(
       tx.gas <= gas &&
         receipt.effectiveGasPrice <= BigInt(p.maxGasPrice) &&
-        spent + fee <= BigInt(p.maxTotalFee),
+        gasPriceLimit(tx) <= BigInt(p.maxGasPrice) &&
+        spent + tx.gas * gasPriceLimit(tx) <= BigInt(p.maxTotalFee),
       "Wallet transaction exceeded an approved network fee limit",
     );
     invariant(
@@ -142,23 +149,34 @@ export class Executor {
     );
     return attempt.hash;
   }
-  async actualFees(row: RecordEntry) {
+  async actualFees(row: RecordEntry, upfrontLimits = false) {
     let fees = 0n;
     for (const a of row.attempts)
       if (a.hash) {
         const receipt = await this.client.rpc.getTransactionReceipt({ hash: a.hash });
         const tx = await this.client.rpc.getTransaction({ hash: a.hash });
-        invariant(same(tx.from, row.plan.account), "Journal transaction sender mismatch");
+        invariant(
+          same(tx.from, row.plan.account) &&
+            same(tx.to, a.to) &&
+            same(tx.input, a.data) &&
+            tx.value === 0n &&
+            tx.nonce === a.nonce,
+          "Journal transaction sender or payload mismatch",
+        );
         const block = await this.client.rpc.getBlock({ blockNumber: receipt.blockNumber });
         invariant(same(block.hash, receipt.blockHash), "Transaction receipt is not canonical");
-        fees += receipt.gasUsed * receipt.effectiveGasPrice;
+        // Carry the complete earlier gas limits forward. RPC gas fees alone need not
+        // describe all native storage reservations on a revive chain.
+        fees += upfrontLimits
+          ? tx.gas * gasPriceLimit(tx)
+          : receipt.gasUsed * receipt.effectiveGasPrice;
       }
     return fees;
   }
   async execute(plan: Plan, notify: (text: string) => void = () => {}) {
     const c = this.client;
     invariant(
-      c.registry.mode === "local",
+      c.registry.mode === "local" || hasReviewedProgram(c.registry),
       "V3 DeFi submission is disabled until a reviewed deployment and liquidity profile are included in the release",
     );
     plan = Object.freeze(parsePlan({ ...plan }, c.registry));
@@ -221,7 +239,7 @@ export class Executor {
   }
   async revoke(plan: Plan, notify: (text: string) => void = () => {}) {
     invariant(
-      this.client.registry.mode === "local",
+      this.client.registry.mode === "local" || hasReviewedProgram(this.client.registry),
       "V3 DeFi submission is disabled in this local development release",
     );
     return this.exclusive(JOURNAL_LOCK, async () => {
