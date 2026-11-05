@@ -89,8 +89,19 @@ export class NativeSwapStore {
     if (this.kv.getItem(NATIVE_SWAP_STORE) !== raw)
       throw Error("Native swap journal was not persisted. Submission is blocked.");
   }
-  assertReady() {
-    if (this.list().some((r) => ["submitted", "uncertain"].includes(r.state)))
+  assertReady(planId?: string, ownSigning = false) {
+    const rows = this.list();
+    if (planId && rows.some((r) => r.plan.id === planId && r.hash))
+      throw Error(
+        "This native swap plan was already submitted. Recover its transaction; do not sign it again.",
+      );
+    if (
+      rows.some(
+        (r) =>
+          ["submitted", "uncertain"].includes(r.state) ||
+          (r.state === "signing" && !(ownSigning && r.plan.id === planId)),
+      )
+    )
       throw Error("Recover the pending native swap before requesting another signature.");
   }
   abandonUnsigned() {
@@ -107,15 +118,14 @@ export class NativeSwapStore {
   }
   restore(input: unknown) {
     const a = input as { archiveVersion: number; kind: string; rows: unknown[] };
-    if (
-      !a ||
-      a.archiveVersion !== 1 ||
-      a.kind !== "seam-native-swaps" ||
-      !Array.isArray(a.rows) ||
-      a.rows.length > 100 ||
-      JSON.stringify(input).length > 512000
-    )
-      throw Error("Choose a native swap archive with at most 100 records and 500 KB.");
+    if (!a || a.kind !== "seam-native-swaps")
+      throw Error(
+        "This file is not a native swap archive. Restore composer receipts in Activity & recovery, or inspect them in Receipt inspector.",
+      );
+    if (a.archiveVersion !== 1 || !Array.isArray(a.rows))
+      throw Error("Unsupported or invalid native swap archive format.");
+    if (a.rows.length > 100 || JSON.stringify(input).length > 512000)
+      throw Error("Native swap archives support at most 100 records and 500 KB.");
     const incoming = a.rows.map((r) => row(r, true)),
       rows = this.list(),
       ids = new Map(rows.map((r) => [r.plan.id, r]));

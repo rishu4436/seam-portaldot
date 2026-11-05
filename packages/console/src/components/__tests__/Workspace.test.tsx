@@ -19,7 +19,11 @@ vi.mock("../../lib/rebind", () => ({
   }),
 }));
 vi.mock("../ManifestBuilder", () => ({
-  ManifestBuilder: (props: { onInvalidate: () => void; onUsePolicy: (s: unknown) => void }) => {
+  ManifestBuilder: (props: {
+    onInvalidate: () => void;
+    onPolicyEdit: () => void;
+    onUsePolicy: (s: unknown) => void;
+  }) => {
     const select = (id: string, downgrade = false) =>
       props.onUsePolicy({
         plan: {
@@ -41,6 +45,7 @@ vi.mock("../ManifestBuilder", () => ({
         <button onClick={() => select("plan-b")}>Provide plan B</button>
         <button onClick={() => select("downgraded", true)}>Provide downgraded plan</button>
         <button onClick={props.onInvalidate}>Edit draft</button>
+        <button onClick={props.onPolicyEdit}>Edit policy</button>
       </div>
     );
   },
@@ -87,6 +92,18 @@ it("invalidates review and approval when the draft changes", async () => {
   );
   fireEvent.click(screen.getByText("Edit draft"));
   expect(screen.getByTestId("execution").textContent).toBe("no plan / unapproved");
+});
+it("clears an approval immediately on a policy edit and names the cause", async () => {
+  mocks.check.mockResolvedValue({ ok: true, codes: [], explanations: [] });
+  render(<App />);
+  fireEvent.click(screen.getByText("Provide plan A"));
+  fireEvent.click(screen.getByText("Check policy and approve"));
+  await waitFor(() =>
+    expect(screen.getByTestId("execution").textContent).toBe("plan-a / approved"),
+  );
+  fireEvent.click(screen.getByText("Edit policy"));
+  expect(screen.getByTestId("execution").textContent).toBe("no plan / unapproved");
+  expect(screen.getByText(/Policy changed\. The previous approval was cleared/)).toBeTruthy();
 });
 it("discards a late approval result when a different plan was selected", async () => {
   let resolve!: (v: unknown) => void;

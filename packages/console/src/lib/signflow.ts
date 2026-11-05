@@ -17,7 +17,23 @@ import { runPolicyGate, type GateOutcome, type PolicyGateInput } from "./policyg
 
 type Res<T> = { ok: true; value: T } | { ok: false; reason: "unavailable"; message: string };
 type Send = (method: string, params: unknown[]) => Promise<unknown>;
-type PreflightRes = { steps: { actionId: string; dryRun: string }[]; totalFee?: unknown };
+type PreflightRes = {
+  steps: { actionId: string; dryRun: string; note?: string }[];
+  totalFee?: unknown;
+};
+
+/** A policy allow-list cannot establish a contract's execution permissions. Require a real pre-sign simulation. */
+export function callPermissionBlock(plan: unknown, preflight: PreflightRes): string | undefined {
+  const steps = (plan as { steps?: { actionId: string; kind: string }[] })?.steps ?? [];
+  const call = steps.find(
+    (s) =>
+      ["contracts.call", "revive.call", "nfts.mint"].includes(s.kind) &&
+      preflight.steps.find((p) => p.actionId === s.actionId)?.dryRun !== "ok",
+  );
+  return call
+    ? `${call.kind === "nfts.mint" ? "NFT mint" : "Contract call"} ${call.actionId} has no successful pre-sign simulation for this account. Permission and execution could not be verified. Nothing will be signed.`
+    : undefined;
+}
 
 /** One signed transaction's system_dryRun as @seam/chain's preflightReport returns it (transactions[i].dryRun). */
 export interface ChainDryRun {
@@ -246,6 +262,8 @@ export async function preSign(args: {
   } catch (e) {
     return { res: no(`Preflight failed, so nothing will be signed: ${errMsg(e)}`) };
   }
+  const permissionBlock = callPermissionBlock(input.plan, preflight);
+  if (permissionBlock) return { res: no(permissionBlock) };
   if (!chain.buildSigningEnvelope)
     return { res: no("The signing envelope builder is not available, so nothing will be signed.") };
   let envelope: ReturnType<NonNullable<ChainFns["buildSigningEnvelope"]>>;
@@ -520,6 +538,14 @@ export async function engineApprovalCheck(args: {
         message: "Live runtime facts could not be read, so the plan can't be approved.",
       };
     const preflight = await args.chain.preflight(args.send, args.input.plan, facts);
+    const permissionBlock = callPermissionBlock(args.input.plan, preflight);
+    if (permissionBlock)
+      return {
+        ok: false,
+        codes: ["CALL_PERMISSION_UNVERIFIED"],
+        explanations: [],
+        message: permissionBlock,
+      };
     return (args.gate ?? runPolicyGate)(
       { ...args.input, facts, preflight },
       { now: args.now, ...(args.acknowledgedDowngrade ? { acknowledgedDowngrade: true } : {}) },

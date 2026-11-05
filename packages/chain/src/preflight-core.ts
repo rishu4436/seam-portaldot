@@ -952,13 +952,45 @@ export async function preflightWithClient(
           transactions,
           atomic,
         );
+    const mintFailures = new Map<string, string>();
+    for (const step of plan.steps.filter((s) => s.kind === "assets.mint")) {
+      try {
+        const decorated = decodeRuntime(facts).decorated() as unknown as {
+          query?: { assets?: { asset?: StorageEntryLoose } };
+        };
+        const entry = decorated.query?.assets?.asset;
+        if (!entry || step.decodedArgs.assetId === undefined)
+          throw Error("asset details unavailable");
+        const details = await readStorageValue(
+          client,
+          facts,
+          entry,
+          [step.decodedArgs.assetId],
+          atBlock.hash,
+        );
+        const issuer = (
+          details as unknown as { issuer?: { toHex(): string } } | null
+        )?.issuer?.toHex();
+        if (!issuer) throw Error("issuer unavailable");
+        if (issuer.toLowerCase() !== plan.signer.publicKey.toLowerCase())
+          mintFailures.set(
+            step.actionId,
+            `Mint permission denied: this account is not the issuer of asset ${step.decodedArgs.assetId}. Nothing will be signed.`,
+          );
+      } catch {
+        mintFailures.set(
+          step.actionId,
+          `Mint permission could not be verified for asset ${step.decodedArgs.assetId}. Read live facts and retry. Nothing will be signed.`,
+        );
+      }
+    }
     const contractDryRuns: Record<string, unknown> = {};
     const recipientFailures = new Map<string, string>();
     if (!opts.signedExtrinsics) {
       // Check only the first action against current state. Later actions may depend on earlier effects.
       const first = plan.steps[0];
       if (
-        first?.kind === "assets.transfer" &&
+        (first?.kind === "assets.transfer" || first?.kind === "assets.mint") &&
         first.decodedArgs.recipient &&
         first.decodedArgs.assetId &&
         first.decodedArgs.amount
@@ -1012,6 +1044,11 @@ export async function preflightWithClient(
         }
       }
       const nativeNote = nativeFailures.get(s.actionId);
+      const mintNote = mintFailures.get(s.actionId);
+      if (mintNote) {
+        dryRun = "failed";
+        notes.push(mintNote);
+      }
       const recipientNote = recipientFailures.get(s.actionId);
       if (recipientNote) {
         dryRun = "failed";

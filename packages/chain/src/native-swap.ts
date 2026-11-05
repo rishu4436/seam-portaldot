@@ -710,7 +710,8 @@ export async function verifyNativeSwap(
         }
       : {
           status: "pending",
-          message: "Not found in a finalized block yet. Recovery only reads the chain.",
+          message:
+            "Submitted, awaiting finality. The transaction is not finalized yet. You can leave this page and recover by hash; do not submit it again.",
         };
   } catch (error) {
     return { status: "failed", message: error instanceof Error ? error.message : String(error) };

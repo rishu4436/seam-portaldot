@@ -3,6 +3,7 @@ import type { Call, Extrinsic } from "@polkadot/types/interfaces";
 import { hexToU8a, u8aConcat, u8aToHex } from "@polkadot/util";
 import { blake2AsHex, signatureVerify } from "@polkadot/util-crypto";
 import type { Hex, RuntimeFacts } from "@seam/compiler";
+import { ALICE } from "./helpers.js";
 import {
   SYSTEM_EVENTS_KEY,
   decodeRuntime,
@@ -22,6 +23,8 @@ export interface FakeNodeOptions {
   facts: RuntimeFacts;
   /** Asset ids that exist (Assets.Asset storage present). */
   existingAssets?: string[];
+  /** Issuer for existingAssets fixtures; defaults to the public Alice development account. */
+  existingAssetIssuer?: string;
   /**
    * Real Assets.Asset / Assets.Account storage (SCALE-encoded with the runtime's own types) for these assets:
    * minBalance and per-account balances (SS58 -> balance). Accounts not listed have no Assets.Account entry.
@@ -31,6 +34,7 @@ export interface FakeNodeOptions {
     minBalance: bigint;
     accounts: Record<string, bigint>;
     isSufficient?: boolean;
+    issuer?: string;
   }[];
   /** Response for contracts_call. Default: Ok, flags 0. */
   contractsCall?: unknown;
@@ -132,6 +136,7 @@ export class FakeNode implements RpcClient {
 
   private assetsQuery() {
     type Entry = Parameters<typeof storageKey>[0] & {
+      keyPrefix(): Uint8Array;
       meta: { type: { asMap: { value: unknown } } };
     };
     return (
@@ -243,6 +248,7 @@ export class FakeNode implements RpcClient {
           if (key === this.assetKey(a.assetId))
             return r(
               this.encodeValue("asset", {
+                issuer: a.issuer ?? `0x${"00".repeat(32)}`,
                 minBalance: a.minBalance,
                 supply: 1000n,
                 accounts: 1,
@@ -283,7 +289,19 @@ export class FakeNode implements RpcClient {
           return r(null);
         }
         for (const id of this.o.existingAssets ?? [])
-          if (key === this.assetKey(id)) return r("0x00");
+          if (key === this.assetKey(id))
+            return r(
+              this.encodeValue("asset", {
+                issuer: this.o.existingAssetIssuer ?? ALICE,
+                minBalance: 1,
+                isSufficient: true,
+              }),
+            );
+        if (
+          this.o.existingAssets?.length &&
+          key.startsWith(u8aToHex(this.assetsQuery().account.keyPrefix()))
+        )
+          throw Error("FakeNode: balances for existingAssets are not modelled; use assetBalances");
         return r(null);
       }
       default:

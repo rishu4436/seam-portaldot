@@ -1,5 +1,7 @@
 # Portaldot V3 testnet: first funded SEAM run
 
+Later native swap rehearsal: [`native-swap-rehearsal-20261106.json`](native-swap-rehearsal-20261106.json) independently records three successful native swaps and one asset mint at blocks 336987–337436, with signer nonces 26–29 used once each. The user reported forward/reverse, rejection, reload recovery and archive restore acceptance on the earlier deployed release. The new canonical read proves finalized calls/events; it does not reconstruct the original Seam approval/quote archive or certify later builds. See [`docs/live-qa-2026-11-06.md`](../../docs/live-qa-2026-11-06.md) for the security follow-up and required manual regression.
+
 Chain: `wss://test-node-v3.portaldot.dev` ("PortaldotV3 Test", `portaldot-v3` spec 3002, transaction version 2, ss58 42, token `tPOT` with 14 decimals, genesis `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd`). It is a test network, not mainnet.
 The run took place on 2026-10-19 between 16:48 and 17:32 IST, at blocks #102233 to #102671.
 

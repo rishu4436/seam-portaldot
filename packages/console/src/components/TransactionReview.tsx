@@ -1,6 +1,8 @@
 import type { Plan } from "@seam/policy/browser";
 import type { RuntimeFacts } from "@seam/compiler/browser";
 import { formatUnits } from "./AccountReadiness";
+import { RecipientReadiness } from "./RecipientReadiness";
+import { V3_HTTPS_RPC } from "../lib/v3facts";
 
 /** Readable projection of decoded compiled calls. The original plan remains the signing authority. */
 export function TransactionReview({
@@ -8,11 +10,13 @@ export function TransactionReview({
   facts,
   feeEstimate,
   feeCap,
+  rpcUrl = V3_HTTPS_RPC,
 }: {
   plan: Plan;
   facts?: RuntimeFacts;
   feeEstimate?: string;
   feeCap?: string;
+  rpcUrl?: string;
 }) {
   const native = (value?: string) =>
     value && /^\d+$/.test(value)
@@ -92,6 +96,15 @@ export function TransactionReview({
                   </dd>
                 </div>
               </dl>
+              {(transfer || mint) && facts && args.assetId && args.recipient && args.amount && (
+                <RecipientReadiness
+                  facts={facts}
+                  rpcUrl={rpcUrl}
+                  assetId={args.assetId}
+                  recipient={args.recipient}
+                  amount={args.amount}
+                />
+              )}
             </li>
           );
         })}
