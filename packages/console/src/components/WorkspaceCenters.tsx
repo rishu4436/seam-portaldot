@@ -16,6 +16,9 @@ import { V3_HTTPS_RPC } from "../lib/v3facts";
 import { downloadJson, verifyEvidence } from "../lib/evidence";
 import { verificationLabel, verificationTone } from "../lib/verification-view";
 import { SDK_DOCS_URL, PAYMENT_EXAMPLE_URL, SOURCE_URL } from "../lib/product-links";
+import { parseJsonFile } from "../lib/json-input";
+import { NativeSwapStore, type NativeSwapRow } from "../lib/native-swap-store";
+import { verifyNativeSwap, type NativeSwapVerification } from "@seam/chain/browser";
 import {
   exportLocalReceipts,
   importLocalReceipts,
@@ -201,7 +204,7 @@ function ActivityCenter({
                 void (async () => {
                   if (file.size > 32 * 1024 * 1024)
                     throw new Error("Choose an archive smaller than 32 MiB.");
-                  const count = await importLocalReceipts(JSON.parse(await file.text()));
+                  const count = await importLocalReceipts(parseJsonFile(await file.text()));
                   setArchiveNotice(
                     `Archive restored: ${count} receipt${count === 1 ? "" : "s"} checked and merged. Existing receipts were deduplicated. Nothing was submitted.`,
                   );
@@ -340,8 +343,12 @@ export function EvidenceInspector({
     [result, setResult] = useState<{ bundle: EvidenceBundle; value: unknown }>(),
     [busy, setBusy] = useState(false);
   const request = useRef(0);
+  const [nativeRows, setNativeRows] = useState<NativeSwapRow[]>();
+  const [nativeResults, setNativeResults] = useState<Record<string, NativeSwapVerification>>({});
   useEffect(() => {
     request.current++;
+    setNativeRows(undefined);
+    setNativeResults({});
     setResult(undefined);
     setBusy(false);
     setProblem(undefined);
@@ -352,10 +359,28 @@ export function EvidenceInspector({
     const version = ++request.current;
     setBusy(true);
     setResult(undefined);
+    setNativeRows(undefined);
+    setNativeResults({});
     setProblem(undefined);
     try {
       if (file.size > 8 * 1024 * 1024) throw new Error("Choose a JSON file smaller than 8 MiB.");
-      const value = prepareEvidenceBundle(JSON.parse(await file.text()));
+      const parsed = parseJsonFile(await file.text());
+      if ((parsed as { kind?: string } | null)?.kind === "seam-native-swaps") {
+        const temporary = new Map<string, string>();
+        const store = new NativeSwapStore({
+          getItem: (key) => temporary.get(key) ?? null,
+          setItem: (key, value) => {
+            temporary.set(key, value);
+          },
+        });
+        store.restore(parsed);
+        if (version === request.current) {
+          setNativeRows(store.list());
+          setNativeResults({});
+        }
+        return;
+      }
+      const value = prepareEvidenceBundle(parsed);
       if (version === request.current) onBundle(value);
     } catch (error) {
       if (version === request.current) setProblem(message(error));
@@ -374,7 +399,10 @@ export function EvidenceInspector({
       <div className="import-zone">
         <span aria-hidden="true">↥</span>
         <h3>Bring your receipt</h3>
-        <p>Console receipt, SDK run recording, or portable evidence bundle · JSON up to 8 MiB</p>
+        <p>
+          Native swap archive, console receipt, SDK recording or portable evidence bundle · JSON up
+          to 8 MiB
+        </p>
         <label className="file-button">
           Choose receipt file
           <input
@@ -394,7 +422,62 @@ export function EvidenceInspector({
           {problem}
         </p>
       )}
-      {bundle && offline && (
+      {nativeRows && (
+        <article className="record-card">
+          <h2>Native swap archive</h2>
+          <p>
+            Imported claims are unverified. These checks only read V3; no wallet connection or
+            signature is needed.
+          </p>
+          {nativeRows.map((row) => (
+            <div key={row.plan.id}>
+              <h3>
+                Asset {row.plan.assetId} · {row.plan.reverse ? "Asset → tPOT" : "tPOT → asset"}
+              </h3>
+              <code>{row.hash ?? "Not submitted"}</code>
+              {row.hash && (
+                <button
+                  disabled={busy}
+                  onClick={() => {
+                    const version = ++request.current;
+                    setBusy(true);
+                    void (async () => {
+                      const { transportFor } = await import("../lib/browserChain");
+                      const value = await verifyNativeSwap(
+                        transportFor(V3_HTTPS_RPC),
+                        row.plan,
+                        row.hash!,
+                      );
+                      if (version === request.current)
+                        setNativeResults((old) => ({ ...old, [row.plan.id]: value }));
+                    })()
+                      .catch((error: unknown) => {
+                        if (version === request.current) setProblem(message(error));
+                      })
+                      .finally(() => {
+                        if (version === request.current) setBusy(false);
+                      });
+                  }}
+                >
+                  Verify native swap on V3
+                </button>
+              )}
+              {nativeResults[row.plan.id] !== undefined && (
+                <>
+                  <p role="status">
+                    {nativeResults[row.plan.id].status === "verified"
+                      ? "Verified execution"
+                      : nativeResults[row.plan.id].status}
+                    : {nativeResults[row.plan.id].message}
+                  </p>
+                  <Details value={nativeResults[row.plan.id]} label="Native verification result" />
+                </>
+              )}
+            </div>
+          ))}
+        </article>
+      )}
+      {!nativeRows && bundle && offline && (
         <article className="record-card">
           <div className="feature-row">
             <div>
@@ -467,7 +550,7 @@ export function EvidenceInspector({
           </p>
         </article>
       )}
-      {result && result.bundle === bundle && (
+      {!nativeRows && result && result.bundle === bundle && (
         <article className="record-card">
           <h2>Independent chain result</h2>
           <p className="result-headline">

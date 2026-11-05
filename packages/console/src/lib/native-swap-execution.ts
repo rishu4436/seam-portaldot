@@ -22,7 +22,7 @@ export async function submitNativeSwap(args: {
 }) {
   return (args.exclusive ?? browserExclusive)(JOURNAL_LOCK, async () => {
     const { send, plan, store, notify = () => {} } = args;
-    store.assertReady();
+    store.assertReady(plan.id);
     const ctx = await recheckNativeSwap(send, plan),
       request = nativeSwapSigningRequest(ctx, plan);
     await args.assertAccount();
@@ -46,7 +46,7 @@ export async function submitNativeSwap(args: {
       // Recheck after the dry run too: long wallet/RPC waits must not outlive the approved quote.
       if (Date.now() >= plan.expiresAt)
         throw Error("The quote expired while checking the signature. Nothing was submitted.");
-      store.assertReady();
+      store.assertReady(plan.id, true);
     } catch (error) {
       store.save({
         ...record,

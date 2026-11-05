@@ -25,17 +25,20 @@ export function BuilderPolicy({
   manifest,
   onUse,
   readPreflight,
+  onInvalidate,
 }: {
   plan: Plan;
   manifest: unknown;
   onUse?: (sel: BuilderSelection) => void;
   /** Real read-only preflight of this plan (@seam/chain/browser preflight). Its totalFee sets the fee cap. */
   readPreflight?: () => Promise<unknown>;
+  onInvalidate?: () => void;
 }) {
   const [preflight, setPreflight] = useState<unknown>();
   const [pfMsg, setPfMsg] = useState<string>();
   const derived = useMemo(() => derivePolicy(plan, { preflight }), [plan, preflight]);
   const fetchFee = async () => {
+    onInvalidate?.();
     setPfMsg(undefined);
     try {
       if (!readPreflight) throw new Error("no preflight reader in this build");
@@ -90,14 +93,20 @@ export function BuilderPolicy({
               type="checkbox"
               aria-label={`Allow asset ${a}`}
               checked={!removeAssets.includes(a)}
-              onChange={() => setRemoveAssets((x) => toggle(x, a))}
+              onChange={() => {
+                onInvalidate?.();
+                setRemoveAssets((x) => toggle(x, a));
+              }}
             />{" "}
             Asset {a}, max per step
           </label>
           <input
             aria-label={`Max amount ${a}`}
             value={amounts[a] ?? base.maxAmountPerAsset?.[a] ?? ""}
-            onChange={(e) => setAmounts((m) => ({ ...m, [a]: e.target.value }))}
+            onChange={(e) => {
+              onInvalidate?.();
+              setAmounts((m) => ({ ...m, [a]: e.target.value }));
+            }}
           />
         </div>
       ))}
@@ -107,7 +116,10 @@ export function BuilderPolicy({
             type="checkbox"
             aria-label={`Allow recipient ${r}`}
             checked={!removeRecipients.includes(r)}
-            onChange={() => setRemoveRecipients((x) => toggle(x, r))}
+            onChange={() => {
+              onInvalidate?.();
+              setRemoveRecipients((x) => toggle(x, r));
+            }}
           />{" "}
           Recipient <code>{r}</code>
         </label>
@@ -117,7 +129,10 @@ export function BuilderPolicy({
         <input
           aria-label="Fee cap"
           value={maxFee ?? base.maxFee ?? ""}
-          onChange={(e) => setMaxFee(e.target.value)}
+          onChange={(e) => {
+            onInvalidate?.();
+            setMaxFee(e.target.value);
+          }}
         />
       </label>
       {!t.ok && (

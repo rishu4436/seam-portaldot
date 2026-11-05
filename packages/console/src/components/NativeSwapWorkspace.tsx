@@ -20,6 +20,8 @@ import { downloadJson } from "../lib/evidence";
 import { NativeSwapStore, NATIVE_SWAP_STORE, type NativeSwapRow } from "../lib/native-swap-store";
 import { submitNativeSwap } from "../lib/native-swap-execution";
 import { V3_HTTPS_RPC } from "../lib/v3facts";
+import { parseJsonFile } from "../lib/json-input";
+import { WalletInstallHelp } from "./WalletInstallHelp";
 const send = transportFor(V3_HTTPS_RPC);
 const money = (value: string, decimals: number) => formatUnits(BigInt(value), decimals);
 const short = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
@@ -68,6 +70,8 @@ export default function NativeSwapWorkspace({
     [nativeBalance, setNativeBalance] = useState<string>(),
     [assetBalance, setAssetBalance] = useState<string>(),
     [now, setNow] = useState(Date.now());
+  const running = useRef(false),
+    amountByDirection = useRef({ native: "0.01", asset: "1" });
   const file = useRef<HTMLInputElement>(null),
     revision = useRef(0),
     mounted = useRef(true);
@@ -86,6 +90,8 @@ export default function NativeSwapWorkspace({
   const wallet = accounts.find((a) => `${a.source}:${a.address}` === selected),
     pool = pools.find((p) => p.assetId === assetId);
   const run = async (fn: () => Promise<void>) => {
+    if (running.current) return;
+    running.current = true;
     setBusy(true);
     setProblem(undefined);
     setNotice(undefined);
@@ -94,6 +100,7 @@ export default function NativeSwapWorkspace({
     } catch (e) {
       if (mounted.current) setProblem(message(e));
     } finally {
+      running.current = false;
       if (mounted.current) {
         setBusy(false);
         try {
@@ -121,8 +128,14 @@ export default function NativeSwapWorkspace({
   }, []);
   useEffect(() => {
     try {
-      storage().abandonUnsigned();
       refreshRows();
+      if (navigator.locks)
+        void browserExclusive(JOURNAL_LOCK, async () => {
+          storage().abandonUnsigned();
+          refreshRows();
+        }).catch(() => {
+          /* Another tab owns the wallet request; preserve its signing state. */
+        });
     } catch (e) {
       setProblem(message(e));
     }
@@ -211,8 +224,12 @@ export default function NativeSwapWorkspace({
       invalidate();
       const atRevision = revision.current;
       if (!wallet || !pool) throw Error("Connect your native wallet and select a liquid pool.");
-      if (!/^\d+(?:\.\d{1,2})?$/.test(slippage))
-        throw Error("Enter slippage with at most two decimal places.");
+      if (!/^\d+(?:\.\d{1,2})?$/.test(slippage) || Number(slippage) < 0.01 || Number(slippage) > 5)
+        throw Error("Slippage must be between 0.01% and 5%, with at most two decimal places.");
+      if (!/^\d+(?:\.\d{1,14})?$/.test(feeLimit) || Number(feeLimit) <= 0 || Number(feeLimit) > 0.1)
+        throw Error(
+          "Fee review limit must be greater than 0 and at most 0.1 tPOT, with at most 14 decimal places.",
+        );
       const result = await quoteNativeSwap(send, {
         signer: wallet.address,
         assetId,
@@ -250,7 +267,9 @@ export default function NativeSwapWorkspace({
           ? "submitted"
           : "uncertain",
     };
-    storage().save(next);
+    await browserExclusive(JOURNAL_LOCK, async () => {
+      storage().save(next);
+    });
     refreshRows();
     setNotice(verification.message);
     return next;
@@ -299,8 +318,23 @@ export default function NativeSwapWorkspace({
     });
   const pending = rows.some((r) => ["submitted", "uncertain"].includes(r.state)),
     latest = rows.find((r) => r.hash),
-    verified = latest?.state === "verified",
+    verified =
+      latest?.state === "verified" && rows[0]?.plan.id === latest.plan.id && !plan && !busy,
     expired = !!plan && now >= plan.expiresAt;
+  useEffect(() => {
+    if (plan && now >= plan.expiresAt) {
+      setAck(false);
+      setNotice("Quote expired. Read a new quote and review its limits before signing.");
+    }
+  }, [plan, now]);
+  const nativeTradeValue =
+    plan && pool
+      ? plan.reverse
+        ? (BigInt(plan.amountIn) * BigInt(pool.nativeReserve)) / BigInt(pool.assetReserve)
+        : BigInt(plan.amountIn)
+      : undefined;
+  const feeDominates =
+    plan && nativeTradeValue !== undefined && BigInt(plan.estimatedFee) >= nativeTradeValue;
   const inputDecimals = reverse ? (pool?.decimals ?? 0) : 14,
     outputDecimals = reverse ? 14 : (pool?.decimals ?? 0),
     inputSymbol = reverse ? (pool?.symbol ?? "Asset") : "tPOT",
@@ -327,7 +361,7 @@ export default function NativeSwapWorkspace({
       <div className="defi-network-note">
         <span aria-hidden="true">⇄</span>
         <p>
-          <strong>No contract deployment required.</strong>Use the tPOT already in your native
+          <strong>No contract deployment required.</strong> Use the tPOT already in your native
           account. Swaps use V3’s built-in DEX. Pool assets are community-created test tokens with
           no promised value.
         </p>
@@ -342,6 +376,7 @@ export default function NativeSwapWorkspace({
           {problem}
         </p>
       )}
+      {!wallet && <WalletInstallHelp />}
       <div className="defi-grid">
         <section className="defi-card defi-trade">
           <div className="defi-card-top">
@@ -402,7 +437,12 @@ export default function NativeSwapWorkspace({
                   aria-label="Native swap amount"
                   inputMode="decimal"
                   value={amount}
-                  onChange={(e) => edit(() => setAmount(e.target.value))}
+                  onChange={(e) =>
+                    edit(() => {
+                      amountByDirection.current[reverse ? "asset" : "native"] = e.target.value;
+                      setAmount(e.target.value);
+                    })
+                  }
                 />
                 <strong>{inputSymbol}</strong>
               </div>
@@ -440,12 +480,20 @@ export default function NativeSwapWorkspace({
               </p>
             )}
             <div className="defi-direction">
+              {wallet && reverse && (
+                <p className="defi-small">
+                  Native fee balance:{" "}
+                  {nativeBalance !== undefined ? money(nativeBalance, 14) : "Reading…"} tPOT.
+                  Network fees are paid in tPOT.
+                </p>
+              )}
               <button
                 aria-label="Reverse native swap direction"
                 onClick={() =>
                   edit(() => {
                     setReverse(!reverse);
-                    setAmount(reverse ? "0.01" : "1");
+                    amountByDirection.current[reverse ? "asset" : "native"] = amount;
+                    setAmount(amountByDirection.current[reverse ? "native" : "asset"]);
                   })
                 }
               >
@@ -492,6 +540,13 @@ export default function NativeSwapWorkspace({
           {plan && pool && (
             <section className="native-review" aria-label="Native swap approval">
               <h3>What you are approving</h3>
+              {feeDominates && (
+                <p role="status" className="defi-notice">
+                  High fee relative to trade: the estimated network fee is at least the native value
+                  of your input. You may spend more on fees than you swap. Increase the amount or
+                  cancel; test tokens have no promised value.
+                </p>
+              )}
               <dl>
                 <dt>Signer & recipient</dt>
                 <dd>
@@ -527,7 +582,7 @@ export default function NativeSwapWorkspace({
               <label className="native-ack">
                 <input
                   type="checkbox"
-                  checked={ack}
+                  checked={ack && !expired}
                   disabled={busy || expired}
                   onChange={(e) => setAck(e.target.checked)}
                 />
@@ -616,7 +671,7 @@ export default function NativeSwapWorkspace({
                 if (chosen)
                   void run(async () => {
                     if (chosen.size > 512000) throw Error("Native archive exceeds 500 KB.");
-                    const value = JSON.parse(await chosen.text());
+                    const value = parseJsonFile(await chosen.text());
                     const count = await browserExclusive(JOURNAL_LOCK, async () =>
                       storage().restore(value),
                     );

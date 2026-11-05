@@ -1,0 +1,450 @@
+{
+  "checkedAt": "2026-11-05T21:42:57.050Z",
+  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "finalizedHead": {
+    "number": 340106,
+    "hash": "0x4bf2da1b925955f8c9e9599933f0a032abd3dcfa6e677d769e5900e8739749ae"
+  },
+  "results": [
+    {
+      "number": 336987,
+      "blockHash": "0xdecbbf14f6f360de2191528c0df8f3551a9ad3e1959827b93a6c32f4b172ab50",
+      "hash": "0x432dadc0af0ed4fa8f9a9af93deeca88efc3bcfe66435fdb999035a2a5b0a010",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "nonce": "26",
+      "call": {
+        "section": "assetConversion",
+        "method": "swapExactTokensForTokens",
+        "args": [
+          [
+            {
+              "native": null
+            },
+            {
+              "withId": 8801000
+            }
+          ],
+          10000000000000,
+          987094334741,
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          true
+        ]
+      },
+      "events": [
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810731648786
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            10000000000000
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Withdrawn",
+          "data": [
+            8801000,
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            992054607780
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            10000000000000
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Deposited",
+          "data": [
+            8801000,
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            992054607780
+          ]
+        },
+        {
+          "section": "assetConversion",
+          "method": "SwapExecuted",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            10000000000000,
+            992054607780,
+            [
+              [
+                {
+                  "native": null
+                },
+                10000000000000
+              ],
+              [
+                {
+                  "withId": 8801000
+                },
+                992054607780
+              ]
+            ]
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+            1810731648786
+          ]
+        },
+        {
+          "section": "transactionPayment",
+          "method": "TransactionFeePaid",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810731648786,
+            0
+          ]
+        },
+        {
+          "section": "system",
+          "method": "ExtrinsicSuccess",
+          "data": [
+            {
+              "weight": {
+                "refTime": 1555828770,
+                "proofSize": 26115
+              },
+              "class": "Normal",
+              "paysFee": "Yes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 337038,
+      "blockHash": "0x3ffa0d2084cb28c5d2d21d9d8e0c26c736a278291a7a4dcb9baf19d00755df2c",
+      "hash": "0x3118d32e21788cf9d80a335986a634fd0e8461e63cbe9638e379e5a1017aaafb",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "nonce": "27",
+      "call": {
+        "section": "assetConversion",
+        "method": "swapExactTokensForTokens",
+        "args": [
+          [
+            {
+              "withId": 8801000
+            },
+            {
+              "native": null
+            }
+          ],
+          992054607779,
+          9890684351429,
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          true
+        ]
+      },
+      "events": [
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810731569341
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Withdrawn",
+          "data": [
+            8801000,
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            992054607779
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            9940386282844
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Deposited",
+          "data": [
+            8801000,
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            992054607779
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            9940386282844
+          ]
+        },
+        {
+          "section": "assetConversion",
+          "method": "SwapExecuted",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            992054607779,
+            9940386282844,
+            [
+              [
+                {
+                  "withId": 8801000
+                },
+                992054607779
+              ],
+              [
+                {
+                  "native": null
+                },
+                9940386282844
+              ]
+            ]
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+            1810731569341
+          ]
+        },
+        {
+          "section": "transactionPayment",
+          "method": "TransactionFeePaid",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810731569341,
+            0
+          ]
+        },
+        {
+          "section": "system",
+          "method": "ExtrinsicSuccess",
+          "data": [
+            {
+              "weight": {
+                "refTime": 1555828770,
+                "proofSize": 26115
+              },
+              "class": "Normal",
+              "paysFee": "Yes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 337112,
+      "blockHash": "0x4180eeb26c9ecd567ed535f5aa6ccd0e26e43f43a0d0c48b96448d4e2240f231",
+      "hash": "0x7d788fa98be74ce86cd5b9fd6fda3284f1b0150b2cf09d39c8b91d207252cb77",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "nonce": "28",
+      "call": {
+        "section": "assetConversion",
+        "method": "swapExactTokensForTokens",
+        "args": [
+          [
+            {
+              "native": null
+            },
+            {
+              "withId": 8801000
+            }
+          ],
+          10000000000000,
+          987065059369,
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          true
+        ]
+      },
+      "events": [
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810731454135
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            10000000000000
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Withdrawn",
+          "data": [
+            8801000,
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            992025185296
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            10000000000000
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Deposited",
+          "data": [
+            8801000,
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            992025185296
+          ]
+        },
+        {
+          "section": "assetConversion",
+          "method": "SwapExecuted",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            10000000000000,
+            992025185296,
+            [
+              [
+                {
+                  "native": null
+                },
+                10000000000000
+              ],
+              [
+                {
+                  "withId": 8801000
+                },
+                992025185296
+              ]
+            ]
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+            1810731454135
+          ]
+        },
+        {
+          "section": "transactionPayment",
+          "method": "TransactionFeePaid",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810731454135,
+            0
+          ]
+        },
+        {
+          "section": "system",
+          "method": "ExtrinsicSuccess",
+          "data": [
+            {
+              "weight": {
+                "refTime": 1555828770,
+                "proofSize": 26115
+              },
+              "class": "Normal",
+              "paysFee": "Yes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 337436,
+      "blockHash": "0xc1ecb125a17c4de7065ce57a9269de76db5f974017684f078cb9cc3d529ca312",
+      "hash": "0xfe0366ecc9d07c31cacbaae5cd3897e2b8cff693c9908223a5cce093b60779ea",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "nonce": "29",
+      "call": {
+        "section": "assets",
+        "method": "mint",
+        "args": [
+          806707,
+          {
+            "id": "5CwFE91fBsdTSAAcnbn2cSu8iCmeQHYtB9wakzPCJv1QVr5G"
+          },
+          1
+        ]
+      },
+      "events": [
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1470439375929
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Issued",
+          "data": [
+            806707,
+            "5CwFE91fBsdTSAAcnbn2cSu8iCmeQHYtB9wakzPCJv1QVr5G",
+            1
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+            1470439375929
+          ]
+        },
+        {
+          "section": "transactionPayment",
+          "method": "TransactionFeePaid",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1470439375929,
+            0
+          ]
+        },
+        {
+          "section": "system",
+          "method": "ExtrinsicSuccess",
+          "data": [
+            {
+              "weight": {
+                "refTime": 878070000,
+                "proofSize": 15859
+              },
+              "class": "Normal",
+              "paysFee": "Yes"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

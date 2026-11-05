@@ -13,6 +13,7 @@ import type { Approval, RuntimeFacts } from "./lib/types";
 import type { GateOutcome } from "./lib/policygate";
 import "./workspace.css";
 import { DOCS_URL, SOURCE_URL } from "./lib/product-links";
+import { RELEASE } from "./lib/release";
 
 const Lab = import.meta.env.DEV ? lazy(() => import("./LegacyApp")) : undefined;
 const WorkspaceCenters = lazy(() => import("./components/WorkspaceCenters"));
@@ -221,6 +222,19 @@ export default function App() {
           </select>
         </label>
         <div className="rail-bottom">
+          {RELEASE && (
+            <p>
+              <a
+                href={SOURCE_URL}
+                target="_blank"
+                rel="noreferrer"
+                title={`${RELEASE.sourceCommit} · ${RELEASE.sourceBranch}`}
+              >
+                Build {RELEASE.sourceCommit.slice(0, 8)}
+                {RELEASE.dirty ? " · local changes" : ""}
+              </a>
+            </p>
+          )}
           <div className="network-pill">
             <span className="status-dot" />
             Portaldot V3 <span>TESTNET</span>
@@ -288,6 +302,12 @@ export default function App() {
                   <ManifestBuilder
                     onRuntime={setRuntime}
                     onInvalidate={invalidate}
+                    onPolicyEdit={() => {
+                      invalidate();
+                      setNotice(
+                        "Policy changed. The previous approval was cleared. Send the updated policy to review and approve again.",
+                      );
+                    }}
                     onUsePolicy={(sel) => {
                       invalidate();
                       setSelection(sel);
@@ -312,6 +332,7 @@ export default function App() {
                           facts={selection.facts as CompilerFacts}
                           feeEstimate={selection.feeEstimate}
                           feeCap={selection.policy.maxFee}
+                          rpcUrl={selection.rpcUrl}
                         />
                         <dl className="review-summary">
                           <div>

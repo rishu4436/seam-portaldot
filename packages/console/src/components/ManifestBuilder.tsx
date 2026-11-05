@@ -31,6 +31,7 @@ import { BuilderPolicy, type BuilderSelection } from "./BuilderPolicy";
 import type { Plan as PolicyPlan } from "@seam/policy/browser";
 import { AccountReadiness } from "./AccountReadiness";
 import { RecipientReadiness } from "./RecipientReadiness";
+import { WalletInstallHelp } from "./WalletInstallHelp";
 
 type Facts = Extract<V3FactsResult, { ok: true }>["facts"];
 const ACTION_LABELS: Record<BuilderKind, string> = {
@@ -172,9 +173,11 @@ export function ManifestBuilder({
   onCompiled,
   onUsePolicy,
   onInvalidate,
+  onPolicyEdit,
   onRuntime,
 }: {
   onInvalidate?: () => void;
+  onPolicyEdit?: () => void;
   onRuntime?: (facts: unknown) => void;
   getInjected?: Parameters<typeof listWalletAccounts>[0];
   transportFor?: (url: string) => RpcTransport;
@@ -430,6 +433,7 @@ export function ManifestBuilder({
           {walletMsg}
         </p>
       )}
+      {!accounts?.length && <WalletInstallHelp />}
 
       <h4>
         <span>2</span> Read the network
@@ -686,6 +690,7 @@ export function ManifestBuilder({
         <>
           <h4>6. Policy</h4>
           <BuilderPolicy
+            onInvalidate={onPolicyEdit ?? onInvalidate}
             plan={plan as PolicyPlan}
             manifest={toCompilerManifest(manifest)}
             readPreflight={async () => {

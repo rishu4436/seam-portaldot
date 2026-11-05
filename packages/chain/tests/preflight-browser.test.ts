@@ -45,6 +45,7 @@ const v3Node = (o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {}) =>
     inputs: v3Inputs,
     facts: v3Facts,
     existingAssets: ["806707"],
+    existingAssetIssuer: atomicRun.plan.signer.publicKey,
     queryInfoWeight: { ref_time: 180000000, proof_size: 3593 },
     ...o,
   });
