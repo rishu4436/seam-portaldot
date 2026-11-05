@@ -656,3 +656,157 @@
     font-size: 12px;
   }
 }
+.defi-route-nav {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 1248px;
+  margin: 24px auto 0;
+  padding: 0 36px;
+}
+.defi-route-nav button {
+  width: auto;
+  border: 1px solid #d5dfd7;
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: #fff;
+  color: #34523e;
+  cursor: pointer;
+}
+.native-swap {
+  padding-top: 24px;
+}
+.native-connection {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+@media (max-width: 1000px) {
+  .native-connection {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-items: start;
+  }
+}
+.defi-route-nav button[aria-pressed="true"] {
+  background: #244d36;
+  color: white;
+}
+.native-swap select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  margin: 8px 0 14px;
+  border: 1px solid #d5dfd7;
+  border-radius: 10px;
+  background: #fff;
+  color: #243b2e;
+  font: inherit;
+  font-size: 13px;
+}
+.native-swap label {
+  font-size: 13px;
+  color: #53645a;
+}
+.native-swap .native-connect {
+  display: block;
+  width: 100%;
+  margin: 18px 0;
+}
+.native-address {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+.native-swap aside {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+}
+.native-vault-note p,
+.native-receipt p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #64736a;
+}
+.native-review {
+  border-top: 1px solid #d5dfd7;
+  margin-top: 22px;
+  padding-top: 14px;
+  animation: defi-enter 0.3s ease both;
+}
+.native-review dl,
+.native-facts {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(0, 1.6fr);
+  gap: 10px;
+  font-size: 12px;
+}
+.native-review dd,
+.native-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.native-review dt,
+.native-facts dt {
+  color: #64736a;
+}
+.native-ack {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  line-height: 1.6;
+  margin: 16px 0;
+}
+.native-ack input {
+  margin-top: 4px;
+}
+.native-journal {
+  margin-top: 24px;
+}
+.native-receipt {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  border-top: 1px solid #e1e7e2;
+  padding: 18px 0;
+}
+.native-receipt code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.native-receipt > div {
+  min-width: 0;
+}
+.native-receipt > button {
+  align-self: start;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .defi-route-nav {
+    padding: 0 20px;
+  }
+  .native-journal .defi-card-top,
+  .native-receipt {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .native-review dl {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .native-review dd {
+    margin-bottom: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .native-review {
+    animation: none;
+  }
+}

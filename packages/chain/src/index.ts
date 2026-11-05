@@ -217,3 +217,4 @@ export {
   assessRecipientReadiness,
   type RecipientReadiness,
 } from "./recipient-readiness.js";
+export * from "./native-swap.js";
