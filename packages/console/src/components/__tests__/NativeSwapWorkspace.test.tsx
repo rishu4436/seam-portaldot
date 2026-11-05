@@ -84,6 +84,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  history.replaceState({}, "", "/console.html?view=defi");
 });
 async function connected() {
   render(<DeFiWorkspace onBusyChange={() => {}} />);
@@ -103,6 +104,15 @@ it("opens native swaps first, discovers live liquidity and requires no EVM marke
   expect(mock.sign).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Contract markets & vaults" }));
   expect(screen.getByText("Separate contract vault setup")).toBeTruthy();
+});
+it("preserves existing contract-market recovery links", () => {
+  history.replaceState({}, "", `/console.html?view=defi&marketTx=${h}`);
+  render(<DeFiWorkspace onBusyChange={() => {}} />);
+  expect(screen.getByText("Separate contract vault setup")).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "Contract markets & vaults" }).getAttribute("aria-pressed"),
+  ).toBe("true");
+  expect(mock.context).not.toHaveBeenCalled();
 });
 it("connecting and reading a quote never sign; changing the amount discards approval", async () => {
   await connected();
@@ -128,6 +138,21 @@ it("rejects precision loss in input before asking for a quote", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Read live quote" }));
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect(mock.quote).not.toHaveBeenCalled();
+  expect(mock.sign).not.toHaveBeenCalled();
+});
+it("Use available leaves the required minimum when reversing a swap", async () => {
+  mock.readiness.mockResolvedValue({
+    ...quoted.balances,
+    assets: [{ balance: { known: true, value: { balance: "99650324313" } } }],
+  });
+  await connected();
+  await waitFor(() => expect(screen.getByText(/Balance: 100 tPOT/)).toBeTruthy());
+  fireEvent.click(screen.getByRole("button", { name: "Reverse native swap direction" }));
+  fireEvent.click(screen.getByRole("button", { name: "Use available" }));
+  expect((screen.getByLabelText("Native swap amount") as HTMLInputElement).value).toBe(
+    "9.9650324312",
+  );
+  expect(screen.getByText("Keep 0.0000000001 DUCAT to preserve the asset account.")).toBeTruthy();
   expect(mock.sign).not.toHaveBeenCalled();
 });
 it("expired quotes disable signing and explain how to recover", async () => {

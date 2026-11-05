@@ -723,6 +723,10 @@
   font-size: 11px;
   margin-bottom: 12px;
 }
+.native-minimum {
+  display: block;
+  margin-top: 8px;
+}
 .native-swap aside {
   display: grid;
   align-content: start;

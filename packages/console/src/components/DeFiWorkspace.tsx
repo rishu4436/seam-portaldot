@@ -3,7 +3,9 @@ import NativeSwapWorkspace from "./NativeSwapWorkspace";
 import ContractDeFiWorkspace from "./ContractDeFiWorkspace";
 import "./defi.css";
 export default function DeFiWorkspace({ onBusyChange }: { onBusyChange: (busy: boolean) => void }) {
-  const [mode, setMode] = useState<"native" | "contracts">("native"),
+  const [mode, setMode] = useState<"native" | "contracts">(() =>
+      new URLSearchParams(location.search).has("marketTx") ? "contracts" : "native",
+    ),
     [busy, setBusy] = useState(false);
   const changed = useCallback(
     (value: boolean) => {
