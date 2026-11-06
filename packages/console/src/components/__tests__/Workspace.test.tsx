@@ -44,7 +44,7 @@ vi.mock("../ManifestBuilder", () => ({
         <button onClick={() => select("plan-a")}>Provide plan A</button>
         <button onClick={() => select("plan-b")}>Provide plan B</button>
         <button onClick={() => select("downgraded", true)}>Provide downgraded plan</button>
-        <button onClick={props.onInvalidate}>Edit draft</button>
+        <button onClick={() => props.onInvalidate()}>Edit draft</button>
         <button onClick={props.onPolicyEdit}>Edit policy</button>
       </div>
     );
@@ -81,6 +81,17 @@ it("opens the live workspace without a demo-mode detour", () => {
   expect(screen.getByRole("heading", { name: "Make your next move." })).toBeTruthy();
   expect(screen.getByTestId("execution").textContent).toBe("no plan / unapproved");
   expect(screen.queryByText("OFFLINE DEMO")).toBeNull();
+});
+it("refreshes the review fee from the same preflight used by the approval check", async () => {
+  mocks.check.mockImplementation(async (args: { onPreflight: (value: unknown) => void }) => {
+    args.onPreflight({ totalFee: { value: "1234" } });
+    return { ok: true, explanations: [] };
+  });
+  render(<App />);
+  fireEvent.click(screen.getByText("Provide plan A"));
+  fireEvent.click(screen.getByText("Check policy and approve"));
+  expect(await screen.findByText("1234 native base units")).toBeTruthy();
+  expect(screen.getByTestId("execution").textContent).toBe("plan-a / approved");
 });
 it("invalidates review and approval when the draft changes", async () => {
   mocks.check.mockResolvedValue({ ok: true, codes: [], explanations: [] });

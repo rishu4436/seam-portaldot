@@ -22,6 +22,8 @@ import { submitNativeSwap } from "../lib/native-swap-execution";
 import { V3_HTTPS_RPC } from "../lib/v3facts";
 import { parseJsonFile } from "../lib/json-input";
 import { WalletInstallHelp } from "./WalletInstallHelp";
+import { ReadProgress } from "./ReadProgress";
+import { withReadTimeout } from "../lib/read-timeout";
 const send = transportFor(V3_HTTPS_RPC);
 const money = (value: string, decimals: number) => formatUnits(BigInt(value), decimals);
 const short = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
@@ -75,6 +77,10 @@ export default function NativeSwapWorkspace({
   const file = useRef<HTMLInputElement>(null),
     revision = useRef(0),
     mounted = useRef(true);
+  const checking = useRef(new Set<string>());
+  const [checkingIds, setCheckingIds] = useState<string[]>([]);
+  const [checkProblems, setCheckProblems] = useState<Record<string, string>>({});
+  const [readingQuote, setReadingQuote] = useState(false);
   const refreshRows = () => setRows(storage().list());
   const invalidate = () => {
     revision.current++;
@@ -226,18 +232,32 @@ export default function NativeSwapWorkspace({
       if (!wallet || !pool) throw Error("Connect your native wallet and select a liquid pool.");
       if (!/^\d+(?:\.\d{1,2})?$/.test(slippage) || Number(slippage) < 0.01 || Number(slippage) > 5)
         throw Error("Slippage must be between 0.01% and 5%, with at most two decimal places.");
-      if (!/^\d+(?:\.\d{1,14})?$/.test(feeLimit) || Number(feeLimit) <= 0 || Number(feeLimit) > 0.1)
+      if (!/^\d+(?:\.\d+)?$/.test(feeLimit) || Number(feeLimit) <= 0 || Number(feeLimit) > 0.1)
+        throw Error("Fee review limit must be greater than 0 and at most 0.1 tPOT.");
+      if ((feeLimit.split(".")[1]?.length ?? 0) > 14)
         throw Error(
-          "Fee review limit must be greater than 0 and at most 0.1 tPOT, with at most 14 decimal places.",
+          "Fee review limit supports at most 14 decimal places. Remove the extra decimal digits.",
         );
-      const result = await quoteNativeSwap(send, {
-        signer: wallet.address,
-        assetId,
-        reverse,
-        amountIn: nativeAmount(amount, reverse ? pool.decimals : 14),
-        slippageBps: Number(parseUnits(slippage, 2)),
-        feeLimit: nativeAmount(feeLimit, 14),
-      });
+      const amountIn = nativeAmount(amount, reverse ? pool.decimals : 14);
+      setReadingQuote(true);
+      let result: Awaited<ReturnType<typeof quoteNativeSwap>>;
+      try {
+        result = await withReadTimeout(
+          quoteNativeSwap(
+            transportFor(V3_HTTPS_RPC, { readDeadline: Date.now() + 55000, readRounds: 1 }),
+            {
+              signer: wallet.address,
+              assetId,
+              reverse,
+              amountIn,
+              slippageBps: Number(parseUnits(slippage, 2)),
+              feeLimit: nativeAmount(feeLimit, 14),
+            },
+          ),
+        );
+      } finally {
+        if (mounted.current) setReadingQuote(false);
+      }
       if (atRevision !== revision.current)
         throw Error("The form changed while reading. Read a new quote.");
       setContext(result.ctx);
@@ -252,12 +272,15 @@ export default function NativeSwapWorkspace({
     });
   const recover = async (row: NativeSwapRow) => {
     if (!row.hash) throw Error("This request was not submitted. Read a new quote to start again.");
-    const verification = await verifyNativeSwap(
-      send,
-      row.plan,
-      row.hash,
-      row.verification?.block?.number,
+    const verification = await withReadTimeout(
+      verifyNativeSwap(
+        transportFor(V3_HTTPS_RPC, { readDeadline: Date.now() + 55000, readRounds: 1 }),
+        row.plan,
+        row.hash,
+        row.verification?.block?.number,
+      ),
     );
+    if (verification.status === "failed") throw Error(verification.message);
     const next: NativeSwapRow = {
       ...row,
       verification,
@@ -273,6 +296,20 @@ export default function NativeSwapWorkspace({
     refreshRows();
     setNotice(verification.message);
     return next;
+  };
+  const recoverManually = async (row: NativeSwapRow) => {
+    if (running.current || checking.current.has(row.plan.id)) return;
+    checking.current.add(row.plan.id);
+    setCheckingIds([...checking.current]);
+    setCheckProblems((old) => ({ ...old, [row.plan.id]: "" }));
+    try {
+      await recover(row);
+    } catch (error) {
+      if (mounted.current) setCheckProblems((old) => ({ ...old, [row.plan.id]: message(error) }));
+    } finally {
+      checking.current.delete(row.plan.id);
+      if (mounted.current) setCheckingIds([...checking.current]);
+    }
   };
   const execute = () =>
     run(async () => {
@@ -369,11 +406,6 @@ export default function NativeSwapWorkspace({
       {notice && (
         <p className="defi-notice" role="status">
           {notice}
-        </p>
-      )}
-      {problem && (
-        <p className="defi-error" role="alert">
-          {problem}
         </p>
       )}
       {!wallet && <WalletInstallHelp />}
@@ -534,9 +566,22 @@ export default function NativeSwapWorkspace({
               to your selected account.
             </p>
             <button className="defi-primary" disabled={pending} onClick={() => void quote()}>
-              {plan ? "Refresh quote" : "Read live quote"}
+              {readingQuote ? "Reading live quote…" : plan ? "Refresh quote" : "Read live quote"}
             </button>
           </fieldset>
+          <ReadProgress
+            active={loading || readingQuote}
+            label={
+              readingQuote
+                ? "Reading the pool quote, balances and fee estimate…"
+                : "Reading finalized V3 liquidity…"
+            }
+          />
+          {problem && (
+            <p className="defi-error" role="alert">
+              {problem}
+            </p>
+          )}
           {plan && pool && (
             <section className="native-review" aria-label="Native swap approval">
               <h3>What you are approving</h3>
@@ -722,16 +767,21 @@ export default function NativeSwapWorkspace({
                 {row.note && <p>{row.note}</p>}
               </div>
               {row.hash && (
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      await recover(row);
-                    })
-                  }
-                >
-                  Verify / recover on V3
-                </button>
+                <div>
+                  <button
+                    disabled={busy || checkingIds.includes(row.plan.id)}
+                    onClick={() => void recoverManually(row)}
+                  >
+                    {checkingIds.includes(row.plan.id)
+                      ? "Verifying on V3…"
+                      : "Verify / recover on V3"}
+                  </button>
+                  <ReadProgress
+                    active={checkingIds.includes(row.plan.id)}
+                    label="Checking this transaction against finalized V3 blocks…"
+                  />
+                  {checkProblems[row.plan.id] && <p role="alert">{checkProblems[row.plan.id]}</p>}
+                </div>
               )}
             </article>
           ))

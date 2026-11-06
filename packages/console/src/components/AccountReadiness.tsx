@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { readAccountReadiness, type AccountReadiness as Observation } from "@seam/chain/browser";
 import type { RuntimeFacts } from "@seam/compiler/browser";
 import type { RpcTransport } from "../lib/chainclient";
+import { ReadProgress } from "./ReadProgress";
 
 export function formatUnits(raw: string, decimals = 0): string {
   if (!/^\d+$/.test(raw) || !Number.isInteger(decimals) || decimals < 0 || decimals > 30)
@@ -106,6 +107,7 @@ export function AccountReadiness({
           {busy ? "Reading balances…" : "Read balances"}
         </button>
       </div>
+      <ReadProgress active={busy} label="Reading native balances and discovering your assets…" />
       <details>
         <summary>Look up an asset manually</summary>
         <label>

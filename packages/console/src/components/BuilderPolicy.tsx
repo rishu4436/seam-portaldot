@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import type { Plan, Policy } from "@seam/policy/browser";
 import { derivePolicy, policyJson, tightenPolicy } from "../lib/builderpolicy";
+import { ReadProgress } from "./ReadProgress";
+import { withReadTimeout } from "../lib/read-timeout";
 
 export interface BuilderSelection {
   plan: Plan;
@@ -36,16 +38,20 @@ export function BuilderPolicy({
 }) {
   const [preflight, setPreflight] = useState<unknown>();
   const [pfMsg, setPfMsg] = useState<string>();
+  const [readingFee, setReadingFee] = useState(false);
   const derived = useMemo(() => derivePolicy(plan, { preflight }), [plan, preflight]);
   const fetchFee = async () => {
     onInvalidate?.();
     setPfMsg(undefined);
+    setReadingFee(true);
     try {
       if (!readPreflight) throw new Error("no preflight reader in this build");
-      setPreflight(await readPreflight());
+      setPreflight(await withReadTimeout(readPreflight()));
     } catch (e) {
       setPreflight(undefined);
       setPfMsg(`Preflight failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setReadingFee(false);
     }
   };
   const [maxFee, setMaxFee] = useState<string>();
@@ -55,9 +61,13 @@ export function BuilderPolicy({
   if (!derived.ok)
     return (
       <div aria-label="Builder policy" role="group">
-        <button onClick={fetchFee} disabled={!readPreflight}>
-          Read fee from preflight
+        <button onClick={fetchFee} disabled={!readPreflight || readingFee}>
+          {readingFee ? "Reading live fee…" : "Read fee from preflight"}
         </button>
+        <ReadProgress
+          active={readingFee}
+          label="Checking permissions and estimating the network fee…"
+        />
         {pfMsg && <p className="small">{pfMsg}</p>}
         <p role="alert" className="small">
           No policy{derived.code ? ` (${derived.code})` : ""}: {derived.message}

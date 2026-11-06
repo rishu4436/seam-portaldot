@@ -1078,6 +1078,17 @@ html {
     font-size: 13px;
   }
 }
+.read-progress {
+  padding: 0.75rem 1rem;
+  border-left: 3px solid currentColor;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.read-progress span {
+  display: block;
+  margin-top: 0.35rem;
+  opacity: 0.8;
+}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

@@ -32,7 +32,8 @@ export function checkRebind(
       plan: r.plan,
       liveFacts,
       previousPlanDigest: r.previousPlanDigest,
-      message: `The runtime metadata changed (${r.reason}). The plan was recompiled: new plan digest ${r.plan.planDigest} (was ${r.previousPlanDigest}). The old approval was discarded; approve the new plan.`,
+      message:
+        "Runtime metadata changed during the check. The plan was recompiled and the previous approval was cleared. Review and approve the new plan; the next policy check will refresh its fee estimate.",
     };
   } catch (e) {
     const issues = (e as { issues?: { code?: string; message?: string }[] }).issues;

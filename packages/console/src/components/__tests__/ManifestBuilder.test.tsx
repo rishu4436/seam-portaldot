@@ -15,6 +15,11 @@ import type { V3FactsResult } from "../../lib/v3facts";
 
 // Fixture paths resolve from this test file, not process.cwd(), so `vitest --root packages/console` works from the repo root.
 const CONSOLE_DIR = resolvePath(dirname(fileURLToPath(import.meta.url)), "../../..");
+const recipientRead = vi.hoisted(() => vi.fn());
+vi.mock("@seam/chain/browser", async (original) => ({
+  ...(await original<typeof import("@seam/chain/browser")>()),
+  readRecipientReadiness: recipientRead,
+}));
 
 afterEach(cleanup);
 const ALICE = "5HEuRGmZgmP86h4MPUcCmYWRi5dE8QKCSgf3JMGCTveyqKpE";
@@ -53,6 +58,86 @@ const factsStep = vi.fn(
 );
 
 describe("Manifest builder", () => {
+  it("shows the unfunded-recipient warning in a mint draft before compilation", async () => {
+    recipientRead.mockResolvedValue({
+      status: "needs_native_funding",
+      message: "The recipient needs native tPOT to hold this asset.",
+      nativeShortfall: "10000000000000",
+      block: { number: 100 },
+    });
+    render(
+      <ManifestBuilder getInjected={injected} transportFor={() => vi.fn()} factsStep={factsStep} />,
+    );
+    fireEvent.click(screen.getByText("Connect wallet"));
+    await screen.findByLabelText("Account");
+    fireEvent.click(screen.getByText("Read live facts"));
+    await screen.findByText(/Live runtime:/);
+    fireEvent.click(screen.getByRole("button", { name: "Add Mint assets" }));
+    fireEvent.change(screen.getByLabelText("step1 assetId"), { target: { value: "806707" } });
+    fireEvent.change(screen.getByLabelText("step1 amount"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("step1 recipient"), { target: { value: ALICE } });
+    expect(
+      await screen.findByText("The recipient needs native tPOT to hold this asset."),
+    ).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Builder policy" })).toBeNull();
+  });
+  it.each(["amount", "recipient"])(
+    "explains why editing the draft %s clears its compiled approval",
+    async (field) => {
+      const invalidated = vi.fn();
+      render(
+        <ManifestBuilder
+          getInjected={injected}
+          transportFor={() => vi.fn()}
+          factsStep={factsStep}
+          onInvalidate={invalidated}
+          compile={async () => ({ ok: true, plan: demo.plan })}
+        />,
+      );
+      fireEvent.click(screen.getByText("Connect wallet"));
+      await screen.findByLabelText("Account");
+      fireEvent.click(screen.getByText("Read live facts"));
+      await screen.findByText(/Live runtime:/);
+      fireEvent.click(screen.getByRole("button", { name: "Add Mint assets" }));
+      fireEvent.change(screen.getByLabelText("step1 assetId"), { target: { value: "806707" } });
+      fireEvent.change(screen.getByLabelText("step1 amount"), { target: { value: "1" } });
+      fireEvent.change(screen.getByLabelText("step1 recipient"), { target: { value: ALICE } });
+      fireEvent.click(screen.getByText("Compile against live runtime"));
+      await screen.findByRole("group", { name: "Builder policy" });
+      fireEvent.change(screen.getByLabelText(`step1 ${field}`), {
+        target: {
+          value: field === "amount" ? "2" : "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        },
+      });
+      expect(
+        await screen.findByText(
+          /Transaction details changed\. The previous plan and approval were cleared/,
+        ),
+      ).toBeTruthy();
+      expect(invalidated).toHaveBeenLastCalledWith(
+        expect.stringContaining("Transaction details changed"),
+      );
+      expect(screen.queryByRole("group", { name: "Builder policy" })).toBeNull();
+    },
+  );
+  it("shows progress while a live runtime read is pending", async () => {
+    let finish!: (value: V3FactsResult) => void;
+    render(
+      <ManifestBuilder
+        transportFor={() => vi.fn()}
+        factsStep={() =>
+          new Promise((resolve) => {
+            finish = resolve;
+          })
+        }
+      />,
+    );
+    fireEvent.click(screen.getByText("Read live facts"));
+    expect(screen.getByText("Reading finalized network facts…")).toBeTruthy();
+    await waitFor(() => expect(finish).toBeTypeOf("function"));
+    await act(async () => finish({ ok: true, facts, report: {} } as unknown as V3FactsResult));
+    expect(screen.queryByText("Reading finalized network facts…")).toBeNull();
+  });
   it("retries one transient read-only discovery failure and never retries a network mismatch", async () => {
     const read = vi
       .fn()

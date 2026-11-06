@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import DeFiWorkspace from "../DeFiWorkspace";
 import { NativeSwapStore } from "../../lib/native-swap-store";
 const mock = vi.hoisted(() => ({
@@ -143,6 +143,11 @@ it("rejects precision loss in input before asking for a quote", async () => {
 it.each([
   ["Native fee review limit", "0", "Fee review limit must be greater than 0"],
   ["Native fee review limit", "-1", "Fee review limit must be greater than 0"],
+  [
+    "Native fee review limit",
+    "0.000000000000001",
+    "Fee review limit supports at most 14 decimal places",
+  ],
   ["Native slippage (%)", "-1", "Slippage must be between 0.01% and 5%"],
 ])("names the invalid %s field for input %s", async (field, value, expected) => {
   await connected();
@@ -255,4 +260,58 @@ it("a recovery read cannot modify the journal while another tab owns the wallet 
     if (prior) Object.defineProperty(navigator, "locks", prior);
     else Reflect.deleteProperty(navigator, "locks");
   }
+});
+it("shows a tiny reverse quote failure next to the quote control and permits a new quote", async () => {
+  await connected();
+  fireEvent.click(screen.getByRole("button", { name: "Reverse native swap direction" }));
+  fireEvent.change(screen.getByLabelText("Native swap amount"), {
+    target: { value: "0.00000001" },
+  });
+  mock.quote.mockRejectedValueOnce(
+    new Error("No executable quote for this amount. Try another pool or amount."),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Read live quote" }));
+  const error = await screen.findByRole("alert");
+  expect(error.textContent).toContain("No executable quote");
+  expect(error.closest(".defi-trade")).toBeTruthy();
+  await waitFor(() =>
+    expect(
+      (screen.getByRole("button", { name: "Read live quote" }) as HTMLButtonElement).disabled,
+    ).toBe(false),
+  );
+  fireEvent.change(screen.getByLabelText("Native swap amount"), { target: { value: "0.05" } });
+  fireEvent.click(screen.getByRole("button", { name: "Read live quote" }));
+  await screen.findByRole("heading", { name: "What you are approving" });
+  expect(mock.sign).not.toHaveBeenCalled();
+});
+it("verifies two restored receipts independently and preserves saved proof after a read failure", async () => {
+  const store = new NativeSwapStore(localStorage);
+  const other = `0x${"cd".repeat(32)}` as const;
+  store.save({
+    plan: quoted.plan,
+    hash: h,
+    state: "verified",
+    verification: { status: "verified", message: "Previous valid proof." },
+  });
+  store.save({ plan: { ...quoted.plan, id: other }, hash: other, state: "submitted" });
+  let finish!: (value: { status: string; message: string }) => void;
+  mock.verify.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  mock.verify.mockResolvedValueOnce({ status: "failed", message: "RPC temporarily unavailable" });
+  render(<DeFiWorkspace onBusyChange={() => {}} />);
+  const buttons = await screen.findAllByRole("button", { name: "Verify / recover on V3" });
+  fireEvent.click(buttons[0]!);
+  fireEvent.click(buttons[1]!);
+  await screen.findByText("RPC temporarily unavailable");
+  expect(store.list().find((row) => row.hash === h)!.state).toBe("verified");
+  await act(async () => finish({ status: "verified", message: "Finalized." }));
+  await waitFor(() =>
+    expect(screen.getAllByRole("button", { name: "Verify / recover on V3" })).toHaveLength(2),
+  );
+  for (const button of screen.getAllByRole("button", { name: "Verify / recover on V3" }))
+    expect((button as HTMLButtonElement).disabled).toBe(false);
 });

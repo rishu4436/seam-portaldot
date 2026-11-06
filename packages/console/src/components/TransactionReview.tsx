@@ -23,7 +23,7 @@ export function TransactionReview({
       ? facts?.fingerprint
         ? `${formatUnits(value, facts.fingerprint.tokenDecimals)} ${facts.fingerprint.tokenSymbol} (${value} base units)`
         : `${value} native base units`
-      : "Unavailable — read preflight again";
+      : "Unavailable — run the live policy check again";
   return (
     <section className="transaction-review" aria-label="Transaction details">
       <h3>What you are approving</h3>

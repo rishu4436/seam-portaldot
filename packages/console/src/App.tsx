@@ -14,6 +14,8 @@ import type { GateOutcome } from "./lib/policygate";
 import "./workspace.css";
 import { DOCS_URL, SOURCE_URL } from "./lib/product-links";
 import { RELEASE } from "./lib/release";
+import { ReadProgress } from "./components/ReadProgress";
+import { withReadTimeout } from "./lib/read-timeout";
 
 const Lab = import.meta.env.DEV ? lazy(() => import("./LegacyApp")) : undefined;
 const WorkspaceCenters = lazy(() => import("./components/WorkspaceCenters"));
@@ -55,6 +57,7 @@ export default function App() {
   );
   const [defiOpened, setDefiOpened] = useState(() => readActiveView() === "defi");
   const [notice, setNotice] = useState<string>();
+  const [approvalProgress, setApprovalProgress] = useState("Reading the current runtime…");
   const navigate = (next: ActiveView) => {
     if (busy || executionBusy || next === activeView) return;
     writeView(next);
@@ -82,13 +85,13 @@ export default function App() {
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, [activeView, busy, executionBusy]);
-  const invalidate = useCallback(() => {
+  const invalidate = useCallback((reason?: string) => {
     revision.current++;
     setAcknowledgedDowngrade(false);
     setSelection(undefined);
     setApproval(undefined);
     setGate(undefined);
-    setNotice(undefined);
+    setNotice(reason);
   }, []);
   const view = useMemo(() => (selection ? planView(selection.plan) : undefined), [selection]);
   const input = selection
@@ -106,28 +109,44 @@ export default function App() {
     setBusy(true);
     setApproval(undefined);
     setNotice(undefined);
+    setApprovalProgress("Reading the current runtime…");
     try {
       const { transportFor } = await import("./lib/browserChain");
-      const rpc = transportFor(selection.rpcUrl ?? V3_HTTPS_RPC);
-      const chain = await loadChainFns();
-      const result = await approveWithRebind({
-        manifest: selection.manifest,
-        plan: selection.plan,
-        planFacts: selection.facts,
-        readFacts: async () => {
-          const result = await liveFactsStep(rpc);
-          return result.ok ? result.facts : undefined;
-        },
-        check: (facts) =>
-          engineApprovalCheck({
-            chain,
-            send: rpc,
-            readFacts: async () => facts,
-            input,
-            now: new Date(),
-            acknowledgedDowngrade,
-          }),
+      const rpc = transportFor(selection.rpcUrl ?? V3_HTTPS_RPC, {
+        readDeadline: Date.now() + 55000,
+        readRounds: 1,
       });
+      const chain = await loadChainFns();
+      let freshFee: string | undefined;
+      const result = await withReadTimeout(
+        approveWithRebind({
+          manifest: selection.manifest,
+          plan: selection.plan,
+          planFacts: selection.facts,
+          readFacts: async () => {
+            const result = await liveFactsStep(rpc);
+            return result.ok ? result.facts : undefined;
+          },
+          check: (facts) => {
+            setApprovalProgress("Checking permissions, recipient readiness and network fees…");
+            return engineApprovalCheck({
+              chain,
+              send: rpc,
+              readFacts: async () => facts,
+              input,
+              now: new Date(),
+              acknowledgedDowngrade,
+              onPreflight: (preflight) => {
+                const fee = preflight.totalFee as { unknown?: boolean; value?: string } | undefined;
+                freshFee =
+                  fee && !fee.unknown && typeof fee.value === "string" && /^\d+$/.test(fee.value)
+                    ? fee.value
+                    : undefined;
+              },
+            });
+          },
+        }),
+      );
       if (revision.current !== version) return;
       if (result.kind === "rebound") {
         setSelection({
@@ -145,6 +164,7 @@ export default function App() {
         return;
       }
       setGate(result.gate);
+      setSelection({ ...selection, facts: result.liveFacts, feeEstimate: freshFee });
       if (result.gate.ok) setApproval(reviewApproval(view, selection.policy.maxApprovalSeconds));
     } catch (error) {
       setNotice(
@@ -382,6 +402,7 @@ export default function App() {
                           <Symbol kind="arrow" />
                         </button>
                         {gate && <PolicyGatePanel gate={gate} />}
+                        <ReadProgress active={busy} label={approvalProgress} />
                       </>
                     ) : (
                       <div className="empty-review">
