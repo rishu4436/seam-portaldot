@@ -19,6 +19,8 @@ import { SDK_DOCS_URL, PAYMENT_EXAMPLE_URL, SOURCE_URL } from "../lib/product-li
 import { parseJsonFile } from "../lib/json-input";
 import { NativeSwapStore, type NativeSwapRow } from "../lib/native-swap-store";
 import { verifyNativeSwap, type NativeSwapVerification } from "@seam/chain/browser";
+import { ReadProgress } from "./ReadProgress";
+import { withReadTimeout } from "../lib/read-timeout";
 import {
   exportLocalReceipts,
   importLocalReceipts,
@@ -345,10 +347,14 @@ export function EvidenceInspector({
   const request = useRef(0);
   const [nativeRows, setNativeRows] = useState<NativeSwapRow[]>();
   const [nativeResults, setNativeResults] = useState<Record<string, NativeSwapVerification>>({});
+  const checking = useRef(new Set<string>());
+  const [checkingIds, setCheckingIds] = useState<string[]>([]);
   useEffect(() => {
     request.current++;
     setNativeRows(undefined);
     setNativeResults({});
+    checking.current.clear();
+    setCheckingIds([]);
     setResult(undefined);
     setBusy(false);
     setProblem(undefined);
@@ -357,6 +363,8 @@ export function EvidenceInspector({
   const importFile = async (file?: File) => {
     if (!file) return;
     const version = ++request.current;
+    checking.current.clear();
+    setCheckingIds([]);
     setBusy(true);
     setResult(undefined);
     setNativeRows(undefined);
@@ -437,16 +445,24 @@ export function EvidenceInspector({
               <code>{row.hash ?? "Not submitted"}</code>
               {row.hash && (
                 <button
-                  disabled={busy}
+                  disabled={busy || checkingIds.includes(row.plan.id)}
                   onClick={() => {
-                    const version = ++request.current;
-                    setBusy(true);
+                    if (checking.current.has(row.plan.id)) return;
+                    const version = request.current;
+                    checking.current.add(row.plan.id);
+                    setCheckingIds([...checking.current]);
+                    setProblem(undefined);
                     void (async () => {
                       const { transportFor } = await import("../lib/browserChain");
-                      const value = await verifyNativeSwap(
-                        transportFor(V3_HTTPS_RPC),
-                        row.plan,
-                        row.hash!,
+                      const value = await withReadTimeout(
+                        verifyNativeSwap(
+                          transportFor(V3_HTTPS_RPC, {
+                            readDeadline: Date.now() + 55000,
+                            readRounds: 1,
+                          }),
+                          row.plan,
+                          row.hash!,
+                        ),
                       );
                       if (version === request.current)
                         setNativeResults((old) => ({ ...old, [row.plan.id]: value }));
@@ -455,13 +471,22 @@ export function EvidenceInspector({
                         if (version === request.current) setProblem(message(error));
                       })
                       .finally(() => {
-                        if (version === request.current) setBusy(false);
+                        if (version === request.current) {
+                          checking.current.delete(row.plan.id);
+                          setCheckingIds([...checking.current]);
+                        }
                       });
                   }}
                 >
-                  Verify native swap on V3
+                  {checkingIds.includes(row.plan.id)
+                    ? "Verifying on V3…"
+                    : "Verify native swap on V3"}
                 </button>
               )}
+              <ReadProgress
+                active={checkingIds.includes(row.plan.id)}
+                label="Checking this transaction against finalized V3 blocks…"
+              />
               {nativeResults[row.plan.id] !== undefined && (
                 <>
                   <p role="status">
@@ -522,7 +547,7 @@ export function EvidenceInspector({
               setBusy(true);
               setProblem(undefined);
               setResult(undefined);
-              void verifyEvidence(bundle)
+              void withReadTimeout(verifyEvidence(bundle))
                 .then((value) => {
                   if (version === request.current) setResult({ bundle, value });
                 })
@@ -753,7 +778,7 @@ export function TeamConsole({ bundle }: { bundle?: EvidenceBundle }) {
               type="url"
               required
               value={url}
-              placeholder="https://your-service.up.railway.app"
+              placeholder="Enter your team backend URL"
               onChange={(event) => setUrl(event.target.value)}
             />
           </label>

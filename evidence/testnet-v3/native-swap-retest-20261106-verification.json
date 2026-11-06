@@ -1,0 +1,266 @@
+{
+  "checkedAt": "2026-11-06T00:43:08.711Z",
+  "genesis": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+  "finalizedHead": {
+    "number": 341897,
+    "hash": "0x721279b40e122f5e8597a288bd3fa15aed617d1e4b11c9a9b53129ccdbcbf7bf"
+  },
+  "results": [
+    {
+      "blockHash": "0x2800f8d04a93d852cd3397a6990512f061f62a156cfff24933548c9c89150f3b",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "nonce": "30",
+      "call": {
+        "section": "assetConversion",
+        "method": "swapExactTokensForTokens",
+        "args": [
+          [
+            {
+              "native": null
+            },
+            {
+              "withId": 8801000
+            }
+          ],
+          10000000000000,
+          977306940429,
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          true
+        ]
+      },
+      "events": [
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810724634923
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            10000000000000
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Withdrawn",
+          "data": [
+            8801000,
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            982218030582
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            10000000000000
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Deposited",
+          "data": [
+            8801000,
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            982218030582
+          ]
+        },
+        {
+          "section": "assetConversion",
+          "method": "SwapExecuted",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            10000000000000,
+            982218030582,
+            [
+              [
+                {
+                  "native": null
+                },
+                10000000000000
+              ],
+              [
+                {
+                  "withId": 8801000
+                },
+                982218030582
+              ]
+            ]
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+            1810724634923
+          ]
+        },
+        {
+          "section": "transactionPayment",
+          "method": "TransactionFeePaid",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810724634923,
+            0
+          ]
+        },
+        {
+          "section": "system",
+          "method": "ExtrinsicSuccess",
+          "data": [
+            {
+              "weight": {
+                "refTime": 1555828770,
+                "proofSize": 26115
+              },
+              "class": "Normal",
+              "paysFee": "Yes"
+            }
+          ]
+        }
+      ],
+      "txHash": "0x0e366e266ec04746002795021fcdf20549d5067b8d8bc0442ff1056eb287078b",
+      "blockNumber": 341514,
+      "what": "Canonical native swap: tPOT to DUCAT",
+      "verdict": "canonical_execution_verified"
+    },
+    {
+      "blockHash": "0x4f8264c563609b24733ff3d67da2a6408092fa1109427c4e160e9055fc5b85fc",
+      "signer": "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+      "nonce": "31",
+      "call": {
+        "section": "assetConversion",
+        "method": "swapExactTokensForTokens",
+        "args": [
+          [
+            {
+              "withId": 8801000
+            },
+            {
+              "native": null
+            }
+          ],
+          500000000,
+          5059756936,
+          "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+          true
+        ]
+      },
+      "events": [
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810724596463
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Withdrawn",
+          "data": [
+            8801000,
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            500000000
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Withdraw",
+          "data": [
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            5085182851
+          ]
+        },
+        {
+          "section": "assets",
+          "method": "Deposited",
+          "data": [
+            8801000,
+            "5CA36UdrW46V1PZaoJ5kRh42Jj7Xc6pCum4ccf1Rw4z2v3Qd",
+            500000000
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            5085182851
+          ]
+        },
+        {
+          "section": "assetConversion",
+          "method": "SwapExecuted",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            500000000,
+            5085182851,
+            [
+              [
+                {
+                  "withId": 8801000
+                },
+                500000000
+              ],
+              [
+                {
+                  "native": null
+                },
+                5085182851
+              ]
+            ]
+          ]
+        },
+        {
+          "section": "balances",
+          "method": "Deposit",
+          "data": [
+            "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+            1810724596463
+          ]
+        },
+        {
+          "section": "transactionPayment",
+          "method": "TransactionFeePaid",
+          "data": [
+            "5ExjaoAwuDG42GbnX6GQBdhNugSv59nXj2HKiUXoS7qkhFV1",
+            1810724596463,
+            0
+          ]
+        },
+        {
+          "section": "system",
+          "method": "ExtrinsicSuccess",
+          "data": [
+            {
+              "weight": {
+                "refTime": 1555828770,
+                "proofSize": 26115
+              },
+              "class": "Normal",
+              "paysFee": "Yes"
+            }
+          ]
+        }
+      ],
+      "txHash": "0xa7d0972c61554501c3a51c36e611bb05f5d71b6dbd67cbacaa35bb0a9ef14367",
+      "blockNumber": 341539,
+      "what": "Canonical native swap: DUCAT to tPOT",
+      "verdict": "canonical_execution_verified"
+    }
+  ],
+  "reportedClientBuild": "82551fca721d269a57751f49eccc38b080bc47ba",
+  "scope": "Read-only canonical calls, signers, nonces and finalized success/effect events. Does not attest browser behavior or original quote/approval archives.",
+  "signaturesRequested": 0,
+  "transactionsSubmitted": 0
+}

@@ -32,6 +32,7 @@ import type { Plan as PolicyPlan } from "@seam/policy/browser";
 import { AccountReadiness } from "./AccountReadiness";
 import { RecipientReadiness } from "./RecipientReadiness";
 import { WalletInstallHelp } from "./WalletInstallHelp";
+import { ReadProgress } from "./ReadProgress";
 
 type Facts = Extract<V3FactsResult, { ok: true }>["facts"];
 const ACTION_LABELS: Record<BuilderKind, string> = {
@@ -176,7 +177,7 @@ export function ManifestBuilder({
   onPolicyEdit,
   onRuntime,
 }: {
-  onInvalidate?: () => void;
+  onInvalidate?: (reason?: string) => void;
   onPolicyEdit?: () => void;
   onRuntime?: (facts: unknown) => void;
   getInjected?: Parameters<typeof listWalletAccounts>[0];
@@ -209,6 +210,8 @@ export function ManifestBuilder({
   const [compileMsg, setCompileMsg] = useState<string>();
   const [plan, setPlan] = useState<unknown>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const compiledDraft = useRef(false);
+  const [draftNotice, setDraftNotice] = useState<string>();
 
   const live = facts?.ok ? facts.facts : undefined;
   useEffect(() => {
@@ -230,7 +233,12 @@ export function ManifestBuilder({
     setPlan(undefined);
     setCompileMsg(undefined);
     setFieldErrors({});
-    onInvalidate?.();
+    const reason = compiledDraft.current
+      ? "Transaction details changed. The previous plan and approval were cleared. Compile again and review the updated transaction."
+      : undefined;
+    compiledDraft.current = false;
+    if (reason) setDraftNotice(reason);
+    onInvalidate?.(reason);
   }, [signer, walletSource, url, live, actions, atomicity, onInvalidate]);
   const manifest =
     signer && actions.length
@@ -351,6 +359,7 @@ export function ManifestBuilder({
     setCompileMsg(undefined);
     setFieldErrors({});
     setPlan(undefined);
+    setDraftNotice(undefined);
     if (!manifest || !live) return;
     const r = await compile(manifest, live).catch((e: unknown) => ({
       ok: false as const,
@@ -362,6 +371,7 @@ export function ManifestBuilder({
       return setCompileMsg(`Compile failed: ${r.message}`);
     }
     setPlan(r.plan);
+    compiledDraft.current = true;
     onCompiled?.(r.plan, manifest, live);
   };
   const blocked = !signer
@@ -466,6 +476,14 @@ export function ManifestBuilder({
           Live facts failed ({facts.reason}): {facts.message}
         </p>
       )}
+      <ReadProgress
+        active={busy}
+        label={
+          factsAttempt === 2
+            ? "Retrying the live runtime read…"
+            : "Reading finalized network facts…"
+        }
+      />
       {fp && (
         <p className="small">
           Live runtime: {fp.specName ?? "?"} spec {fp.specVersion}, genesis{" "}
@@ -574,7 +592,7 @@ export function ManifestBuilder({
               );
             })}
             {!f.length && <p className="muted small">No arguments.</p>}
-            {a.kind === "assets.transfer" && live && (
+            {(a.kind === "assets.transfer" || a.kind === "assets.mint") && live && (
               <RecipientReadiness
                 recipient={a.args.recipient ?? ""}
                 assetId={a.args.assetId ?? ""}
@@ -636,6 +654,11 @@ export function ManifestBuilder({
       <h4>
         <span>5</span> Compile your transaction
       </h4>
+      {draftNotice && (
+        <p role="status" className="workspace-notice">
+          {draftNotice}
+        </p>
+      )}
       <div className="row">
         <button disabled={!!blocked} onClick={doCompile}>
           Compile against live runtime
@@ -696,7 +719,11 @@ export function ManifestBuilder({
             readPreflight={async () => {
               const t = transportFor ?? (await import("../lib/browserChain")).transportFor;
               const chain = await loadChainFns();
-              return chain.preflight(t(url), plan, live);
+              return chain.preflight(
+                t(url, { readDeadline: Date.now() + 55000, readRounds: 1 }),
+                plan,
+                live,
+              );
             }}
             onUse={
               onUsePolicy &&

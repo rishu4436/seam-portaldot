@@ -193,7 +193,7 @@ it("reviews exact decoded addresses, precision-safe amounts, fee estimate and a 
 });
 it("keeps an unavailable fee distinct from zero and carries the real preflight fee into approval review", async () => {
   const view = render(<TransactionReview plan={plan} />);
-  expect(screen.getAllByText(/Unavailable — read preflight again/)).toHaveLength(2);
+  expect(screen.getAllByText(/Unavailable — run the live policy check again/)).toHaveLength(2);
   view.unmount();
   const use = vi.fn();
   render(

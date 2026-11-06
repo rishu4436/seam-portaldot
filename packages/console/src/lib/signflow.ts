@@ -527,6 +527,7 @@ export async function engineApprovalCheck(args: {
   now: Date;
   gate?: typeof runPolicyGate;
   acknowledgedDowngrade?: boolean;
+  onPreflight?: (preflight: PreflightRes) => void;
 }): Promise<GateOutcome> {
   try {
     const facts = await args.readFacts();
@@ -538,6 +539,7 @@ export async function engineApprovalCheck(args: {
         message: "Live runtime facts could not be read, so the plan can't be approved.",
       };
     const preflight = await args.chain.preflight(args.send, args.input.plan, facts);
+    args.onPreflight?.(preflight);
     const permissionBlock = callPermissionBlock(args.input.plan, preflight);
     if (permissionBlock)
       return {
