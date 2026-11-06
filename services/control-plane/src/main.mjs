@@ -43,11 +43,25 @@ if (process.env.SEAM_BACKUP_ENCRYPTION_KEY) {
   backups.start();
 }
 const port = Number(process.env.PORT ?? 8080);
-app.server.listen(port, "0.0.0.0", () => console.log(JSON.stringify({ event: "ready", port })));
+const logMemory = () =>
+  console.log(
+    JSON.stringify({
+      event: "memory",
+      uptimeSeconds: Math.floor(process.uptime()),
+      ...process.memoryUsage(),
+    }),
+  );
+const memoryTimer = setInterval(logMemory, 300000);
+memoryTimer.unref();
+app.server.listen(port, "0.0.0.0", () => {
+  console.log(JSON.stringify({ event: "ready", port }));
+  logMemory();
+});
 let stopping = false;
 const stop = () => {
   if (stopping) return;
   stopping = true;
+  clearInterval(memoryTimer);
   Promise.resolve(backups?.close())
     .then(() => app.close())
     .then(() => process.exit(0))

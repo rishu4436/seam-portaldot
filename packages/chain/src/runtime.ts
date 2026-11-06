@@ -74,6 +74,7 @@ export interface DecodeRuntime {
 }
 
 const decodeCache = new Map<string, DecodeRuntime>();
+const DECODE_CACHE_LIMIT = 2;
 
 /** Metadata version byte (byte 4, after the "meta" magic). */
 export function metadataVersionOf(metadataHex: string): number {
@@ -88,9 +89,17 @@ export function metadataVersionOf(metadataHex: string): number {
 export function decodeRuntime(facts: RuntimeFacts): DecodeRuntime {
   const key = `${facts.fingerprint.metadataHash}:${facts.fingerprint.typesBundleHash}`;
   const hit = decodeCache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    decodeCache.delete(key);
+    decodeCache.set(key, hit);
+    return hit;
+  }
   encodeRuntime(facts); // integrity check
   const pinned = parsePinnedTypes(facts.source.typesBundle);
+  if (decodeCache.size >= DECODE_CACHE_LIMIT) {
+    const oldest = decodeCache.keys().next().value;
+    if (oldest !== undefined) decodeCache.delete(oldest);
+  }
   const registry = new TypeRegistry();
   const legacy = metadataVersionOf(facts.source.metadataHex) <= 13;
   registry.register({

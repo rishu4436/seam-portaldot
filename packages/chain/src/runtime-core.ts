@@ -43,6 +43,7 @@ function metadataVersion(metadataHex: string): number {
 }
 
 const cache = new Map<string, LoadedRuntime>();
+const CACHE_LIMIT = 2;
 
 export function loadRuntimeCore(metadataHex: string, typesBundle?: string | null): LoadedRuntime {
   const version = metadataVersion(metadataHex);
@@ -55,12 +56,22 @@ export function loadRuntimeCore(metadataHex: string, typesBundle?: string | null
   const typesBundleHash = legacy ? (blake2AsHex(stringToU8a(typesBundle!), 256) as Hex) : null;
   const key = `${metadataHash}:${typesBundleHash}`;
   const hit = cache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    cache.delete(key);
+    cache.set(key, hit);
+    return hit;
+  }
   const pinned = legacy ? parsePinned(typesBundle!) : parsePinned(NO_PINNED_TYPES);
   if (legacy && pinned.metadataVersion !== undefined && pinned.metadataVersion !== version) {
     throw new Error(
       `the pinned types file is for metadata V${pinned.metadataVersion}, this runtime serves V${version}`,
     );
+  }
+  // Match the compiler's bounded exact-hash cache. Metadata drift is not a reason
+  // to keep every decoded historical registry alive for the life of the process.
+  if (cache.size >= CACHE_LIMIT) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
   }
   const registry = new TypeRegistry();
   registry.register(pinned.types as Record<string, string>);

@@ -60,6 +60,9 @@ export function needsPinnedTypes(metadataHex: string): boolean {
 }
 
 const cache = new Map<string, LoadedRuntime>();
+// V3's state-dependent metadata changes between blocks. Each registry retains a large
+// object graph, so a long-lived monitor must not retain every historical raw hash.
+const CACHE_LIMIT = 2;
 
 /**
  * Builds a polkadot.js registry from raw metadata plus, for metadata V13 and older only, the pinned types.
@@ -80,7 +83,11 @@ export function loadRuntime(metadataHex: string, typesBundle?: string | null): L
   const typesBundleHash = legacy ? blake2_256(utf8Bytes(typesBundle!)) : null;
   const key = `${metadataHash}:${typesBundleHash}`;
   const hit = cache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    cache.delete(key);
+    cache.set(key, hit);
+    return hit;
+  }
 
   const pinned = legacy ? parsePinnedTypes(typesBundle!) : parsePinnedTypes(NO_PINNED_TYPES);
   if (
@@ -91,6 +98,10 @@ export function loadRuntime(metadataHex: string, typesBundle?: string | null): L
     throw new Error(
       `the pinned types file is for metadata V${pinned.metadataVersion}, this runtime serves V${metadataVersion}`,
     );
+  }
+  if (cache.size >= CACHE_LIMIT) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
   }
   const registry = new TypeRegistry();
   registry.register(pinned.types as Record<string, string>);
