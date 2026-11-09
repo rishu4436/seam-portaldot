@@ -235,7 +235,7 @@ describe("fails closed (SYNTHETIC variants of the REAL records)", () => {
 
 describe("agreement with live re-verification (verify-live's verifyStep call, with runtime and call bytes)", () => {
   // verify-live.ts on this branch calls verifyStep(planStep, signer, outcome, effect) with no runtime and no callHex;
-  // Sentinel is adding both (bot3/v3-verify-wiring). Until then this calls the SDK verifyStep directly the way
+  // the policy engine is adding both (v3-verify-wiring implementation). Until then this calls the SDK verifyStep directly the way
   // verify-live will: outcome from the chain (status finalized, hash, block, events, call bytes), plus the runtime.
   const live = (rec: Rec, receipt: Receipt, id: string, effect?: ContractEffect) => {
     const step = rec.plan.steps.find((s: Rec) => s.actionId === id);

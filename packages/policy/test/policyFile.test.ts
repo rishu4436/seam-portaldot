@@ -134,7 +134,7 @@ describe("two-part weights", () => {
     });
     expect(uncapped.allowed).toBe(true);
   });
-  it("uses a contract call's own proofSize instead of the node's estimate (Bot 4's test-chain numbers)", () => {
+  it("uses a contract call's own proofSize instead of the node's estimate (chain adapter's test-chain numbers)", () => {
     const p = structuredClone(plan);
     p.steps[1].decodedArgs.proofSize = "1000000";
     const edited = { ...p, planDigest: H.planDigest(p) };

@@ -3,7 +3,7 @@ import type {
   PreflightStep as EnginePreflightStep,
   ReceiptStep as EngineReceiptStep,
 } from "@seam/policy/browser";
-// Test-chain adapter. Everything here comes from Bot 4's REAL runs on a local
+// Test-chain adapter. Everything here comes from chain adapter's REAL runs on a local
 // substrate-contracts-node v0.42.0 (ws://127.0.0.1:9944, metadata v14), imported
 // by scripts/import-devnode.mjs into src/demo/devnode.json. Nothing is simulated:
 // hashes, blocks, events, fees, dry runs and digests are what that chain returned.

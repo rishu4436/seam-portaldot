@@ -30,7 +30,7 @@ const ink = (name: string) =>
   );
 const ERC20 = ink("erc20.v5.json"); // ink! 5 metadata (V5), from polkadot-js/api test fixtures
 const FLIPPER = ink("flipper.v3.json"); // ink! 3.0.0-rc7 metadata (V3)
-const SEAM_DEMO = ink("seam_demo.v5.json"); // contracts/seam-demo/artifacts/metadata.json (ink! 5.1.1, branch bot2/demo-contract)
+const SEAM_DEMO = ink("seam_demo.v5.json"); // contracts/seam-demo/artifacts/metadata.json (ink! 5.1.1, test contract build)
 
 const facts = realFacts();
 const { registry } = loadRuntime(metadataHex, typesBundle);

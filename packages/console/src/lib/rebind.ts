@@ -1,5 +1,5 @@
-// Facts snapshot (Sentinel's FACTS_MISMATCH fix): the live facts read once for the builder are the plan's facts for
-// compile, preflight, approval and signing. Whenever facts are re-read (before approve, before sign) Forge's
+// Facts snapshot (the policy engine's FACTS_MISMATCH fix): the live facts read once for the builder are the plan's facts for
+// compile, preflight, approval and signing. Whenever facts are re-read (before approve, before sign) the compiler's
 // rebindPlan (@seam/compiler/browser) decides; the console has no comparison logic of its own:
 //  - same facts            -> the plan stands;
 //  - only allow-listed raw metadata drift -> a recompiled plan with a NEW digest: the old approval is discarded and a

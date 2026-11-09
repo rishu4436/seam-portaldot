@@ -1,4 +1,4 @@
-// The authoritative pre-sign policy gate: Sentinel's assertPolicyAllows from @seam/policy/browser, called right before
+// The authoritative pre-sign policy gate: the policy engine's assertPolicyAllows from @seam/policy/browser, called right before
 // the wallet signer. The console's own limits view and the wallet demo pre-check are display only; only this decides.
 // Fail closed: no policy, a missing preflight, an unknown rule or a thrown evaluation all block.
 import {

@@ -34,7 +34,7 @@ import { perStepOfBatch } from "./batch-steps.js";
 
 export { perStepOfBatch };
 
-/** What SEAM needs from the chain layer (Bot 4's @seam/chain implements this). */
+/** What SEAM needs from the chain layer (chain adapter's @seam/chain implements this). */
 export interface ChainAdapter {
   discover(): Promise<RuntimeFacts>;
   /** Fingerprint read fresh from the node, used right before submitting. */
@@ -84,7 +84,7 @@ export type TxLookup =
     }
   | { state: "unknown"; detail: string };
 
-/** A send whose outcome is ambiguous. Local type: swap for Bot 5's receipt type if one lands. Never retry blindly: reconcile. */
+/** A send whose outcome is ambiguous. Never retry blindly: reconcile. */
 export interface UncertainSend {
   actionId: string;
   index: number;

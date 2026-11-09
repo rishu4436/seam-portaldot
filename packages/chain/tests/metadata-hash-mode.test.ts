@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- raw polkadot.js objects */
 /**
- * The trusted decoder reports CheckMetadataHash's mode from the extension bytes themselves (Sentinel's
+ * The trusted decoder reports CheckMetadataHash's mode from the extension bytes themselves (the policy engine's
  * submit-lock layout path requires metadataHashMode === 0). Ground truth: the 19 real finalized V3 extrinsics, all
  * mode 0 (Disabled). A copy with the mode byte set to 1 must report 1, and a runtime without the extension must leave it out.
  */

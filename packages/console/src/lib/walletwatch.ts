@@ -1,4 +1,4 @@
-// Wallet events for the LIVE console: Chainsmith's watchSigner (@seam/chain/browser). Signing is only allowed while the
+// Wallet events for the LIVE console: the chain adapter's watchSigner (@seam/chain/browser). Signing is only allowed while the
 // watch says `ready`; assertReadyToSign() runs (with fresh reads) before every signPayload and again before every
 // submit. On SignerNotReadyError the run stops and nothing is broadcast. Read-only: the watch never signs.
 import {

@@ -1,4 +1,4 @@
-// Builds src/demo/devnode.json from Bot 4's REAL runs on the local
+// Builds src/demo/devnode.json from chain adapter's REAL runs on the local
 // substrate-contracts-node (ws://127.0.0.1:9944), committed in this repo under
 // evidence/devnode/ (see evidence/README.md). Nothing here is simulated: every
 // Manifest, fact, policy, rule result, hash, block, event, fee and digest is

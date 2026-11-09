@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Multi-step LIVE with Quill's real verifyStep (@seam/sdk/browser) over the REAL Portaldot V3 sequential run
+// Multi-step LIVE with the SDK's real verifyStep (@seam/sdk/browser) over the REAL Portaldot V3 sequential run
 // evidence/testnet-v3/runs/plan-sequential-1792411270138.json ([pay assets.transfer #102653, nft nfts.mint #102657]).
 // The chain outcomes (status, tx hash, block, decoded events) are the recorded ones; the gates, signer and submit are
 // fakes, so nothing is signed or sent. The records keep no signatures: the fake "signed bytes" are placeholders and

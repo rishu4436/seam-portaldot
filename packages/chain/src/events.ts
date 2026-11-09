@@ -3,7 +3,7 @@ import { u8aToHex } from "@polkadot/util";
 import type { Hex, RuntimeFacts } from "@seam/compiler";
 import { decodeRuntime, describeDispatchError } from "./runtime.js";
 
-/** Event shape Bot 5's receipt verifies against: positional args, accounts as 0x AccountId32 hex, numbers as decimal strings. */
+/** Event shape SDK's receipt verifies against: positional args, accounts as 0x AccountId32 hex, numbers as decimal strings. */
 export interface ChainEvent {
   pallet: string;
   name: string;

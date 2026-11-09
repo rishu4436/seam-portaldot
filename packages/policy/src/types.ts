@@ -1,4 +1,4 @@
-// Policy-side shapes. Runtime facts, Manifest and Plan come from Bot 2's compiler (compilerTypes.ts);
+// Policy-side shapes. Runtime facts, Manifest and Plan come from compiler's compiler (compilerTypes.ts);
 // preflight, envelope, policy result, approval and receipt shapes are the ones the team agreed on Oct 11, 2026.
 export * from "./compilerTypes.js";
 import type { Hex } from "./compilerTypes.js";

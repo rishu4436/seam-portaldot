@@ -91,7 +91,7 @@ function factsWith(over: Partial<RuntimeFingerprint>): RuntimeFacts {
   return f;
 }
 
-describe("matches Bot 2's compiler", () => {
+describe("matches compiler's compiler", () => {
   it("hashes exactly like the compiler (plan, fingerprint, arbitrary JSON)", () => {
     const plan = H.compilePlan();
     expect(planDigest(plan)).toBe(plan.planDigest);

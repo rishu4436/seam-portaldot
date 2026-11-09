@@ -48,7 +48,7 @@ if (!(await storage(assetKey))) {
   if (m.status !== "finalized" || !m.inclusion?.success) throw new Error("mint failed");
 } else log.steps.push({ what: `asset ${ASSET_ID} already exists, skipped create/mint` });
 
-// Bot 2's demo ink! contract (contracts/seam-demo/artifacts/seam_demo.contract, ink! 5.1.1). Constructor `new` = 0x9bae9d5e.
+// compiler's demo ink! contract (contracts/seam-demo/artifacts/seam_demo.contract, ink! 5.1.1). Constructor `new` = 0x9bae9d5e.
 const CONTRACT_FILE = fileURLToPath(
   new URL("../../../../contracts/seam-demo/artifacts/seam_demo.contract", import.meta.url),
 );

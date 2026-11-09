@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// READ-ONLY: browser preflight (@seam/chain/browser `preflightReport`) of Pixel's V3 demo plan
-// (packages/console/src/demo/v3-demo-transfer.json) against the V3 test node, plus Sentinel's gate verdict on it with
+// READ-ONLY: browser preflight (@seam/chain/browser `preflightReport`) of the console's V3 demo plan
+// (packages/console/src/demo/v3-demo-transfer.json) against the V3 test node, plus the policy engine's gate verdict on it with
 // the sequential demo policy. No wallet, no keystore, no signer: fees come from payment_queryInfo on a FAKE-signed
 // extrinsic (never submittable), and no system_dryRun is attempted (it needs a real signature), so dryRun stays unknown.
 // Writes evidence/testnet-v3/preflight-<timestamp>.json.

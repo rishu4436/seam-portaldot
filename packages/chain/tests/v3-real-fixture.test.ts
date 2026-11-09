@@ -85,7 +85,7 @@ describe("REAL V3 testnet metadata (spec 3002)", () => {
       "data",
     ]);
   });
-  it("revive.call: compiler now accepts the real weight_limit name (Forge alias); preflight still unobserved / proves nothing", async () => {
+  it("revive.call: compiler now accepts the real weight_limit name (the compiler alias); preflight still unobserved / proves nothing", async () => {
     const plan = compile(manifest([revive]), facts);
     expect(plan.steps[0]!.status).toBe("ok");
     const node = new FakeNode({ inputs, facts });

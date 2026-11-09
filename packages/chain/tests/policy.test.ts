@@ -120,7 +120,7 @@ async function run(
   return { policyResult, approval, envelope, signed, dry, gate };
 }
 
-describe("plugs into Bot 3's policy package (fddfee3) as-is", () => {
+describe("plugs into policy engine's policy package (fddfee3) as-is", () => {
   it("createApproval refuses an envelope without a checkpoint; the chain envelope has one", async () => {
     const facts = snapshotFacts();
     const { envelope, policyResult } = await run(demoPlan(), facts, portaldotPolicy(limits));

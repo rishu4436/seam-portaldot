@@ -127,8 +127,8 @@ describe("receipt carries the verifyStep verdict", () => {
   });
 });
 
-describe("builder transfer #119634 (Chainsmith fb95dac read-only verification)", () => {
-  // Chain data straight from Chainsmith's evidence on main; the fixture only holds the old receipt's values.
+describe("builder transfer #119634 (the chain adapter fb95dac read-only verification)", () => {
+  // Chain data straight from the chain adapter's evidence on main; the fixture only holds the old receipt's values.
   const chain = JSON.parse(
     readFileSync(
       resolve(CONSOLE_DIR, "../../evidence/testnet-v3/builder-transfer-119634-verification.json"),

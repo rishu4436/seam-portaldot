@@ -1,4 +1,4 @@
-// Policy side of Bot 2's compiler audit changes: SEAM-012 (rollback proof), SEAM-013 (atomicRequired / modeDowngrade),
+// Policy side of compiler's compiler audit changes: SEAM-012 (rollback proof), SEAM-013 (atomicRequired / modeDowngrade),
 // SEAM-006/007 (reasonCode blockers).
 import { describe, it, expect } from "vitest";
 import {

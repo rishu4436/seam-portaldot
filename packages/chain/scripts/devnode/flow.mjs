@@ -19,7 +19,7 @@ export const GAS_PROOF_SIZE = "1000000";
 
 /** Weight V2 contract-call limits used by the demo flows (manifest values; the compiler binds them on V14). */
 export const SETTLE = { orderId: 7, amount: "2500" };
-/** Bot 2's ink! ABI (metadata.json) by reference, so the manifest stays small and the plan pins it by hash. */
+/** compiler's ink! ABI (metadata.json) by reference, so the manifest stays small and the plan pins it by hash. */
 export const ABIS = {
   seam_demo: JSON.parse(
     readFileSync(

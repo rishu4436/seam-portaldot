@@ -1,4 +1,4 @@
-// Per-step receipt verification with Quill's verifyStep from @seam/sdk/browser (one dispatcher over every step kind),
+// Per-step receipt verification with the SDK's verifyStep from @seam/sdk/browser (one dispatcher over every step kind),
 // replacing the console's transfer-only effect check as the gate for the next step. Read-only: it re-reads the block and
 // its System.Events, decodes this extrinsic's events in the shape the SDK checks (accounts as 0x AccountId32 hex,
 // integers as decimal strings), and passes the V3 runtime facts so the observed spec-3002 verdicts apply.

@@ -74,7 +74,7 @@ describe("browser entry has no node-only code", () => {
     // The `ws` npm package (node WebSocket) is never bundled; @polkadot/x-ws resolves to its browser build.
     expect(inputs.some((i) => /node_modules\/ws\//.test(i))).toBe(false);
     expect(inputs.some((i) => /x-ws\/(node|cjs)/.test(i))).toBe(false);
-    // Only files that @seam/compiler/browser itself bundles (Forge's browser-safe entry) may come from the compiler.
+    // Only files that @seam/compiler/browser itself bundles (the compiler's browser-safe entry) may come from the compiler.
     const compilerBrowser = new Set(
       Object.keys(
         esbuild.buildSync({

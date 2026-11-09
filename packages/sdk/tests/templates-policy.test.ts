@@ -280,7 +280,7 @@ it("createApproval refuses a template plan whose bytes were edited (digest recom
   expect((out as { reason: string }).reason).toMatch(/call bytes|different inputs/);
 });
 
-// ---- Live submit gate (checkBeforeSubmit live: true, Sentinel's call shape from 4dd5e1a) ----
+// ---- Live submit gate (checkBeforeSubmit live: true, the policy engine's call shape from 4dd5e1a) ----
 // Synthetic: the "signed extrinsics" are opaque indices and the test decoder (metadataHashMode 0) returns the call
 // bytes for each; nothing is signed or sent.
 function liveSubmit(
@@ -389,7 +389,7 @@ it("live gate: missing signed calls and extrinsics blocks with live_signed_calls
   expect(codesOf(r)).toContain("live_signed_calls_missing");
 });
 
-// ---- Proof size on V3 (Sentinel's final rule, 1b98a8a): an explicit non-zero step cap is required; dryRunProofSize
+// ---- Proof size on V3 (the policy engine's final rule, 1b98a8a): an explicit non-zero step cap is required; dryRunProofSize
 // must fit the cap (0 / unknown / missing is unknown, never a bound); callInfoProofSize (query_call_info = cap +
 // overhead) must exceed the cap; requireMeasuredProofSize needs callInfoProofSize. Synthetic preflight numbers.
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));

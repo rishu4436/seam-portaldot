@@ -1,7 +1,7 @@
 // @vitest-environment node
 // Live gate hardening: the live console compiles the plan fresh from the Manifest on the live facts and never signs a
 // stored plan; createApproval requirePlanVerified and checkBeforeSubmit live: true; every block code in plain words;
-// Sentinel's Demo C. Real @seam/policy + @seam/compiler on committed V3 spec 3002 metadata. Nothing is signed or sent.
+// the policy engine's Demo C. Real @seam/policy + @seam/compiler on committed V3 spec 3002 metadata. Nothing is signed or sent.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
@@ -63,7 +63,7 @@ const base = {
 const freshFixture = json("packages/compiler/fixtures/v3-fresh-transfer.json");
 
 describe("live gate hardening", () => {
-  it("the console's live compile equals Forge's fresh V3 fixture (not a recorded run)", () => {
+  it("the console's live compile equals the compiler's fresh V3 fixture (not a recorded run)", () => {
     expect(fresh.planDigest).toBe(freshFixture.planDigest);
   });
 

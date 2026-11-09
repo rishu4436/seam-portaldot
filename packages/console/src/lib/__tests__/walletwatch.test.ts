@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Wallet watch (Chainsmith's real watchSigner): states in plain words, Sign only when ready, assertReadyToSign before
+// Wallet watch (the chain adapter's real watchSigner): states in plain words, Sign only when ready, assertReadyToSign before
 // each signPayload and before each submit; not ready -> stop, nothing broadcast. Nothing is signed here.
 import { describe, expect, it, vi } from "vitest";
 import { SignerNotReadyError } from "@seam/chain/browser";

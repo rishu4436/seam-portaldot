@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test passes raw JSON fixtures */
 /**
  * @seam/chain/browser preflight: one implementation with the node entry (preflightWithClient over an injected send),
- * the PreflightResult Sentinel's gate (@seam/policy/browser assertPolicyAllows) takes, and no node builtins.
+ * the PreflightResult the policy engine's gate (@seam/policy/browser assertPolicyAllows) takes, and no node builtins.
  * Offline: FakeNode answers are fixtures, not chain data.
  */
 import { readFileSync } from "node:fs";
@@ -84,7 +84,7 @@ describe("browser preflight", () => {
     expect(browser.fakeSignedExtrinsic).toBe(node.fakeSignedExtrinsic);
   });
 
-  it("a full result (one step per plan step) passes Sentinel's gate with the sequential demo policy", async () => {
+  it("a full result (one step per plan step) passes the policy engine's gate with the sequential demo policy", async () => {
     const r = await browser.preflight(sendOf(v3Node()), plan, v3Facts);
     expect(r.steps.map((s) => s.actionId)).toEqual(plan.steps.map((s) => s.actionId));
     expect(r.steps[0]).toMatchObject({

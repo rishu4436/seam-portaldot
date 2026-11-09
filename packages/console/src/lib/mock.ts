@@ -6,9 +6,9 @@ import type {
 import type { GateResult } from "./gate";
 // Console data adapter. Every plan, policy result, approval and receipt here was
 // produced by the REAL @seam/compiler, @seam/policy and @seam/sdk, run offline
-// against Bot 4's saved Portaldot node snapshot (see scripts/gen-demo.mjs).
+// against chain adapter's saved Portaldot node snapshot (see scripts/gen-demo.mjs).
 // Simulated (no V3 testnet run yet): the chain's replies (tx hashes, blocks,
-// events). Fees and weights are Bot 4's real payment_queryInfo results.
+// events). Fees and weights are chain adapter's real payment_queryInfo results.
 import data from "../demo/scenarios.json";
 import type {
   Approval,

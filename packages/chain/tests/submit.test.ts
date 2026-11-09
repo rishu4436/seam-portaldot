@@ -76,7 +76,7 @@ describe("submitAndWatch and event reading (fake node)", () => {
         args: ['{"class":"Normal","paysFee":"Yes","weight":200000000}'],
       },
     ]);
-    // readEvents gives the same answer for Bot 5's receipt check
+    // readEvents gives the same answer for SDK's receipt check
     const again = await readEvents(n, r.inclusion!.hash, 1, facts);
     expect(again.events).toEqual(r.inclusion!.events);
   });

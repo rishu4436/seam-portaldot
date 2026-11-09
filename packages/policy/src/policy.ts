@@ -570,7 +570,7 @@ export function evaluatePolicy({
         actionId: id,
       });
     else capCheck("proof_size_limit", "proof size limit", d.proofSize, policy.maxProofSize);
-    // storageDepositLimit: null means the developer chose "no limit" (Bot 2's compiler never defaults to it).
+    // storageDepositLimit: null means the developer chose "no limit" (compiler's compiler never defaults to it).
     const sdl = (d as Record<string, string | null | undefined>).storageDepositLimit;
     if (sdl === null) {
       if (policy.maxStorageDeposit !== undefined)

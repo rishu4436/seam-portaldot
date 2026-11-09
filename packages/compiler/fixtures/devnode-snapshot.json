@@ -1,5 +1,5 @@
 {
-  "note": "Read-only capture of the local dev node (Bot 4's substrate-contracts-node) for offline compiler tests: state_getMetadata, state_getRuntimeVersion, chain_getBlockHash(0), system_properties.",
+  "note": "Read-only capture of the local dev node (Rishu Kumar Gupta's substrate-contracts-node) for offline compiler tests: state_getMetadata, state_getRuntimeVersion, chain_getBlockHash(0), system_properties.",
   "endpoint": "ws://127.0.0.1:9944",
   "chain": "Development",
   "nodeVersion": "0.42.0-f209befc88c",

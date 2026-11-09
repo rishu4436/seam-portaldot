@@ -15,7 +15,7 @@ const run = spawnSync("node", ["examples/templates/index.mjs", "--json"], {
 const results = JSON.parse(run.stdout.trim().split("\n").at(-1) ?? "[]") as Array<
   Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 >;
-// Does the built policy have Sentinel's pre-sign verifyPlan gate (a74ad38)?
+// Does the built policy have the policy engine's pre-sign verifyPlan gate (a74ad38)?
 const hasBytesGate = readFileSync(`${repo}packages/policy/dist/browser.js`, "utf8").includes(
   "PLAN_BYTES_MISMATCH",
 );
@@ -72,7 +72,7 @@ describe.each(IDS)("example %s", (id) => {
     expect(e.approvalOk).toBe(false);
     // Reusing the honest result for the edited plan fails before the independent bytes gate.
     expect(e.approvalReason).toMatch(/evaluated for different inputs/);
-    // With Sentinel's pre-sign gate (a74ad38) in the build the gate blocks with PLAN_BYTES_MISMATCH; before it, the
+    // With the policy engine's pre-sign gate (a74ad38) in the build the gate blocks with PLAN_BYTES_MISMATCH; before it, the
     // gate has no bytes check and allows it (createApproval above is what refuses).
     if (hasBytesGate) {
       expect(e.gateAllowed).toBe(false);

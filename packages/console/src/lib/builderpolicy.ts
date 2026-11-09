@@ -3,7 +3,7 @@
 // native value, step count and mode, plus a fee cap. There is no allow-all default: anything not in the plan is "*": "0" or
 // an empty list. The user may only tighten it; tightenPolicy refuses anything looser than the derived policy.
 // The fee cap is the plan's own preflight totalFee + 25%; with no known totalFee there is no policy (fail closed).
-// The authoritative decision stays with Sentinel's engine (runPolicyGate / preSign); this file only builds the input.
+// The authoritative decision stays with the policy engine's engine (runPolicyGate / preSign); this file only builds the input.
 import { parsePolicy, type Plan, type Policy } from "@seam/policy/browser";
 
 const uint = (s: unknown): s is string => typeof s === "string" && /^\d+$/.test(s);
@@ -145,7 +145,7 @@ export const policyJson = (policy: Policy) =>
     2,
   );
 
-/** Reads an exported builder policy back with Sentinel's own parsePolicy. */
+/** Reads an exported builder policy back with the policy engine's own parsePolicy. */
 export function readPolicyJson(
   text: string,
 ): { ok: true; policy: Policy } | { ok: false; message: string } {

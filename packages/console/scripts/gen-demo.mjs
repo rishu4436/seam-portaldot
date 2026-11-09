@@ -96,8 +96,8 @@ const good = () => [
     events: [ev("Assets", "Issued", "2", BOB_HEX, "1"), OK],
   },
 ];
-// Fees below are Bot 4's real live estimates from the Portaldot node (Oct 11).
-// Bot 4's real payment_queryInfo results from the Portaldot mainnet node (Oct 11), base units.
+// Fees below are chain adapter's real live estimates from the Portaldot node (Oct 11).
+// chain adapter's real payment_queryInfo results from the Portaldot mainnet node (Oct 11), base units.
 const WEIGHTS = { pay: "567688000", settle: "5811203000", receipt: "295983000" };
 const FEES = { pay: "1490125636184", settle: "1520000000000", receipt: "1420000000000" };
 // fingerprintAfter: runtime changed before the first send. changeAfterStep: runtime changes once N steps have been sent.

@@ -11,8 +11,8 @@ import {
   type SigningEnvelope,
 } from "../src/index.js";
 
-// Real data: Bot 4's read-only snapshot of wss://mainnet.portaldot.io at block 2,721,455 (spec 1002),
-// compiled by Bot 2's compiler. Preflight estimates and the signing envelope are example data.
+// Real data: chain adapter's read-only snapshot of wss://mainnet.portaldot.io at block 2,721,455 (spec 1002),
+// compiled by compiler's compiler. Preflight estimates and the signing envelope are example data.
 const fx = (n: string) => fileURLToPath(new URL(`./fixtures/${n}`, import.meta.url));
 const snapshot = JSON.parse(readFileSync(fx("portaldot-mainnet-snapshot.json"), "utf8"));
 const metadataHex = readFileSync(fx("portaldot-mainnet-metadata.hex"), "utf8").trim();

@@ -142,7 +142,7 @@ try {
     const charge = BigInt(d.storageDeposit.charge);
     const codeDep = up.decoded?.ok ? BigInt(up.decoded.ok.deposit) : null;
     const wr = d.weightRequired;
-    // Explicit limits per Sentinel: 2x refTime; proof from the run (0 recorded as unknown, a floor of 0 is NOT a pass)
+    // Explicit limits per the policy engine: 2x refTime; proof from the run (0 recorded as unknown, a floor of 0 is NOT a pass)
     const proofKnown = BigInt(wr.proofSize) > 0n;
     const limW = {
       refTime: BigInt(wr.refTime) * 2n,

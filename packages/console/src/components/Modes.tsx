@@ -504,7 +504,7 @@ export function LiveReceipt({
   approval?: Approval;
   rpc?: RpcTransport;
   effectCheck?: typeof checkAssetsTransferEffect;
-  /** The compiled step + signer + V3 runtime. When given, Quill's verifyStep decides for ANY step kind. */
+  /** The compiled step + signer + V3 runtime. When given, the SDK's verifyStep decides for ANY step kind. */
   compiled?: CompiledStepContext;
   stepCheck?: (
     rpc: RpcTransport,
@@ -691,10 +691,10 @@ export function LivePanel({
    * @seam/compiler/browser. The stored-plan guard and createApproval(requirePlanVerified) still apply.
    */
   liveCompileLoader?: typeof loadLiveCompile;
-  /** Injectable only for tests; the app always uses Chainsmith's watchSigner on the injected extension. */
+  /** Injectable only for tests; the app always uses the chain adapter's watchSigner on the injected extension. */
   signerWatchLoader?: typeof openSignerWatch;
   /**
-   * Builder plans: the facts snapshot the plan was compiled with. Before signing, the re-read facts go through Forge's
+   * Builder plans: the facts snapshot the plan was compiled with. Before signing, the re-read facts go through the compiler's
    * rebindPlan; a rebound plan is handed back (new digest, approval discarded) and nothing is signed; RUNTIME_CHANGED blocks.
    */
   rebind?: {

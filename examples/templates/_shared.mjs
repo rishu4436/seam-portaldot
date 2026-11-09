@@ -109,7 +109,7 @@ export function strictProofSize(g, facts, callInfoProofSize) {
 export const codesOf = (gr) => [...new Set(gr.blockedBy.map((x) => x.code))];
 
 // The pre-sign gate the console uses before the wallet opens. requirePlanVerified: true makes it fail closed on
-// call bytes when the policy build has Sentinel's pre-sign verifyPlan (a74ad38); older builds ignore the option.
+// call bytes when the policy build has the policy engine's pre-sign verifyPlan (a74ad38); older builds ignore the option.
 const presignGate = (input) =>
   gatePolicy(
     { ...input, liveFacts: input.facts },
@@ -249,7 +249,7 @@ export function runTemplate(spec, { quiet = false } = {}) {
     verifyPlanCodes: fv.ok ? [] : [...new Set(fv.issues.map((i) => i.code))],
     approvalOk: fap.ok,
     approvalReason: fap.ok ? null : fap.reason,
-    // Pre-sign gate: PLAN_BYTES_MISMATCH once Sentinel's a74ad38 is in the build. Without it the gate (policy rules
+    // Pre-sign gate: PLAN_BYTES_MISMATCH once the policy engine's a74ad38 is in the build. Without it the gate (policy rules
     // only) still allows the forged plan, and createApproval / verifyPlan are what refuse it.
     gateAllowed: fgate.allowed,
     gateCodes: codesOf(fgate),

@@ -18,7 +18,7 @@ describe("factsFromMetadata on the real Portaldot mainnet snapshot", () => {
     expect(facts.fingerprintDigest).toBe(computeFingerprintDigest(facts.fingerprint));
   });
 
-  it("metadataHash matches the blake2b-256 Bot 4 recorded in the snapshot", () => {
+  it("metadataHash matches the blake2b-256 chain adapter recorded in the snapshot", () => {
     expect(facts.fingerprint.metadataHash).toBe(`0x${snapshot.metadata_blake2b256}`);
   });
 

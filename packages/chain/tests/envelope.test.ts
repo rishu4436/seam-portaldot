@@ -124,7 +124,7 @@ describe("buildSigningEnvelope", () => {
     ).toThrow(node.SeamChainError);
   });
 
-  it("Sentinel's gate: the built envelope passes the demo plan; an expired one blocks", () => {
+  it("the policy engine's gate: the built envelope passes the demo plan; an expired one blocks", () => {
     const demo = json("packages/console/src/demo/v3-demo-transfer.json");
     const seq = json("packages/console/src/demo/v3-demo-transfer-policy-sequential.json").policy;
     const run = json("evidence/testnet-v3/runs/plan-atomic-1792411355057.json");
