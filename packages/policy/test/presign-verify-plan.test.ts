@@ -20,7 +20,7 @@ import {
 } from "../src/browser.js";
 import * as H from "./helpers.js";
 
-// Forge's fresh V3 fixture (bot2/fresh-v3-fixture a745260): a FRESH compile on spec 3002, not a recorded run.
+// the compiler's fresh V3 fixture (fresh-v3-fixture implementation a745260): a FRESH compile on spec 3002, not a recorded run.
 // Sequential, one assets.transfer. Single/atomic variants below still compile in-test (the fixture has none).
 const read = (p: string) => readFileSync(root(p), "utf8").trim();
 const fx = JSON.parse(
@@ -91,7 +91,7 @@ function forgedToCharlie(): Plan {
   return redigest(p);
 }
 
-describe("Forge's fresh V3 fixture", () => {
+describe("the compiler's fresh V3 fixture", () => {
   const plan = fx.plan as Plan;
   const manifest = fx.manifest as Manifest;
   const [{ args }] = manifest.actions as { args: { assetId: string; recipient: string } }[];
@@ -148,7 +148,7 @@ describe("honest fresh plans pass the strict pre-sign gate", () => {
 });
 
 describe("edited plans are blocked before the wallet opens", () => {
-  it("plan paying Charlie with a recomputed digest: PLAN_BYTES_MISMATCH with Forge's issues and a plain line", () => {
+  it("plan paying Charlie with a recomputed digest: PLAN_BYTES_MISMATCH with the compiler's issues and a plain line", () => {
     const p = forgedToCharlie();
     const g = gatePolicy(input(single, p), strict);
     expect(g.allowed).toBe(false);

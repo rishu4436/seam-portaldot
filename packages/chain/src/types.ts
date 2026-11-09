@@ -3,7 +3,7 @@ import type { Hex } from "@seam/compiler";
 export type { Hex };
 
 // ---------------------------------------------------------------------------------------------------------
-// Shapes owned by Bot 3's policy package (/workspace/seam-policy/src/types.ts @ fddfee3).
+// Shapes owned by policy engine's policy package (@seam/policy, fddfee3).
 // Mirrored here field-for-field so @seam/chain output plugs straight into evaluatePolicy, createApproval
 // and checkBeforeSubmit. Replace with an import once the monorepo exists. tests/policy.test.ts checks
 // that they really plug in.
@@ -22,7 +22,7 @@ export interface PreflightStep {
   /**
    * Proof size (PoV) part of the weight, from payment_queryInfo on two-part-weight (Weight V2) runtimes.
    * Unknown on Weight V1 runtimes (Portaldot spec 1002), which have no proof size. Optional in @seam/policy's
-   * type (bot3/policy-file 71daa3b); @seam/chain always sets it.
+   * type (policy-file implementation 71daa3b); @seam/chain always sets it.
    */
   proofSize?: Estimate;
   /**

@@ -145,7 +145,7 @@ export function toCompilerManifest(m: DraftManifest): Manifest {
   } as unknown as Manifest;
 }
 
-/** Default compile: Forge's checkManifest. Never throws; field issues come back keyed by "actionId field". */
+/** Default compile: the compiler's checkManifest. Never throws; field issues come back keyed by "actionId field". */
 export const browserCompile: CompileFn = async (manifest, facts) => {
   const r = checkManifest(toCompilerManifest(manifest), facts as unknown as RuntimeFacts);
   if (r.ok && r.plan && !r.unavailable.length) return { ok: true, plan: r.plan };

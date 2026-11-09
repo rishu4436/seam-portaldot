@@ -80,7 +80,7 @@ export interface KV {
 }
 
 /**
- * Tx-hash lookup for reconciliation: Chainsmith's lookupTxByHash(rpc, { txHash, fromBlock, toBlock?, maxBlocks? })
+ * Tx-hash lookup for reconciliation: the chain adapter's lookupTxByHash(rpc, { txHash, fromBlock, toBlock?, maxBlocks? })
  * from @seam/chain/browser, bound to an RPC (chainTxLookup). Run only when the user asks to reconcile (the LIVE panel
  * contacts nothing on its own). Nothing is faked.
  * not_found means "not seen in that range" only: never proof the tx didn't land, so the step stays uncertain and is

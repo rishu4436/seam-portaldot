@@ -1,4 +1,4 @@
-// Sentinel's Demo C (packages/policy/demo/demo-c.json): a policy violation blocked before the wallet opens. Example
+// the policy engine's Demo C (packages/policy/demo/demo-c.json): a policy violation blocked before the wallet opens. Example
 // data only: no keys, no chain writes. Each Manifest is compiled fresh on the given facts and run through the
 // authoritative pre-sign gate (runPolicyGate). A block means the signing request is never built.
 import { parsePolicy } from "@seam/policy/browser";

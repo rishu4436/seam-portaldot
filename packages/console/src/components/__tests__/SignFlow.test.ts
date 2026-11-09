@@ -1,6 +1,6 @@
 // @vitest-environment node
 // preSign / preSubmit with the REAL @seam/policy engine, the real demo plan, the sequential demo policy, facts from the
-// committed V3 spec 3002 metadata and the real live V3 preflight result recorded by Chainsmith
+// committed V3 spec 3002 metadata and the real live V3 preflight result recorded by the chain adapter
 // (evidence/testnet-v3/preflight-1792509095721.json). Only the chain calls are stubbed; nothing is signed or sent.
 import { fileURLToPath } from "node:url";
 import { dirname, resolve as resolvePath } from "node:path";
@@ -48,7 +48,7 @@ const chain = (dryRun = "unknown"): ChainFns => ({
       : recorded,
   ),
   signedExtrinsicDecoder: () => () => null,
-  // Chainsmith's real envelope builder; the block time comes from the V3 spec 3002 metadata itself.
+  // the chain adapter's real envelope builder; the block time comes from the V3 spec 3002 metadata itself.
   blockTimeFromFacts: blockTimeFromFacts as never,
   buildSigningEnvelope: buildSigningEnvelope as never,
 });

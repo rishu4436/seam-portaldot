@@ -167,7 +167,7 @@ export function toStepOutcome(actionId: string, r: SubmitResult): StepOutcome {
 }
 
 /**
- * Bot 5's ChainAdapter for Portaldot. discover/readFingerprint/preflight are read-only; submit broadcasts
+ * SDK's ChainAdapter for Portaldot. discover/readFingerprint/preflight are read-only; submit broadcasts
  * a transaction the user's wallet already signed. The adapter holds no keys.
  */
 export function createPortaldotAdapter(

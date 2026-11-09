@@ -1,6 +1,6 @@
 import * as chainBrowser from "@seam/chain/browser";
 import { compile as compileManifest } from "@seam/compiler/browser";
-// Pre-sign and pre-submit gates for the LIVE flow, in the order Sentinel specified:
+// Pre-sign and pre-submit gates for the LIVE flow, in the order the policy engine specified:
 //   real preflight -> policy gate -> bound approval (engine) -> wallet signs -> preflight again with the signed
 //   extrinsic (real dry run) -> checkBeforeSubmit -> submit.
 // Everything here is fail closed and read-only on the chain; nothing is invented. All chain/policy functions are
@@ -90,15 +90,15 @@ export interface ChainFns {
     opts?: { signedExtrinsics?: string[] },
   ): Promise<PreflightRes>;
   /**
-   * Chainsmith's decoder (needs 239974f). The context (the approved envelope's checkpoint, or the signing requests) is
+   * the chain adapter's decoder (needs 239974f). The context (the approved envelope's checkpoint, or the signing requests) is
    * required to check a signature: the era block hash is not inside the extrinsic, so with no context every signature
    * reads as invalid (the LIVE fc91363 signed_signature_invalid bug).
    */
   signedExtrinsicDecoder(facts: unknown, context?: unknown): (x: `0x${string}`) => unknown;
-  /** Block time from the runtime's own metadata (Chainsmith, @seam/chain/browser). */
+  /** Block time from the runtime's own metadata (the chain adapter, @seam/chain/browser). */
   blockTimeFromFacts?: (facts: unknown) => number | undefined;
   /**
-   * Chainsmith's buildSigningEnvelope from @seam/chain/browser. Throws NODE_MISSING_VALUE when the block time or any
+   * the chain adapter's buildSigningEnvelope from @seam/chain/browser. Throws NODE_MISSING_VALUE when the block time or any
    * input is unknown; that blocks before signing. Missing entirely also blocks.
    */
   buildSigningEnvelope?: (i: {

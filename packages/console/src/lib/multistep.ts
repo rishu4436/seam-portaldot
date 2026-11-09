@@ -1,4 +1,4 @@
-// Multi-step LIVE, driven by Sentinel's engine:
+// Multi-step LIVE, driven by the policy engine's engine:
 //  - atomic plan (or a one-step plan): ONE signing request for the single call (the batch_all outer call, or the step's call),
 //    one preSign gate + approval, one re-preflight and one checkBeforeSubmit, then submit.
 //  - sequential plan with k > 1 steps: one preSign gate binds the approval (envelope nonce n). The engine's
@@ -140,7 +140,7 @@ export async function runPlanSteps(a0: RunPlanArgs): Promise<MultiStepResult> {
 
 export interface RunPlanArgs {
   /**
-   * Wallet watch (Chainsmith's watchSigner): assertReadyToSign runs before each step's signPayload and again before each
+   * Wallet watch (the chain adapter's watchSigner): assertReadyToSign runs before each step's signPayload and again before each
    * submit. Not ready: the run stops and nothing is broadcast. The caller stops the watch.
    */
   watch?: Pick<SignerWatch, "assertReadyToSign">;
@@ -167,7 +167,7 @@ export interface RunPlanArgs {
    */
   submitAndWait: (i: number, signedTx: string) => Promise<Res<StepOutcome>>;
   /**
-   * Decides a step's verification. Default: Quill's verifyStep (@seam/sdk/browser) with the V3 runtime facts and the
+   * Decides a step's verification. Default: the SDK's verifyStep (@seam/sdk/browser) with the V3 runtime facts and the
    * call decoded from the in-memory signed bytes. Only "verified" lets the next step run.
    */
   verifyOutcome?: (i: number, outcome: StepOutcome, callHex: string | undefined) => ReceiptStepLike;
@@ -303,7 +303,7 @@ async function runPlanStepsInner(args: RunPlanArgs): Promise<MultiStepResult> {
       updatedAt: new Date().toISOString(),
     })),
   });
-  // ONE envelope for the whole plan (Chainsmith's buildSigningEnvelope in preSign): same checkpoint and short mortality
+  // ONE envelope for the whole plan (the chain adapter's buildSigningEnvelope in preSign): same checkpoint and short mortality
   // for every step; only the nonce moves (n + i). Its expiresAt is checked again before every send.
   const expiresAt = Date.parse(
     String((preSigned.approvalInput?.envelope as { expiresAt?: string } | undefined)?.expiresAt),
@@ -462,7 +462,7 @@ async function runPlanStepsInner(args: RunPlanArgs): Promise<MultiStepResult> {
     const done = receipt.status === "finalized" && receipt.verification === "verified";
     const atomic = plan.mode.startsWith("atomic");
     if (atomic && !args.verifyOutcome && signerAccountId) {
-      // Atomic: Quill's perStepOfBatch splits the one batch outcome into per-step outcomes (each step's call is a
+      // Atomic: the SDK's perStepOfBatch splits the one batch outcome into per-step outcomes (each step's call is a
       // verified slice of the signed batch call); verifyStep then checks each step. Labelled per-step verified.
       const per = atomicStepReceipts(args.input.plan, r.value, callHex, signerAccountId, runtime);
       for (const s of steps) {

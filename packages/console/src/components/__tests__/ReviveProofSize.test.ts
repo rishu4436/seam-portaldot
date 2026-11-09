@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Live Revive path: the pre-sign gate with requireMeasuredProofSize. Real V3 spec 3002 metadata, fresh compile in-test;
-// the preflight proof sizes are synthetic test data (the 7725 static overhead matches Chainsmith's dry-run measurement).
+// the preflight proof sizes are synthetic test data (the 7725 static overhead matches the chain adapter's dry-run measurement).
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";

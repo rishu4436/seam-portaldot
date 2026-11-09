@@ -1,6 +1,6 @@
 // @vitest-environment node
-// Facts snapshot + Forge's rebindPlan, before approve and before sign. Offline on the committed real V3 spec 3002
-// metadata; the raw-metadata drift is made with the chain package's metadata mutator (same as Forge's tests).
+// Facts snapshot + the compiler's rebindPlan, before approve and before sign. Offline on the committed real V3 spec 3002
+// metadata; the raw-metadata drift is made with the chain package's metadata mutator (same as the compiler's tests).
 import { fileURLToPath } from "node:url";
 import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";

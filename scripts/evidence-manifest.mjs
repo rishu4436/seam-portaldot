@@ -161,17 +161,17 @@ const PENDING = [
   [
     "evidence/testnet-v3/recorded-replay-102671-1792553452393.{json,md}",
     "#102671 atomic batch_all: recorded run, replayed read-only",
-    "7dfca89 (bot4/recorded-replay)",
+    "7dfca89 (Rishu Kumar Gupta)",
   ],
   [
     "evidence/testnet-v3/recorded-replay-102665-1792553452393.{json,md}",
     "#102665 rollback probe (ExtrinsicFailed assets.BalanceLow, no inner events): recorded run, replayed read-only",
-    "7dfca89 (bot4/recorded-replay)",
+    "7dfca89 (Rishu Kumar Gupta)",
   ],
   [
     "evidence/testnet-v3/dryrun-capability-*",
     "V3 system_dryRun capability on signed bytes",
-    "33fcca7 (bot4/browser-dryrun)",
+    "33fcca7 (Rishu Kumar Gupta)",
   ],
 ].filter(
   ([f]) =>

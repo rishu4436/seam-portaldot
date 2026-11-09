@@ -2,7 +2,7 @@
 //
 // The compiler has no action kinds for these yet. Until it does, policy accepts plan steps with
 //   kind "revive.instantiate_with_code" | "revive.map_account"
-// and reads these decodedArgs (base-unit integer strings, hex, or SS58/AccountId32), ASSUMED NAMES for Forge to align:
+// and reads these decodedArgs (base-unit integer strings, hex, or SS58/AccountId32), argument names must match the compiler:
 //   revive.instantiate_with_code:
 //     codeHash             0x + 64 hex, hash of the `code` bytes, computed by the compiler (never caller-supplied)
 //     value                native value sent to the constructor, integer string

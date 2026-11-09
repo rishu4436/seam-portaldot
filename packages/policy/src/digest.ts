@@ -3,7 +3,7 @@ import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import type { Hex } from "./types.js";
 
 /**
- * Canonical JSON, the same rules as Bot 2's compiler: keys sorted, no whitespace, undefined keys dropped,
+ * Canonical JSON, the same rules as compiler's compiler: keys sorted, no whitespace, undefined keys dropped,
  * undefined array items become null, and only safe integers allowed as numbers (amounts are strings).
  */
 export function canonicalJson(value: unknown, path = "$"): string {

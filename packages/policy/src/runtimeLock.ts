@@ -4,7 +4,7 @@ import { blake2b } from "@noble/hashes/blake2b";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import { metadataLayoutHash } from "@seam/compiler/browser";
 
-/** The nine fingerprint fields, in the same object shape Bot 2's compiler hashes. */
+/** The nine fingerprint fields, in the same object shape compiler's compiler hashes. */
 export const LOCKED_FIELDS = [
   "genesisHash",
   "specName",

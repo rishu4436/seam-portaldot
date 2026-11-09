@@ -1,5 +1,5 @@
-// Shapes agreed by the SEAM team on Oct 11, 2026 (Bot 2 runtime facts + plan,
-// Bot 3 policy + approval, Bot 5 manifest + receipt). Keep in sync with the
+// Shapes agreed by the SEAM team on Oct 11, 2026 (compiler runtime facts + plan,
+// policy engine policy + approval, SDK manifest + receipt). Keep in sync with the
 // shared packages once the monorepo exists.
 
 export type Tri = "observed" | "not_observed" | "unknown";

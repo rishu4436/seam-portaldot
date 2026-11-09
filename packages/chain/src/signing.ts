@@ -614,7 +614,7 @@ export function verifySignedBatch(
   return { ok: reasons.length === 0, reasons, results };
 }
 
-/** What @seam/policy's checkBeforeSubmit({ decodeSignedExtrinsic }) expects from a trusted decoder (SEAM-001, Bot 3). */
+/** What @seam/policy's checkBeforeSubmit({ decodeSignedExtrinsic }) expects from a trusted decoder (SEAM-001, policy engine). */
 export interface DecodedSignedExtrinsic {
   /** The call bytes inside the extrinsic, decoded from the extrinsic itself. */
   call: Hex;

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- walks raw fixture JSON */
-// REAL V3 spec 3002 LAYOUT FIXTURE (tests/fixtures/v3-testnet-spec3002-layouts.json, copied from Chainsmith's
+// REAL V3 spec 3002 LAYOUT FIXTURE (tests/fixtures/v3-testnet-spec3002-layouts.json, copied from the chain adapter's
 // packages/chain fixture, decoded from the real V3 node's metadata). These tests compare the compiler's expected
 // argument shape with those real layouts. They prove NOTHING about execution, account mapping, atomicity or
 // rollback on V3: no call was ever run against the chain by this suite.
@@ -54,7 +54,7 @@ const argsOf = (call: string, mutate?: (a: any[]) => void) => {
 const cap = { argTypesConfidence: "full" } as any;
 
 describe("REAL V3 spec 3002 layout fixture vs the compiler's expected shape (no execution verified)", () => {
-  it("fixture carries the indices Chainsmith recorded", () => {
+  it("fixture carries the indices the chain adapter recorded", () => {
     expect(layouts["Revive.call"]).toMatchObject({ palletIndex: 80, callIndex: 1 });
     expect(layouts["Nfts.mint"]).toMatchObject({ palletIndex: 47, callIndex: 3 });
   });

@@ -2,13 +2,13 @@
 // Regression for the LIVE run on fc91363: a real wallet signature was blocked at submit with signed_signature_invalid
 // while the panel said "Signed bytes match the approval".
 //
-// Root cause (console side): preSubmit called Chainsmith's signedExtrinsicDecoder(facts) with no context. The era's
+// Root cause (console side): preSubmit called the chain adapter's signedExtrinsicDecoder(facts) with no context. The era's
 // block hash is not inside a signed extrinsic, so with no context every signature reads as invalid. preSubmit now passes
-// the approved envelope (its checkpoint), which the decoder accepts since Chainsmith's 239974f.
+// the approved envelope (its checkpoint), which the decoder accepts since the chain adapter's 239974f.
 //
 // Runs preSubmit end to end with the REAL @seam/policy engine and the REAL @seam/chain/browser decoder over:
 //  - a //Alice dev-key signed extrinsic (public dev key, test only; never a wallet or keystore), and
-//  - the real extension-signed V3 transfer 0x8a2c8b92…a4ad (#118310) from Chainsmith's committed fixture.
+//  - the real extension-signed V3 transfer 0x8a2c8b92…a4ad (#118310) from the chain adapter's committed fixture.
 import { fileURLToPath } from "node:url";
 import { dirname, resolve as resolvePath } from "node:path";
 import { readFileSync } from "node:fs";

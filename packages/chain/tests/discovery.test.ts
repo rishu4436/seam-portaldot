@@ -57,7 +57,7 @@ describe("discovery from the real spec 1002 snapshot", () => {
     expect(facts.endpoint).toBe("wss://mainnet.portaldot.io");
   });
 
-  it("a refetched fingerprint from the snapshot inputs equals the compiler digest and Bot 3's digest", () => {
+  it("a refetched fingerprint from the snapshot inputs equals the compiler digest and policy engine's digest", () => {
     const fresh = fingerprintFromChainInputs(snapshotInputs());
     expect(fresh.fingerprintDigest).toBe(computeFingerprintDigest(compilerFacts().fingerprint));
     expect(policyFingerprintDigest(fresh.fingerprint)).toBe(fresh.fingerprintDigest);

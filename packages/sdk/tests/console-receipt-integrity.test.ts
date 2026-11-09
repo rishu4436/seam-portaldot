@@ -10,7 +10,7 @@ import {
   type ConsoleReceipt,
 } from "../src/index.js";
 
-// sealed-seq-not-run.json was written by the console's own code (bot1/receipt-integrity 17218a7: preSign +
+// sealed-seq-not-run.json was written by the console's own code (receipt-integrity implementation 17218a7: preSign +
 // buildSequentialReceipt + sealReceipt, the same path as its receiptintegrity.test.ts). It is a stopped run on V3 spec
 // 3002 facts: nothing signed or sent, so it carries no chain claim. sealed-seq-tampered-hash.json is the same file with
 // integrityHash replaced by zeros.

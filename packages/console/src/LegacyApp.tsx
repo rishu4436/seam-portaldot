@@ -676,7 +676,7 @@ export default function App() {
                       const chain = await loadChainFns();
                       setBuilderApproval(undefined);
                       setBuilderNote(undefined);
-                      // Re-read facts once; Forge's rebindPlan decides against the builder's snapshot.
+                      // Re-read facts once; the compiler's rebindPlan decides against the builder's snapshot.
                       const o = await approveWithRebind({
                         manifest: builderSel.manifest,
                         plan: builderSel.plan,

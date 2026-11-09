@@ -1,5 +1,5 @@
 // revive.instantiate_with_code and revive.map_account against the REAL committed V3 spec 3002 metadata blob
-// (evidence/v3-discovery). Offline: these tests prove encoding and the decodedArgs Sentinel's deploy policy reads.
+// (evidence/v3-discovery). Offline: these tests prove encoding and the decodedArgs the policy engine's deploy policy reads.
 // They prove nothing about execution on V3: no deploy or mapping was sent by this suite.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

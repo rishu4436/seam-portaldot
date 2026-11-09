@@ -199,7 +199,7 @@ export async function runtimeReport(endpoint, discoverOpts = {}, { httpUrl } = {
     },
     summary: "",
   };
-  // Bot 2's read-only shape check (packages/compiler/scripts/v3-shape-check.mjs): called, not duplicated. Best effort.
+  // compiler's read-only shape check (packages/compiler/scripts/v3-shape-check.mjs): called, not duplicated. Best effort.
   try {
     const out = execFileSync(
       "node",

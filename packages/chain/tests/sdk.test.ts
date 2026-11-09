@@ -1,5 +1,5 @@
 /**
- * Bot 5's SDK flow (Seam: discover -> prepare -> approve -> execute -> receipt) running on
+ * SDK's SDK flow (Seam: discover -> prepare -> approve -> execute -> receipt) running on
  * createPortaldotAdapter against the in-process fake node. Imports the SDK from its sibling folder
  * (../../sdk/dist) until the monorepo wires packages together; skipped if it isn't built.
  */
@@ -33,14 +33,14 @@ const limits = {
 };
 // Strict default (requireSignedDryRun on) everywhere. Sequential plans pass it because the SDK (77d3c82) gates
 // each step on its own: fresh fingerprint and a dry run of that step's signed transaction, after the previous
-// step finalized, with Bot 3's per-step gate (sendIndex, previousSteps).
+// step finalized, with policy engine's per-step gate (sendIndex, previousSteps).
 const strict = portaldotPolicy(limits);
 const policy = strict;
 
 /** The fake node emits ContractEmitted with data 0x01; the caller commits to that effect before the run. */
 const effects = { call: { emittedData: "0x01" } };
 
-describe.skipIf(!existsSync(SDK))("Bot 5 SDK flow with createPortaldotAdapter (fake node)", () => {
+describe.skipIf(!existsSync(SDK))("SDK SDK flow with createPortaldotAdapter (fake node)", () => {
   const setup = async (
     o: Partial<ConstructorParameters<typeof FakeNode>[0]> = {},
     batchAllRollback?: "verified",

@@ -1,9 +1,9 @@
 // @vitest-environment node
 // Submit-time runtime lock on the layout hash, through the console's preSubmit with the REAL @seam/policy gate, the REAL
 // @seam/chain/browser decoder (its metadataHashMode comes from the extension bytes) and the committed V3 spec 3002
-// metadata. Extrinsic: the real extension-signed V3 transfer #118310 (CheckMetadataHash mode 0) from Chainsmith's
+// metadata. Extrinsic: the real extension-signed V3 transfer #118310 (CheckMetadataHash mode 0) from the chain adapter's
 // fixture; the mode-1 case is that same extrinsic with only its mode byte set to 1, as read back by the real decoder.
-// The live drift (Revive.EthBlockBuilderIR default) is synthesized with Chainsmith's metadata mutators.
+// The live drift (Revive.EthBlockBuilderIR default) is synthesized with the chain adapter's metadata mutators.
 // No wallet, no keys, nothing signed or sent; only the preflight RPC is stubbed.
 import { fileURLToPath } from "node:url";
 import { dirname, resolve as resolvePath } from "node:path";

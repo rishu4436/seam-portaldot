@@ -297,7 +297,7 @@ export function verifyConsoleReceiptOffline(r: ConsoleReceipt): ConsoleVerificat
   };
 }
 
-/** The console's integrity domain and algorithm string (packages/console/src/lib/receiptintegrity.ts, bot1/receipt-integrity). */
+/** The console's integrity domain and algorithm string (packages/console/src/lib/receiptintegrity.ts, receipt-integrity implementation). */
 export const CONSOLE_INTEGRITY_DOMAIN = "seam/console-receipt-integrity/v1";
 export const CONSOLE_INTEGRITY_ALGO =
   "blake2b-256(utf8('seam/console-receipt-integrity/v1') || 0x00 || canonicalJson(receipt without integrityHash and integrityAlgo)) via @seam/policy digest()";

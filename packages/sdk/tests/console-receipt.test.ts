@@ -131,7 +131,7 @@ describe("per-step nonce (receipt metadata, nonceSource decoded | signing_reques
       "failed",
     );
   });
-  it("Pixel's later fields: policyDigest recomputed from approvalInputs.policy when present", async () => {
+  it("the console's later fields: policyDigest recomputed from approvalInputs.policy when present", async () => {
     const r = load(SEQ);
     r.policyDigest = "0x" + "22".repeat(32);
     expect(st(verifyConsoleReceiptOffline(r), "policy_digest")).toEqual(["fail"]);

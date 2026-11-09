@@ -206,7 +206,7 @@
       }
     },
     "issues": [
-      "receipt result is \"unverified\" while verification/effect.verdict say effect_proven (and the console showed Effect Proven): Pixel field to fix",
+      "receipt result is \"unverified\" while verification/effect.verdict say effect_proven (and the console showed Effect Proven): console receipt-status inconsistency in the recorded run",
       "receipt fee 1470877255420 is not the on-chain TransactionFeePaid 1470877249652 (differs by 5768 planck; looks like the preflight estimate)",
       "receipt effect.extrinsicIndex is -1 and effect.event is {} although the chain shows extrinsic index 1 with an Assets.Transferred event",
       "receipt approvalHash equals planDigest"
