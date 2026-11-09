@@ -50,4 +50,4 @@ V3 DeFi submission and trusted economic verification are explicitly disabled. Im
 
 The runtime ABI dependency resolves patched Zod 4.6.7, and the compiler's `tmp` dependency is overridden to patched 0.2.7. Hardhat's separate localhost-only development dependency still requires Zod 3. The full audit reports three related high findings across Zod, Hardhat's Zod utility and Hardhat itself. They are not shipped in the browser runtime. Forcing the incompatible Zod 4 API into Hardhat was avoided; the upstream migration remains a development-tool maintenance item. See [the dependency boundary](defi-threat-model.md#dependencies).
 
-Start with [the local run/test guide](defi-local.md). Funding work is an [internal milestone and pilot worksheet](defi-pilot-milestones.md), not a claim of adoption, revenue, partnership or grant eligibility.
+Start with [the local run/test guide](defi-local.md). The subsequent [V3 engineering review](defi-v3-engineering-review.md) records the contract validation and deployment boundary.

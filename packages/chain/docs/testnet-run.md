@@ -26,7 +26,7 @@ Options: `--out DIR` (default `evidence/testnet-v3`, the folder `docs/testnet-ch
 
 1. **Runtime report** (read-only): discover, refetch the fingerprint (must be stable), then spec, metadata version,
    pallets (Contracts, Revive, Assets, Utility, Nfts), token, whether `Contracts.call` is the V13 (one gas number) or V14
-   (Weight V2) shape, RPC methods, and Bot 2's `v3-shape-check.mjs` output under `shapeCheck`.
+   (Weight V2) shape, RPC methods, and the compiler's `v3-shape-check.mjs` output under `shapeCheck`.
 2. Only with a signer **and** `--yes`: creates a free asset id and funds the signer (if needed), funds two fresh recipient
    accounts with a little native token (non-sufficient assets need it), **deploys `seam_demo` through SEAM's signing path (an unchecked setup step, outside the Manifest/Policy trust boundary)**,
    then runs **sequential**, **rollback** and **atomic** with the strict policy (`allowedMessages: settle`, pinned ABI hash,

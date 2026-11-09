@@ -1,6 +1,6 @@
 # Policy coverage (P0-02)
 
-Audit of `@seam/policy` at `7a551e3` plus the `bot3/policy-hardening` changes. Browser path: the console calls
+Audit of `@seam/policy` at `7a551e3` including policy-hardening changes. Browser path: the console calls
 `gatePolicy` / `assertPolicyAllows` (`packages/policy/src/browser.ts`, which runs `evaluatePolicy`) before the wallet
 opens, then `createApproval`, then `checkBeforeSubmit` on the signed bytes before broadcasting. All three are in the
 browser-safe import graph.
@@ -50,7 +50,7 @@ browser-safe import graph.
 - Strict mode is opt-in so that existing replay callers (the SDK's `Seam.execute` replays recorded JSON results) keep
   working. The console and SDK should turn it on; that edit is in their files, not here.
 
-## Demo C: policy violation blocked before the wallet opens
+## Policy rejection before the wallet opens
 
 Fixture: `packages/policy/demo/demo-c.json`. It holds a normal policy file (Portaldot base, asset 1, recipient Bob only,
 amount cap 1000000000000) and two valid manifests:
@@ -64,7 +64,7 @@ amount cap 1000000000000) and two valid manifests:
 that one code and text, `assertPolicyAllows` throws `PolicyBlockedError` with that code, no signing request is made,
 and `createApproval` refuses.
 
-How to run it in the console (Pixel wires the UI; nothing is signed or sent):
+The corresponding policy-denial flow (nothing is signed or sent):
 
 1. Open the LIVE flow and load the policy object from `demo-c.json` (`policy`) into the policy panel.
 2. Import one case's `manifest` (the console fills `chain` from the live runtime facts) and compile.
@@ -79,7 +79,7 @@ Run the test with `npm test -w @seam/policy`.
 - Outside live mode, mortality and account-nonce checks only run when the caller passes `currentBlockNumber` / `currentAccountNonce`.
 - Signature validity is the trusted decoder's job (`@seam/chain`). Here it is tested at the gate with a stub decoder.
 
-## Plan-bytes gate and live mode (`bot3/plan-bytes-gate`)
+## Plan-bytes gate and live mode
 
 The policy engine reads `decodedArgs`, but the wallet signs `encodedCall`. The old pre-sign check compared only the
 pallet/call index prefix of `encodedCall`. It has been **removed**, because an edited plan keeps the right prefix. In its place:
@@ -96,9 +96,9 @@ pallet/call index prefix of `encodedCall`. It has been **removed**, because an e
 - **Non-live mode (e.g. SDK replay) without manifest + liveFacts: call bytes are unchecked against the Manifest.** The
   signed calls are still compared with the plan's own `callsToSign`, but a plan edited with a recomputed digest passes that.
   Use live mode for real sends.
-- **Pre-sign (`bot3/presign-verify-plan`):** `gatePolicy` / `assertPolicyAllows` / `evaluatePolicy` run `verifyPlan`
+- **Pre-sign:** `gatePolicy` / `assertPolicyAllows` / `evaluatePolicy` run `verifyPlan`
   (no signed calls) when the input carries `manifest` **and** `liveFacts`. A mismatch blocks rule `plan_bytes`, code
-  `PLAN_BYTES_MISMATCH`. The rule result and `explainPolicy` line carry Forge's `issues`, and the line reads
+  `PLAN_BYTES_MISMATCH`. The rule result and `explainPolicy` line carry the compiler's `issues`, and the line reads
   "Call bytes match the Manifest: Fail. Blocked: the plan's call bytes are not what the Manifest compiles to on the
   live runtime (STEP_BYTES_MISMATCH at step 1)." `liveFacts` must have the same fingerprint as `facts`.
   `requirePlanVerified: true` (a gate option, or on the engine input) blocks with the same code when either input is
@@ -107,20 +107,20 @@ pallet/call index prefix of `encodedCall`. It has been **removed**, because an e
   It no longer matches a fresh compile body-for-body, so it must not be used with `liveFacts`.
 
 Tests: `packages/policy/test/plan-bytes-gate.test.ts`, `packages/policy/test/presign-verify-plan.test.ts` (fresh
-compile from the committed spec 3002 metadata). The sequential case now uses Forge's fresh fixture
+compile from the committed spec 3002 metadata). The sequential case now uses the compiler's fresh fixture
 `packages/compiler/fixtures/v3-fresh-transfer.json` (a745260): it passes the strict gate, and a forged-Charlie variant
 of it blocks `PLAN_BYTES_MISMATCH`. The single and atomic variants still compile in the test, because the fixture has none.
 
 ## Proof size on V3 (spec 3002)
 
-Measurements (Chainsmith, `bot4/proof-size` 166af4a / 9881568): the `ReviveApi_call` dry run measures
+Measurements (`166af4a` / `9881568`): the `ReviveApi_call` dry run measures
 `weight_required.proof_size`, and instantiate reads 0. `query_call_info` reports the step cap plus an overhead
 (about 7,725 for a call, about 6,823 for instantiate). The overhead varies by call type, so no fixed constant is used.
 
 - **Step cap (unchanged):** `revive.call` and `revive.instantiate_with_code` must carry an explicit non-zero
   `proofSize`. 0 blocks `CALL_PROOF_SIZE_UNKNOWN` / `DEPLOY_PROOF_SIZE_UNKNOWN`. Missing blocks
   `CALL_GAS_LIMIT_MISSING` / `DEPLOY_GAS_LIMIT_MISSING`.
-- **Field names and types match `@seam/chain`'s preflight (Chainsmith f5ae4ce):** `dryRunProofSize` and `callInfoProofSize` are `Estimate`s; unknown or 0 counts as no reading.
+- **Field names and types match `@seam/chain`'s preflight (the chain adapter f5ae4ce):** `dryRunProofSize` and `callInfoProofSize` are `Estimate`s; unknown or 0 counts as no reading.
 - **`dryRunProofSize`** (weight_required, a new optional preflight step field): 0 or missing is unknown and never a
   bound. The step is allowed next to a valid cap, with that noted. A non-zero value must be at most the cap, otherwise
   `PROOF_SIZE_ESTIMATE_OVER_LIMIT`.

@@ -63,7 +63,7 @@ Notes per template:
   `callInfoProofSize` (the `query_call_info` total, which must be above the cap). With `requireMeasuredProofSize: true`,
   which real testnet deploys and calls use, a missing `callInfoProofSize` blocks with `PROOF_SIZE_CALL_INFO_MISSING`;
   both examples print the blocked and the passing case. The callInfo values (cap + 7,725 for the call, cap + 6,823 for
-  the deploy) are example data shaped like Chainsmith's dry-run-only measurements, not readings; re-measure at signing.
+  the deploy) are example data shaped like the chain adapter's dry-run-only measurements, not readings; re-measure at signing.
 
 ## Error codes
 
@@ -75,7 +75,7 @@ Notes per template:
 |                                       | `CONTRACT_NOT_ALLOWED`                                                              | The contract is not in `allowedContracts`.                                                                                 |
 |                                       | `PLAN_MODE_NOT_ALLOWED`                                                             | The plan's mode (e.g. `atomic_unverified`) is not in `allowedModes`.                                                       |
 |                                       | `DEPLOY_CODE_HASH_NOT_ALLOWED` (and the other `DEPLOY_*`)                           | `checkDeployStep`: code hash not allow-listed, value not 0, or a cap missing / exceeded.                                   |
-|                                       | `PLAN_BYTES_MISMATCH`                                                               | Pre-sign `verifyPlan`: the plan's call bytes are not what the Manifest compiles to on the live facts (Sentinel `b1a60a4`). |
+|                                       | `PLAN_BYTES_MISMATCH`                                                               | Pre-sign `verifyPlan`: the plan's call bytes are not what the Manifest compiles to on the live facts (the policy engine `b1a60a4`). |
 |                                       | `DEPLOY_PROOF_SIZE_UNKNOWN`, `CALL_PROOF_SIZE_UNKNOWN`                              | A Revive step's proof size cap is `"0"`: unknown, never a bound.                                                           |
 |                                       | `PROOF_SIZE_ESTIMATE_OVER_LIMIT`                                                    | A non-zero `dryRunProofSize` is above the step's cap.                                                                      |
 |                                       | `PROOF_SIZE_CALL_INFO_MISMATCH`                                                     | `callInfoProofSize` (query_call_info total) is not above the cap.                                                          |
@@ -84,7 +84,7 @@ Notes per template:
 |                                       | `OUTER_CALL_MISMATCH`                                                               | Atomic only: the Utility.batch_all outer call differs.                                                                     |
 | `createApproval(requirePlanVerified)` | `ok: false`, reason "the plan's call bytes are not what the Manifest compiles to …" | Approval is refused for an edited plan, even with a recomputed digest.                                                     |
 
-`PLAN_BYTES_MISMATCH` comes from Sentinel's pre-sign check (on main as `b1a60a4`, originally `a74ad38`); every example
+`PLAN_BYTES_MISMATCH` comes from the policy engine's pre-sign check (on main as `b1a60a4`, originally `a74ad38`); every example
 hits it for the edited plan. The test also tolerates an older `@seam/policy` build without the check, where the edited plan
 is still refused by `verifyPlan` and `createApproval`.
 
@@ -99,5 +99,4 @@ is still refused by `verifyPlan` and `createApproval`.
   from these templates. There is no live run of two transfers in one batch, and the **revive-call and restricted-deploy
   templates are not live-run** by these examples (the contract address and code are made up).
 - **Dev accounts** are public test keys. Never fund them on a real network.
-- The console's pre-sign `gatePolicy` call with `requirePlanVerified: true` is `bot1/gate-hardening` (Pixel); these
-  examples call the same function from Node.
+- The console and these Node examples use the same pre-sign `gatePolicy` function with `requirePlanVerified: true`.

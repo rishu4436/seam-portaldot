@@ -1,144 +1,54 @@
 # Manifest Builder
 
-How the console's Manifest Builder works, first written against `main` at `dbe8e3b`, with the section below updated
-for `main` at `8cf10d0`. Parts that were **not wired** at `dbe8e3b` are listed at the end with their current state.
+The live console's **New transaction** view builds a Manifest from the selected wallet account, live runtime facts and one or more actions. The builder compiles and prepares the plan; the separate review and signing stages handle approval and submission.
 
-## Update for `8cf10d0`
+## Build and review an operation
 
-- **Kind availability with a cause** (Forge `8cf10d0`): `supportedKinds(facts)` decides each of the 7 kinds from the live
-  runtime's own metadata only. An unsupported kind always carries `cause` (`KindReasonCode`): `NO_OBSERVED_V3_METADATA`,
-  `V3_ARG_SHAPE_MISMATCH`, `CAPABILITY_NOT_OBSERVED`, `CAPABILITY_UNKNOWN`, `CAPABILITY_NO_INDEX`,
-  `CAPABILITY_ORIGIN_MISMATCH`, `UNFILLABLE_CALL_ARGS` or `NO_ENCODER`, plus a plain `reason`. `reasonCode` is still set
-  only for the two step-level codes `compile()` also uses. On the real V3 testnet (spec 3002) all 7 kinds are supported
-  (`evidence/testnet-v3/capabilities-1792508589179.json`). The console's `actionSupport` reads `supportedKinds`.
-- **Manifest JSON round-trip** (Forge `8cf10d0`): `serializeManifest(manifest)` writes strict canonical JSON and
-  `parseManifest(text)` reads it back (`packages/compiler/src/manifest-io.ts`, also in `@seam/compiler/browser`); tests in
-  `compiler/tests/manifest-io.test.ts` check that a round trip keeps the Manifest digest. The console's import still uses
-  its own `parseManifestJson` (`console/src/lib/manifestbuilder.ts`).
-- **Wired since `dbe8e3b`:** the builder compiles with `@seam/compiler/browser`, a real browser preflight feeds the policy
-  gate, and builder plans reach LIVE signing (see [BUILD_STATE.md](BUILD_STATE.md)).
+1. Connect a Polkadot wallet and select the intended account. Account discovery and runtime reads do not require a signature.
+2. Read live facts for the hosted V3 testnet. The compiler's `supportedKinds(facts)` determines available actions and explains unsupported call shapes.
+3. Add actions and enter their arguments. Form fields come from `argFields(kind)`; amounts use the asset's base units. Account and recipient readiness checks describe balance and account-existence requirements.
+4. Choose sequential or preferred/required atomic execution. Atomic verification requires rollback evidence for the selected runtime and composition; a local-node result does not establish V3 atomicity.
+5. Compile against the observed runtime. `checkManifest` supplies field-level validation; a successful result contains the compiled plan.
+6. Review the plan, policy and live preflight estimate. Asset minting also checks the live issuer. An allow-list does not grant on-chain mint authority.
+7. Send the plan to review and approve it before the wallet signs. Changes to the draft or policy clear the prior selection and approval. Runtime drift can require recompilation and a new approval.
 
-## Console flow (`packages/console/src/components/ManifestBuilder.tsx`, Pixel `39b2bf6`)
+The live flow is wired through `packages/console/src/App.tsx`, `components/ManifestBuilder.tsx` and `components/BuilderPolicy.tsx`. The signing flow uses an external wallet and performs its own submit-time checks; the builder itself never broadcasts.
 
-`App.tsx` renders `<ManifestBuilder />` when the wallet demo is off. The component never signs or submits.
+## Manifest import and export
 
-1. **Wallet connect and account pick.** `listWalletAccounts()` (`lib/manifestbuilder.ts`) calls `enable("SEAM console")`
-   on every extension in `globalThis.injectedWeb3` and lists their accounts. No extension, a wallet error, or zero
-   accounts gives a plain message and no signer. The picked account becomes `signer: { type: "ss58", value }`; there is
-   no hardcoded signer.
-2. **Network pick.** "V3 HTTPS" (`V3_HTTPS_RPC` from `lib/v3facts.ts`) or a custom RPC URL.
-3. **Live facts.** "Read live runtime facts" runs `liveFactsStep` (from `components/Modes.tsx`) over the
-   `lib/browserChain` transport. Read-only; an RPC error becomes `{ ok: false, reason: "rpc_error" }`.
-4. **Action support.** `actionSupport(facts)` marks each of the 7 kinds supported only when
-   `facts.capabilities["Pallet.call"].status === "observed"`; otherwise it shows the status as the reason. With no facts
-   nothing is supported. (This reads the facts directly; it does not call `readLiveCapabilities` or `supportedKinds`, see below.)
-5. **Steps.** Add, edit and remove actions (`emptyAction` gives ids `step1`, `step2`, ...). Form fields come from the
-   console's own `FORM_FIELDS` table, which mirrors the compiler's argument names. Values stay strings; the compiler
-   validates them.
-6. **Atomicity.** `"preferred"` (default, may fall back to sequential), `"required"` (sets `atomicRequired: true`) or
-   `"sequential"`. `buildManifest(signer, actions, atomicity, chain?)` builds the Manifest and drops empty optional fields.
-7. **JSON export and import.** Export downloads `seam-manifest.json`. `parseManifestJson(text)` refuses invalid JSON,
-   `version !== 1`, no actions, a missing or duplicate id, or an unknown kind. An imported signer is replaced by the
-   connected account.
-8. **Compile.** Only through an injected `compile?: CompileFn` prop. `App.tsx` passes none, so on `dbe8e3b` the button
-   reports _"The browser compiler is not wired in this build, so nothing was compiled."_
+Export uses the compiler's `serializeManifest` to produce canonical JSON. Import validates the document and uses the currently selected wallet account as the signer. Invalid JSON, unsupported action kinds and missing or duplicate action IDs produce validation errors.
 
-Compile stays disabled until an account is picked, facts are read, at least one action exists and every action is supported.
+An imported Manifest is an operation description, not an authorization to send. It must be compiled, checked and approved for the current account and runtime.
 
-## `@seam/compiler/browser` (Forge `559581e`)
+## Compiler browser API
 
-No node built-ins; same function objects as the main entry. Exports (from `packages/compiler/src/browser.ts`):
-everything in `@seam/compiler/facts`, `compile`, `computePlanDigest`, `computeManifestDigest`, `KIND_TO_CAPABILITY`,
-`BATCH_CAPABILITY`, `evaluateRollbackProof`, `supportedKinds`, `argFields`, `checkManifest`, `canonicalJson`,
-`digestJson`, `domainHash`, `DOMAIN`, `parseNativeAddress`, `parseH160`, and the types `KindAvailability`, `ArgField`,
-`ArgFieldType`, `ManifestCheck`, `NativeAddress`.
+`@seam/compiler/browser` provides the compiler and metadata helpers without Node built-ins:
 
 ```ts
 compile(manifest: Manifest, facts: RuntimeFacts, options?: CompileOptions): Plan
-supportedKinds(facts: RuntimeFacts): KindAvailability[]   // throws SeamCompileError on invalid facts
-argFields(kind: ActionKind): ArgField[]                   // { name, type: ArgFieldType, required, description }
-checkManifest(manifest, facts, options?): ManifestCheck   // never throws a SeamCompileError
+supportedKinds(facts: RuntimeFacts): KindAvailability[]
+argFields(kind: ActionKind): ArgField[]
+checkManifest(manifest, facts, options?): ManifestCheck
 ```
 
-- `KindAvailability` is `{ kind, capability, supported: true, palletIndex, callIndex }` or
-  `{ kind, capability, supported: false, reason, reasonCode?, cause }` (`cause` since `8cf10d0`).
-- `ArgFieldType` is one of `amount`, `id`, `accountAddress`, `contractAddress`, `hexBytes`, `weight`, `salt`, `json`.
-  `argFields` is derived from the compiler's own `ARG_SCHEMA`, required fields first.
-- `ManifestCheck` is `{ ok, issues: CompileIssue[], unavailable: { step, actionId, reason, reasonCode? }[], plan? }`.
-  It runs `compile()` itself; issues carry paths such as `actions[0].args.amount`.
+`supportedKinds` returns observed pallet/call indexes for supported actions, or a reason and stable cause code for an unsupported kind. Indexes are runtime observations, not constants to copy into an application.
 
-## `@seam/chain/browser` live capabilities (Chainsmith `1d678a0`)
+`argFields` derives required and optional fields from the compiler's argument schema. `checkManifest` returns compilation issues with paths such as `actions[0].args.amount` instead of treating an invalid draft as a successful plan.
 
-From `packages/chain/src/live-capabilities.ts`:
+See the [reference](reference.md) for Manifest fields and [security gates](SECURITY_GATES.md) for the approval and submission boundaries.
 
-```ts
-readLiveCapabilities(send: RpcSend, opts?: FactsOptions & { endpoint?: string }): Promise<LiveCapabilities>
-liveCapabilities(inputs: ChainInputs, opts?: FactsOptions): LiveCapabilities
-type RpcSend = (method: string, params: unknown[]) => Promise<unknown>
-```
+## Receipt verification
 
-`readLiveCapabilities` reads only: genesis hash, finalized head and header, runtime version and metadata at that head,
-and `system_properties`. It never signs or submits.
+After submission, the SDK verifies the recorded execution using the expected action, signed call bytes and chain observations. A Revive call remains unknown without sufficient expected event evidence; a finalized extrinsic alone does not prove an arbitrary contract effect.
 
-`LiveCapabilities` is `{ version: 1, fingerprint, fingerprintDigest, metadataVersion, metadataLayoutHash, atBlock,
-endpoint?, actions, facts }`. `facts` is `RuntimeFacts`, ready for `compile` / `supportedKinds`.
-`actions[kind]` is an `ActionCapability`:
+The [SDK documentation](sdk.md) explains the browser verifier exports, atomic per-step outcomes, receipt integrity and independent chain verification. Native swap archives are handled in the separate [native swap workspace](native-swaps-v3.md).
 
-```ts
-{ kind, capability /* "Pallet.call_name" */, presence /* "observed" | "pallet_missing" | "call_missing" | "unreadable" */,
-  supported, reasonCode? /* "NO_OBSERVED_V3_METADATA" | "V3_ARG_SHAPE_MISMATCH" */, reason,
-  palletIndex: number | null, callIndex: number | null, args: { name, type, rawType: string | null }[] }
-```
+## Runnable example
 
-Also exported: `shapeMismatch`, `argMatchesClass`, `isWeightV2RawType`, `SEAM_ACTION_KINDS`, `ACTION_CAPABILITY`,
-`ACTION_SHAPES`, `V3_ACTION_KINDS`.
-
-**Live V3 run** (read-only): `evidence/testnet-v3/capabilities-1792508589179.json`, spec 3002, block #118808,
-`metadataLayoutHash` `0x221ba8f7dd81e0341fca9f0074a3e433659c97300cbbb2f874dbd5f0d998b304`. All 7 kinds `supported`:
-`assets.transfer` 39/9, `assets.mint` 39/6, `nfts.mint` 47/3, `contracts.call` 21/6, `revive.call` 80/1,
-`revive.instantiate_with_code` 80/3, `revive.map_account` 80/7.
-
-## `@seam/sdk/browser` step verifiers
-
-After a step is sent, the console can check it with `verifyStep` from `@seam/sdk/browser`, which is the same function as in `@seam/sdk` and covers every kind the builder offers. Pass the V3 runtime fingerprint and the signed call bytes. `revive.call` stays `unknown` unless the manifest gives the expected contract event, and `revive.map_account` stays `unknown` without a `Revive.OriginalAccount` read. For an atomic plan, first split the one batch outcome with `perStepOfBatch(plan, outcomes, signedBatchCall)` from the same entry, then check each step. See `packages/sdk/README.md`.
-
-## SDK / Node example
-
-[`docs/examples/builder-compile.mjs`](examples/builder-compile.mjs) uses the browser entries from Node. Run it from
-the repo root after `npm run build`:
+After building the packages, run the browser-entry compilation example from the repository root:
 
 ```sh
 node docs/examples/builder-compile.mjs
 ```
 
-It takes `facts` from the capabilities evidence, prints `supportedKinds` and `argFields("assets.transfer")`, runs
-`checkManifest` and `compile` on the V3 wallet-demo Manifest, then calls `assertPolicyAllows` with no preflight.
-Output on `dbe8e3b` (run 2026-10-20):
-
-```
-assets.transfer 39/9
-...
-revive.map_account 80/7
-assets.transfer fields: assetId, amount, recipient
-checkManifest ok: true issues: 0
-mode: sequential planDigest: 0xb7a80ae632f164d2f6f611718f0648f668e9cf90d51db4dbb49fa6462c941176
-same metadataHash as the demo plan's facts: false
-same call bytes as the demo plan: true
-gate blocked: PREFLIGHT_UNKNOWN
-  Preflight ran: Unknown, so blocked. No preflight result was given, so fees, weight and dry runs are unknown.
-```
-
-The call bytes equal the committed demo plan, but the plan digest does not: the #118808 read saw a different raw
-`metadataHash` than the facts the demo plan was compiled from, and the digest binds the fingerprint. The layout hash is
-the same (layout hash v2 blanks `Revive.EthBlockBuilderIR`).
-
-## Not wired yet on `dbe8e3b` (historical; all four are wired on `7a551e3`, see the update above)
-
-- **Compiler in the console.** No `compile` prop is passed, so the builder does not compile. It also does not use
-  `argFields`, `checkManifest`, `supportedKinds` or `readLiveCapabilities` yet; it uses its own `FORM_FIELDS` and
-  `actionSupport`. (Pixel's wiring commit is pending.)
-- **Compile-to-signing handoff.** `onCompiled` exists but nothing consumes it; a built plan cannot reach the signer.
-- **Browser preflight.** `@seam/chain/browser` has no `preflight` export (Chainsmith, pending). Without a full
-  `PreflightResult` the policy gate blocks with `PREFLIGHT_UNKNOWN`, as the example shows.
-- **Policy gate in the console.** `@seam/policy/browser` is not imported anywhere in `packages/console` yet. See
-  [SECURITY_GATES.md, Browser policy flow](SECURITY_GATES.md#browser-policy-flow).
+This example reads recorded V3 facts, inspects supported actions and arguments, compiles a Manifest and exercises policy refusal without a live preflight. It signs and submits nothing. Recorded facts and outputs do not establish current wallet authorization or a new testnet execution.
