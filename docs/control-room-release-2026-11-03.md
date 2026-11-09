@@ -20,8 +20,6 @@ Backend: `https://control-plane-production-3a6b.up.railway.app`; health at `/hea
 
 Railway project: `dff818c7-9d85-45ae-80e6-5ebcf1d8f6f3`; service: `59a67ffa-5043-44f8-a9f0-df53e2c5f6a4`. One replica uses a persistent 500 MB volume mounted at `/data`. Credentials are saved only under the ignored local `secrets/` directory, with Windows ACLs restricted to the current user, SYSTEM and Administrators. No keys appear in deployment artifacts or this report.
 
-At the user's explicit request, Railway accepted deletion of the old `kickr` and `VYTRIX` projects, including their PostgreSQL services. Railway scheduled permanent removal for **5 November 2026 at approximately 14:00 IST**. Capacity became available immediately and the new project was created successfully.
-
 ## Verification evidence
 
 - [Independent public-node verification](independent-verification-2026-11-03.json): a real historical V3 sequential receipt returned `chain_verified`, with both effects independently observed and the manifest recompiled against historical facts. This was a read-only check, not a new transaction.
