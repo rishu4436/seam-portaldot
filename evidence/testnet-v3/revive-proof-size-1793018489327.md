@@ -33,7 +33,7 @@ TransactionPaymentApi_query_info was not used: it takes a signed extrinsic.
 ExtrinsicSuccess dispatch_info.weight = {'refTime': 1524333644, 'proofSize': 19007} (limit sent: ref_time 50,000,000,000, proof_size 1,000,000). Pre-dispatch then was 1,019,007 proof, so the execution part was refunded to 0.
 
 ## Recommendation
-weight_limit = { ref_time: weight_required.ref_time * 1.2 (dry run), proof_size: a stated non-zero cap, e.g. 1,000,000 as in #102840 (refunded; costs ~0.0003 tPOT extra pre-dispatch fee) }, and check the whole extrinsic with query_call_info: pre-dispatch proof_size must equal cap + measured static overhead. Do NOT relax Sentinel's rule to accept 0 from weight_required; the dry run's 0 means 'not metered', which still is not a measured bound.
+weight_limit = { ref_time: weight_required.ref_time * 1.2 (dry run), proof_size: a stated non-zero cap, e.g. 1,000,000 as in #102840 (refunded; costs ~0.0003 tPOT extra pre-dispatch fee) }, and check the whole extrinsic with query_call_info: pre-dispatch proof_size must equal cap + measured static overhead. Do NOT relax the policy engine's rule to accept 0 from weight_required; the dry run's 0 means 'not metered', which still is not a measured bound.
 
 ## Old evidence
 `escrow-dryrun-1792555095045` and `escrow-min-dryrun-1793017079627` are unchanged. Their proof_size 0 is a correct reading (not a decode bug): the execution meter does not charge proof size on this runtime.

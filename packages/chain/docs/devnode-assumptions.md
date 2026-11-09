@@ -1,10 +1,10 @@
 # Spec-1002 / metadata-V13 assumptions found by running SEAM on substrate-contracts-node v0.42.0 (metadata V14)
 
-Teammates' packages were NOT edited (main 241ac8c). Workarounds live in packages/chain (bot4/devnode).
+These are historical porting observations from `241ac8c`, not a current capability or release checklist. They record the initial V13-to-V14 compatibility issues and fixes. See the [chain package README](../README.md) and [policy coverage](../../../docs/policy-coverage.md) for supported operations and current gate behavior.
 
-## @seam/compiler (Bot 2)
+## @seam/compiler
 
-UPDATE (bot4/ink-contract): item 1 is resolved. The compiler now binds Weight V2 `proofSize` and `storageDepositLimit` (null = none) and encodes ink! messages from an ABI; the run scripts no longer patch Contracts.call.
+Compatibility update: item 1 was resolved. The compiler now binds Weight V2 `proofSize` and `storageDepositLimit` (null = none) and encodes ink! messages from an ABI; the run scripts no longer patch Contracts.call.
 
 1. `compile.ts` ARG_BINDINGS / ARG_SCHEMA `contracts.call` = {dest, value, gasLimit, data}. On V14,
    Contracts.call is `call(dest, value, gas_limit: Weight{ref_time, proof_size}, storage_deposit_limit: Option<Compact<u128>>, data)`.
@@ -23,7 +23,7 @@ UPDATE (bot4/ink-contract): item 1 is resolved. The compiler now binds Weight V2
    so it still works via `u\d+`. OK.
 5. `withoutLookupWarning` comment: V13-specific, harmless on V14.
 
-## @seam/policy (Bot 3)
+## @seam/policy
 
 6. `maxWeight` is a single number; on Weight V2 chains only ref_time is limited (proof_size not limited).
    @seam/chain reports ref_time as `weight`. Needed (later): optional `maxProofSize`.
@@ -31,7 +31,7 @@ UPDATE (bot4/ink-contract): item 1 is resolved. The compiler now binds Weight V2
 8. `maxNativeValue` doc says "POT base units": token-agnostic in code, fine.
    Everything else (call_index check from encoded bytes, per-step gate, approval binding) worked unchanged on V14.
 
-## @seam/sdk (Bot 5)
+## @seam/sdk
 
 9. `offline.ts` factsFromSnapshot: hard-coded file names `portaldot-mainnet-*.json/hex`, default spec-1002 types,
    tokenSymbol/decimals straight from properties (devnode has none -> undefined). Needed: name/typesBundle/declaredToken params.
@@ -42,11 +42,11 @@ UPDATE (bot4/ink-contract): item 1 is resolved. The compiler now binds Weight V2
     amount) matches V14 too. Verified on chain.
 12. `cli.ts` default snapshot is the bundled mainnet spec 1002.
 
-## @seam/console (Bot 1)
+## @seam/console
 
-13. Default endpoint wss://mainnet.portaldot.io and demo scenarios pinned to spec 1002 / POT / V13 metadata.
+13. The initial console used the mainnet endpoint and scenarios pinned to spec 1002 / POT / V13 metadata. This is historical; the live console now targets the hosted V3 testnet and blocks mainnet sends.
 
-## Own (@seam/chain), fixed on bot4/devnode
+## Chain adapter fixes
 
 - DECODE_TYPES (DispatchError Module {index u8, error u8}) now only for metadata <= V13.
 - payment_queryInfo Weight V2 JSON is snake_case {ref_time, proof_size}: was read as refTime only -> "unknown".

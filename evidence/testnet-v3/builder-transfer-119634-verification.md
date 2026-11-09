@@ -30,7 +30,7 @@ No plan file is committed for this builder plan, and the receipt carries no plan
 
 `/workspace/demo-shots/seam-receipt-0x74a76dcb.json` agrees with the chain on tx hash, block number and hash, and signer. Where it does not:
 
-- `result` is `"unverified"`, while `verification` and `effect.verdict` are `effect_proven` (and the console showed Effect Proven). This is Pixel's field to fix.
+- `result` is `"unverified"`, while `verification` and `effect.verdict` are `effect_proven` (and the console showed Effect Proven). This was a console receipt-status inconsistency in the recorded run.
 - `fee` is 1470877255420, but the chain's `TransactionFeePaid` is 1470877249652 (5768 planck less). The receipt's value looks like the preflight estimate.
 - `effect.extrinsicIndex` is −1 and `effect.event` is `{}`, but the chain shows extrinsic index 1 with an `Assets.Transferred` event.
 - `approvalHash` equals `planDigest`.

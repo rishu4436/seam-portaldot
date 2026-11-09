@@ -67,11 +67,11 @@ See [`packages/sdk/README.md`](../packages/sdk/README.md) for the flow, receipts
 
 ## Security limitations
 
-- **Plan-bytes binding is CLOSED** (Forge's `verifyPlan`, `1021d28`, plus Sentinel's gate, `50d2911`). Given a
+- **Plan-bytes binding.** Given a
   Manifest and live facts, `createApproval` and `checkBeforeSubmit` recompile the Manifest on the live runtime and block
   on any byte difference in a step, the atomic outer call or the signed calls (`plan_bytes_mismatch`). Facts carried
   inside a plan are never used. Remaining limits:
-  - The pre-sign `verifyPlan` check is in progress (Forge's fresh compiled fixture, then Sentinel's pre-sign gate).
+  - Pre-sign policy checking also runs `verifyPlan` when `manifest` and `liveFacts` are provided; `requirePlanVerified` refuses approval when those inputs or their byte-binding proof are missing.
   - In non-live mode without `manifest` and `liveFacts` (e.g. replaying a recorded JSON run), call bytes are not checked
     against a Manifest.
   - The console must pass `live: true` on every real submit.

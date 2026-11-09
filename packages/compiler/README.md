@@ -9,7 +9,7 @@ Manifest ─┐
 Facts ────┘
 ```
 
-Standalone for now; it will move into the monorepo as `packages/compiler`.
+The compiler is an npm workspace at `packages/compiler`.
 
 ## Quick start
 
@@ -73,7 +73,7 @@ Other exports: `computePlanDigest(plan)`, `computeManifestDigest(manifest)`, `co
 `canonicalJson`, `digestJson`, `loadRuntime`, `readPinnedTypes`, `KIND_TO_CAPABILITY`,
 `encodeInkMessage`, `decodeInkMessage(abi, data, ss58Prefix)`, `computeAbiHash(abi)`, `loadInkAbi`.
 
-## Manifest (draft v1, owned by Bot 5)
+## Manifest v1
 
 ```jsonc
 {
@@ -261,11 +261,11 @@ Changing this file changes `typesBundleHash`, and with it the fingerprint and ev
 
 ## Fixtures
 
-`fixtures/` holds copies of Bot 4's read-only captures of Portaldot mainnet (spec 1002, tx version 2, SS58 42, POT 14 decimals,
+`fixtures/` holds copies of the chain adapter's read-only captures of Portaldot mainnet (spec 1002, tx version 2, SS58 42, POT 14 decimals,
 metadata blake2b `0x8b91f644…5150`), plus one real signed extrinsic used as type evidence. Tests make no network calls.
 
 `fixtures/ink/` holds ink! metadata used by the ABI tests: `seam_demo.v5.json` (our demo contract, a copy of
-`contracts/seam-demo/artifacts/metadata.json` from branch `bot2/demo-contract`), `erc20.v5.json` (ink! 5, metadata V5) and `flipper.v3.json`
+`contracts/seam-demo/artifacts/metadata.json` from the test contract build), `erc20.v5.json` (ink! 5, metadata V5) and `flipper.v3.json`
 (ink! 3.0.0-rc7, metadata V3), both from the polkadot-js/api test fixtures (Apache-2.0) with the wasm blob removed.
 
 `fixtures/devnode-metadata.hex` + `devnode-snapshot.json` are a read-only capture of the local dev node

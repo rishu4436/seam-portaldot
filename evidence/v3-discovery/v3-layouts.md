@@ -29,7 +29,7 @@ Revive storage entries listed: PristineCode, CodeInfoOf, AccountInfoOf, NativeDe
 | Nfts.mint mint_to | AccountId32 or MultiAddress.Id | `MultiAddress` (accepted via Id variant) | yes |
 | Nfts.mint witness_data | Option (SEAM encodes None) | `Option<MintWitness>` | yes |
 
-Net effect: the compiler matches argument names exactly, so the real `Revive.call` is refused with `V3_ARG_SHAPE_MISMATCH` solely because the weight argument is called `weight_limit`, not `gas_limit`. The types line up. Nfts.mint passes the shape check. Whether to accept `weightLimit` as an alias is a compiler decision for the owner (Forge); this branch changes nothing there.
+Net effect: the compiler matches argument names exactly, so the real `Revive.call` is refused with `V3_ARG_SHAPE_MISMATCH` solely because the weight argument is called `weight_limit`, not `gas_limit`. The types line up. Nfts.mint passes the shape check. This observation describes the compiler at the time of this capture; later compiler support must be checked against current runtime facts.
 
 ## Preflight on this real metadata (offline FakeNode serving it; see `packages/chain/tests/v3-real-fixture.test.ts`)
 - revive.call: compiler `unavailable`, `V3_ARG_SHAPE_MISMATCH`; coverage `basis: unobserved`, `proves: nothing`; simulation not attempted; accountMapping `unknown` (`map_account` present in metadata, no OriginalAccount entry read, so not known mapped).

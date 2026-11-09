@@ -76,4 +76,4 @@ The original polkadot-js/native transfer workspace remains available in **New tr
 
 Every browser journal mutation must share `JOURNAL_LOCK`; Executor acquires it for the entire operation and the UI takes it for archive restore. Cross-tab exclusion fails closed if Web Locks are unavailable. Journal writes must succeed before any wallet request. The portable DeFi namespace is separate from the existing native transaction journal and receipt archives.
 
-See [the threat model](defi-threat-model.md) and [pilot milestones](defi-pilot-milestones.md) for practical limits and release gates.
+See [the threat model](defi-threat-model.md) and [V3 engineering review](defi-v3-engineering-review.md) for practical limits and release gates.

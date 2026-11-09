@@ -1,14 +1,14 @@
 # @seam/chain
 
-Bot 4's part of SEAM: the Portaldot chain layer. It does live discovery, the runtime recheck before
+The Portaldot chain layer for SEAM. It does live discovery, the runtime recheck before
 submission, preflight, the signing handoff to the user's wallet, and submit-and-track with decoded
 events. **SEAM never holds user keys.** It builds the exact bytes, the wallet signs them, and SEAM checks
 and broadcasts the result.
 
 ```
-discover ─► compile (Bot 2) ─► preflight ─► policy + approve (Bot 3) ─► buildSigningRequests ─► wallet signs
-   ─► assembleSignedExtrinsic ─► extractSignedCall + refetchFingerprint ─► checkBeforeSubmit (Bot 3)
-   ─► submitAndWatch ─► events ─► receipt (Bot 5)
+discover ─► compile ─► preflight ─► policy + approve ─► buildSigningRequests ─► wallet signs
+   ─► assembleSignedExtrinsic ─► extractSignedCall + refetchFingerprint ─► checkBeforeSubmit
+   ─► submitAndWatch ─► events ─► receipt
 ```
 
 It will move into the monorepo as `packages/chain`.
@@ -47,7 +47,7 @@ against the metadata by `factsFromMetadata`. A missing `tokenSymbol`/`tokenDecim
 
 `refetchFingerprint(endpoint): RuntimeFingerprint`. It re-reads everything and returns the nine-field
 fingerprint. `readFingerprint` returns it with `fingerprintDigest` and `atBlock`. The digest is computed by
-the compiler's `computeFingerprintDigest`, so it matches Bot 2 and Bot 3 byte for byte (tested).
+the compiler's `computeFingerprintDigest`, so it matches the compiler and policy engine byte for byte (tested).
 
 ### 3. Preflight
 
@@ -88,7 +88,7 @@ No real Portaldot V3 metadata has ever been observed, so these two kinds are han
 | `signBytesOf(payload, facts)`                                                         | the bytes a key signs for a payload (for raw-signing wallets)                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `assembleSignedExtrinsic(payload, signature, facts, { scheme?, verify? })`            | signed extrinsic hex. Refuses a payload for another genesis, spec or tx version, a non-zero tip, or other signed extensions. By default it **verifies the signature** first. Typed (65/66-byte) signatures are taken as given. An untyped 64-byte one needs `scheme`.                                                                                                                                                                                                              |
 | `extractSignedCall(extrinsicHex, facts)`                                              | `{ callHex, capability, palletIndex, callIndex, signer { accountId, ss58 }, nonce, era, tip, signature, signatureScheme, txHash }`: what is **actually inside** the extrinsic                                                                                                                                                                                                                                                                                                      |
-| `signedCallsOf(extrinsics, facts)`                                                    | `Hex[]` → Bot 3's `checkBeforeSubmit({ signedCalls })`                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `signedCallsOf(extrinsics, facts)`                                                    | `Hex[]` → the policy engine's `checkBeforeSubmit({ signedCalls })`                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `checkSignedExtrinsic(extrinsicHex, request, facts)`                                  | compares call, signer, nonce, era and tip, and verifies the signature over the extrinsic's own contents. Returns `{ ok, mismatches[] }`                                                                                                                                                                                                                                                                                                                                            |
 
 Tip is always 0. `mortalityBlocks` must be a power of two from 4 to 65536. polkadot.js silently rounds
@@ -114,7 +114,7 @@ keys (e.g. `{"class":"Normal","paysFee":"Yes","weight":200000000}`). `toChainEve
 Before broadcasting, `submitAndWatch` checks that the node's genesis equals the facts' genesis, and it
 **refuses Portaldot mainnet** unless `allowMainnet: true` is set.
 
-### Bot 5's `ChainAdapter`
+### SDK `ChainAdapter` integration
 
 `createPortaldotAdapter(endpoint, options)` implements `@seam/sdk`'s `ChainAdapter` exactly:
 
@@ -133,7 +133,7 @@ Before broadcasting, `submitAndWatch` checks that the node's genesis equals the 
 `submit` dry-runs each transaction again right before broadcasting it and returns a `failed` outcome
 without sending when that fails (`dryRunBeforeSubmit: false` turns this off).
 
-Sequential plans with `requireSignedDryRun` on (Bot 3's default): transactions 2..n can't dry-run before
+Sequential plans with `requireSignedDryRun` on (the policy engine's default): transactions 2..n can't dry-run before
 transaction 1 is on chain (future nonce → `'unknown'`), so the SDK's `execute` (77d3c82) gates each step on its
 own. Before every step it re-reads the fingerprint, calls `dryRunSigned([thatStep])` and runs
 `checkBeforeSubmit({ sendIndex, previousSteps })`, after the previous step finalized and verified. A step whose own
@@ -152,7 +152,7 @@ const wallet = chain.walletFrom((payload) => injector.signer.signPayload(payload
 const run = await seam.execute({ ...prepared, policy, facts, approval: approval.approval, wallet });
 ```
 
-## How Bot 3's submit gate uses it
+## Submit gate integration
 
 ```ts
 checkBeforeSubmit({
@@ -167,7 +167,7 @@ checkBeforeSubmit({
 `tests/policy.test.ts` runs this with the real package. It passes for honest inputs and blocks a swapped
 signed call (`signed_bytes_mismatch`) and a changed runtime (`runtime_changed`).
 
-## How Bot 5's receipt uses it
+## Receipt integration
 
 `submit()` / `readEvents()` return `{ pallet, name, args }` events read from System.Events at the inclusion
 block. The receipt compares `Assets.Transferred(assetId, from, to, amount)`, `Assets.Issued(assetId,
@@ -232,7 +232,7 @@ atomic plans and a failing step.
 ```sh
 npm run devnode -- start          # prebuilt substrate-contracts-node v0.42.0 (sha256-checked), ws://127.0.0.1:9944
 node scripts/devnode/snapshot.mjs # read-only snapshot
-node scripts/devnode/setup.mjs    # //Alice: create + mint asset 1, deploy contracts/seam-demo (Bot 2's ink! contract)
+node scripts/devnode/setup.mjs    # //Alice: create + mint asset 1, deploy contracts/seam-demo (test ink! contract)
 node scripts/devnode/run-sequential.mjs
 node scripts/devnode/run-rollback.mjs
 node scripts/devnode/run-atomic.mjs <rollback-*.json>
@@ -345,7 +345,7 @@ const report = await preflightReport(send, plan, facts); // PreflightReport (cov
   - A fake signature is never dry-run: the node rejects it.
 - Anything the node does not answer is `{ unknown: true }`, or `dryRun: "unknown"`. An RPC error on `payment_queryInfo` leaves that step's fee and weight unknown and `totalFee` unknown, and the gate blocks. `storageDeposit` is always unknown (the runtime does not report it). If the node cannot be reached at all, `preflight` throws.
 
-`scripts/v3-live-preflight.mjs` runs it read-only against the V3 test node for the demo plan (`packages/console/src/demo/v3-demo-transfer.json`) and records Sentinel's gate verdict with the sequential demo policy. It writes `evidence/testnet-v3/preflight-<ts>.json`.
+`scripts/v3-live-preflight.mjs` runs it read-only against the V3 test node for the demo plan (`packages/console/src/demo/v3-demo-transfer.json`) and records the policy engine's gate verdict with the sequential demo policy. It writes `evidence/testnet-v3/preflight-<ts>.json`.
 
 ## Verifying signed extrinsics (`signedExtrinsicDecoder`)
 

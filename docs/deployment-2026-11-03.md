@@ -67,5 +67,3 @@ For the first complete rehearsal:
 Participant testnet funding instructions are on the [official event page](https://dorahacks.io/hackathon/portaldot-hacker-house-2026/detail). They describe organizer distribution through Discord, rather than a public faucet.
 
 ![Deployed workspace](deployment-preview-2026-11-03.jpg)
-
-The [hackathon strategy](hackathon-strategy-2026-11-03.md) covers the current competition, judging priorities, the three-minute demo and a focused path beyond the event.
